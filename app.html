@@ -254,7 +254,7 @@
   </section>
 
   <section id="play">
-    <h2 id="playTitle" style="cursor:default">训练</h2>
+    <h2 id="playTitle" style="cursor:default;user-select:none">训练</h2>
     <div class="hint">先到设置页做一次灵敏度标定，之后每天按计划练。</div>
 
     <div class="grid" id="drillGrid"></div>
@@ -444,12 +444,34 @@ function show(t){
   applyLang();
 }
 
-let switching=false;
+let switching=false, watchdog=null;
 function rippleSwitch(lang, cx, cy){
-  if(switching) return; switching=true;
+  if(switching) return;
+  switching=true;
+
+  // 系统开启「减少动态效果」时直接切换
+  try{
+    if(matchMedia('(prefers-reduced-motion: reduce)').matches){
+      LANG=lang; setLang(lang); applyLang();
+      const lsw=document.getElementById('langSw');
+      if(lsw) lsw.querySelectorAll('span[data-lang]').forEach(el=>el.classList.toggle('on', el.dataset.lang===lang));
+      switching=false;
+      return;
+    }
+  }catch(e){}
+
+  // 看门狗：任何异常都不会让切换永久卡死
+  clearTimeout(watchdog);
+  watchdog=setTimeout(function(){
+    if(switching){
+      document.querySelectorAll('#langBlocker,.langLayer,.langCanvas').forEach(el=>el.remove());
+      switching=false;
+    }
+  }, 6000);
 
   // 拦截层：动画期间吃掉所有点击
   const blocker=document.createElement('div');
+  blocker.className='langBlocker';
   blocker.style.cssText='position:fixed;inset:0;z-index:9500;cursor:default;background:transparent';
   document.body.appendChild(blocker);
 
@@ -458,6 +480,7 @@ function rippleSwitch(lang, cx, cy){
     const src=document.body.cloneNode(true);
     src.querySelectorAll('script,iframe,canvas,.lang').forEach(el=>el.remove());
     layer=document.createElement('div');
+    layer.className='langLayer';
     layer.style.cssText='position:fixed;inset:0;z-index:9000;pointer-events:none;overflow:hidden;'
       +'background:var(--bg);contain:strict;will-change:clip-path;transform:translateZ(0);'
       +'clip-path:circle(0px at '+cx+'px '+cy+'px)';
@@ -476,6 +499,7 @@ function rippleSwitch(lang, cx, cy){
   // 波纹画布
   const cv=document.createElement('canvas'), ctx2=cv.getContext('2d');
   const dpr=devicePixelRatio||1;
+  cv.className='langCanvas';
   cv.style.cssText='position:fixed;inset:0;z-index:9001;pointer-events:none';
   cv.width=innerWidth*dpr; cv.height=innerHeight*dpr;
   cv.style.width=innerWidth+'px'; cv.style.height=innerHeight+'px';
@@ -518,6 +542,7 @@ function rippleSwitch(lang, cx, cy){
       requestAnimationFrame(()=>{
         layer.remove();
         blocker.remove();
+        clearTimeout(watchdog);
         switching=false;
       });
     }

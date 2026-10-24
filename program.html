@@ -37,12 +37,22 @@
   .go{margin-left:auto;padding:8px 18px;background:var(--acc);border:1px solid var(--acc);color:#fff;
     border-radius:7px;text-decoration:none;font-size:14px;white-space:nowrap}
   .go:hover{background:var(--acc)}
-  .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:10px}
-  .cell{aspect-ratio:1;border-radius:5px;background:var(--panel2);display:flex;align-items:center;
-    justify-content:center;font-size:11px;color:var(--dim)}
-  .cell.done{background:var(--acc);color:#fff}
-  .cell.today{outline:2px solid var(--acc)}
-  .cell.rest{background:var(--panel);color:var(--line)}
+  .cal{margin-top:12px}
+  .calTitle{font-size:15px;font-weight:600;color:var(--txt);margin-bottom:10px;letter-spacing:.5px}
+  .calWeek{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px}
+  .calWeek div{font-size:11px;color:var(--dim);text-align:center;letter-spacing:1px}
+  .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+  .grid .cell{height:44px;display:flex;align-items:center;justify-content:center;
+    border-radius:8px;background:var(--panel2);color:var(--dim);font-size:13px;
+    border:1px solid transparent;font-variant-numeric:tabular-nums}
+  .grid .cell.blank{background:transparent;border:0}
+  .grid .cell.rest{background:transparent;color:var(--dim);opacity:.45;border:1px dashed var(--line)}
+  .grid .cell.done{background:var(--acc);color:#fff;border-color:var(--acc);font-weight:600}
+  .grid .cell.today{border:2px solid var(--acc);color:var(--acc);font-weight:700;
+    box-shadow:0 0 0 3px color-mix(in srgb,var(--acc) 22%,transparent)}
+  .grid .cell.rest.today{background:var(--panel2)}
+  .grid .cell.done.today{border-color:var(--txt)}
+  
   textarea{width:100%;height:70px;background:var(--bg);border:1px solid var(--line);color:var(--txt);
     border-radius:7px;padding:10px;font-family:Consolas,monospace;font-size:13px;resize:vertical}
   button{padding:9px 20px;background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:7px;
@@ -54,6 +64,11 @@
   th{color:var(--dim);font-weight:500}
   .hint{font-size:13px;color:var(--dim)}
   code{background:var(--panel2);padding:1px 6px;border-radius:4px;font-size:12px}
+
+  /* 隐藏滚动条（仍可滚动） */
+  html{scrollbar-width:none}
+  html::-webkit-scrollbar{display:none}
+  ::-webkit-scrollbar{width:0;height:0}
 </style>
 </head>
 <body>
@@ -83,8 +98,12 @@
 
   <div class="panel">
     <h2>进度</h2>
-    <div class="hint">绿色 = 已完成，蓝色边框 = 今天，深色 = 休息日</div>
-    <div class="grid" id="grid"></div>
+    <div class="hint">绿色 = 已完成 · 描边 = 今天 · 淡色 = 休息日</div>
+    <div class="cal">
+      <div class="calTitle" id="calTitle"></div>
+      <div class="calWeek" id="calWeek"></div>
+      <div class="grid" id="grid"></div>
+    </div>
   </div>
 
   <div class="panel">
@@ -194,17 +213,31 @@ function render(){
   }).join('');
 
   // 进度格
+  // 日历渲染
+  const startDt=new Date(localStorage.getItem(K_START));
+  const pd=n=>String(n).padStart(2,'0');
+  const wd=(startDt.getDay()+6)%7;          // 周一=0
+  const WEEK=['一','二','三','四','五','六','日'];
+  $('calWeek').innerHTML=WEEK.map(w=>'<div>'+w+'</div>').join('');
+  const months={}; 
   let g='';
+  for(let i=0;i<wd;i++) g+='<div class="cell blank"></div>';
   for(let i=0;i<28;i++){
-    const dt=new Date(new Date(localStorage.getItem(K_START)).getTime()+i*86400000);
-    const p=n=>String(n).padStart(2,'0');
-    const k=dt.getFullYear()+'-'+p(dt.getMonth()+1)+'-'+p(dt.getDate());
+    const dt=new Date(startDt.getTime()+i*86400000);
+    const k=dt.getFullYear()+'-'+pd(dt.getMonth()+1)+'-'+pd(dt.getDate());
+    months[dt.getMonth()+1]=dt.getFullYear();
     const done=set.has(k);
-    const rest=(i%7===5||i%7===6);
+    const rest=((dt.getDay()+6)%7)>=5;       // 六、日
     const cls='cell'+(done?' done':rest?' rest':'')+(i===d?' today':'');
-    g+='<div class="'+cls+'" title="'+k+'">'+(i+1)+'</div>';
+    g+='<div class="'+cls+'" title="'+k+(done?' · 已完成':'')+'">'+dt.getDate()+'</div>';
   }
+  const total=wd+28, tail=(7-total%7)%7;
+  for(let i=0;i<tail;i++) g+='<div class="cell blank"></div>';
   $('grid').innerHTML=g;
+  const mk=Object.keys(months).map(Number);
+  $('calTitle').textContent = mk.length===1
+    ? months[mk[0]]+' 年 '+mk[0]+' 月'
+    : months[mk[0]]+' 年 '+mk[0]+' 月 — '+mk[mk.length-1]+' 月';
 
   // 记录表
   if(log.length){

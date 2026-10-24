@@ -43,6 +43,13 @@
     --txt:#e6edf3; --dim:#8b949e; --acc:#58a6ff; --acc2:#3b82f6; --gold:#d29922;
   }
   *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{display:flex;align-items:center;justify-content:center;overflow:hidden}
+  #stage{width:900px;height:660px;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;transform-origin:center center;
+    will-change:transform}
+  html{scrollbar-width:none}          /* Firefox */
+  html::-webkit-scrollbar{display:none} /* Chrome / Edge */
   html,body{margin:0;background:var(--bg);color:var(--txt);overflow-x:hidden;
     font-family:"Microsoft YaHei UI","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
     -webkit-font-smoothing:antialiased}
@@ -50,21 +57,22 @@
   .grain{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.35;
     background-image:radial-gradient(color-mix(in srgb,var(--txt) 9%,transparent) 1px,transparent 1px);background-size:3px 3px}
 
-  .hero{position:relative;z-index:2;min-height:100vh;display:flex;flex-direction:column;
+  #stage .hero{position:relative;z-index:2;min-height:0;flex:1;display:flex;flex-direction:column;
     align-items:center;justify-content:center;text-align:center;padding:40px 22px}
   .logo-mark{width:104px;height:104px;color:var(--acc);margin-bottom:18px;display:block}
   .brandline{font-size:11px;letter-spacing:7px;color:var(--dim);margin-bottom:14px;
-    text-transform:uppercase;padding-left:4px}
+    text-transform:uppercase;padding-left:4px;line-height:16px;height:16px}
   .mark{width:54px;height:54px;border-radius:16px;margin-bottom:26px;
     background:linear-gradient(150deg,var(--acc),var(--acc2) 70%);
     box-shadow:0 12px 30px -10px color-mix(in srgb,var(--acc) 40%,transparent);position:relative}
   
   h1{font-size:clamp(30px,5.5vw,52px);margin:0;font-weight:800;letter-spacing:4px;
-    color:var(--txt)}
+    color:var(--txt);line-height:1.15}
   h1 em{font-style:normal;color:var(--acc)}
-  .sub{margin:16px 0 0;color:var(--dim);font-size:15px;line-height:2;max-width:520px}
-  .by{margin-top:10px;font-size:13px;color:var(--dim);
-    letter-spacing:3px;text-transform:uppercase}
+  .sub{margin:16px 0 0;color:var(--dim);font-size:15px;line-height:30px;
+    min-height:60px;max-width:560px}
+  .by{margin-top:10px;font-size:13px;color:var(--dim);line-height:20px;
+    letter-spacing:3px;text-transform:uppercase;white-space:nowrap}
   .by b{color:var(--gold);letter-spacing:1px}
 
   .start{
@@ -91,69 +99,41 @@
   .it{font-size:15px;font-weight:600;margin-bottom:6px}
   .id{font-size:13px;color:var(--dim);line-height:1.65}
   .foot{position:relative;z-index:2;text-align:center;color:var(--dim);
-    font-size:12.5px;padding:0 22px 70px;line-height:2.1}
+    font-size:12.5px;padding:0 22px 26px;line-height:1.9}
   .foot a{color:var(--acc);text-decoration:none}
   .foot code{background:var(--bg2);padding:2px 7px;border-radius:6px;font-size:12px;color:var(--acc)}
-  .eggword{display:inline-block;margin-left:10px;font-family:Georgia,serif;font-style:italic;
-    font-size:12px;color:var(--dim);cursor:pointer;letter-spacing:.5px;transition:color .2s;user-select:none}
-  .eggword:hover{color:var(--acc)}
-  #toast{position:fixed;left:50%;bottom:56px;transform:translate(-50%,14px);z-index:99;
-    background:var(--txt);color:var(--bg);padding:13px 24px;border-radius:12px;font-size:14.5px;
-    letter-spacing:2px;opacity:0;pointer-events:none;transition:opacity .35s,transform .35s;
-    box-shadow:0 12px 32px -12px color-mix(in srgb,var(--txt) 40%,transparent)}
-  #toast.on{opacity:1;transform:translate(-50%,0)}
+  .langTop{position:fixed;top:18px;right:22px;z-index:9600;display:flex;
+    border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--bg)}
+  .langTop span{padding:7px 13px;font-size:12.5px;color:var(--dim);cursor:pointer;
+    transition:.15s;user-select:none}
+  .langTop span:hover{background:var(--panel);color:var(--txt)}
+  .langTop span.on{background:var(--acc);color:#fff;font-weight:600}
 </style>
 </head>
 <body>
+<div class="langTop" id="langTop">
+  <span data-l="zh">中</span><span data-l="en">EN</span>
+</div>
 <canvas id="fx"></canvas>
 <div class="grain"></div>
 
+<div id="stage">
 <div class="hero">
   <svg class="logo-mark" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-linecap="butt" aria-hidden="true"><defs><mask id="vmHero" maskUnits="userSpaceOnUse" x="0" y="0" width="32" height="32"><rect width="32" height="32" fill="#fff" stroke="none"/><rect x="-8.12" y="12.58" width="44" height="2.6" transform="rotate(-45 13.88 13.88)" fill="#000" stroke="none"/><rect x="-10.81" y="9.89" width="44" height="2.6" transform="rotate(-45 11.19 11.19)" fill="#000" stroke="none"/><rect x="-13.50" y="7.20" width="44" height="2.6" transform="rotate(-45 8.50 8.50)" fill="#000" stroke="none"/></mask></defs><g mask="url(#vmHero)"><circle cx="16" cy="16" r="8.80" stroke-width="1.90"/><path d="M20.40 16H30M16 20.40V30M11.60 16H2M16 11.60V2" stroke-width="2.20"/><circle cx="16" cy="16" r="1.50" fill="currentColor" stroke="none"/></g></svg>
   <div class="brandline">VERNIER</div>
   <h1>分毫</h1>
   <div class="sub">瞄准，被度量。<br>灵敏度标定 · 甩枪训练 · 四周计划</div>
-  <div class="by"><a href="https://github.com/i11usoryCat" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">i11usoryCat</a> <span style="opacity:.5">×</span> <a href="dialogue.html" style="color:var(--gold);text-decoration:none" title="">大肥鱼</a></div>
+  <div class="by"><a href="https://github.com/i11usoryCat" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">i11usoryCat</a> <span style="opacity:.5">×</span> <a href="dialogue.html" style="color:var(--gold);text-decoration:none">大肥鱼</a></div>
   <button class="start" onclick="location.href='app.html'">开始</button>
   <div class="tip">建议使用 Chrome 或 Edge</div>
 </div>
 
-<div class="list">
-  <h2>软件清单</h2>
-  <div class="items">
-    <a class="item" href="tools/sensitivity-calibrator.html">
-      <div class="it">灵敏度标定 · 过冲法</div>
-      <div class="id">测出你每次甩动偏多少，反推应该填的 sensitivity。</div>
-    </a>
-    <a class="item" href="tools/aim-trainer.html?mode=random&count=40&limit=1">
-      <div class="it">甩枪训练 · 自适应随机</div>
-      <div class="id">球与限时按 85% 成功率自动调节，主练模式。</div>
-    </a>
-    <a class="item" href="tools/aim-trainer.html?mode=block&count=40&limit=0">
-      <div class="it">甩枪训练 · 定角重复</div>
-      <div class="id">同一角度连打 8 球，形成运动程序，热身用。</div>
-    </a>
-    <a class="item" href="tools/aim-trainer.html?mode=precision&count=40&limit=0">
-      <div class="it">甩枪训练 · 小球精度</div>
-      <div class="id">0.7° 小球，无时限，练一次定位的精度。</div>
-    </a>
-    <a class="item" href="program.html">
-      <div class="it">四周训练计划</div>
-      <div class="id">按天推进，自动记录进度与数据。</div>
-    </a>
-    <a class="item" href="https://github.com/i11usoryCat/cs2-aim-tools/blob/main/windows/RawLogger.cs">
-      <div class="it">原始输入记录器</div>
-      <div class="id">C# 单文件，验证真实回报率与报告间隔抖动。</div>
-    </a>
-  </div>
-</div>
-
 <div class="foot">
-  <code>cm/360 = 360 / (sensitivity × m_yaw) / DPI × 2.54</code><br>
+  <code id="eggFormula" title="">cm/360 = 360 / (sensitivity × m_yaw) / DPI × 2.54</code><br>
   <a href="https://github.com/i11usoryCat/cs2-aim-tools">GitHub</a> ·
   <a href="https://github.com/i11usoryCat/cs2-aim-tools/blob/main/docs/methodology.md">方法论</a> ·
   <a href="https://github.com/i11usoryCat/cs2-aim-tools/blob/main/docs/training-plan.md">训练方案</a>
-  <span class="eggword" id="eggWord">vernier</span>
+</div>
 </div>
 
 <script>
@@ -198,8 +178,7 @@
   requestAnimationFrame(frame);
 })();
 
-(function(){
-  var EN={
+var EN={
     '甩枪训练中心':'AIM TRAINING HUB',
     '瞄准，被度量。':'Aim, measured.',
     '灵敏度标定 · 甩枪训练 · 四周计划':'Calibration · drills · four-week plan','浏览器里的灵敏度标定与甩枪训练。':'Sensitivity calibration and flick training in the browser.','浏览器端 · 无需安装 · 不读取游戏数据':'Browser based · no install · reads no game data',
@@ -219,26 +198,165 @@
     '原始输入记录器':'Raw input recorder',
     'C# 单文件，验证真实回报率与报告间隔抖动。':'Single-file C# tool to verify polling rate and report jitter.'
   };
-  try{
-    var lang = localStorage.getItem('cs2at.lang')||'zh';
-    if(lang!=='en' || !document.createTreeWalker) return;
-    document.documentElement.setAttribute('lang','en');
-    var w=document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), n;
+  var ZH={}; Object.keys(EN).forEach(function(k){ ZH[EN[k]]=k; });
+  var LANG='zh';
+  try{ LANG=localStorage.getItem('cs2at.lang')||'zh'; }catch(e){}
+
+  function translateRoot(root, lang){
+    if(!root || !document.createTreeWalker) return;
+    var w=document.createTreeWalker(root, NodeFilter.SHOW_TEXT), n;
     while((n=w.nextNode())){
       var t=n.nodeValue.trim();
-      if(EN[t]) n.nodeValue=n.nodeValue.replace(t, EN[t]);
+      if(!t) continue;
+      if(lang==='en'){ if(EN[t]) n.nodeValue=n.nodeValue.replace(t, EN[t]); }
+      else { if(ZH[t]) n.nodeValue=n.nodeValue.replace(t, ZH[t]); }
     }
-  }catch(e){}
-})();
-(function(){
-  var w=document.getElementById('eggWord'), t=document.getElementById('toast'), timer=null;
-  if(!w||!t) return;
-  w.addEventListener('click',function(){
-    t.classList.add('on');
-    clearTimeout(timer);
-    timer=setTimeout(function(){ t.classList.remove('on'); }, 3200);
+  }
+  function applyLang(lang){
+    document.documentElement.setAttribute('lang', lang==='en'?'en':'zh-CN');
+    translateRoot(document.body, lang);
+  }
+  function markSwitch(lang){
+    var box=document.getElementById('langTop');
+    if(box) box.querySelectorAll('span[data-l]').forEach(function(el){ el.classList.toggle('on', el.dataset.l===lang); });
+  }
+
+
+  function storeLang(l){ try{ localStorage.setItem('cs2at.lang', l); }catch(e){} }
+
+let switching=false, watchdog=null;
+
+function rippleSwitch(lang, cx, cy){
+  if(switching) return;
+  switching=true;
+
+  clearTimeout(watchdog);
+  watchdog=setTimeout(function(){
+    if(switching){
+      try{ LANG=lang; localStorage.setItem('cs2at.lang',lang); applyLang(lang); markSwitch(lang); }catch(e){}
+      document.querySelectorAll('.langBlocker,.langLayer,.langCanvas').forEach(function(el){ el.remove(); });
+      try{ document.documentElement.style.overflow=''; }catch(e){}
+      switching=false;
+    }
+  }, 6000);
+
+  var blocker=document.createElement('div');
+  blocker.className='langBlocker';
+  blocker.style.cssText='position:fixed;inset:0;z-index:9500;cursor:default;background:transparent;touch-action:none';
+  document.body.appendChild(blocker);
+
+  var htmlEl=document.documentElement;
+  var prevOverflow=htmlEl.style.overflow;
+  var scrollTop=window.scrollY||0;
+  htmlEl.style.overflow='hidden';
+
+  var stopScroll=function(ev){ ev.preventDefault(); };
+  blocker.addEventListener('wheel', stopScroll, {passive:false});
+  blocker.addEventListener('touchmove', stopScroll, {passive:false});
+
+  // ① 按钮先切（这是用户看到的第一个反馈）
+  var lsReal=document.getElementById('langTop');
+  if(lsReal) lsReal.querySelectorAll('span[data-l]').forEach(function(el){ el.classList.toggle('on', el.dataset.l===lang); });
+
+  // ② 复制当前页面（旧语言），塞进滚动容器
+  var scroller=null, layer=null;
+  try{
+    var src=document.body.cloneNode(true);
+    src.querySelectorAll('script,iframe,canvas').forEach(function(el){ el.remove(); });
+    var hSrc=src.querySelector('#langTop');
+    if(hSrc){ hSrc.style.background='var(--bg)'; }
+    scroller=document.createElement('div');
+    scroller.style.cssText='position:absolute;inset:0;overflow:auto;scrollbar-width:none;-ms-overflow-style:none';
+    scroller.appendChild(src);
+
+    layer=document.createElement('div');
+    layer.className='langLayer';
+    layer.style.cssText='position:fixed;inset:0;z-index:9000;pointer-events:none;overflow:hidden;'
+      +'background:var(--bg);contain:layout paint;transform:translateZ(0);'
+      +'backface-visibility:hidden;isolation:isolate;'
+      +'clip-path:circle(0px at '+cx+'px '+cy+'px)';
+    layer.appendChild(scroller);
+
+    translateRoot(layer, lang);   // 复制层翻成新语言
+    layer.querySelectorAll('#langTop span[data-l]').forEach(function(el){ el.classList.toggle('on', el.dataset.l===lang); });
+    document.body.appendChild(layer);
+    scroller.scrollTop=scrollTop;
+    requestAnimationFrame(function(){ scroller.scrollTop=scrollTop; });
+  }catch(e){ layer=null; }
+
+  if(!layer){
+    try{ LANG=lang; localStorage.setItem('cs2at.lang',lang); applyLang(lang); markSwitch(lang); }catch(e){}
+    blocker.remove(); htmlEl.style.overflow=prevOverflow;
+    switching=false; return;
+  }
+
+  // ③ 波纹
+  var cv=document.createElement('canvas');
+  var ctx2=cv.getContext('2d'), dpr=devicePixelRatio||1;
+  cv.className='langCanvas';
+  cv.style.cssText='position:fixed;inset:0;z-index:9001;pointer-events:none';
+  cv.width=innerWidth*dpr; cv.height=innerHeight*dpr;
+  cv.style.width=innerWidth+'px'; cv.style.height=innerHeight+'px';
+  document.body.appendChild(cv);
+
+  var acc=(getComputedStyle(htmlEl).getPropertyValue('--acc')||'#0f766e').trim().replace('#','');
+  if(acc.length===3) acc=acc[0]+acc[0]+acc[1]+acc[1]+acc[2]+acc[2];
+  var av=parseInt(acc,16), ACC='15,118,110';
+  if(!isNaN(av)) ACC=((av>>16)&255)+','+((av>>8)&255)+','+(av&255);
+
+  var maxD=Math.hypot(Math.max(cx,innerWidth-cx),Math.max(cy,innerHeight-cy))+70;
+  var DUR=2600, t0=null;
+
+  function ring(R,w,a){
+    if(R<=0) return;
+    ctx2.beginPath(); ctx2.arc(cx*dpr,cy*dpr,R*dpr,0,Math.PI*2);
+    ctx2.strokeStyle='rgba('+ACC+','+a+')'; ctx2.lineWidth=w*dpr; ctx2.stroke();
+  }
+
+  function step(now){
+    if(t0===null) t0=now;
+    var t=Math.min(1,(now-t0)/DUR);
+    var e=t<0.5? 4*t*t*t : 1-Math.pow(-2*t+2,3)/2;
+    var R=maxD*e;
+    layer.style.clipPath='circle('+R+'px at '+cx+'px '+cy+'px)';
+    ctx2.clearRect(0,0,cv.width,cv.height);
+    var fade=Math.max(0,1-Math.pow(t,1.6));
+    ring(R,2.2,0.75*fade); ring(R*0.93,1.4,0.40*fade); ring(R*1.05,1.0,0.22*fade);
+    if(t<1){ requestAnimationFrame(step); return; }
+
+    // ④ 遮罩盖满之后，真实页面才切语言
+    try{ LANG=lang; localStorage.setItem('cs2at.lang',lang); applyLang(lang); markSwitch(lang); }catch(e){}
+    try{ markSwitch(lang); }catch(e){}
+
+    layer.style.clipPath='circle(300vmax at '+cx+'px '+cy+'px)';
+    cv.width=0; cv.height=0; cv.remove();
+    requestAnimationFrame(function(){
+      layer.remove(); blocker.remove();
+      htmlEl.style.overflow=prevOverflow;
+      clearTimeout(watchdog);
+      switching=false;
+      try{ window.scrollTo(0,scrollTop); }catch(e){}
+    });
+  }
+  requestAnimationFrame(step);
+}
+
+  applyLang(LANG);
+  markSwitch(LANG);
+
+  var box=document.getElementById('langTop');
+  if(box) box.querySelectorAll('span[data-l]').forEach(function(el){
+    el.addEventListener('click', function(){
+      if(el.dataset.l===LANG || switching) return;
+      var r=el.getBoundingClientRect();
+      var cx=r.left+r.width/2, cy=r.top+r.height/2;
+      var target=el.dataset.l;
+
+      rippleSwitch(target, cx, cy);
+    });
   });
-})();
+
+
 (function(){
   try{
     var q=new URLSearchParams(location.search).get('theme');
@@ -246,7 +364,42 @@
     if(t) document.documentElement.setAttribute('data-theme', t);
   }catch(e){}
 })();
+
+
+(function(){
+  var W=900, H=660, MIN=0.62;
+  var st=document.getElementById('stage');
+  var html=document.documentElement, body=document.body;
+  function fit(){
+    var k=Math.min(1, (innerWidth-24)/W, (innerHeight-24)/H);
+    var use=Math.max(k, MIN);
+    st.style.transform='scale('+use.toFixed(4)+')';
+    if(k>=MIN){
+      html.style.overflow='hidden'; body.style.overflow='hidden';
+      body.style.alignItems='center'; body.style.height='100%';
+    }else{
+      html.style.overflow='auto'; body.style.overflow='auto';
+      body.style.alignItems='flex-start'; body.style.height='auto';
+      body.style.minHeight='100%';
+      body.style.padding='12px 0';
+    }
+  }
+  addEventListener('resize', fit);
+  fit();
+
+  // 第四个彩蛋：页脚公式连点 3 次
+  (function(){
+    var f=document.getElementById('eggFormula');
+    if(!f) return;
+    var n=0, timer=null;
+    f.style.cursor='pointer';
+    f.addEventListener('click',function(){
+      n++; clearTimeout(timer);
+      timer=setTimeout(function(){ n=0; }, 900);
+      if(n>=3){ n=0; location.href='对话记录.html'; }
+    });
+  })();
+})();
 </script>
-<div id="toast">若无可能，毋需添多。</div>
 </body>
 </html>

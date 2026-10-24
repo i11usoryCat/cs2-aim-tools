@@ -186,8 +186,10 @@ Two consecutive rounds differed by 0.7%, so the run was marked converged. Final 
 
 ## Authors
 
-- **[@i11usoryCat](https://github.com/i11usoryCat)** — project owner. Hardware and measurement work, calibration methodology validation, test data.
-- **大肥鱼 (Dafeiyu)** — design and implementation.
+- **[@i11usoryCat](https://github.com/i11usoryCat)** — direction, measurement data, methodology validation.
+- **大肥鱼 (Dafeiyu)** — design, implementation, debugging.
+
+Both lines describe *what was done*. Neither outranks the other.
 
 ## License
 

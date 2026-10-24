@@ -18,6 +18,12 @@
     --acc:#7fbfa6; --acc2:#5aa78c; --ok:#a3d977; --warn:#e0a458;
     --head:#101917e6; --shade:0 0 0; --ring:#7fbfa633;
   }
+  html[data-theme="lake"]{
+    --bg:#eef4f6; --bg2:#e4eef1; --panel:#ffffff; --panel2:#e8f1f4;
+    --line:#d2e2e7; --line2:#bdd3da; --txt:#14313a; --dim:#587a85; --dim2:#8aa6af;
+    --acc:#0e7490; --acc2:#0b5f78; --ok:#2f855a; --warn:#b7791f;
+    --head:#eef4f6e6; --shade:20 49 58; --ring:#0e749033;
+  }
   html[data-theme="light"]{
     --bg:#f4f6f9; --bg2:#e9eef4; --panel:#fff; --panel2:#eef2f7;
     --line:#dde4ed; --line2:#cdd6e0; --txt:#1a2230; --dim:#5b6879; --dim2:#8b98a8;
@@ -340,6 +346,7 @@ const MODE_NAME={random:'自适应随机', block:'定角重复', precision:'小�
 const THEMES=[
   {id:'jade',  name:'墨玉', dot:'#7fbfa6', kind:'rec'},
   {id:'ink',   name:'墨鱼', dot:'#0f766e', kind:'rec'},
+  {id:'lake',  name:'湖泊', dot:'#0e7490', kind:'light'},
   {id:'light', name:'明亮', dot:'#f4f6f9', kind:'light'},
   {id:'sand',  name:'暖砂', dot:'#f7f2e8', kind:'light'},
   {id:'forest',name:'森林', dot:'#1f6f45', kind:'dark'},
@@ -425,69 +432,73 @@ let switching=false;
 function rippleSwitch(lang, cx, cy){
   if(switching) return; switching=true;
 
-  // 收集所有可见文本节点，按与波心的距离排序
-  const items=[];
+  // 1) 先把「旧语言」整页复制成一层
+  let layer=null;
   try{
-    const w=document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
-    let n;
-    while((n=w.nextNode())){
-      if(!n.nodeValue.trim()) continue;
-      const rg=document.createRange(); rg.selectNodeContents(n);
-      const b=rg.getBoundingClientRect();
-      if(!b.width && !b.height) continue;                 // 隐藏区块跳过
-      const dx=(b.left+b.width/2)-cx, dy=(b.top+b.height/2)-cy;
-      items.push({n:n, d:Math.hypot(dx,dy)});
-    }
-  }catch(e){}
-  items.sort((a,b)=>a.d-b.d);
+    layer=document.createElement('div');
+    layer.style.cssText='position:fixed;inset:0;z-index:9000;pointer-events:none;'
+      +'background:var(--bg);overflow:hidden;will-change:mask-image;'
+      +'-webkit-mask-image:radial-gradient(circle 0px at '+cx+'px '+cy+'px, transparent 82%, rgba(0,0,0,.6) 92%, #000 100%);'
+      +'mask-image:radial-gradient(circle 0px at '+cx+'px '+cy+'px, transparent 82%, rgba(0,0,0,.6) 92%, #000 100%)';
+    layer.innerHTML=document.body.innerHTML;
+    layer.querySelectorAll('script,iframe,canvas').forEach(el=>el.remove());
+    document.body.appendChild(layer);
+  }catch(e){ layer=null; }
 
-  const maxD = items.length ? items[items.length-1].d : 400;
+  // 2) 真实页面立刻切到新语言（它被遮罩盖住，所以看不到突变）
+  const oldLang=LANG;
+  LANG=lang; setLang(lang); applyLang();
+
+  if(!layer){ switching=false; return; }
+
+  // 3) 水波：柔边遮罩连续推移 + 主题色波纹
   const cv=document.createElement('canvas'), ctx2=cv.getContext('2d');
   const dpr=devicePixelRatio||1;
-  cv.style.cssText='position:fixed;inset:0;z-index:9000;pointer-events:none';
+  cv.style.cssText='position:fixed;inset:0;z-index:9001;pointer-events:none';
   cv.width=innerWidth*dpr; cv.height=innerHeight*dpr;
   cv.style.width=innerWidth+'px'; cv.style.height=innerHeight+'px';
   document.body.appendChild(cv);
 
-  const acc=(getComputedStyle(document.documentElement).getPropertyValue('--acc')||'#0f766e').trim();
-  const oldLang=LANG;
-  const DUR=1500, t0=performance.now();
-  let idx=0;
-
-  function ring(R, w, a){
-    if(R<=0) return;
-    ctx2.beginPath(); ctx2.arc(cx*dpr, cy*dpr, R*dpr, 0, Math.PI*2);
-    ctx2.strokeStyle='rgba('+hex2rgb(acc)+','+a+')';
-    ctx2.lineWidth=w*dpr; ctx2.stroke();
-  }
-  function hex2rgb(h){
+  const rawAcc=(getComputedStyle(document.documentElement).getPropertyValue('--acc')||'#0f766e').trim();
+  function rgb(h){
     h=h.replace('#','');
     if(h.length===3) h=h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
     const v=parseInt(h,16);
     return [(v>>16)&255,(v>>8)&255,v&255].join(',');
   }
+  const ACC=rgb(rawAcc);
+
+  const maxD=Math.hypot(Math.max(cx, innerWidth-cx), Math.max(cy, innerHeight-cy))+70;
+  const DUR=1500, t0=performance.now();
+
+  function ring(R,w,a){
+    if(R<=0) return;
+    ctx2.beginPath(); ctx2.arc(cx*dpr,cy*dpr,R*dpr,0,Math.PI*2);
+    ctx2.strokeStyle='rgba('+ACC+','+a+')'; ctx2.lineWidth=w*dpr; ctx2.stroke();
+  }
 
   function step(now){
     const t=Math.min(1,(now-t0)/DUR);
-    const R=maxD*1.15*(1-Math.pow(1-t,3));
+    // easeInOutCubic：起步柔和，中段匀速，收尾柔和
+    const e = t<0.5 ? 4*t*t*t : 1-Math.pow(-2*t+2,3)/2;
+    const R = maxD*e;
 
-    // 波前所到之处，逐字切换
-    while(idx<items.length && items[idx].d<=R){ setTextLang(items[idx].n, lang); idx++; }
+    const mask='radial-gradient(circle '+R+'px at '+cx+'px '+cy+'px, transparent 80%, rgba(0,0,0,.55) 91%, #000 100%)';
+    layer.style.webkitMaskImage=mask;
+    layer.style.maskImage=mask;
 
-    // 水波
     ctx2.clearRect(0,0,cv.width,cv.height);
-    const fade=Math.max(0,1-t*0.9);
-    ring(R, 2.4, 0.85*fade);
-    ring(R*0.90, 1.5, 0.45*fade*Math.max(0,1-t*1.6));
-    ring(R*1.06, 1.0, 0.25*fade*Math.max(0,1-t*2.2));
+    const fade=Math.max(0,1-Math.pow(t,1.6));
+    ring(R,       2.2, 0.75*fade);
+    ring(R*0.93,  1.4, 0.40*fade);
+    ring(R*1.05,  1.0, 0.22*fade);
 
     if(t<1) requestAnimationFrame(step);
     else{
-      while(idx<items.length){ setTextLang(items[idx].n, lang); idx++; }   // 收尾兜底
-      LANG=lang; setLang(lang);
+      layer.remove(); cv.remove();
       const ls=document.getElementById('langSw');
-      if(ls) ls.querySelectorAll('span[data-lang]').forEach(el=>el.classList.toggle('on', el.dataset.lang===lang));
-      cv.remove(); switching=false;
+      if(ls) ls.querySelectorAll('span[data-lang]').forEach(el=>el.classList.toggle('on', el.dataset.lang===LANG));
+      switching=false;
     }
   }
   requestAnimationFrame(step);

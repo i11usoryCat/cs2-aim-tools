@@ -459,7 +459,7 @@ function rippleSwitch(lang, cx, cy){
   cv.style.width=innerWidth+'px'; cv.style.height=innerHeight+'px';
   document.body.appendChild(cv);
 
-  const rawAcc=(getComputedStyle(document.documentElement).getPropertyValue('--acc')||'#0f766e').trim();
+  const rawAcc='#e0a458';   // 固定琥珀色
   function rgb(h){
     h=h.replace('#','');
     if(h.length===3) h=h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
@@ -469,7 +469,7 @@ function rippleSwitch(lang, cx, cy){
   const ACC=rgb(rawAcc);
 
   const maxD=Math.hypot(Math.max(cx, innerWidth-cx), Math.max(cy, innerHeight-cy))+70;
-  const DUR=1500, t0=performance.now();
+  const DUR=5000, t0=performance.now();
 
   function ring(R,w,a){
     if(R<=0) return;
@@ -511,8 +511,14 @@ function rippleSwitch(lang, cx, cy){
     el.classList.toggle('on', el.dataset.lang===LANG);
     el.addEventListener('click',ev=>{
       if(el.dataset.lang===LANG) return;
+      if(el.dataset.lang!=='en'){
+        // 切回中文：立即完成，不做动画
+        LANG=el.dataset.lang; setLang(LANG); applyLang();
+        ls.querySelectorAll('span[data-lang]').forEach(x=>x.classList.toggle('on', x.dataset.lang===LANG));
+        return;
+      }
       const r=el.getBoundingClientRect();
-      rippleSwitch(el.dataset.lang, r.left+r.width/2, r.top+r.height/2);
+      rippleSwitch('en', r.left+r.width/2, r.top+r.height/2);
     });
   });
 })();

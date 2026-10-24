@@ -326,11 +326,12 @@ const THEMES=[
   {id:'night', name:'深蓝', dot:'#0b0f14'}
 ];
 const SCENES=[
+  {id:'classic', name:'经典', dot:'#f85149'},
   {id:'ink',   name:'墨鱼', dot:'#ffb020'},
   {id:'light', name:'浅灰', dot:'#eef1f4'},
-  {id:'night', name:'暗蓝', dot:'#0b0f14'},
+  {id:'night', name:'暗蓝', dot:'#58a6ff'},
   {id:'mono',  name:'纯黑', dot:'#ffd166'},
-  {id:'cs',    name:'沙色', dot:'#2b2620'}
+  {id:'cs',    name:'沙色', dot:'#e5484d'}
 ];
 
 let cfg=load(K_CFG,{dpi:1000,yaw:0.013052,sens:1.92,cm:36.5});
@@ -435,7 +436,7 @@ function fillSettings(){
     applyTheme(el.dataset.th); fillSettings();
   }));
 
-  const scene=localStorage.getItem(K_SCENE)||'ink';
+  const scene=localStorage.getItem(K_SCENE)||'classic';
   $('scenes').innerHTML=SCENES.map(t=>'<div class="sw'+(t.id===scene?' on':'')+'" data-sc="'+t.id+'">'+
     '<span class="dot" style="background:'+t.dot+'"></span>'+t.name+'</div>').join('');
   document.querySelectorAll('.sw[data-sc]').forEach(el=>el.addEventListener('click',()=>{
@@ -464,7 +465,7 @@ $('saveBtn').addEventListener('click',()=>{
 $('defBtn').addEventListener('click',()=>{
   cfg={dpi:1000,yaw:0.013052,sens:1.92,cm:36.5}; save(K_CFG,cfg);
   localStorage.setItem(K_THEME,'ink'); applyTheme('ink');
-  localStorage.setItem(K_SCENE,'ink');
+  localStorage.setItem(K_SCENE,'classic');
   fillSettings();
 });
 

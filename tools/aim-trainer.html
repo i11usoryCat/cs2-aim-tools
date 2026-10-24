@@ -117,18 +117,20 @@ function line3(x1,y1,z1,x2,y2,z2,col){
   ctx.beginPath(); ctx.moveTo(pa.sx,pa.sy); ctx.lineTo(pb.sx,pb.sy); ctx.stroke();
 }
 const SCENES={
-  ink:{dark:true,bg:'#12181d',major:'rgba(15,118,110,.55)',minor:'rgba(58,74,82,1)',ceil:'rgba(44,58,66,1)',
+  classic:{dark:true,halo:.22,bg:'#0b0f14',major:'rgba(88,166,255,.55)',minor:'rgba(64,76,90,1)',ceil:'rgba(50,60,72,1)',
+       tgt:'#f85149',tgtFill:'rgba(248,81,73,.30)',ring:'rgba(248,81,73,.95)',cross:'#3fb950',edge:'#000000'},
+  ink:{dark:true,halo:.45,bg:'#12181d',major:'rgba(15,118,110,.55)',minor:'rgba(58,74,82,1)',ceil:'rgba(44,58,66,1)',
        tgt:'#ffb020',tgtFill:'rgba(255,176,32,.85)',ring:'#ffffff',cross:'#ffffff',edge:'#000000'},
-  light:{dark:false,bg:'#eef1f4',major:'rgba(15,118,110,.45)',minor:'rgba(160,172,182,1)',ceil:'rgba(184,194,203,1)',
+  light:{dark:false,halo:.30,bg:'#eef1f4',major:'rgba(15,118,110,.45)',minor:'rgba(160,172,182,1)',ceil:'rgba(184,194,203,1)',
        tgt:'#e8590c',tgtFill:'rgba(232,89,12,.85)',ring:'#ffffff',cross:'#111827',edge:'#ffffff'},
-  night:{dark:true,bg:'#0b0f14',major:'rgba(88,166,255,.50)',minor:'rgba(64,76,90,1)',ceil:'rgba(50,60,72,1)',
+  night:{dark:true,halo:.35,bg:'#0b0f14',major:'rgba(88,166,255,.50)',minor:'rgba(64,76,90,1)',ceil:'rgba(50,60,72,1)',
        tgt:'#ff5f56',tgtFill:'rgba(255,95,86,.85)',ring:'#ffffff',cross:'#7ee787',edge:'#000000'},
-  mono:{dark:true,bg:'#0f1113',major:'rgba(200,205,215,.40)',minor:'rgba(88,92,100,1)',ceil:'rgba(70,73,80,1)',
+  mono:{dark:true,halo:.40,bg:'#0f1113',major:'rgba(200,205,215,.40)',minor:'rgba(88,92,100,1)',ceil:'rgba(70,73,80,1)',
        tgt:'#ffd166',tgtFill:'rgba(255,209,102,.85)',ring:'#000000',cross:'#ffffff',edge:'#000000'},
-  cs:{dark:true,bg:'#2b2620',major:'rgba(214,181,120,.45)',minor:'rgba(120,110,88,1)',ceil:'rgba(98,90,72,1)',
+  cs:{dark:true,halo:.35,bg:'#2b2620',major:'rgba(214,181,120,.45)',minor:'rgba(120,110,88,1)',ceil:'rgba(98,90,72,1)',
        tgt:'#e5484d',tgtFill:'rgba(229,72,77,.85)',ring:'#ffffff',cross:'#b8e986',edge:'#000000'}
 };
-let SC = SCENES[ (function(){ try{ return localStorage.getItem('cs2at.scene')||'ink'; }catch(e){ return 'ink'; } })() ] || SCENES.ink;
+let SC = SCENES[ (function(){ try{ return localStorage.getItem('cs2at.scene')||'classic'; }catch(e){ return 'ink'; } })() ] || SCENES.classic;
 try{
   document.body.style.background=SC.bg;
   document.body.style.color = SC.dark? '#e9eef3' : '#1f2b2c';
@@ -359,12 +361,12 @@ function loop(){
       const rad=Math.max(5, f*Math.tan(radius*D2R));
       // 暗色光晕，保证任何背景上都跳出来
       const halo=ctx.createRadialGradient(p.sx,p.sy,rad*0.8,p.sx,p.sy,rad*2.4);
-      halo.addColorStop(0,'rgba(0,0,0,.45)'); halo.addColorStop(1,'rgba(0,0,0,0)');
+      halo.addColorStop(0,'rgba(0,0,0,'+SC.halo+')'); halo.addColorStop(1,'rgba(0,0,0,0)');
       ctx.fillStyle=halo; ctx.beginPath(); ctx.arc(p.sx,p.sy,rad*2.4,0,Math.PI*2); ctx.fill();
       // 实心目标 + 白环
       ctx.beginPath(); ctx.arc(p.sx,p.sy,rad,0,Math.PI*2);
       ctx.fillStyle=SC.tgtFill; ctx.fill();
-      ctx.strokeStyle=SC.ring; ctx.lineWidth=Math.max(2,rad*0.12); ctx.stroke();
+      ctx.strokeStyle=SC.ring; ctx.lineWidth=Math.max(1.5,rad*0.10); ctx.stroke();
       // 中心点
       ctx.beginPath(); ctx.arc(p.sx,p.sy,rad*0.20,0,Math.PI*2);
       ctx.fillStyle=SC.edge; ctx.fill();

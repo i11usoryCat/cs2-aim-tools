@@ -84,6 +84,7 @@ let tSpawn=0, alive=false, nextAt=0;
 let times=[], errs=[], hitFlags=[], blocks=[], allowed=800, timeouts=0, timeFactor=1.25;
 let blockTimes=[], blockHits=0;
 let mode='random', blockYaw=0, blockPitch=0, blockLeft=0;
+let fpsCap=0, fpsShow=true, lastDraw=0, fpsFrames=0, fpsLast=0, fpsVal=0;
 
 const wrapPi=a=>{ while(a>Math.PI)a-=2*Math.PI; while(a<-Math.PI)a+=2*Math.PI; return a; };
 const med=a=>{ if(!a.length)return 0; const s=[...a].sort((x,y)=>x-y); return s[s.length>>1]; };
@@ -135,6 +136,11 @@ function start(){
   DPI=parseFloat(document.getElementById('dpi').value)||1000;
   cm360=parseFloat(document.getElementById('cm').value)||27.2;
   if(cm360<12) cm360=12; if(cm360>60) cm360=60;
+  try{
+    fpsCap=parseInt(localStorage.getItem('cs2at.fps')||'0')||0;
+    fpsShow=localStorage.getItem('cs2at.fpsShow')!=='0';
+  }catch(e){}
+  lastDraw=0; fpsFrames=0; fpsLast=performance.now(); fpsVal=0;
   mode=(document.getElementById('mode')||{value:'random'}).value||'random';
   if(mode==='precision'){ radius=0.7; limitChk.checked=false; }
   else if(mode==='block'){ radius=R0; limitChk.checked=false; blockLeft=0; }
@@ -309,6 +315,12 @@ function loop(){
     radius=Math.max(RMIN, radius*Math.pow(0.88, 1/60));
   }
 
+  // 帧率上限
+  if(fpsCap){ const gap=1000/fpsCap; if(now-lastDraw < gap-1) return; }
+  lastDraw=now;
+  fpsFrames++;
+  if(now-fpsLast>=500){ fpsVal=Math.round(fpsFrames*1000/(now-fpsLast)); fpsFrames=0; fpsLast=now; }
+
   ctx.fillStyle='#0b0f14'; ctx.fillRect(0,0,W,H);
   grid();
 
@@ -354,7 +366,8 @@ function loop(){
   const rate=recent.length? Math.round(recent.filter(Boolean).length/recent.length*100) : 0;
   hud.innerHTML='第 <b>'+(trial+1)+'</b>/'+TOTAL+' &nbsp; 球半径 <b>'+radius.toFixed(2)+'°</b> &nbsp; '+cm360.toFixed(1)+' cm/360<br>'+
     '近 10 球命中率 <b>'+rate+'%</b> &nbsp; 连击 <b>'+streak+'</b>'+(limitChk.checked? ' &nbsp; 限时 <b>'+Math.round(allowed)+'ms</b>':'')+'<br>'+
-    '<span style="font-size:13px;color:#6e7681">看到球 → 甩过去 → 手停 → 点击</span>';
+    (fpsShow? ' <span style="color:#3fb950">· '+fpsVal+' fps</span>':'')+
+    '<br><span style="font-size:13px;color:#6e7681">看到球 → 甩过去 → 手停 → 点击</span>';
 }
 requestAnimationFrame(loop);
 

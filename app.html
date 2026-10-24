@@ -76,8 +76,8 @@
 <header>
   <div class="logo">CS2 AIM TOOLS</div>
   <nav>
-    <a href="#data" data-t="data">个人数据</a>
     <a href="#plan" data-t="plan">计划训练</a>
+    <a href="#data" data-t="data">个人数据</a>
     <a href="#play" data-t="play">训练</a>
     <a href="#set"  data-t="set">设置</a>
   </nav>
@@ -148,6 +148,26 @@
       <div class="hint" style="margin:8px 0 0">开启后训练场景的网格线减少约 70%，GPU 占用更低。</div>
     </div>
 
+    <div class="card">
+      <div class="row" style="align-items:flex-end">
+        <div>
+          <div class="k">渲染帧率上限</div>
+          <select id="iFps" style="width:150px">
+            <option value="0">无限制（跟随刷新率）</option>
+            <option value="60">60 帧</option>
+            <option value="120">120 帧</option>
+            <option value="144">144 帧</option>
+            <option value="240">240 帧</option>
+          </select>
+        </div>
+        <label class="sw" style="margin-bottom:8px"><input type="checkbox" id="iFpsShow" checked> 显示实时帧率</label>
+      </div>
+      <div class="hint" style="margin:10px 0 0">
+        训练页用 requestAnimationFrame 渲染，默认跟随显示器刷新率（400Hz 显示器就是 400 帧）。<br>
+        限制帧率可以降低 GPU 占用和发热；显示帧率用于确认实际渲染速度。
+      </div>
+    </div>
+
     <div class="row">
       <button class="main" id="saveBtn">保存设置</button>
       <button id="defBtn">恢复默认</button>
@@ -156,7 +176,7 @@
 </main>
 
 <script>
-const K_CFG='cs2at.cfg', K_BEST='cs2at.best', K_RUNS='cs2at.runs', K_PERF='cs2at.perf';
+const K_CFG='cs2at.cfg', K_BEST='cs2at.best', K_RUNS='cs2at.runs', K_PERF='cs2at.perf', K_FPS='cs2at.fps', K_FPSSHOW='cs2at.fpsShow';
 const $=id=>document.getElementById(id);
 const load=(k,d)=>{ try{ const v=localStorage.getItem(k); return v? JSON.parse(v): d; }catch(e){ return d; } };
 const save=(k,v)=>{ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} };
@@ -175,7 +195,7 @@ function show(t){
 document.querySelectorAll('nav a').forEach(a=>a.addEventListener('click',e=>{
   e.preventDefault(); location.hash=a.dataset.t; show(a.dataset.t);
 }));
-addEventListener('hashchange',()=>show((location.hash||'#data').slice(1)));
+addEventListener('hashchange',()=>show((location.hash||'#plan').slice(1)));
 
 /* ---------- 训练卡片 ---------- */
 function cfgQ(){
@@ -261,6 +281,8 @@ function fillSettings(){
   $('iDpi').value=cfg.dpi; $('iYaw').value=cfg.yaw;
   $('iSens').value=cfg.sens; $('iCm').value=cfg.cm;
   $('iPerf').checked=localStorage.getItem(K_PERF)==='1';
+  $('iFps').value=localStorage.getItem(K_FPS)||'0';
+  $('iFpsShow').checked=localStorage.getItem(K_FPSSHOW)!=='0';
   updateCalc();
 }
 function num(el,def){ const v=parseFloat(el.value); return isFinite(v)? v: def; }
@@ -283,6 +305,8 @@ $('saveBtn').addEventListener('click',()=>{
   cfg={dpi:num($('iDpi'),1000), yaw:num($('iYaw'),0.013052), sens:num($('iSens'),1.92), cm:num($('iCm'),36.5)};
   save(K_CFG,cfg);
   localStorage.setItem(K_PERF, $('iPerf').checked? '1':'0');
+  localStorage.setItem(K_FPS, $('iFps').value||'0');
+  localStorage.setItem(K_FPSSHOW, $('iFpsShow').checked? '1':'0');
   const b=$('saveBtn'); b.textContent='已保存 ✓';
   setTimeout(()=>b.textContent='保存设置',1200);
 });
@@ -294,7 +318,7 @@ $('defBtn').addEventListener('click',()=>{
 
 /* 启动 */
 cfg=load(K_CFG,cfg);
-show((location.hash||'#data').slice(1));
+show((location.hash||'#plan').slice(1));
 </script>
 </body>
 </html>

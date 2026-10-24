@@ -389,15 +389,17 @@ const EN={
   '360° 转身需要':'360° needs'
 };
 let LANG='zh';
+const ZH_ORIG=new WeakMap();
 function applyLang(){
   try{
     document.documentElement.setAttribute('lang', LANG==='en'?'en':'zh-CN');
-    if(LANG!=='en' || !document.createTreeWalker) return;
+    if(!document.createTreeWalker) return;
     const w=document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
     let n;
     while((n=w.nextNode())){
-      const t=n.nodeValue.trim();
-      if(EN[t]) n.nodeValue=n.nodeValue.replace(t, EN[t]);
+      if(!ZH_ORIG.has(n)) ZH_ORIG.set(n, n.nodeValue);
+      const zh=ZH_ORIG.get(n), t=zh.trim();
+      n.nodeValue = (LANG==='en' && EN[t]) ? zh.replace(t, EN[t]) : zh;
     }
   }catch(e){}
 }
@@ -418,12 +420,67 @@ function show(t){
   if(t==='play') renderDrills();
   if(t==='set')  fillSettings();
   applyLang();
+let switching=false;
+function rippleSwitch(lang, cx, cy){
+  if(switching) return; switching=true;
+  // 1. 先复制「旧语言」的页面
+  let layer=null;
+  try{
+    layer=document.createElement('div');
+    layer.style.cssText='position:fixed;inset:0;z-index:9000;pointer-events:none;background:var(--bg);'
+      +'overflow:hidden;will-change:mask-image;-webkit-mask-image:radial-gradient(circle 0px at '+cx+'px '+cy+'px, transparent 99%, #000 100%);'
+      +'mask-image:radial-gradient(circle 0px at '+cx+'px '+cy+'px, transparent 99%, #000 100%)';
+    layer.innerHTML=document.body.innerHTML;
+    layer.querySelectorAll('script,iframe').forEach(el=>el.remove());
+    document.body.appendChild(layer);
+  }catch(e){ layer=null; }
+
+  // 2. 立刻切到新语言
+  const old=LANG;
+  LANG=lang; setLang(lang); applyLang();
+  document.getElementById('langSw').querySelectorAll('span[data-lang]').forEach(el=>
+    el.classList.toggle('on', el.dataset.lang===LANG));
+
+  if(!layer){ switching=false; return; }
+
+  // 3. 水波：遮罩半径扩大 + 外圈波纹
+  const maxR=Math.hypot(Math.max(cx, innerWidth-cx), Math.max(cy, innerHeight-cy))+40;
+  const rings=[];
+  for(let i=0;i<3;i++){
+    const r=document.createElement('div');
+    r.style.cssText='position:fixed;left:0;top:0;border-radius:50%;pointer-events:none;z-index:9001;'
+      +'border:2px solid '+(i===0?'rgba(15,118,110,.55)':'rgba(15,118,110,.28)');
+    document.body.appendChild(r); rings.push(r);
+  }
+  const t0=performance.now(), DUR=760;
+  function step(now){
+    const t=Math.min(1,(now-t0)/DUR);
+    const e=1-Math.pow(1-t,3);              // easeOutCubic
+    const R=maxR*e;
+    layer.style.webkitMaskImage='radial-gradient(circle '+R+'px at '+cx+'px '+cy+'px, transparent 99%, #000 100%)';
+    layer.style.maskImage='radial-gradient(circle '+R+'px at '+cx+'px '+cy+'px, transparent 99%, #000 100%)';
+    rings.forEach((r,i)=>{
+      const rr=R*(1.06+i*0.10);
+      r.style.width=r.style.height=(rr*2)+'px';
+      r.style.transform='translate('+(cx-rr)+'px,'+(cy-rr)+'px)';
+      r.style.opacity=String(Math.max(0,1-t)*(0.9-i*0.25));
+    });
+    if(t<1) requestAnimationFrame(step);
+    else { layer.remove(); rings.forEach(r=>r.remove()); switching=false; }
+  }
+  requestAnimationFrame(step);
+}
+
 (function bindLang(){
   const ls=document.getElementById('langSw');
   if(!ls) return;
   ls.querySelectorAll('span[data-lang]').forEach(el=>{
     el.classList.toggle('on', el.dataset.lang===LANG);
-    el.addEventListener('click',()=>{ if(el.dataset.lang===LANG) return; setLang(el.dataset.lang); location.reload(); });
+    el.addEventListener('click',ev=>{
+      if(el.dataset.lang===LANG) return;
+      const r=el.getBoundingClientRect();
+      rippleSwitch(el.dataset.lang, r.left+r.width/2, r.top+r.height/2);
+    });
   });
 })();
 }

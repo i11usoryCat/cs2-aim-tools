@@ -86,7 +86,8 @@ let cm360=27.2, radius=R0, trial=0, hits=0, streak=0, bestStreak=0;
 let tSpawn=0, alive=false, nextAt=0;
 let times=[], errs=[], hitFlags=[], blocks=[], allowed=800, timeouts=0, timeFactor=1.25;
 let blockTimes=[], blockHits=0;
-let mode='random', blockYaw=0, blockPitch=0, blockLeft=0;
+let mode='random', blockLeft=0;
+let blockAnchorYaw=0, blockAnchorPitch=0, blockAmp=0, blockPitchAmp=0, blockSide=1;
 let fpsCap=0, fpsShow=true, lastDraw=0, fpsFrames=0, fpsLast=0, fpsVal=0;
 
 const wrapPi=a=>{ while(a>Math.PI)a-=2*Math.PI; while(a<-Math.PI)a+=2*Math.PI; return a; };
@@ -194,12 +195,17 @@ function spawn(){
   sYaw=yaw; sPitch=pitch;
   if(mode==='block'){
     if(blockLeft<=0){
-      blockYaw=(Math.random()<0.5?-1:1)*(14+Math.random()*10)*D2R;
-      blockPitch=(Math.random()*2-1)*5*D2R;
-      blockLeft=8;
+      // 新一组：以当前视角为中线，之后每次都要穿过它
+      blockAnchorYaw=yaw; blockAnchorPitch=pitch;
+      blockAmp=(16+Math.random()*8)*D2R;        // 相邻两球之间的距离
+      blockPitchAmp=(Math.random()*2-1)*4*D2R;
+      blockLeft=8; blockSide=1;
     }
+    const off=blockAmp*0.5*blockSide;           // 左右各偏半个幅度
+    blockSide=-blockSide;
     blockLeft--;
-    tYaw=yaw+blockYaw; tPitch=pitch+blockPitch;
+    tYaw=blockAnchorYaw+off;
+    tPitch=blockAnchorPitch+blockPitchAmp*0.4;
   } else {
     const a=(Math.random()<0.5?-1:1)*(12+Math.random()*16)*D2R;
     const b=(Math.random()*2-1)*8*D2R;

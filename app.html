@@ -442,13 +442,14 @@ function rippleSwitch(lang, cx, cy){
       +'mask-image:radial-gradient(circle 0px at '+cx+'px '+cy+'px, transparent 82%, rgba(0,0,0,.6) 92%, #000 100%)';
     layer.innerHTML=document.body.innerHTML;
     layer.querySelectorAll('script,iframe,canvas').forEach(el=>el.remove());
-    document.body.appendChild(layer);
+    // 注意：这里「不」挂载，避免被 applyLang 一起翻译
   }catch(e){ layer=null; }
 
-  // 2) 真实页面立刻切到新语言（它被遮罩盖住，所以看不到突变）
-  const oldLang=LANG;
+  // 2) 先把真实页面切成新语言（此时复制层还是旧语言，且尚未挂载）
   LANG=lang; setLang(lang); applyLang();
 
+  // 3) 再挂载旧语言层，盖在新页面之上
+  if(layer) document.body.appendChild(layer);
   if(!layer){ switching=false; return; }
 
   // 3) 水波：柔边遮罩连续推移 + 主题色波纹
@@ -469,7 +470,7 @@ function rippleSwitch(lang, cx, cy){
   const ACC=rgb(rawAcc);
 
   const maxD=Math.hypot(Math.max(cx, innerWidth-cx), Math.max(cy, innerHeight-cy))+70;
-  const DUR=5000, t0=performance.now();
+  const DUR=3000, t0=performance.now();
 
   function ring(R,w,a){
     if(R<=0) return;

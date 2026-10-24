@@ -360,7 +360,7 @@ function loop(){
     const tw=DIST*cp*Math.sin(tYaw), th=DIST*Math.sin(tPitch), td=DIST*cp*Math.cos(tYaw);
     const p=project(tw,th,td);
     if(p){
-      const rad=Math.max(5, f*Math.tan(radius*D2R));
+      const rad=Math.max(4, f*Math.tan(radius*D2R));
       // 暗光晕：只在深色场景生效，给球一点纵深
       if(SC.halo>=0.05){
         const halo=ctx.createRadialGradient(p.sx,p.sy,rad*0.95,p.sx,p.sy,rad*2.3);
@@ -372,10 +372,10 @@ function loop(){
       // 实心目标 + 细环
       ctx.beginPath(); ctx.arc(p.sx,p.sy,rad,0,Math.PI*2);
       ctx.fillStyle=SC.tgtFill; ctx.fill();
-      ctx.strokeStyle=SC.ring; ctx.lineWidth=Math.max(1.5,rad*0.07); ctx.stroke();
+      ctx.strokeStyle=SC.ring; ctx.lineWidth=2.5; ctx.stroke();
       // 中心点
-      ctx.beginPath(); ctx.arc(p.sx,p.sy,Math.max(1.5,rad*0.16),0,Math.PI*2);
-      ctx.fillStyle=SC.edge; ctx.fill();
+      ctx.beginPath(); ctx.arc(p.sx,p.sy,rad*0.22,0,Math.PI*2);
+      ctx.fillStyle=SC.tgt; ctx.fill();
       if(limitChk.checked){
         const left=Math.max(0, 1-(now-tSpawn)/allowed);
         ctx.beginPath();

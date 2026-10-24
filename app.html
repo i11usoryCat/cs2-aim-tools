@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>训练中心 · CS2 Aim Tools</title>
+<style>
+  :root{
+    color-scheme:dark;
+    --bg:#0b0f14; --panel:#151b24; --panel2:#1b232e; --line:#2a3442;
+    --txt:#e6edf3; --dim:#8b949e; --acc:#58a6ff; --ok:#3fb950; --warn:#d29922;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{background:var(--bg);color:var(--txt);font-family:"Microsoft YaHei","Segoe UI",system-ui,sans-serif;
+    line-height:1.7;overflow-x:hidden}
+  body::before{content:"";position:fixed;inset:-20%;z-index:-1;
+    background:radial-gradient(circle at 20% 10%,#12314f55,transparent 45%),
+               radial-gradient(circle at 80% 0%,#2a1a4a55,transparent 40%),
+               radial-gradient(circle at 50% 100%,#0e3b2a44,transparent 50%);
+    animation:drift 24s ease-in-out infinite alternate}
+  @keyframes drift{from{transform:translate3d(0,0,0) scale(1)}to{transform:translate3d(2%,-2%,0) scale(1.06)}}
+
+  header{position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:8px;
+    padding:12px 22px;background:#0b0f14cc;backdrop-filter:blur(10px);border-bottom:1px solid var(--line)}
+  .logo{font-weight:700;color:var(--acc);letter-spacing:.5px;margin-right:10px}
+  nav{display:flex;gap:4px;flex-wrap:wrap}
+  nav a{padding:7px 16px;border-radius:8px;color:var(--dim);text-decoration:none;font-size:14px;
+    transition:.15s;border:1px solid transparent}
+  nav a:hover{color:var(--txt);background:#ffffff0d}
+  nav a.on{color:#fff;background:linear-gradient(135deg,#1f6feb55,#23863655);border-color:#58a6ff55}
+  .sp{flex:1}
+  .home{color:var(--dim);text-decoration:none;font-size:13px;padding:6px 12px;border:1px solid var(--line);border-radius:8px}
+  .home:hover{color:var(--txt);border-color:var(--acc)}
+
+  main{max-width:920px;margin:0 auto;padding:26px 20px 70px}
+  section{display:none;animation:fade .28s ease}
+  section.on{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+  h2{font-size:18px;margin:0 0 4px}
+  .hint{font-size:13px;color:var(--dim);margin-bottom:18px}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+  a.tile,.tile{display:block;background:linear-gradient(160deg,var(--panel2),var(--panel));
+    border:1px solid var(--line);border-radius:12px;padding:18px 20px;text-decoration:none;color:inherit;
+    transition:.18s;position:relative;overflow:hidden}
+  a.tile:hover{transform:translateY(-2px);border-color:#58a6ff66;box-shadow:0 10px 30px #0006}
+  a.tile::after{content:"";position:absolute;inset:0;background:linear-gradient(120deg,transparent 40%,#ffffff0a 50%,transparent 60%);
+    transform:translateX(-120%);transition:.6s}
+  a.tile:hover::after{transform:translateX(120%)}
+  .t{font-size:15px;font-weight:600;margin-bottom:6px}
+  .d{font-size:13px;color:var(--dim)}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-bottom:16px}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:8px 10px;border-bottom:1px solid #21262d;text-align:left}
+  th{color:var(--dim);font-weight:500}
+  .big{color:var(--ok);font-weight:700}
+  .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+  input,select{padding:8px 10px;background:#0d1117;border:1px solid var(--line);color:var(--txt);
+    border-radius:8px;font-size:14px;font-family:inherit;width:110px}
+  button{padding:9px 18px;background:var(--panel2);border:1px solid var(--line);color:var(--txt);
+    border-radius:8px;font-size:14px;cursor:pointer;font-family:inherit;transition:.15s}
+  button:hover{background:#243040;border-color:#3d4a5c}
+  button.main{background:linear-gradient(135deg,#238636,#2ea043);border-color:#2ea043;color:#fff}
+  iframe{width:100%;height:calc(100vh - 130px);border:0;border-radius:12px;background:transparent}
+  .k{font-size:12px;color:var(--dim)}
+  .v{font-size:20px;font-weight:700;color:var(--acc)}
+  label.sw{display:flex;align-items:center;gap:10px;font-size:14px;cursor:pointer}
+  input[type=checkbox]{width:18px;height:18px;accent-color:#238636}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">CS2 AIM TOOLS</div>
+  <nav>
+    <a href="#data" data-t="data">个人数据</a>
+    <a href="#plan" data-t="plan">计划训练</a>
+    <a href="#play" data-t="play">训练</a>
+    <a href="#set"  data-t="set">设置</a>
+  </nav>
+  <div class="sp"></div>
+  <a class="home" href="index.html">← 首页</a>
+</header>
+
+<main>
+  <section id="data">
+    <h2>个人数据</h2>
+    <div class="hint">最佳成绩按模式分别记录，只存在本浏览器。</div>
+
+    <div class="card">
+      <div class="row" style="gap:28px">
+        <div><div class="k">总训练组数</div><div class="v" id="sRuns">0</div></div>
+        <div><div class="k">训练天数</div><div class="v" id="sDays">0</div></div>
+        <div><div class="k">最低限时</div><div class="v" id="sLimit">—</div></div>
+        <div><div class="k">最高命中率</div><div class="v" id="sHit">—</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="t" style="margin-bottom:10px">各模式最佳</div>
+      <table id="bestTable"></table>
+    </div>
+
+    <div class="card">
+      <div class="t" style="margin-bottom:10px">最近记录</div>
+      <table id="runTable"></table>
+      <div class="row" style="margin-top:14px">
+        <button id="expBtn">导出 JSON</button>
+        <label class="sw" style="font-size:13px">导入
+          <input type="file" id="impFile" accept="application/json" style="width:auto;padding:0;border:0">
+        </label>
+        <button id="clrBtn">清空全部数据</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="plan">
+    <h2>计划训练</h2>
+    <div class="hint">四周计划，自动判断今天该练什么。</div>
+    <iframe src="program.html" title="训练计划"></iframe>
+  </section>
+
+  <section id="play">
+    <h2>训练</h2>
+    <div class="hint">先标定灵敏度，之后每天按计划练。单独练某一项也可以。</div>
+    <div class="grid" id="drillGrid"></div>
+  </section>
+
+  <section id="set">
+    <h2>设置</h2>
+    <div class="hint">这里的参数会自动带进所有训练页面。</div>
+
+    <div class="card">
+      <div class="row">
+        <div><div class="k">鼠标 DPI</div><input id="iDpi" type="number" step="100" value="1000"></div>
+        <div><div class="k">m_yaw</div><input id="iYaw" type="number" step="0.0001" value="0.013052"></div>
+        <div><div class="k">CS 灵敏度</div><input id="iSens" type="number" step="0.01" value="1.92"></div>
+        <div><div class="k">cm/360</div><input id="iCm" type="number" step="0.1" value="36.5"></div>
+      </div>
+      <div class="hint" id="calcHint" style="margin:12px 0 0"></div>
+    </div>
+
+    <div class="card">
+      <label class="sw"><input type="checkbox" id="iPerf"> 性能模式（减少网格密度，适合高刷新率）</label>
+      <div class="hint" style="margin:8px 0 0">开启后训练场景的网格线减少约 70%，GPU 占用更低。</div>
+    </div>
+
+    <div class="row">
+      <button class="main" id="saveBtn">保存设置</button>
+      <button id="defBtn">恢复默认</button>
+    </div>
+  </section>
+</main>
+
+<script>
+const K_CFG='cs2at.cfg', K_BEST='cs2at.best', K_RUNS='cs2at.runs', K_PERF='cs2at.perf';
+const $=id=>document.getElementById(id);
+const load=(k,d)=>{ try{ const v=localStorage.getItem(k); return v? JSON.parse(v): d; }catch(e){ return d; } };
+const save=(k,v)=>{ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} };
+const MODE_NAME={random:'自适应随机', block:'定角重复', precision:'小球精度'};
+
+let cfg=load(K_CFG,{dpi:1000,yaw:0.013052,sens:1.92,cm:36.5});
+
+/* ---------- 标签切换 ---------- */
+function show(t){
+  document.querySelectorAll('section').forEach(s=>s.classList.toggle('on', s.id===t));
+  document.querySelectorAll('nav a').forEach(a=>a.classList.toggle('on', a.dataset.t===t));
+  if(t==='data') renderData();
+  if(t==='play') renderDrills();
+  if(t==='set')  fillSettings();
+}
+document.querySelectorAll('nav a').forEach(a=>a.addEventListener('click',e=>{
+  e.preventDefault(); location.hash=a.dataset.t; show(a.dataset.t);
+}));
+addEventListener('hashchange',()=>show((location.hash||'#data').slice(1)));
+
+/* ---------- 训练卡片 ---------- */
+function cfgQ(){
+  const p=[];
+  if(cfg.dpi) p.push('dpi='+cfg.dpi);
+  if(cfg.cm)  p.push('cm='+cfg.cm);
+  if(cfg.yaw) p.push('yaw='+cfg.yaw);
+  if(cfg.sens)p.push('sens='+cfg.sens);
+  return p.length? '&'+p.join('&'):'';
+}
+function renderDrills(){
+  const q=cfgQ();
+  const items=[
+    {t:'自适应随机',d:'球与限时按 85% 成功率自动调节，主练用这个。',u:'tools/aim-trainer.html?mode=random&count=40&limit=1'+q},
+    {t:'定角重复',d:'同一角度连打 8 球，形成运动程序，热身用。',u:'tools/aim-trainer.html?mode=block&count=40&limit=0'+q},
+    {t:'小球精度',d:'0.7° 小球，无时限，练一次定位的精度。',u:'tools/aim-trainer.html?mode=precision&count=40&limit=0'+q},
+    {t:'灵敏度标定',d:'测量过冲，算出该填的 sensitivity。',u:'tools/sensitivity-calibrator.html'}
+  ];
+  $('drillGrid').innerHTML=items.map(i=>
+    '<a class="tile" href="'+i.u+'"><div class="t">'+i.t+'</div><div class="d">'+i.d+'</div></a>').join('');
+}
+
+/* ---------- 数据 ---------- */
+function renderData(){
+  const best=load(K_BEST,{}), runs=load(K_RUNS,[]);
+  $('sRuns').textContent=runs.length;
+  $('sDays').textContent=new Set(runs.map(r=>r.d)).size;
+  const lims=runs.map(r=>r.limit).filter(v=>v>0);
+  $('sLimit').textContent=lims.length? Math.min.apply(null,lims)+' ms':'—';
+  const hits=runs.map(r=>r.hit).filter(v=>v>0);
+  $('sHit').textContent=hits.length? Math.max.apply(null,hits)+'%':'—';
+
+  let rows='<tr><th>模式</th><th>最低限时</th><th>最高命中率</th><th>最快中位用时</th><th>组数</th></tr>';
+  const keys=Object.keys(best);
+  if(!keys.length) rows+='<tr><td colspan="5" style="color:#6e7681">还没有数据，去练一组吧</td></tr>';
+  keys.forEach(k=>{
+    const b=best[k];
+    rows+='<tr><td>'+(MODE_NAME[k]||k)+'</td><td class="big">'+(b.bestLimit||'—')+' ms</td><td>'+
+      (b.bestHit||'—')+'%</td><td>'+(b.bestMT||'—')+' ms</td><td>'+(b.runs||0)+'</td></tr>';
+  });
+  $('bestTable').innerHTML=rows;
+
+  let rr='<tr><th>日期</th><th>模式</th><th>限时</th><th>命中率</th><th>中位用时</th></tr>';
+  const tail=runs.slice(-15).reverse();
+  if(!tail.length) rr+='<tr><td colspan="5" style="color:#6e7681">暂无记录</td></tr>';
+  tail.forEach(r=>{
+    rr+='<tr><td>'+r.d+'</td><td>'+(MODE_NAME[r.mode]||r.mode)+'</td><td>'+r.limit+' ms</td><td>'+
+      r.hit+'%</td><td>'+r.mt+' ms</td></tr>';
+  });
+  $('runTable').innerHTML=rr;
+}
+
+$('expBtn').addEventListener('click',()=>{
+  const data={cfg:load(K_CFG,{}),best:load(K_BEST,{}),runs:load(K_RUNS,[]),exported:new Date().toISOString()};
+  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='cs2-aim-tools-'+new Date().toISOString().slice(0,10)+'.json';
+  a.click(); URL.revokeObjectURL(a.href);
+});
+
+$('impFile').addEventListener('change',e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const rd=new FileReader();
+  rd.onload=()=>{ try{
+    const d=JSON.parse(rd.result);
+    if(d.cfg) save(K_CFG,d.cfg);
+    if(d.best) save(K_BEST,d.best);
+    if(d.runs) save(K_RUNS,d.runs);
+    cfg=load(K_CFG,cfg); renderData(); alert('导入成功');
+  }catch(err){ alert('文件格式不对'); } };
+  rd.readAsText(f);
+});
+
+$('clrBtn').addEventListener('click',()=>{
+  if(!confirm('清空所有训练数据？设置会保留。')) return;
+  [K_BEST,K_RUNS].forEach(k=>{ try{ localStorage.removeItem(k); }catch(e){} });
+  renderData();
+});
+
+/* ---------- 设置 ---------- */
+function fillSettings(){
+  $('iDpi').value=cfg.dpi; $('iYaw').value=cfg.yaw;
+  $('iSens').value=cfg.sens; $('iCm').value=cfg.cm;
+  $('iPerf').checked=localStorage.getItem(K_PERF)==='1';
+  updateCalc();
+}
+function num(el,def){ const v=parseFloat(el.value); return isFinite(v)? v: def; }
+function updateCalc(){
+  const d=num($('iDpi'),1000), y=num($('iYaw'),0.013052), c=num($('iCm'),36.5), s=num($('iSens'),1.92);
+  $('calcHint').textContent='360° 转身需要 '+c.toFixed(1)+' cm · 180° 需要 '+(c/2).toFixed(1)+
+    ' cm · 当前 sensitivity '+s.toFixed(2)+'（m_yaw '+y+'）';
+}
+['iDpi','iYaw','iSens','iCm'].forEach(id=>{
+  $(id).addEventListener('input',()=>{
+    const d=num($('iDpi'),1000), y=num($('iYaw'),0.013052);
+    if(id==='iSens'){ const s=num($('iSens'),0); if(s>0&&d>0&&y>0) $('iCm').value=(360/(s*y)/d*2.54).toFixed(1); }
+    if(id==='iCm'){ const c=num($('iCm'),0); if(c>0&&d>0&&y>0) $('iSens').value=(360/((c/2.54)*d)/y).toFixed(2); }
+    if(id==='iDpi'||id==='iYaw'){ const c=num($('iCm'),0); if(c>0&&d>0&&y>0) $('iSens').value=(360/((c/2.54)*d)/y).toFixed(2); }
+    updateCalc();
+  });
+});
+
+$('saveBtn').addEventListener('click',()=>{
+  cfg={dpi:num($('iDpi'),1000), yaw:num($('iYaw'),0.013052), sens:num($('iSens'),1.92), cm:num($('iCm'),36.5)};
+  save(K_CFG,cfg);
+  localStorage.setItem(K_PERF, $('iPerf').checked? '1':'0');
+  const b=$('saveBtn'); b.textContent='已保存 ✓';
+  setTimeout(()=>b.textContent='保存设置',1200);
+});
+
+$('defBtn').addEventListener('click',()=>{
+  cfg={dpi:1000,yaw:0.013052,sens:1.92,cm:36.5};
+  fillSettings(); save(K_CFG,cfg);
+});
+
+/* 启动 */
+cfg=load(K_CFG,cfg);
+show((location.hash||'#data').slice(1));
+</script>
+</body>
+</html>

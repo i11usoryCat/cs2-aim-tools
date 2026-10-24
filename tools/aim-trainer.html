@@ -113,12 +113,13 @@ function line3(x1,y1,z1,x2,y2,z2,col){
   ctx.beginPath(); ctx.moveTo(pa.sx,pa.sy); ctx.lineTo(pb.sx,pb.sy); ctx.stroke();
 }
 function grid(){
-  const R=44, step=3;
+  const perf = (function(){ try{ return localStorage.getItem('cs2at.perf')==='1'; }catch(e){ return false; } })();
+  const R=44, step = perf? 8 : 3;
   for(let v=-R;v<=R;v+=step){
     line3(v,-EYE,-R,v,-EYE,R,(v===0)?'rgba(88,166,255,.55)':'rgba(64,76,90,1)');
     line3(-R,-EYE,v,R,-EYE,v,(v===0)?'rgba(88,166,255,.55)':'rgba(64,76,90,1)');
-    line3(v,4.2,-R,v,4.2,R,'rgba(50,60,72,1)');
-    line3(-R,4.2,v,R,4.2,v,'rgba(50,60,72,1)');
+    if(!perf){ line3(v,4.2,-R,v,4.2,R,'rgba(50,60,72,1)');
+               line3(-R,4.2,v,R,4.2,v,'rgba(50,60,72,1)'); }
   }
 }
 
@@ -237,6 +238,25 @@ function finish(){
   window.__logLine = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+
     '  限时'+Math.round(minLim)+'ms  命中率'+Math.round(overallHit*100)+'%'+
     '  中位'+overallMT.toFixed(0)+'ms  超时'+timeouts+'次';
+  const _d=new Date(), _p=n=>String(n).padStart(2,'0');
+  const TODAY=_d.getFullYear()+'-'+_p(_d.getMonth()+1)+'-'+_p(_d.getDate());
+  try{
+    const key='cs2at.best', histKey='cs2at.runs';
+    const b=JSON.parse(localStorage.getItem(key)||'{}');
+    const rec=b[mode]||{runs:0};
+    const limN=Math.round(minLim), hitN=Math.round(overallHit*100), mtN=Math.round(overallMT);
+    if(rec.bestLimit===undefined || limN<rec.bestLimit) rec.bestLimit=limN;
+    if(rec.bestHit===undefined || hitN>rec.bestHit) rec.bestHit=hitN;
+    if(rec.bestMT===undefined || mtN<rec.bestMT) rec.bestMT=mtN;
+    rec.runs=(rec.runs||0)+1; rec.date=TODAY;
+    b[mode]=rec; localStorage.setItem(key, JSON.stringify(b));
+
+    const hist=JSON.parse(localStorage.getItem(histKey)||'[]');
+    hist.push({d:TODAY, mode:mode, limit:limN, hit:hitN, mt:mtN, to:timeouts});
+    while(hist.length>300) hist.shift();
+    localStorage.setItem(histKey, JSON.stringify(hist));
+  }catch(e){}
+
   res.classList.add('show');
 }
 

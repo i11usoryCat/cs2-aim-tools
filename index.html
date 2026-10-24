@@ -3,77 +3,160 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>CS2 Aim Tools</title>
+<title>CS2 Aim Tools · 大肥鱼</title>
 <style>
-  :root{color-scheme:dark}
+  :root{color-scheme:dark;--txt:#e6edf3;--dim:#8b949e;--acc:#58a6ff;--ok:#3fb950}
   *{box-sizing:border-box}
-  body{margin:0;background:#0b0f14;color:#e6edf3;font-family:"Microsoft YaHei","Segoe UI",system-ui,sans-serif;line-height:1.7}
-  .wrap{max-width:880px;margin:0 auto;padding:48px 22px 70px}
-  h1{font-size:28px;margin:0 0 8px;color:#58a6ff}
-  .sub{color:#8b949e;font-size:14px;margin-bottom:36px;max-width:640px}
-  h2{font-size:15px;color:#8b949e;font-weight:500;letter-spacing:1px;margin:0 0 14px}
-  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px;margin-bottom:34px}
-  a.card{display:block;text-decoration:none;color:inherit;background:#161b22;border:1px solid #30363d;
-    border-radius:10px;padding:18px 20px;transition:.15s;border-left:3px solid #238636}
-  a.card:hover{background:#1c2430;border-left-color:#3fb950;transform:translateX(3px)}
-  a.card.big{border-left-color:#58a6ff;background:#131a24}
-  a.card.big:hover{border-left-color:#79c0ff}
-  .t{font-size:16px;font-weight:600;margin-bottom:6px}
-  .d{font-size:13px;color:#8b949e;line-height:1.6}
-  .tag{display:inline-block;font-size:11px;padding:1px 8px;border-radius:10px;background:#21262d;
-    color:#8b949e;margin-left:8px;vertical-align:1px}
-  .tag.hot{background:#1f6feb33;color:#79c0ff}
-  .foot{margin-top:20px;font-size:12px;color:#6e7681;line-height:1.9}
-  code{background:#21262d;padding:1px 6px;border-radius:4px;font-size:12px}
-  a.lk{color:#58a6ff;text-decoration:none}
+  html,body{margin:0;background:#070a0e;color:var(--txt);
+    font-family:"Microsoft YaHei","Segoe UI",system-ui,sans-serif;overflow-x:hidden}
+  #fx{position:fixed;inset:0;z-index:0}
+  .veil{position:fixed;inset:0;z-index:1;pointer-events:none;
+    background:radial-gradient(ellipse at 50% 0%,#0d2b4d66,transparent 55%),
+               radial-gradient(ellipse at 80% 90%,#2a124455,transparent 50%),
+               linear-gradient(180deg,#070a0e00,#070a0eaa 70%,#070a0e 100%)}
+  .hero{position:relative;z-index:2;min-height:100vh;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;text-align:center;padding:40px 20px}
+  .badge{font-size:12px;letter-spacing:3px;color:var(--dim);border:1px solid #ffffff22;
+    padding:5px 14px;border-radius:20px;margin-bottom:26px;backdrop-filter:blur(4px)}
+  h1{font-size:clamp(34px,7vw,68px);margin:0;letter-spacing:2px;font-weight:800;
+    background:linear-gradient(120deg,#fff 10%,#58a6ff 45%,#3fb950 90%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    text-shadow:0 0 60px #58a6ff33;animation:glow 6s ease-in-out infinite alternate}
+  @keyframes glow{from{filter:drop-shadow(0 0 18px #58a6ff33)}to{filter:drop-shadow(0 0 40px #3fb95044)}}
+  .sub{color:var(--dim);margin:14px 0 0;font-size:15px;max-width:560px;line-height:1.9}
+  .by{margin-top:8px;font-size:13px;color:#6e7681}
+  .by b{color:var(--acc)}
+  .start{margin-top:42px;padding:16px 62px;font-size:17px;font-weight:700;font-family:inherit;
+    color:#fff;cursor:pointer;border:none;border-radius:40px;letter-spacing:2px;
+    background:linear-gradient(135deg,#1f6feb,#238636);box-shadow:0 10px 40px #1f6feb55;
+    transition:.2s;position:relative;overflow:hidden}
+  .start:hover{transform:translateY(-2px);box-shadow:0 16px 50px #1f6feb88}
+  .start:active{transform:translateY(0)}
+  .start::after{content:"";position:absolute;inset:0;background:linear-gradient(120deg,transparent 40%,#ffffff33 50%,transparent 60%);
+    transform:translateX(-120%);animation:sheen 3.2s infinite}
+  @keyframes sheen{0%,60%{transform:translateX(-120%)}100%{transform:translateX(120%)}}
+  .scroll{margin-top:34px;font-size:12px;color:#4b5563;animation:bob 2s ease-in-out infinite}
+  @keyframes bob{0%,100%{transform:translateY(0);opacity:.6}50%{transform:translateY(6px);opacity:1}}
+
+  .list{position:relative;z-index:2;max-width:960px;margin:0 auto;padding:0 20px 90px}
+  .list h2{font-size:15px;color:var(--dim);font-weight:500;letter-spacing:2px;margin:0 0 20px;
+    display:flex;align-items:center;gap:12px}
+  .list h2::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,#ffffff22,transparent)}
+  .items{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px}
+  a.item{display:block;text-decoration:none;color:inherit;padding:18px 20px;border-radius:12px;
+    background:linear-gradient(160deg,#10161f,#0b0f14);border:1px solid #1f2733;
+    transition:.22s;position:relative;overflow:hidden}
+  a.item:hover{transform:translateY(-3px);border-color:#58a6ff55;box-shadow:0 14px 36px #0008}
+  a.item::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;
+    background:linear-gradient(180deg,#58a6ff,#3fb950);opacity:.85}
+  .it{font-size:15px;font-weight:600;margin-bottom:6px}
+  .id{font-size:13px;color:var(--dim);line-height:1.65}
+  .foot{position:relative;z-index:2;text-align:center;color:#4b5563;font-size:12px;padding:0 20px 60px;line-height:2}
+  .foot a{color:#6e7681;text-decoration:none}
+  .foot a:hover{color:var(--acc)}
 </style>
 </head>
 <body>
-<div class="wrap">
-  <h1>CS2 Aim Tools</h1>
+<canvas id="fx"></canvas>
+<div class="veil"></div>
+
+<div class="hero">
+  <div class="badge">C S 2 &nbsp; A I M &nbsp; T O O L S</div>
+  <h1>甩枪训练中心</h1>
   <div class="sub">
-    浏览器端的瞄准灵敏度标定与甩枪训练。无需安装、无需进入游戏、不读取任何游戏数据。<br>
-    先标定灵敏度，再按计划训练。
+    浏览器端 · 无需安装 · 不读取游戏数据<br>
+    标定灵敏度 → 四周计划 → 每天 15 分钟
   </div>
+  <div class="by">by <b>大肥鱼</b></div>
+  <button class="start" onclick="location.href='app.html'">开 始</button>
+  <div class="scroll">↓ 软件清单</div>
+</div>
 
-  <h2>计划训练</h2>
-  <div class="cards">
-    <a class="card big" href="program.html">
-      <div class="t">四周训练计划 <span class="tag hot">推荐</span></div>
-      <div class="d">每天 15 分钟，按周分阶段。自动记录进度与训练数据，告诉你今天该练什么。</div>
+<div class="list">
+  <h2>大肥鱼出品的练枪软件清单</h2>
+  <div class="items">
+    <a class="item" href="tools/sensitivity-calibrator.html">
+      <div class="it">灵敏度标定器 · 过冲法</div>
+      <div class="id">测出你每次甩动偏多少，反推应该填的 sensitivity。支持累计样本与收敛检测。</div>
     </a>
-  </div>
-
-  <h2>单项训练</h2>
-  <div class="cards">
-    <a class="card" href="tools/sensitivity-calibrator.html">
-      <div class="t">灵敏度标定 <span class="tag">先做这个</span></div>
-      <div class="d">测量你甩枪「过头」或「不足」多少，直接算出该填的 sensitivity。</div>
+    <a class="item" href="tools/aim-trainer.html?mode=random&count=40&limit=1">
+      <div class="it">甩枪训练 · 自适应随机</div>
+      <div class="id">球的大小与限时按 85% 成功率自动调节，主练模式。</div>
     </a>
-    <a class="card" href="tools/aim-trainer.html?mode=random&count=40&limit=1">
-      <div class="t">自适应随机</div>
-      <div class="d">球的大小与限时按 85% 成功率自动调节。主练用这个。</div>
+    <a class="item" href="tools/aim-trainer.html?mode=block&count=40&limit=0">
+      <div class="it">甩枪训练 · 定角重复</div>
+      <div class="id">同一角度连打 8 球，形成运动程序最快的方式，热身用。</div>
     </a>
-    <a class="card" href="tools/aim-trainer.html?mode=block&count=40&limit=0">
-      <div class="t">定角重复</div>
-      <div class="d">同一角度连打 8 个球。形成运动程序最快的方式，热身用。</div>
+    <a class="item" href="tools/aim-trainer.html?mode=precision&count=40&limit=0">
+      <div class="it">甩枪训练 · 小球精度</div>
+      <div class="id">0.7° 小球，无时间限制，专门练一次定位的精度。</div>
     </a>
-    <a class="card" href="tools/aim-trainer.html?mode=precision&count=40&limit=0">
-      <div class="t">小球精度</div>
-      <div class="d">0.7° 小球，无时间限制。练一次定位的精度，不计速度。</div>
+    <a class="item" href="program.html">
+      <div class="it">四周训练计划</div>
+      <div class="id">按天推进，自动记录进度与训练数据，告诉你今天该练什么。</div>
     </a>
-    <a class="card" href="tools/sensitivity-calibrator-strict.html">
-      <div class="t">标定 · 严格口径</div>
-      <div class="d">过冲统计只算未命中的球。命中被视为「已能控制」，不计入偏差。</div>
+    <a class="item" href="https://github.com/i11usoryCat/cs2-aim-tools/blob/main/windows/RawLogger.cs">
+      <div class="it">原始输入记录器</div>
+      <div class="id">C# 单文件，直接读 HID 原始报告，验证真实回报率与报告间隔抖动。</div>
     </a>
-  </div>
-
-  <div class="foot">
-    核心公式：<code>cm/360 = 360 / (sensitivity × m_yaw) / DPI × 2.54</code><br>
-    方法论 <a class="lk" href="https://github.com/i11usoryCat/cs2-aim-tools/blob/main/docs/methodology.md">docs/methodology.md</a>
-    · 训练方案 <a class="lk" href="https://github.com/i11usoryCat/cs2-aim-tools/blob/main/docs/training-plan.md">docs/training-plan.md</a>
-    · <a class="lk" href="https://github.com/i11usoryCat/cs2-aim-tools">GitHub</a>
   </div>
 </div>
+
+<div class="foot">
+  核心公式 <code>cm/360 = 360 / (sensitivity × m_yaw) / DPI × 2.54</code><br>
+  <a href="https://github.com/i11usoryCat/cs2-aim-tools">GitHub</a> ·
+  <a href="https://github.com/i11usoryCat/cs2-aim-tools/blob/main/docs/methodology.md">方法论</a> ·
+  <a href="https://github.com/i11usoryCat/cs2-aim-tools/blob/main/docs/training-plan.md">训练方案</a>
+</div>
+
+<script>
+(function(){
+  const cv=document.getElementById('fx'), ctx=cv.getContext('2d');
+  let W=0,H=0,pts=[];
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function resize(){
+    W=cv.width=innerWidth*devicePixelRatio;
+    H=cv.height=innerHeight*devicePixelRatio;
+    cv.style.width=innerWidth+'px'; cv.style.height=innerHeight+'px';
+    const n = Math.min(70, Math.round(innerWidth/22));
+    pts=[]; for(let i=0;i<n;i++) pts.push({
+      x:Math.random()*W, y:Math.random()*H,
+      vx:(Math.random()-.5)*0.22*devicePixelRatio,
+      vy:(Math.random()-.5)*0.22*devicePixelRatio,
+      r:(Math.random()*1.6+0.4)*devicePixelRatio,
+      h:Math.random()*360
+    });
+  }
+  addEventListener('resize',resize); resize();
+
+  function frame(){
+    if(reduce) return;
+    ctx.clearRect(0,0,W,H);
+    for(const p of pts){
+      p.x+=p.vx; p.y+=p.vy;
+      if(p.x<0||p.x>W) p.vx*=-1;
+      if(p.y<0||p.y>H) p.vy*=-1;
+      const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r*8);
+      g.addColorStop(0,'hsla('+p.h+',90%,65%,.55)');
+      g.addColorStop(1,'hsla('+p.h+',90%,65%,0)');
+      ctx.fillStyle=g;
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.r*8,0,Math.PI*2); ctx.fill();
+    }
+    // 连线
+    ctx.lineWidth=devicePixelRatio*0.5;
+    for(let i=0;i<pts.length;i++) for(let j=i+1;j<pts.length;j++){
+      const dx=pts[i].x-pts[j].x, dy=pts[i].y-pts[j].y, d=dx*dx+dy*dy;
+      const lim=(140*devicePixelRatio)**2;
+      if(d<lim){
+        ctx.strokeStyle='rgba(88,166,255,'+(0.18*(1-d/lim))+')';
+        ctx.beginPath(); ctx.moveTo(pts[i].x,pts[i].y); ctx.lineTo(pts[j].x,pts[j].y); ctx.stroke();
+      }
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+</script>
 </body>
 </html>

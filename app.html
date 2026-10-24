@@ -390,17 +390,18 @@ const EN={
 };
 let LANG='zh';
 const ZH_ORIG=new WeakMap();
+function setTextLang(n, lang){
+  if(!ZH_ORIG.has(n)) ZH_ORIG.set(n, n.nodeValue);
+  const zh=ZH_ORIG.get(n), t=zh.trim();
+  n.nodeValue = (lang==='en' && EN[t]) ? zh.replace(t, EN[t]) : zh;
+}
 function applyLang(){
   try{
     document.documentElement.setAttribute('lang', LANG==='en'?'en':'zh-CN');
     if(!document.createTreeWalker) return;
     const w=document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
     let n;
-    while((n=w.nextNode())){
-      if(!ZH_ORIG.has(n)) ZH_ORIG.set(n, n.nodeValue);
-      const zh=ZH_ORIG.get(n), t=zh.trim();
-      n.nodeValue = (LANG==='en' && EN[t]) ? zh.replace(t, EN[t]) : zh;
-    }
+    while((n=w.nextNode())) setTextLang(n, LANG);
   }catch(e){}
 }
 function setLang(l){ LANG=l; try{ localStorage.setItem(K_LANG,l); }catch(e){} }
@@ -423,50 +424,71 @@ function show(t){
 let switching=false;
 function rippleSwitch(lang, cx, cy){
   if(switching) return; switching=true;
-  // 1. 先复制「旧语言」的页面
-  let layer=null;
+
+  // 收集所有可见文本节点，按与波心的距离排序
+  const items=[];
   try{
-    layer=document.createElement('div');
-    layer.style.cssText='position:fixed;inset:0;z-index:9000;pointer-events:none;background:var(--bg);'
-      +'overflow:hidden;will-change:mask-image;-webkit-mask-image:radial-gradient(circle 0px at '+cx+'px '+cy+'px, transparent 99%, #000 100%);'
-      +'mask-image:radial-gradient(circle 0px at '+cx+'px '+cy+'px, transparent 99%, #000 100%)';
-    layer.innerHTML=document.body.innerHTML;
-    layer.querySelectorAll('script,iframe').forEach(el=>el.remove());
-    document.body.appendChild(layer);
-  }catch(e){ layer=null; }
+    const w=document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    let n;
+    while((n=w.nextNode())){
+      if(!n.nodeValue.trim()) continue;
+      const rg=document.createRange(); rg.selectNodeContents(n);
+      const b=rg.getBoundingClientRect();
+      if(!b.width && !b.height) continue;                 // 隐藏区块跳过
+      const dx=(b.left+b.width/2)-cx, dy=(b.top+b.height/2)-cy;
+      items.push({n:n, d:Math.hypot(dx,dy)});
+    }
+  }catch(e){}
+  items.sort((a,b)=>a.d-b.d);
 
-  // 2. 立刻切到新语言
-  const old=LANG;
-  LANG=lang; setLang(lang); applyLang();
-  document.getElementById('langSw').querySelectorAll('span[data-lang]').forEach(el=>
-    el.classList.toggle('on', el.dataset.lang===LANG));
+  const maxD = items.length ? items[items.length-1].d : 400;
+  const cv=document.createElement('canvas'), ctx2=cv.getContext('2d');
+  const dpr=devicePixelRatio||1;
+  cv.style.cssText='position:fixed;inset:0;z-index:9000;pointer-events:none';
+  cv.width=innerWidth*dpr; cv.height=innerHeight*dpr;
+  cv.style.width=innerWidth+'px'; cv.style.height=innerHeight+'px';
+  document.body.appendChild(cv);
 
-  if(!layer){ switching=false; return; }
+  const acc=(getComputedStyle(document.documentElement).getPropertyValue('--acc')||'#0f766e').trim();
+  const oldLang=LANG;
+  const DUR=760, t0=performance.now();
+  let idx=0;
 
-  // 3. 水波：遮罩半径扩大 + 外圈波纹
-  const maxR=Math.hypot(Math.max(cx, innerWidth-cx), Math.max(cy, innerHeight-cy))+40;
-  const rings=[];
-  for(let i=0;i<3;i++){
-    const r=document.createElement('div');
-    r.style.cssText='position:fixed;left:0;top:0;border-radius:50%;pointer-events:none;z-index:9001;'
-      +'border:2px solid '+(i===0?'rgba(15,118,110,.55)':'rgba(15,118,110,.28)');
-    document.body.appendChild(r); rings.push(r);
+  function ring(R, w, a){
+    if(R<=0) return;
+    ctx2.beginPath(); ctx2.arc(cx*dpr, cy*dpr, R*dpr, 0, Math.PI*2);
+    ctx2.strokeStyle='rgba('+hex2rgb(acc)+','+a+')';
+    ctx2.lineWidth=w*dpr; ctx2.stroke();
   }
-  const t0=performance.now(), DUR=760;
+  function hex2rgb(h){
+    h=h.replace('#','');
+    if(h.length===3) h=h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+    const v=parseInt(h,16);
+    return [(v>>16)&255,(v>>8)&255,v&255].join(',');
+  }
+
   function step(now){
     const t=Math.min(1,(now-t0)/DUR);
-    const e=1-Math.pow(1-t,3);              // easeOutCubic
-    const R=maxR*e;
-    layer.style.webkitMaskImage='radial-gradient(circle '+R+'px at '+cx+'px '+cy+'px, transparent 99%, #000 100%)';
-    layer.style.maskImage='radial-gradient(circle '+R+'px at '+cx+'px '+cy+'px, transparent 99%, #000 100%)';
-    rings.forEach((r,i)=>{
-      const rr=R*(1.06+i*0.10);
-      r.style.width=r.style.height=(rr*2)+'px';
-      r.style.transform='translate('+(cx-rr)+'px,'+(cy-rr)+'px)';
-      r.style.opacity=String(Math.max(0,1-t)*(0.9-i*0.25));
-    });
+    const R=maxD*1.15*(1-Math.pow(1-t,3));
+
+    // 波前所到之处，逐字切换
+    while(idx<items.length && items[idx].d<=R){ setTextLang(items[idx].n, lang); idx++; }
+
+    // 水波
+    ctx2.clearRect(0,0,cv.width,cv.height);
+    const fade=Math.max(0,1-t*0.9);
+    ring(R, 2.4, 0.85*fade);
+    ring(R*0.90, 1.5, 0.45*fade*Math.max(0,1-t*1.6));
+    ring(R*1.06, 1.0, 0.25*fade*Math.max(0,1-t*2.2));
+
     if(t<1) requestAnimationFrame(step);
-    else { layer.remove(); rings.forEach(r=>r.remove()); switching=false; }
+    else{
+      while(idx<items.length){ setTextLang(items[idx].n, lang); idx++; }   // 收尾兜底
+      LANG=lang; setLang(lang);
+      const ls=document.getElementById('langSw');
+      if(ls) ls.querySelectorAll('span[data-lang]').forEach(el=>el.classList.toggle('on', el.dataset.lang===lang));
+      cv.remove(); switching=false;
+    }
   }
   requestAnimationFrame(step);
 }

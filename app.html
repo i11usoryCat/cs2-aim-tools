@@ -511,14 +511,8 @@ function rippleSwitch(lang, cx, cy){
     el.classList.toggle('on', el.dataset.lang===LANG);
     el.addEventListener('click',ev=>{
       if(el.dataset.lang===LANG) return;
-      if(el.dataset.lang!=='en'){
-        // 切回中文：立即完成，不做动画
-        LANG=el.dataset.lang; setLang(LANG); applyLang();
-        ls.querySelectorAll('span[data-lang]').forEach(x=>x.classList.toggle('on', x.dataset.lang===LANG));
-        return;
-      }
       const r=el.getBoundingClientRect();
-      rippleSwitch('en', r.left+r.width/2, r.top+r.height/2);
+      rippleSwitch(el.dataset.lang, r.left+r.width/2, r.top+r.height/2);
     });
   });
 })();

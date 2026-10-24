@@ -19,6 +19,10 @@
   td,th{padding:6px 16px;text-align:right;border-bottom:1px solid #21262d;font-size:14px}
   th{color:#8b949e;font-weight:500}
   input[type=checkbox]{width:16px;height:16px;vertical-align:-2px;pointer-events:auto}
+  .fld{display:flex;flex-direction:column;gap:5px;font-size:12px;color:#8b949e}
+  .fld input,.fld select{padding:7px 9px;background:#0d1117;border:1px solid #30363d;color:#e6edf3;
+    border-radius:7px;font-size:14px;font-family:inherit;width:112px}
+  summary::-webkit-details-marker{display:none}
 </style>
 </head>
 <body>
@@ -26,36 +30,35 @@
 <div id="hud"></div>
 
 <div id="msg" class="overlay show">
-  <div style="font-size:20px;color:#58a6ff;margin-bottom:8px">甩枪训练 · 自适应难度</div>
-  <div>球的大小会<b>自动调整</b>，始终把你的成功率压在 <b>70~85%</b><br>
-  打得准 → 球变小；打不中 → 球变大<br>
-  目标随机出现方向，<b>看到就甩，手停住再点</b></div>
-  <div style="margin-top:18px;font-size:15px">
-    模式：<select id="mode" style="padding:7px;background:#161b22;border:1px solid #30363d;color:#e6edf3;border-radius:6px;font-size:14px;pointer-events:auto">
-      <option value="random">自适应随机（主练）</option>
-      <option value="block">定角重复（形成程序）</option>
-      <option value="precision">小球精度（0.7°）</option>
-    </select>
-    &nbsp;球数：<input id="cnt" type="number" step="10" value="40"
-      style="width:80px;padding:7px;background:#161b22;border:1px solid #30363d;color:#e6edf3;border-radius:6px;text-align:center;font-size:15px;pointer-events:auto">
-    （建议 40：约 30 秒，超过 50 个会掺入疲劳）
-  </div>
-  <div style="margin-top:10px;font-size:15px">
-    鼠标 DPI：<input id="dpi" type="number" step="100" value="1000" style="width:90px">
-    &nbsp;m_yaw：<input id="yaw" type="number" step="0.0001" value="0.0165" style="width:95px">
-      &nbsp;CS 灵敏度：<input id="sens" type="number" step="0.01" value="" placeholder="自动" style="width:85px"><br>
-      <span style="display:inline-block;margin-top:8px">cm/360：<input id="cm" type="number" step="0.1" value="27.2"
-      style="width:90px;padding:7px;background:#161b22;border:1px solid #30363d;color:#e6edf3;border-radius:6px;text-align:center;font-size:15px;pointer-events:auto">
-    （当前标定值 27.2）
-  </div>
-  <div style="margin-top:12px;font-size:15px">
-    <label><input id="shrink" type="checkbox"> 收缩模式（球随时间变小）</label>
-    &nbsp;&nbsp;
-    <label><input id="limit" type="checkbox" checked> 时间限制（超时算失误，练速度用这个）</label>
-  </div>
-  <div id="sensHint" style="margin-top:10px;font-size:14px;color:#8b949e"></div>
-  <div id="bw" style="margin-top:12px;font-size:13px;line-height:1.8;color:#d29922"></div>
-  <button id="go" class="btn">开始训练（60 个球）</button>
+  <div style="font-size:26px;color:#e9eef3;font-weight:700;letter-spacing:2px">甩枪训练</div>
+  <div style="margin-top:8px;color:#9fb0bd;font-size:14px">看到球 → 甩过去 → 手停 → 点击</div>
+  <button id="go" class="btn" style="margin-top:26px;padding:16px 64px;font-size:18px;letter-spacing:2px">开 始</button>
+  <div id="sensHint" style="margin-top:14px;font-size:13px;color:#8b949e"></div>
+  <div id="bw" style="margin-top:10px;font-size:13px;color:#d29922"></div>
+
+  <details style="margin-top:22px;width:100%;max-width:520px;text-align:left">
+    <summary style="cursor:pointer;color:#8b949e;font-size:13px;text-align:center;list-style:none">
+      ▸ 高级设置
+    </summary>
+    <div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:12px;justify-content:center">
+      <label class="fld">模式
+        <select id="mode">
+          <option value="random">自适应随机</option>
+          <option value="block">定角重复</option>
+          <option value="precision">小球精度</option>
+        </select>
+      </label>
+      <label class="fld">球数<input id="cnt" type="number" step="10" value="40"></label>
+      <label class="fld">DPI<input id="dpi" type="number" step="100" value="1000"></label>
+      <label class="fld">m_yaw<input id="yaw" type="number" step="0.0001" value="0.013052"></label>
+      <label class="fld">CS 灵敏度<input id="sens" type="number" step="0.01" placeholder="自动"></label>
+      <label class="fld">cm/360<input id="cm" type="number" step="0.1" value="36.5"></label>
+    </div>
+    <div style="margin-top:12px;display:flex;gap:18px;justify-content:center;font-size:13px;color:#9fb0bd">
+      <label><input id="limit" type="checkbox" checked> 时间限制</label>
+      <label><input id="shrink" type="checkbox"> 收缩模式</label>
+    </div>
+  </details>
 </div>
 
 <div id="res" class="overlay"><div id="resBody"></div>
@@ -114,19 +117,23 @@ function line3(x1,y1,z1,x2,y2,z2,col){
   ctx.beginPath(); ctx.moveTo(pa.sx,pa.sy); ctx.lineTo(pb.sx,pb.sy); ctx.stroke();
 }
 const SCENES={
-  night:{bg:'#0b0f14',major:'rgba(88,166,255,.55)',minor:'rgba(64,76,90,1)',ceil:'rgba(50,60,72,1)',
-         tgt:'#f85149',tgtFill:'rgba(248,81,73,.30)',cross:'#3fb950',txt:'#e6edf3',dim:'#8b949e'},
-  light:{bg:'#e9edf2',major:'rgba(47,111,235,.50)',minor:'rgba(150,163,178,1)',ceil:'rgba(178,188,200,1)',
-         tgt:'#d93025',tgtFill:'rgba(217,48,37,.25)',cross:'#137333',txt:'#1a2230',dim:'#5b6879'},
-  sepia:{bg:'#241c14',major:'rgba(214,161,90,.50)',minor:'rgba(120,96,68,1)',ceil:'rgba(96,76,54,1)',
-         tgt:'#ff7043',tgtFill:'rgba(255,112,67,.28)',cross:'#a3e635',txt:'#f0e6d8',dim:'#b8a58c'},
-  mono:{bg:'#101012',major:'rgba(200,205,215,.45)',minor:'rgba(90,94,102,1)',ceil:'rgba(72,76,84,1)',
-         tgt:'#ff5b5b',tgtFill:'rgba(255,91,91,.25)',cross:'#d1d5db',txt:'#e8eaee',dim:'#9aa0a8'},
-  cs:{bg:'#2b2620',major:'rgba(214,181,120,.45)',minor:'rgba(120,110,88,1)',ceil:'rgba(98,90,72,1)',
-      tgt:'#e5484d',tgtFill:'rgba(229,72,77,.28)',cross:'#b8e986',txt:'#efe7d8',dim:'#b6a88c'}
+  ink:{dark:true,bg:'#12181d',major:'rgba(15,118,110,.55)',minor:'rgba(58,74,82,1)',ceil:'rgba(44,58,66,1)',
+       tgt:'#ffb020',tgtFill:'rgba(255,176,32,.85)',ring:'#ffffff',cross:'#ffffff',edge:'#000000'},
+  light:{dark:false,bg:'#eef1f4',major:'rgba(15,118,110,.45)',minor:'rgba(160,172,182,1)',ceil:'rgba(184,194,203,1)',
+       tgt:'#e8590c',tgtFill:'rgba(232,89,12,.85)',ring:'#ffffff',cross:'#111827',edge:'#ffffff'},
+  night:{dark:true,bg:'#0b0f14',major:'rgba(88,166,255,.50)',minor:'rgba(64,76,90,1)',ceil:'rgba(50,60,72,1)',
+       tgt:'#ff5f56',tgtFill:'rgba(255,95,86,.85)',ring:'#ffffff',cross:'#7ee787',edge:'#000000'},
+  mono:{dark:true,bg:'#0f1113',major:'rgba(200,205,215,.40)',minor:'rgba(88,92,100,1)',ceil:'rgba(70,73,80,1)',
+       tgt:'#ffd166',tgtFill:'rgba(255,209,102,.85)',ring:'#000000',cross:'#ffffff',edge:'#000000'},
+  cs:{dark:true,bg:'#2b2620',major:'rgba(214,181,120,.45)',minor:'rgba(120,110,88,1)',ceil:'rgba(98,90,72,1)',
+       tgt:'#e5484d',tgtFill:'rgba(229,72,77,.85)',ring:'#ffffff',cross:'#b8e986',edge:'#000000'}
 };
-let SC = SCENES[ (function(){ try{ return localStorage.getItem('cs2at.scene')||'night'; }catch(e){ return 'night'; } })() ] || SCENES.night;
-try{ document.body.style.background=SC.bg; document.body.style.color=SC.txt; }catch(e){}
+let SC = SCENES[ (function(){ try{ return localStorage.getItem('cs2at.scene')||'ink'; }catch(e){ return 'ink'; } })() ] || SCENES.ink;
+try{
+  document.body.style.background=SC.bg;
+  document.body.style.color = SC.dark? '#e9eef3' : '#1f2b2c';
+}catch(e){}
+
 
 function grid(){
   const perf = (function(){ try{ return localStorage.getItem('cs2at.perf')==='1'; }catch(e){ return false; } })();
@@ -159,7 +166,7 @@ function start(){
   try{
     SC = SCENES[localStorage.getItem('cs2at.scene')||'night'] || SCENES.night;
     document.body.style.background = SC.bg;
-    hud.style.color = SC.txt;
+    hud.style.color = SC.dark? '#e9eef3' : '#1f2b2c';
   }catch(e){}
   mode=(document.getElementById('mode')||{value:'random'}).value||'random';
   if(mode==='precision'){ radius=0.7; limitChk.checked=false; }
@@ -349,12 +356,18 @@ function loop(){
     const tw=DIST*cp*Math.sin(tYaw), th=DIST*Math.sin(tPitch), td=DIST*cp*Math.cos(tYaw);
     const p=project(tw,th,td);
     if(p){
-      const rad=Math.max(4, f*Math.tan(radius*D2R));
+      const rad=Math.max(5, f*Math.tan(radius*D2R));
+      // 暗色光晕，保证任何背景上都跳出来
+      const halo=ctx.createRadialGradient(p.sx,p.sy,rad*0.8,p.sx,p.sy,rad*2.4);
+      halo.addColorStop(0,'rgba(0,0,0,.45)'); halo.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.fillStyle=halo; ctx.beginPath(); ctx.arc(p.sx,p.sy,rad*2.4,0,Math.PI*2); ctx.fill();
+      // 实心目标 + 白环
       ctx.beginPath(); ctx.arc(p.sx,p.sy,rad,0,Math.PI*2);
       ctx.fillStyle=SC.tgtFill; ctx.fill();
-      ctx.strokeStyle=SC.tgt; ctx.lineWidth=2.5; ctx.stroke();
-      ctx.beginPath(); ctx.arc(p.sx,p.sy,rad*0.22,0,Math.PI*2);
-      ctx.fillStyle=SC.tgt; ctx.fill();
+      ctx.strokeStyle=SC.ring; ctx.lineWidth=Math.max(2,rad*0.12); ctx.stroke();
+      // 中心点
+      ctx.beginPath(); ctx.arc(p.sx,p.sy,rad*0.20,0,Math.PI*2);
+      ctx.fillStyle=SC.edge; ctx.fill();
       if(limitChk.checked){
         const left=Math.max(0, 1-(now-tSpawn)/allowed);
         ctx.beginPath();
@@ -365,14 +378,18 @@ function loop(){
     }
   }
 
-  ctx.strokeStyle=SC.cross; ctx.lineWidth=3;
-  const g2=15*devicePixelRatio, cx=W/2, cy=H/2;
-  ctx.beginPath();
-  ctx.moveTo(cx-g2,cy); ctx.lineTo(cx-5,cy);
-  ctx.moveTo(cx+5,cy); ctx.lineTo(cx+g2,cy);
-  ctx.moveTo(cx,cy-g2); ctx.lineTo(cx,cy-5);
-  ctx.moveTo(cx,cy+5); ctx.lineTo(cx,cy+g2);
-  ctx.stroke();
+  const g2=16*devicePixelRatio, cx=W/2, cy=H/2;
+  function drawCross(col,w){
+    ctx.strokeStyle=col; ctx.lineWidth=w;
+    ctx.beginPath();
+    ctx.moveTo(cx-g2,cy); ctx.lineTo(cx-5,cy);
+    ctx.moveTo(cx+5,cy); ctx.lineTo(cx+g2,cy);
+    ctx.moveTo(cx,cy-g2); ctx.lineTo(cx,cy-5);
+    ctx.moveTo(cx,cy+5); ctx.lineTo(cx,cy+g2);
+    ctx.stroke();
+  }
+  drawCross(SC.edge, 5*devicePixelRatio);
+  drawCross(SC.cross, 2*devicePixelRatio);
 
   if(feedback && now<feedback.until){
     ctx.textAlign='center';

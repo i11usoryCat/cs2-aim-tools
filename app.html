@@ -1,10 +1,12 @@
 <!doctype html>
-<html lang="zh-CN" data-theme="light">
+<html lang="zh-CN" data-theme="ink">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>训练中心 · CS2 Aim Tools</title>
 <style>
+  html[data-theme="ink"]{--bg:#f6f4ef;--panel:#fffdf9;--panel2:#efebe2;--line:#ddd6c8;--txt:#1f2b2c;
+    --dim:#69787a;--acc:#0f766e;--ok:#15803d;--warn:#b45309;--head:#fffdf9cc;--shade:#1f2b2c14}
   html[data-theme="light"]{--bg:#f4f6f9;--panel:#ffffff;--panel2:#f0f3f7;--line:#d9e0e9;--txt:#1a2230;
     --dim:#5b6879;--acc:#2f6feb;--ok:#17803d;--warn:#b26b00;--head:#ffffffcc;--shade:#00000010}
   html[data-theme="sand"]{--bg:#f7f2e8;--panel:#fffdf8;--panel2:#f3ece0;--line:#e0d5c2;--txt:#33291c;
@@ -48,7 +50,8 @@
   a.tile,.tile{display:block;background:var(--panel);border:1px solid var(--line);border-radius:12px;
     padding:18px 20px;text-decoration:none;color:inherit;transition:.18s;position:relative;overflow:hidden}
   a.tile:hover{transform:translateY(-2px);border-color:var(--acc);box-shadow:0 10px 26px var(--shade)}
-  a.tile::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--acc);opacity:.9}
+  a.tile{box-shadow:0 1px 2px var(--shade)}
+  a.tile:hover{box-shadow:0 12px 28px var(--shade)}
   .t{font-size:15px;font-weight:600;margin-bottom:6px}
   .d{font-size:13px;color:var(--dim)}
 
@@ -204,6 +207,7 @@ const save=(k,v)=>{ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){}
 const MODE_NAME={random:'自适应随机', block:'定角重复', precision:'小球精度'};
 
 const THEMES=[
+  {id:'ink',   name:'墨鱼', dot:'#0f766e'},
   {id:'light', name:'明亮', dot:'#f4f6f9'},
   {id:'sand',  name:'暖砂', dot:'#f7f2e8'},
   {id:'forest',name:'森林', dot:'#1f6f45'},
@@ -212,11 +216,11 @@ const THEMES=[
   {id:'night', name:'深蓝', dot:'#0b0f14'}
 ];
 const SCENES=[
-  {id:'light',  name:'浅灰', dot:'#e9edf2'},
-  {id:'night',  name:'暗蓝', dot:'#0b0f14'},
-  {id:'sepia',  name:'暖褐', dot:'#241c14'},
-  {id:'mono',   name:'纯黑', dot:'#101012'},
-  {id:'cs',     name:'沙色', dot:'#3a352a'}
+  {id:'ink',   name:'墨鱼', dot:'#ffb020'},
+  {id:'light', name:'浅灰', dot:'#eef1f4'},
+  {id:'night', name:'暗蓝', dot:'#0b0f14'},
+  {id:'mono',  name:'纯黑', dot:'#ffd166'},
+  {id:'cs',    name:'沙色', dot:'#2b2620'}
 ];
 
 let cfg=load(K_CFG,{dpi:1000,yaw:0.013052,sens:1.92,cm:36.5});
@@ -225,7 +229,7 @@ function applyTheme(id){
   document.documentElement.setAttribute('data-theme', id);
   localStorage.setItem(K_THEME, id);
 }
-applyTheme(localStorage.getItem(K_THEME)||'light');
+applyTheme(localStorage.getItem(K_THEME)||'ink');
 
 function show(t){
   document.querySelectorAll('section').forEach(s=>s.classList.toggle('on', s.id===t));
@@ -314,14 +318,14 @@ function fillSettings(){
   $('iFps').value=localStorage.getItem(K_FPS)||'0';
   $('iFpsShow').checked=localStorage.getItem(K_FPSSHOW)!=='0';
 
-  const theme=localStorage.getItem(K_THEME)||'light';
+  const theme=localStorage.getItem(K_THEME)||'ink';
   $('themes').innerHTML=THEMES.map(t=>'<div class="sw'+(t.id===theme?' on':'')+'" data-th="'+t.id+'">'+
     '<span class="dot" style="background:'+t.dot+'"></span>'+t.name+'</div>').join('');
   document.querySelectorAll('.sw[data-th]').forEach(el=>el.addEventListener('click',()=>{
     applyTheme(el.dataset.th); fillSettings();
   }));
 
-  const scene=localStorage.getItem(K_SCENE)||'night';
+  const scene=localStorage.getItem(K_SCENE)||'ink';
   $('scenes').innerHTML=SCENES.map(t=>'<div class="sw'+(t.id===scene?' on':'')+'" data-sc="'+t.id+'">'+
     '<span class="dot" style="background:'+t.dot+'"></span>'+t.name+'</div>').join('');
   document.querySelectorAll('.sw[data-sc]').forEach(el=>el.addEventListener('click',()=>{
@@ -349,8 +353,8 @@ $('saveBtn').addEventListener('click',()=>{
 });
 $('defBtn').addEventListener('click',()=>{
   cfg={dpi:1000,yaw:0.013052,sens:1.92,cm:36.5}; save(K_CFG,cfg);
-  localStorage.setItem(K_THEME,'light'); applyTheme('light');
-  localStorage.setItem(K_SCENE,'night');
+  localStorage.setItem(K_THEME,'ink'); applyTheme('ink');
+  localStorage.setItem(K_SCENE,'ink');
   fillSettings();
 });
 

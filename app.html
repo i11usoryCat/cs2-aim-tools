@@ -62,7 +62,7 @@
   }
 
   *{box-sizing:border-box}
-  html{background:var(--bg)}
+  html{background:var(--bg);scrollbar-gutter:stable}
   html,body{margin:0;min-height:100%}
   body{
     background:var(--bg);
@@ -464,10 +464,18 @@ function rippleSwitch(lang, cx, cy){
   blocker.style.cssText='position:fixed;inset:0;z-index:9500;cursor:default;background:transparent';
   document.body.appendChild(blocker);
 
+  const scrollTop = window.scrollY || document.documentElement.scrollTop || 0;
+  const scrollLeft = window.scrollX || 0;
+
   let layer=null;
   try{
     const src=document.body.cloneNode(true);
     src.querySelectorAll('script,iframe,canvas,.lang').forEach(el=>el.remove());
+    // 让复制层显示与当前滚动位置相同的区域
+    if(scrollTop || scrollLeft){
+      src.style.transform='translate('+(-scrollLeft)+'px,'+(-scrollTop)+'px)';
+      src.style.transformOrigin='0 0';
+    }
     layer=document.createElement('div');
     layer.className='langLayer';
     layer.style.cssText='position:fixed;inset:0;z-index:9000;pointer-events:none;overflow:hidden;'
@@ -533,6 +541,8 @@ function rippleSwitch(lang, cx, cy){
         blocker.remove();
         clearTimeout(watchdog);
         switching=false;
+        // 若高度变化导致滚动位置漂移，回到原位
+        try{ window.scrollTo(scrollLeft, scrollTop); }catch(e){}
       });
     }
   }

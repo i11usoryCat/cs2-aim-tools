@@ -126,6 +126,7 @@ const SCENES={
       tgt:'#e5484d',tgtFill:'rgba(229,72,77,.28)',cross:'#b8e986',txt:'#efe7d8',dim:'#b6a88c'}
 };
 let SC = SCENES[ (function(){ try{ return localStorage.getItem('cs2at.scene')||'night'; }catch(e){ return 'night'; } })() ] || SCENES.night;
+try{ document.body.style.background=SC.bg; document.body.style.color=SC.txt; }catch(e){}
 
 function grid(){
   const perf = (function(){ try{ return localStorage.getItem('cs2at.perf')==='1'; }catch(e){ return false; } })();

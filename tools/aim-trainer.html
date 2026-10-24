@@ -46,6 +46,7 @@
     &nbsp;&nbsp;
     <label><input id="limit" type="checkbox" checked> 时间限制（超时算失误，练速度用这个）</label>
   </div>
+  <div id="bw" style="margin-top:12px;font-size:13px;line-height:1.8;color:#d29922"></div>
   <button id="go" class="btn">开始训练（60 个球）</button>
 </div>
 
@@ -293,6 +294,16 @@ function loop(){
     '<span style="font-size:13px;color:#6e7681">看到球 → 甩过去 → 手停 → 点击</span>';
 }
 requestAnimationFrame(loop);
+
+(function(){
+  var el = document.getElementById('bw');
+  if(!el) return;
+  var ok = (typeof window !== 'undefined') && ('onpointerrawupdate' in window);
+  if(!ok){
+    el.innerHTML = '⚠️ 当前浏览器不支持 pointerrawupdate，采样精度会降低<br>' +
+      '建议使用 <b style="color:#3fb950">Chrome</b> 或 <b style="color:#3fb950">Edge</b>';
+  }
+})();
 </script>
 </body>
 </html>

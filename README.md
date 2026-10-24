@@ -3,8 +3,7 @@
 > Browser-based sensitivity calibration and flick training for CS2. No install, no game integration, no data leaves your browser.
 
 [![Live](https://img.shields.io/badge/live-GitHub%20Pages-2ea043?style=flat-square)](https://i11usorycat.github.io/cs2-aim-tools/)
-[![License](https://img.shields.io/badge/license-MIT-2f6feb?style=flat-square)](LICENSE)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen?style=flat-square)](https://github.com/i11usoryCat/cs2-aim-tools/pulls)
+[![License](https://img.shields.io/badge/license-source--available-d29922?style=flat-square)](LICENSE)
 
 ---
 
@@ -192,4 +191,8 @@ Two consecutive rounds differed by 0.7%, so the run was marked converged. Final 
 
 ## License
 
-[MIT](LICENSE)
+**Source available, all rights reserved.** Reading and using the hosted site are
+permitted; copying, modifying, redistributing, rebranding, or commercial use are not.
+See [LICENSE](LICENSE) for the full terms.
+
+This project is not affiliated with Valve Corporation.

@@ -559,7 +559,7 @@ function rippleSwitch(lang, cx, cy){
   });
 })();
 
-(function bindLang(){
+function bindLang(){
   const ls=document.getElementById('langSw');
   if(!ls) return;
   ls.querySelectorAll('span[data-lang]').forEach(el=>{
@@ -570,7 +570,7 @@ function rippleSwitch(lang, cx, cy){
       rippleSwitch(el.dataset.lang, r.left+r.width/2, r.top+r.height/2);
     });
   });
-})();
+}
 
 document.querySelectorAll('nav a').forEach(a=>a.addEventListener('click',e=>{
   e.preventDefault(); location.hash=a.dataset.t; show(a.dataset.t);
@@ -731,6 +731,7 @@ addEventListener('resize', fitPlanFrame);
   });
 })();
 applyLang();
+bindLang();
 </script>
 </body>
 </html>

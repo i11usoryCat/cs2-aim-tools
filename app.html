@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>训练中心 · CS2 Aim Tools</title>
+<title>Vernier · 分毫</title>
 <style>
   /* ——— 墨鱼：暖纸 + 深青 + 杏橙 ——— */
   html[data-theme="ink"]{
@@ -89,6 +89,13 @@
     backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
     border-bottom:1px solid var(--line);
   }
+  .brand{display:flex;align-items:center;gap:9px;margin-right:18px;text-decoration:none;color:inherit;flex-shrink:0}
+  .brand .mark{width:26px;height:26px;color:var(--acc);flex-shrink:0}
+  .brand-text{display:flex;flex-direction:column;line-height:1.15}
+  .brand-name{font-size:14.5px;font-weight:700;letter-spacing:1.2px;color:var(--txt)}
+  .brand-sub{font-size:9.5px;letter-spacing:2px;color:var(--dim2);margin-top:2px}
+  .brand:hover .mark{color:var(--acc2)}
+  .brand:hover .brand-name{color:var(--acc)}
   .logo{
     font-size:12px; font-weight:800; letter-spacing:2.4px;
     color:var(--acc); margin-right:18px; white-space:nowrap;
@@ -212,7 +219,17 @@
 <body>
 
 <header>
-  <div class="logo">CS2 AIM TOOLS</div>
+  <a class="brand" href="index.html" title="Vernier · 分毫">
+    <svg class="mark" viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="12" r="6.6" fill="none" stroke="currentColor" stroke-width="1.5"/>
+      <path d="M12 1.8v4.2M12 18v4.2M1.8 12h4.2M18 12h4.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+    </svg>
+    <span class="brand-text">
+      <span class="brand-name">Vernier</span>
+      <span class="brand-sub">瞄准 · 度量</span>
+    </span>
+  </a>
   <nav>
     <a href="#data" data-t="data">个人数据</a>
     <a href="#play" data-t="play">训练</a>
@@ -372,7 +389,7 @@ const SCENES=[
 /* ---------- i18n ---------- */
 const K_LANG='cs2at.lang';
 const EN={
-  '个人数据':'Stats','训练':'Drills','计划训练':'Plan','设置':'Settings','← 首页':'← Home',
+  '个人数据':'Stats','训练':'Drills','计划训练':'Plan','设置':'Settings','← 首页':'← Home','瞄准 · 度量':'aim, measured',
   '最佳成绩按模式分别记录，只存在本浏览器。':'Best results per mode, stored locally in this browser.',
   '总训练组数':'Sets','训练天数':'Days','最低限时':'Best limit','最高命中率':'Best hit rate',
   '各模式最佳':'Best per mode','最近记录':'Recent runs',

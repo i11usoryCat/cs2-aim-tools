@@ -62,6 +62,7 @@
   }
 
   *{box-sizing:border-box}
+  html{background:var(--bg)}
   html,body{margin:0;min-height:100%}
   body{
     background:var(--bg);
@@ -188,7 +189,7 @@
   button.main:hover{background:var(--acc2); border-color:var(--acc2)}
   label.sw{display:flex; align-items:center; gap:9px; font-size:14px; cursor:pointer}
   input[type=checkbox]{width:17px; height:17px; accent-color:var(--acc)}
-  iframe{width:100%; height:calc(100vh - 150px); border:0; border-radius:16px; background:transparent}
+  iframe{width:100%; height:600px; border:0; border-radius:16px; background:transparent; display:block}
 
   /* ——— 主题选择 ——— */
   .swatches{display:flex; gap:9px; flex-wrap:wrap}
@@ -436,13 +437,21 @@ applyTheme(localStorage.getItem(K_THEME)||'jade');
 function show(t){
   document.querySelectorAll('section').forEach(s=>s.classList.toggle('on', s.id===t));
   document.querySelectorAll('nav a').forEach(a=>a.classList.toggle('on', a.dataset.t===t));
+  if(t==='plan') setTimeout(fitPlanFrame,60);
   if(t==='data') renderData();
   if(t==='play') renderDrills();
   if(t==='set')  fillSettings();
   applyLang();
+}
+
 let switching=false;
 function rippleSwitch(lang, cx, cy){
   if(switching) return; switching=true;
+
+  // 拦截层：动画期间吃掉所有点击
+  const blocker=document.createElement('div');
+  blocker.style.cssText='position:fixed;inset:0;z-index:9500;cursor:default;background:transparent';
+  document.body.appendChild(blocker);
 
   let layer=null;
   try{
@@ -495,12 +504,22 @@ function rippleSwitch(lang, cx, cy){
 
     if(t<1) requestAnimationFrame(step);
     else{
-      // 先把真实页面切成新语言（此时仍被整层挡住），再移除这层
+      // 先把真实页面切成新语言（此时仍被整层挡住）
       LANG=lang; setLang(lang); applyLang();
       const ls=document.getElementById('langSw');
       if(ls) ls.querySelectorAll('span[data-lang]').forEach(el=>el.classList.toggle('on', el.dataset.lang===lang));
-      layer.remove(); cv.remove();
-      switching=false;
+
+      // 让遮罩完全覆盖，避免边缘残留
+      layer.style.clipPath='circle(300vmax at '+cx+'px '+cy+'px)';
+
+      ctx2.clearRect(0,0,cv.width,cv.height);
+      cv.width=0; cv.height=0; cv.remove();
+
+      requestAnimationFrame(()=>{
+        layer.remove();
+        blocker.remove();
+        switching=false;
+      });
     }
   }
   requestAnimationFrame(step);
@@ -528,7 +547,7 @@ function rippleSwitch(lang, cx, cy){
     });
   });
 })();
-}
+
 document.querySelectorAll('nav a').forEach(a=>a.addEventListener('click',e=>{
   e.preventDefault(); location.hash=a.dataset.t; show(a.dataset.t);
 }));
@@ -655,11 +674,36 @@ $('defBtn').addEventListener('click',()=>{
 cfg=load(K_CFG,cfg);
 LANG=(function(){ try{ return localStorage.getItem(K_LANG)||'zh'; }catch(e){ return 'zh'; } })();
 show((location.hash||'#data').slice(1));
+function fitPlanFrame(){
+  const f=document.querySelector('#plan iframe');
+  if(!f) return;
+  try{
+    const d=f.contentDocument;
+    if(!d) return;
+    const h=Math.max(d.documentElement.scrollHeight, d.body ? d.body.scrollHeight : 0);
+    if(h>200) f.style.height=h+'px';
+  }catch(e){}
+}
+addEventListener('message', function(e){
+  if(e && e.data && e.data.type==='height' && typeof e.data.h==='number'){
+    const f=document.querySelector('#plan iframe');
+    if(f && e.data.h>200) f.style.height=e.data.h+'px';
+  }
+  if(e && e.data && e.data.type==='theme'){
+    // 计划页也会主动请求主题
+    try{ document.querySelector('#plan iframe').contentWindow.postMessage(
+      {type:'theme', theme:document.documentElement.getAttribute('data-theme')}, location.origin); }catch(err){}
+  }
+});
+addEventListener('resize', fitPlanFrame);
+
 (function syncThemeToFrame(){
   const f=document.querySelector('iframe');
   if(!f) return;
   f.addEventListener('load',()=>{
     try{ f.contentWindow.postMessage({type:'theme', theme:document.documentElement.getAttribute('data-theme')}, location.origin); }catch(e){}
+    fitPlanFrame();
+    setTimeout(fitPlanFrame, 300);
   });
 })();
 applyLang();

@@ -372,9 +372,9 @@ function loop(){
       // 实心目标 + 细环
       ctx.beginPath(); ctx.arc(p.sx,p.sy,rad,0,Math.PI*2);
       ctx.fillStyle=SC.tgtFill; ctx.fill();
-      ctx.strokeStyle=SC.ring; ctx.lineWidth=Math.max(1.5,rad*0.07); ctx.stroke();
+      ctx.strokeStyle=SC.ring; ctx.lineWidth=Math.max(1.5,rad*0.10); ctx.stroke();
       // 中心点
-      ctx.beginPath(); ctx.arc(p.sx,p.sy,Math.max(1.5,rad*0.16),0,Math.PI*2);
+      ctx.beginPath(); ctx.arc(p.sx,p.sy,Math.max(1.5,rad*0.20),0,Math.PI*2);
       ctx.fillStyle=SC.edge; ctx.fill();
       if(limitChk.checked){
         const left=Math.max(0, 1-(now-tSpawn)/allowed);

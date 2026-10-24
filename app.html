@@ -253,14 +253,11 @@
   </section>
 
   <section id="play">
-    <h2>训练</h2>
+    <h2 id="playTitle" style="cursor:default">训练</h2>
     <div class="hint">先到设置页做一次灵敏度标定，之后每天按计划练。</div>
-    <div class="grid" id="drillGrid"></div>
 
-    <details class="why">
-      <summary>为什么练这个 · 一段对话</summary>
-
-      <div class="qa">
+    <div id="whyPanel" hidden>
+<div class="qa">
         <div class="who">i11usoryCat</div>
         <div class="say">
           <span class="zh">练枪是不是浪费时间？把时间放到生产劳动或者休息上，是不是更好的选择？</span>
@@ -289,7 +286,11 @@
           <span class="en"><b>Third: this tool is actually against grinding.</b> Two hours of ordinary practice tells you nothing; fifteen minutes here tells you where you are off, and then you go rest. It does not make you practise more, it removes the useless part.</span>
         </div>
       </div>
-    </details>
+    
+    </div>
+    <div class="grid" id="drillGrid"></div>
+
+
   </section>
 
   <section id="plan">
@@ -531,6 +532,12 @@ function rippleSwitch(lang, cx, cy){
   }
   requestAnimationFrame(step);
 }
+
+(function bindWhy(){
+  const t=document.getElementById('playTitle'), pnl=document.getElementById('whyPanel');
+  if(!t||!pnl) return;
+  t.addEventListener('click',()=>{ pnl.hidden=!pnl.hidden; });
+})();
 
 (function bindLang(){
   const ls=document.getElementById('langSw');

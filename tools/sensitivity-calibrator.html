@@ -35,7 +35,8 @@
   <div style="margin-top:22px;color:#8b949e;font-size:14px">
     鼠标 DPI：<input id="dpi" type="number" step="100" value="1000" style="width:90px">
     &nbsp;m_yaw：<input id="yaw" type="number" step="0.0001" value="0.022" style="width:100px"><br>
-    <span style="margin-top:10px;display:inline-block">当前 cm/360：<input id="cm" type="number" step="0.1" value="27">
+    <span style="margin-top:10px;display:inline-block">当前 cm/360：<input id="cm" type="number" step="0.1" value="27"></span>
+      <span style="margin-top:10px;display:inline-block">&nbsp;CS 灵敏度：<input id="sens" type="number" step="0.01" value="" placeholder="自动" style="width:90px"></span>
     &nbsp;&nbsp;球数：<input id="n" type="number" step="10" value="40" style="width:80px">
     &nbsp;球大小：<select id="bs" style="padding:7px;background:#161b22;border:1px solid #30363d;color:#e6edf3;border-radius:6px;font-size:14px;pointer-events:auto">
       <option value="2.0">大（2.0°）</option>
@@ -364,6 +365,25 @@ requestAnimationFrame(loop);
   });
   upd();
   window.__updSensHint = upd;
+})();
+
+(function(){
+  var dpi=document.getElementById('dpi'), yaw=document.getElementById('yaw'),
+      cm=document.getElementById('cm'), sn=document.getElementById('sens');
+  if(!dpi||!cm||!sn) return;
+  var busy=false;
+  function n(el,def){ var v=parseFloat(el&&el.value); return isFinite(v)? v : def; }
+  function toCm(){
+    var d=n(dpi,1000), y= yaw? n(yaw,0.022) : 0.022, s=n(sn,0);
+    if(d>0 && y>0 && s>0) cm.value=(360/(s*y)/d*2.54).toFixed(1);
+  }
+  function toSens(){
+    var d=n(dpi,1000), y= yaw? n(yaw,0.022) : 0.022, c=n(cm,0);
+    if(d>0 && y>0 && c>0) sn.value=(360/((c/2.54)*d)/y).toFixed(2);
+  }
+  sn.addEventListener('input', function(){ if(busy)return; busy=true; toCm(); busy=false; if(window.__updSensHint) window.__updSensHint(); });
+  [dpi,yaw,cm].forEach(function(el){ if(!el) return; el.addEventListener('input', function(){ if(busy)return; busy=true; toSens(); busy=false; }); });
+  toSens();
 })();
 </script>
 </body>

@@ -449,17 +449,6 @@ function rippleSwitch(lang, cx, cy){
   if(switching) return;
   switching=true;
 
-  // 系统开启「减少动态效果」时直接切换
-  try{
-    if(matchMedia('(prefers-reduced-motion: reduce)').matches){
-      LANG=lang; setLang(lang); applyLang();
-      const lsw=document.getElementById('langSw');
-      if(lsw) lsw.querySelectorAll('span[data-lang]').forEach(el=>el.classList.toggle('on', el.dataset.lang===lang));
-      switching=false;
-      return;
-    }
-  }catch(e){}
-
   // 看门狗：任何异常都不会让切换永久卡死
   clearTimeout(watchdog);
   watchdog=setTimeout(function(){

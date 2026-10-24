@@ -491,7 +491,7 @@ function rippleSwitch(lang, cx, cy){
     layer=document.createElement('div');
     layer.className='langLayer';
     layer.style.cssText='position:fixed;inset:0;z-index:9000;pointer-events:none;overflow:hidden;'
-      +'background:var(--bg);contain:strict;will-change:clip-path;transform:translateZ(0);backface-visibility:hidden;'
+      +'background:var(--bg);contain:layout paint;will-change:clip-path;transform:translateZ(0);backface-visibility:hidden;isolation:isolate;'
       +'clip-path:circle(0px at '+cx+'px '+cy+'px)';
     layer.appendChild(src);
     translateRoot(layer, lang);           // 只翻译这一层的副本

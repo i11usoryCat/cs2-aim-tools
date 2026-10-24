@@ -6,48 +6,73 @@
 <title>CS2 Aim Tools</title>
 <style>
   :root{color-scheme:dark}
-  body{margin:0;min-height:100vh;background:#0b0f14;color:#e6edf3;
-    font-family:"Microsoft YaHei","Segoe UI",system-ui,sans-serif;
-    display:flex;align-items:center;justify-content:center;padding:40px 20px}
-  .wrap{max-width:760px;width:100%}
-  h1{font-size:26px;margin:0 0 6px;color:#58a6ff}
-  .sub{color:#8b949e;font-size:14px;margin-bottom:30px;line-height:1.7}
-  a.card{display:block;text-decoration:none;color:inherit;background:#161b22;
-    border:1px solid #30363d;border-radius:10px;padding:18px 22px;margin-bottom:14px;
-    transition:.15s;border-left:3px solid #238636}
+  *{box-sizing:border-box}
+  body{margin:0;background:#0b0f14;color:#e6edf3;font-family:"Microsoft YaHei","Segoe UI",system-ui,sans-serif;line-height:1.7}
+  .wrap{max-width:880px;margin:0 auto;padding:48px 22px 70px}
+  h1{font-size:28px;margin:0 0 8px;color:#58a6ff}
+  .sub{color:#8b949e;font-size:14px;margin-bottom:36px;max-width:640px}
+  h2{font-size:15px;color:#8b949e;font-weight:500;letter-spacing:1px;margin:0 0 14px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px;margin-bottom:34px}
+  a.card{display:block;text-decoration:none;color:inherit;background:#161b22;border:1px solid #30363d;
+    border-radius:10px;padding:18px 20px;transition:.15s;border-left:3px solid #238636}
   a.card:hover{background:#1c2430;border-left-color:#3fb950;transform:translateX(3px)}
+  a.card.big{border-left-color:#58a6ff;background:#131a24}
+  a.card.big:hover{border-left-color:#79c0ff}
   .t{font-size:16px;font-weight:600;margin-bottom:6px}
   .d{font-size:13px;color:#8b949e;line-height:1.6}
-  .foot{margin-top:28px;font-size:12px;color:#6e7681;line-height:1.8}
-  code{background:#21262d;padding:2px 6px;border-radius:4px;font-size:12px}
+  .tag{display:inline-block;font-size:11px;padding:1px 8px;border-radius:10px;background:#21262d;
+    color:#8b949e;margin-left:8px;vertical-align:1px}
+  .tag.hot{background:#1f6feb33;color:#79c0ff}
+  .foot{margin-top:20px;font-size:12px;color:#6e7681;line-height:1.9}
+  code{background:#21262d;padding:1px 6px;border-radius:4px;font-size:12px}
+  a.lk{color:#58a6ff;text-decoration:none}
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>CS2 Aim Tools</h1>
   <div class="sub">
-    浏览器端的瞄准灵敏度标定与甩枪训练工具。无需安装、无需进入游戏、不读取任何游戏数据。<br>
-    单文件 HTML，打开即用。
+    浏览器端的瞄准灵敏度标定与甩枪训练。无需安装、无需进入游戏、不读取任何游戏数据。<br>
+    先标定灵敏度，再按计划训练。
   </div>
 
-  <a class="card" href="tools/sensitivity-calibrator.html">
-    <div class="t">灵敏度标定 · 过冲法</div>
-    <div class="d">测量你甩枪「过头」或「不足」多少，直接算出该填的 sensitivity。支持累计样本与收敛检测。</div>
-  </a>
+  <h2>计划训练</h2>
+  <div class="cards">
+    <a class="card big" href="program.html">
+      <div class="t">四周训练计划 <span class="tag hot">推荐</span></div>
+      <div class="d">每天 15 分钟，按周分阶段。自动记录进度与训练数据，告诉你今天该练什么。</div>
+    </a>
+  </div>
 
-  <a class="card" href="tools/sensitivity-calibrator-strict.html">
-    <div class="t">灵敏度标定 · 严格口径</div>
-    <div class="d">同上，但过冲统计只计算未命中的球。命中被视为「已能控制」，不计入偏差。</div>
-  </a>
-
-  <a class="card" href="tools/aim-trainer.html">
-    <div class="t">甩枪训练 · 自适应难度</div>
-    <div class="d">球的大小与限时按 85% 成功率自动调节，单一难度控制器，避免反馈回路发散。</div>
-  </a>
+  <h2>单项训练</h2>
+  <div class="cards">
+    <a class="card" href="tools/sensitivity-calibrator.html">
+      <div class="t">灵敏度标定 <span class="tag">先做这个</span></div>
+      <div class="d">测量你甩枪「过头」或「不足」多少，直接算出该填的 sensitivity。</div>
+    </a>
+    <a class="card" href="tools/aim-trainer.html?mode=random&count=40&limit=1">
+      <div class="t">自适应随机</div>
+      <div class="d">球的大小与限时按 85% 成功率自动调节。主练用这个。</div>
+    </a>
+    <a class="card" href="tools/aim-trainer.html?mode=block&count=40&limit=0">
+      <div class="t">定角重复</div>
+      <div class="d">同一角度连打 8 个球。形成运动程序最快的方式，热身用。</div>
+    </a>
+    <a class="card" href="tools/aim-trainer.html?mode=precision&count=40&limit=0">
+      <div class="t">小球精度</div>
+      <div class="d">0.7° 小球，无时间限制。练一次定位的精度，不计速度。</div>
+    </a>
+    <a class="card" href="tools/sensitivity-calibrator-strict.html">
+      <div class="t">标定 · 严格口径</div>
+      <div class="d">过冲统计只算未命中的球。命中被视为「已能控制」，不计入偏差。</div>
+    </a>
+  </div>
 
   <div class="foot">
     核心公式：<code>cm/360 = 360 / (sensitivity × m_yaw) / DPI × 2.54</code><br>
-    方法论与踩坑记录见 <a href="https://github.com/i11usoryCat/cs2-aim-tools/blob/main/docs/methodology.md" style="color:#58a6ff">docs/methodology.md</a>
+    方法论 <a class="lk" href="https://github.com/i11usoryCat/cs2-aim-tools/blob/main/docs/methodology.md">docs/methodology.md</a>
+    · 训练方案 <a class="lk" href="https://github.com/i11usoryCat/cs2-aim-tools/blob/main/docs/training-plan.md">docs/training-plan.md</a>
+    · <a class="lk" href="https://github.com/i11usoryCat/cs2-aim-tools">GitHub</a>
   </div>
 </div>
 </body>

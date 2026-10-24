@@ -31,7 +31,12 @@
   打得准 → 球变小；打不中 → 球变大<br>
   目标随机出现方向，<b>看到就甩，手停住再点</b></div>
   <div style="margin-top:18px;font-size:15px">
-    球数：<input id="cnt" type="number" step="10" value="40"
+    模式：<select id="mode" style="padding:7px;background:#161b22;border:1px solid #30363d;color:#e6edf3;border-radius:6px;font-size:14px;pointer-events:auto">
+      <option value="random">自适应随机（主练）</option>
+      <option value="block">定角重复（形成程序）</option>
+      <option value="precision">小球精度（0.7°）</option>
+    </select>
+    &nbsp;球数：<input id="cnt" type="number" step="10" value="40"
       style="width:80px;padding:7px;background:#161b22;border:1px solid #30363d;color:#e6edf3;border-radius:6px;text-align:center;font-size:15px;pointer-events:auto">
     （建议 40：约 30 秒，超过 50 个会掺入疲劳）
   </div>
@@ -78,6 +83,7 @@ let cm360=27.2, radius=R0, trial=0, hits=0, streak=0, bestStreak=0;
 let tSpawn=0, alive=false, nextAt=0;
 let times=[], errs=[], hitFlags=[], blocks=[], allowed=800, timeouts=0, timeFactor=1.25;
 let blockTimes=[], blockHits=0;
+let mode='random', blockYaw=0, blockPitch=0, blockLeft=0;
 
 const wrapPi=a=>{ while(a>Math.PI)a-=2*Math.PI; while(a<-Math.PI)a+=2*Math.PI; return a; };
 const med=a=>{ if(!a.length)return 0; const s=[...a].sort((x,y)=>x-y); return s[s.length>>1]; };
@@ -128,8 +134,15 @@ function start(){
   DPI=parseFloat(document.getElementById('dpi').value)||1000;
   cm360=parseFloat(document.getElementById('cm').value)||27.2;
   if(cm360<12) cm360=12; if(cm360>60) cm360=60;
+  mode=(document.getElementById('mode')||{value:'random'}).value||'random';
+  if(mode==='precision'){ radius=0.7; limitChk.checked=false; }
+  else if(mode==='block'){ radius=R0; limitChk.checked=false; blockLeft=0; }
+  try{ localStorage.setItem('cs2at.cfg', JSON.stringify({
+      dpi: DPI, cm: cm360,
+      yaw: (document.getElementById('yaw')||{}).value,
+      sens: (document.getElementById('sens')||{}).value })); }catch(e){}
   running=true; paused=false;
-  trial=0; hits=0; streak=0; bestStreak=0; radius=R0; allowed=800; timeouts=0; timeFactor=1.25;
+  trial=0; hits=0; streak=0; bestStreak=0; if(mode==='random') radius=R0; allowed=800; timeouts=0; timeFactor=1.25;
   times=[]; errs=[]; hitFlags=[]; blocks=[]; blockTimes=[]; blockHits=0;
   msg.classList.remove('show'); res.classList.remove('show');
   yaw=0; pitch=0; alive=false;
@@ -140,10 +153,20 @@ function start(){
 }
 
 function spawn(){
-  const a=(Math.random()<0.5?-1:1)*(12+Math.random()*16)*D2R;
-  const b=(Math.random()*2-1)*8*D2R;
   sYaw=yaw; sPitch=pitch;
-  tYaw=yaw+a; tPitch=pitch+b;
+  if(mode==='block'){
+    if(blockLeft<=0){
+      blockYaw=(Math.random()<0.5?-1:1)*(14+Math.random()*10)*D2R;
+      blockPitch=(Math.random()*2-1)*5*D2R;
+      blockLeft=8;
+    }
+    blockLeft--;
+    tYaw=yaw+blockYaw; tPitch=pitch+blockPitch;
+  } else {
+    const a=(Math.random()<0.5?-1:1)*(12+Math.random()*16)*D2R;
+    const b=(Math.random()*2-1)*8*D2R;
+    tYaw=yaw+a; tPitch=pitch+b;
+  }
   if(tPitch> 12*D2R) tPitch= 12*D2R;
   if(tPitch<-12*D2R) tPitch=-12*D2R;
   alive=true; tSpawn=performance.now();
@@ -167,7 +190,8 @@ function judge(){
   if(trial%8===0){
     const recent=hitFlags.slice(-8);
     const rate=recent.filter(Boolean).length/8;
-    if(limitChk.checked){
+    if(mode!=='random'){ /* 定角/精度模式不调难度 */ }
+    else if(limitChk.checked){
       // 只调允许时间：锚定在你的实际速度上，再按命中率微调系数
       const base = med(times.slice(-8)) || 400;
       if(rate>=0.85) timeFactor=Math.max(0.80, timeFactor-0.06);
@@ -370,6 +394,18 @@ requestAnimationFrame(loop);
   sn.addEventListener('input', function(){ if(busy)return; busy=true; toCm(); busy=false; if(window.__updSensHint) window.__updSensHint(); });
   [dpi,yaw,cm].forEach(function(el){ if(!el) return; el.addEventListener('input', function(){ if(busy)return; busy=true; toSens(); busy=false; }); });
   toSens();
+})();
+
+(function(){
+  try{
+    var q=new URLSearchParams(location.search);
+    function set(id,v){ var el=document.getElementById(id); if(el && v!==null && v!=='') el.value=v; }
+    set('mode',q.get('mode')); set('cnt',q.get('count')); set('dpi',q.get('dpi'));
+    set('cm',q.get('cm')); set('yaw',q.get('yaw')); set('sens',q.get('sens'));
+    if(q.get('limit')==='0'){ var l=document.getElementById('limit'); if(l) l.checked=false; }
+    if(q.get('shrink')==='1'){ var sh=document.getElementById('shrink'); if(sh) sh.checked=true; }
+    if(window.__updSensHint) window.__updSensHint();
+  }catch(e){}
 })();
 </script>
 </body>

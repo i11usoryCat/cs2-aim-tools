@@ -453,7 +453,8 @@ function rippleSwitch(lang, cx, cy){
   clearTimeout(watchdog);
   watchdog=setTimeout(function(){
     if(switching){
-      document.querySelectorAll('#langBlocker,.langLayer,.langCanvas').forEach(el=>el.remove());
+      document.querySelectorAll('.langBlocker,.langLayer,.langCanvas').forEach(el=>el.remove());
+      try{ document.documentElement.style.overflow=''; }catch(e){}
       switching=false;
     }
   }, 6000);
@@ -461,8 +462,19 @@ function rippleSwitch(lang, cx, cy){
   // 拦截层：动画期间吃掉所有点击
   const blocker=document.createElement('div');
   blocker.className='langBlocker';
-  blocker.style.cssText='position:fixed;inset:0;z-index:9500;cursor:default;background:transparent';
+  blocker.style.cssText='position:fixed;inset:0;z-index:9500;cursor:default;background:transparent;touch-action:none;overscroll-behavior:contain';
   document.body.appendChild(blocker);
+
+  // 锁滚动（scrollbar-gutter 已预留宽度，不会跳）
+  const htmlEl=document.documentElement;
+  const prevOverflow=htmlEl.style.overflow;
+  htmlEl.style.overflow='hidden';
+  const stopScroll=ev=>{ ev.preventDefault(); };
+  blocker.addEventListener('wheel', stopScroll, {passive:false});
+  blocker.addEventListener('touchmove', stopScroll, {passive:false});
+  const scrollKeys={'PageDown':1,'PageUp':1,'Home':1,'End':1,' ':1,'Spacebar':1,'ArrowDown':1,'ArrowUp':1};
+  const stopKey=ev=>{ if(scrollKeys[ev.key]) ev.preventDefault(); };
+  addEventListener('keydown', stopKey, {passive:false});
 
   const scrollTop = window.scrollY || document.documentElement.scrollTop || 0;
   const scrollLeft = window.scrollX || 0;
@@ -479,7 +491,7 @@ function rippleSwitch(lang, cx, cy){
     layer=document.createElement('div');
     layer.className='langLayer';
     layer.style.cssText='position:fixed;inset:0;z-index:9000;pointer-events:none;overflow:hidden;'
-      +'background:var(--bg);contain:strict;will-change:clip-path;transform:translateZ(0);'
+      +'background:var(--bg);contain:strict;will-change:clip-path;transform:translateZ(0);backface-visibility:hidden;'
       +'clip-path:circle(0px at '+cx+'px '+cy+'px)';
     layer.appendChild(src);
     translateRoot(layer, lang);           // 只翻译这一层的副本
@@ -500,6 +512,7 @@ function rippleSwitch(lang, cx, cy){
   cv.style.cssText='position:fixed;inset:0;z-index:9001;pointer-events:none';
   cv.width=innerWidth*dpr; cv.height=innerHeight*dpr;
   cv.style.width=innerWidth+'px'; cv.style.height=innerHeight+'px';
+  ctx2.clearRect(0,0,cv.width,cv.height);
   document.body.appendChild(cv);
 
   const ACC='224,164,88';   // 琥珀
@@ -539,6 +552,8 @@ function rippleSwitch(lang, cx, cy){
       requestAnimationFrame(()=>{
         layer.remove();
         blocker.remove();
+        htmlEl.style.overflow=prevOverflow;
+        removeEventListener('keydown', stopKey);
         clearTimeout(watchdog);
         switching=false;
         // 若高度变化导致滚动位置漂移，回到原位

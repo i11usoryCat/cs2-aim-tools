@@ -2,7 +2,15 @@
 
 > 浏览器端的**瞄准灵敏度标定**与**甩枪训练**工具。无需安装、无需进入游戏、不读取任何游戏数据。
 
-English: Browser-based sensitivity calibration and flick-training tools for CS2 / Source 2 games. No install, no game integration.
+### 🎮 在线直接使用（不用下载）
+
+| 工具 | 链接 |
+|---|---|
+| **灵敏度标定 · 过冲法**（推荐） | https://i11usorycat.github.io/cs2-aim-tools/tools/sensitivity-calibrator.html |
+| 灵敏度标定 · 严格口径 | https://i11usorycat.github.io/cs2-aim-tools/tools/sensitivity-calibrator-strict.html |
+| **甩枪训练 · 自适应难度** | https://i11usorycat.github.io/cs2-aim-tools/tools/aim-trainer.html |
+
+首页：https://i11usorycat.github.io/cs2-aim-tools/
 
 ---
 

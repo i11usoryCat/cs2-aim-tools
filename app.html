@@ -425,6 +425,11 @@ let cfg=load(K_CFG,{dpi:1000,yaw:0.013052,sens:1.92,cm:36.5});
 function applyTheme(id){
   document.documentElement.setAttribute('data-theme', id);
   localStorage.setItem(K_THEME, id);
+  // 同步给计划页 iframe（它是独立文档，不会自己更新）
+  try{
+    const f=document.querySelector('iframe');
+    if(f && f.contentWindow) f.contentWindow.postMessage({type:'theme', theme:id}, location.origin);
+  }catch(e){}
 }
 applyTheme(localStorage.getItem(K_THEME)||'jade');
 
@@ -650,6 +655,13 @@ $('defBtn').addEventListener('click',()=>{
 cfg=load(K_CFG,cfg);
 LANG=(function(){ try{ return localStorage.getItem(K_LANG)||'zh'; }catch(e){ return 'zh'; } })();
 show((location.hash||'#data').slice(1));
+(function syncThemeToFrame(){
+  const f=document.querySelector('iframe');
+  if(!f) return;
+  f.addEventListener('load',()=>{
+    try{ f.contentWindow.postMessage({type:'theme', theme:document.documentElement.getAttribute('data-theme')}, location.origin); }catch(e){}
+  });
+})();
 applyLang();
 </script>
 </body>

@@ -100,8 +100,15 @@
 </div>
 
 <script>
-(function(){ try{ var t=localStorage.getItem('cs2at.theme')||'ink';
-  document.documentElement.setAttribute('data-theme', t); }catch(e){} })();
+(function(){
+  function apply(t){ if(!t) return; document.documentElement.setAttribute('data-theme', t); }
+  var q=null;
+  try{ q=new URLSearchParams(location.search).get('theme'); }catch(e){}
+  try{ apply(q || localStorage.getItem('cs2at.theme') || 'ink'); }catch(e){ apply('ink'); }
+  addEventListener('message', function(e){
+    if(e && e.data && e.data.type==='theme'){ apply(e.data.theme); }
+  });
+})();
 const K_START='cs2at.start', K_LOG='cs2at.log', K_CFG='cs2at.cfg';
 const $=id=>document.getElementById(id);
 const todayStr=()=>{ const d=new Date(),p=n=>String(n).padStart(2,'0'); return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); };

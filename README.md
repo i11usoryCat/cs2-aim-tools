@@ -49,7 +49,7 @@ Three modes mapped to stages of motor learning:
 | Mode | Mechanic | Purpose |
 | --- | --- | --- |
 | Adaptive random | Ball size and time limit auto-adjust toward an **85% success rate** | Main practice |
-| Blocked repetition | Same angle eight times, alternating across a centre anchor on four axes | Build the motor program, warm-up |
+| Fixed angle (blocked practice) | Same angle eight times, alternating across a centre anchor on four axes | Build the motor program, warm-up |
 | Micro-precision | Fixed 0.7° ball, no time limit | Landing precision |
 
 ### Four-week program

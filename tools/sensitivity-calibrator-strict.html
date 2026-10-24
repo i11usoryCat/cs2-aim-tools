@@ -47,6 +47,7 @@
     <div style="margin-top:14px"><label style="pointer-events:auto;cursor:pointer">
       <input id="ex" type="checkbox" checked style="width:16px;height:16px;vertical-align:-2px">
       排除已命中（|过冲| &lt; 3%）的球</label></div></div>
+  <div id="sensHint" style="margin-top:10px;font-size:14px;color:#8b949e"></div>
   <div id="bw" style="margin-top:12px;font-size:13px;line-height:1.8;color:#d29922"></div>
   <button id="go" class="btn">开始</button>
 </div>
@@ -346,6 +347,27 @@ requestAnimationFrame(loop);
     el.innerHTML = '⚠️ 当前浏览器不支持 pointerrawupdate，采样精度会降低<br>' +
       '建议使用 <b style="color:#3fb950">Chrome</b> 或 <b style="color:#3fb950">Edge</b>';
   }
+})();
+
+(function(){
+  var hint = document.getElementById('sensHint');
+  if(!hint) return;
+  function num(id, def){ var el=document.getElementById(id); if(!el) return def; var v=parseFloat(el.value); return isFinite(v)? v : def; }
+  function upd(){
+    var d = num('dpi',1000), y = num('yaw', document.getElementById('yaw')?0.022:0), c = num('cm',27);
+    if(!(d>0 && c>0)) { hint.textContent=''; return; }
+    var s = y>0 ? 360/((c/2.54)*d)/y : 0;
+    var txt = '→ 对应 <b style="color:#3fb950">' + (y>0? 'CS 灵敏度 '+s.toFixed(2) : 'cm/360 '+c.toFixed(1)) + '</b>';
+    txt += ' &nbsp;<span style="color:#6e7681">(' + c.toFixed(1) + ' cm/360 · DPI ' + d + (y>0? ' · m_yaw '+y : '') + ')</span>';
+    if(y>0) txt += '<br><span style="color:#6e7681;font-size:13px">360° 转身需要 ' + c.toFixed(1) + ' cm，180° 需要 ' + (c/2).toFixed(1) + ' cm</span>';
+    hint.innerHTML = txt;
+  }
+  ['dpi','yaw','cm'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el){ el.addEventListener('input',upd); el.addEventListener('change',upd); }
+  });
+  upd();
+  window.__updSensHint = upd;
 })();
 </script>
 </body>

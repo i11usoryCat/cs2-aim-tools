@@ -1,8 +1,8 @@
 # RawLogger
 
-Windows 端原始输入记录器，用于验证鼠标真实回报率与报告间隔抖动。
+Windows raw-input recorder for verifying real mouse polling rate and report-interval jitter.
 
-## 编译
+## Build
 
 ```powershell
 $csc = "$env:WINDIR\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
@@ -10,24 +10,24 @@ $csc = "$env:WINDIR\Microsoft.NET\Framework64\v4.0.30319\csc.exe"
   /reference:System.Windows.Forms.dll /reference:System.Drawing.dll RawLogger.cs
 ```
 
-## 使用
+## Usage
 
 ```powershell
 .\RawLogger.exe C:\temp\rawmouse.csv 90
 ```
 
-| 参数 | 含义 |
+| Argument | Meaning |
 | --- | --- |
-| 第 1 个 | CSV 输出路径 |
-| 第 2 个 | 运行分钟数（默认 90） |
+| 1 | Output CSV path |
+| 2 | Run time in minutes (default 90) |
 
-运行时按 **F9** 打标记，日志里会写入 `# MARK`。
+Press **F9** while it runs to write a `# MARK` line into the log.
 
-## 为什么不能在回调里写磁盘
+## Why you must not write to disk in the callback
 
 ```text
-同步 WriteLine + AutoFlush  →  阻塞消息循环  →  Windows 合并 WM_INPUT
-实测：同步写盘 124 Hz  /  内存缓冲 4207 Hz  （同一只 8K 鼠标）
+synchronous WriteLine + AutoFlush  ->  blocks the message loop  ->  Windows coalesces WM_INPUT
+measured: synchronous writes 124 Hz  /  in-memory buffering 4207 Hz (same 8K mouse)
 ```
 
-生产用途请先在内存缓冲，结束后一次性写盘。
+Buffer in memory and flush once at the end for production use.

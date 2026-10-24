@@ -1,128 +1,109 @@
-# 四周甩枪训练计划
+# Four-Week Training Programme
 
-> 目标：把「一次定位命中率」从现在的 43% 提到 65%+，限时从 430ms 压到 360ms。
-> 前提：预瞄已经达标（用户自评），只练手。
+> Goal: raise first-shot hit rate from roughly 40% to 65%+ and bring the adaptive time limit from 430 ms down to 360 ms.
+> Assumes crosshair placement is already reasonable; this programme trains the hand.
 
----
+## Three principles
 
-## 三条原则
+1. **Fifteen minutes daily beats two hours on the weekend.** Motor skills consolidate during sleep; distributed practice is roughly three to five times more effective than massed practice.
+2. **Keep the hit rate between 70% and 85%.** Too easy produces no learning, too hard teaches the wrong movement. The trainer's controller maintains this band automatically; do not fight it.
+3. **Change one variable at a time.** With the time limit enabled the ball stays at 1.5°. Precision work is a separate set at 0.7°.
 
-1. **每天 15 分钟 > 周末练 2 小时**
-   运动技能靠睡眠巩固。分散练习（每天短时间）的效果是集中练习的 3-5 倍。
+## Daily template (15 minutes)
 
-2. **命中率必须保持在 70-85%**
-   太简单不产生学习，太难会形成错误动作。工具的难度控制器会自动维持这个区间——**不要手动破坏它**。
+| Order | Content | Recorded |
+| --- | --- | --- |
+| Warm-up | 1 set x 40 balls, 1.5°, time limit on | No |
+| **Main** | **2 sets x 40 balls, same settings** | **Yes** |
+| Precision | 1 set x 40 balls, 0.7° ball, time limit **off** | Hit rate only |
 
-3. **一次只改一个变量**
-   限时模式开启时，球大小固定 1.5°。想练精度就单独开一组小球，别混在一起。
+Rest 30 seconds between sets and look away from the screen.
 
----
+## Weekly progression
 
-## 每日模板（15 分钟）
-
-| 顺序 | 内容 | 是否记录 |
-|---|---|---|
-| 热身 | 1 组 × 40 球，球 1.5°，限时开 | ❌ 不记录 |
-| 主练 | 2 组 × 40 球，同上 | ✅ 记录 |
-| 精度 | 1 组 × 40 球，球 0.7°，限时**关** | ✅ 只记录命中率 |
-
-**组间休息 30 秒**，别看手机——让眼睛和手放空。
-
----
-
-## 四周进阶
-
-### 第 1 周：建立稳定（目标：命中率 80%）
+### Week 1 — build consistency (target: 80% hit rate)
 
 ```text
-只追求命中率，不管快慢
-限时由控制器自动调节，你不要主动抢
-周末记录：3 组的中位命中率、中位用时、最低限时
+Chase hit rate only, ignore speed
+Let the controller set the time limit; do not race it
+At the end of the week record: median hit rate, median time, lowest time limit
 ```
 
-**判断标准**：三组命中率都在 75-85% 之间 → 进入第 2 周。
-如果波动超过 20%（比如 90% / 60% / 75%），说明动作还不稳，**重复一周**。
+Pass condition: all three sets land between 75% and 85%. If the spread exceeds 20 points (for example 90 / 60 / 75), repeat the week.
 
-### 第 2 周：压缩时间（目标：限时 -10~15ms）
+### Week 2 — compress time (target: -10 to -15 ms per week)
 
 ```text
-同样的组数，但每天开始前把限时手动设成「昨天的最低限时」
-如果连续两组命中率 >85%，把限时再降 5%
-如果跌到 65% 以下，升回 10%
+Before each session set the time limit manually to yesterday's lowest value
+Two consecutive sets above 85%: lower the limit by another 5%
+Drop below 65%: raise it by 10%
 ```
 
-**这一周你会感觉到「被逼着快」**——这是正常的。
+You should feel pushed. That is the point.
 
-### 第 3 周：抗压与变化
+### Week 3 — pressure and variation
 
 ```text
-主练组：把角度范围调大（如果工具支持）或在实战中练
-精度组：球 0.7° 保持，命中率目标 40%+
-加一局死斗，只打头
+Keep the main sets
+Precision set target: 40%+ hit rate
+Add one deathmatch round, headshots only
 ```
 
-### 第 4 周：迁移到实战
+### Week 4 — transfer to the game
 
 ```text
-训练减半（1 组热身 + 1 组主练）
-剩下的时间全部实战
-只在每周第一天测一次完整数据，其余时间不测
+Halve the training: one warm-up set, one main set
+Spend the remaining time in real matches
+Measure once, on the first day of the week
 ```
 
----
+## Log template
 
-## 记录表（复制到记事本，每天一行）
+One line per day; use **Copy set data** in the trainer and paste it here.
 
 ```text
-日期      限时    命中率   中位用时   小球命中率   备注
-10/24     450ms   83%      436ms      35%         第1天基线
-10/25     ...
+date       limit    hit%    median    precision%    notes
+2026-10-24 450 ms   83%     436 ms    35%           baseline
+2026-10-25 ...
 ```
 
-**一周只看一次趋势，不要看单日。** 单日波动 5-10% 是正常的。
+Look at the weekly trend, not the daily number. Daily variance of 5-10% is normal.
 
----
+## Adjustments
 
-## 进阶 / 退阶规则
+| Situation | Action |
+| --- | --- |
+| Two consecutive sets above 85% | Lower the limit by 5% |
+| Two consecutive sets below 65% | Raise the limit by 10% |
+| Time rises but hit rate does not | **Stop.** This is fatigue, not progress |
+| No change for three days | Take a rest day; sleep debt blocks consolidation |
+| Hit rate near 50% but overshoots and undershoots are balanced | Sensitivity is fine; work on consistency |
 
-| 情况 | 动作 |
-|---|---|
-| 连续两组命中率 > 85% | 限时 -5% |
-| 连续两组命中率 < 65% | 限时 +10% |
-| 中位用时上升但命中率不升 | **停练**，这是疲劳不是进步 |
-| 连续三天数据没变化 | 换一天休息，睡眠不足会锁死进步 |
-
----
-
-## 实战配合（比训练更重要）
+## Real-match practice
 
 ```text
-死斗：只打头，单发，每枪打完回中，不追枪
-每局结束看 HS%（爆头率），记下来
-每周对比 HS%：从多少到多少
+Deathmatch: headshots only, single taps, return to centre after every shot
+Record headshot percentage after each session
+Compare week over week
 ```
 
-**如果训练数据在进步但实战 HS% 不动，说明问题不在手上**——在预瞄时机、拉枪节奏或交火距离判断。
+If training numbers improve but in-game headshot percentage does not, the problem is no longer the hand. Look at crosshair placement, peeking rhythm, and engagement distance instead.
 
----
+## Five common mistakes
 
-## 五个常见错误
+1. **Training until exhausted.** The last twenty balls are noise; drop a set instead.
+2. **Changing settings between sessions.** Every change resets motor memory.
+3. **Only practising large flicks.** Around 80% of real engagements need less than a 5° correction.
+4. **Judging by a single day.** Read the weekly trend.
+5. **Going straight to ranked after training.** Play one deathmatch first; the hand is warm but not settled.
 
-1. **练到累** —— 最后 20 球是垃圾数据，宁可少练一组
-2. **一边练一边改设置** —— 肌肉记忆每次归零
-3. **只练大甩** —— 实战里 80% 的交火是 5° 以内的微调
-4. **盯着单日数据** —— 看一周趋势，别看今天
-5. **练完立刻打排位** —— 训练后手是「热的但不稳」，先打一局死斗过渡
-
----
-
-## 预期曲线
+## Expected curve
 
 ```text
-第 1 周：命中率上升，用时不变（在建立准确性）
-第 2 周：用时开始下降，命中率可能短暂掉到 70%（正常）
-第 3 周：两者同时改善（真正的进步信号）
-第 4 周：实战 HS% 开始跟上
+Week 1: hit rate rises, time unchanged        (accuracy is being built)
+Week 2: time falls, hit rate may dip to 70%   (normal)
+Week 3: both improve together                 (the real signal)
+Week 4: in-game headshot percentage follows
 ```
 
-**如果第 2 周命中率掉到 60% 以下并持续三天，退回第 1 周的做法。**
+If hit rate drops below 60% for three consecutive days in week 2, go back to the week 1 approach.

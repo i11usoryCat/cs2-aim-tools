@@ -152,6 +152,38 @@
   }
   requestAnimationFrame(frame);
 })();
+
+(function(){
+  var EN={
+    '甩枪训练中心':'AIM TRAINING HUB',
+    '浏览器端 · 无需安装 · 不读取游戏数据':'Browser based · no install · reads no game data',
+    '标定 → 计划 → 每天十五分钟':'Calibrate → plan → fifteen minutes a day',
+    'by':'by','开始':'START','建议使用 Chrome 或 Edge':'Chrome or Edge recommended',
+    '软件清单':'TOOLS',
+    '灵敏度标定 · 过冲法':'Calibrator · overshoot',
+    '测出你每次甩动偏多少，反推应该填的 sensitivity。':'Measures how far each flick lands from the target and derives the sensitivity to use.',
+    '甩枪训练 · 自适应随机':'Flick trainer · adaptive',
+    '球与限时按 85% 成功率自动调节，主练模式。':'Ball size and time limit adapt to an 85% success rate. Main practice mode.',
+    '甩枪训练 · 定角重复':'Flick trainer · blocked',
+    '同一角度连打 8 球，形成运动程序，热身用。':'Same angle eight times, alternating on four axes. Warm-up.',
+    '甩枪训练 · 小球精度':'Flick trainer · precision',
+    '0.7° 小球，无时限，练一次定位的精度。':'0.7° ball, no time limit. Landing precision.',
+    '四周训练计划':'Four-week programme',
+    '按天推进，自动记录进度与数据。':'Day by day, with progress tracking.',
+    '原始输入记录器':'Raw input recorder',
+    'C# 单文件，验证真实回报率与报告间隔抖动。':'Single-file C# tool to verify polling rate and report jitter.'
+  };
+  try{
+    var lang = localStorage.getItem('cs2at.lang')||'zh';
+    if(lang!=='en' || !document.createTreeWalker) return;
+    document.documentElement.setAttribute('lang','en');
+    var w=document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT), n;
+    while((n=w.nextNode())){
+      var t=n.nodeValue.trim();
+      if(EN[t]) n.nodeValue=n.nodeValue.replace(t, EN[t]);
+    }
+  }catch(e){}
+})();
 </script>
 </body>
 </html>

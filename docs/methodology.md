@@ -1,43 +1,41 @@
-# 方法论与踩坑记录
+# Methodology and Pitfalls
 
-这份文档记录标定方法的设计过程、失败的尝试，以及为什么最后选了现在这套。
+This document records how the calibration method was designed, which approaches failed, and why the current one was kept.
 
-## 一、先回答一个问题：灵敏度到底影响多大？
+## Does sensitivity actually matter?
 
-### 控制变量实验
+### Controlled experiment
 
-5 组灵敏度，每组 30 次，**顺序正反平衡**（消除熟练与疲劳的线性漂移）：
+Five sensitivities, thirty trials each, with block order counterbalanced (reversed in the second half to cancel learning and fatigue drift):
 
 ```text
-cm/360   球→球间隔(中位)   重新进入(中位)
-16         538 ms            1.0
-20         551 ms            0.0
-23.2       538 ms            0.0
-27         521 ms            0.0
-32         531 ms            0.0
+cm/360   median ball-to-ball interval   median re-entries
+16       538 ms                         1.0
+20       551 ms                         0.0
+23.2     538 ms                         0.0
+27       521 ms                         0.0
+32       531 ms                         0.0
 ```
 
-**跨度 5.8%，在统计噪声内。** 结论：在这个区间里，灵敏度对命中速度没有可测影响。
+The spread is 5.8%, which is inside statistical noise. **Within this range sensitivity has no measurable effect on hit speed.** This also explains why players can tweak sensitivity for hours without feeling a difference: the effect is smaller than the noise.
 
-这也解释了为什么很多人反复调灵敏度却感觉不到变化——**变化本身就在噪声里**。
+## Four iterations of the overshoot method
 
-## 二、过冲法的四次迭代
-
-### v1：记录点击时刻的位置
+### v1 — record the click position
 
 ```text
-f = (落点 - 目标) / 目标
-cm_new = cm × (1 + f)
+f       = (landing - target) / target
+cm_new  = cm * (1 + f)
 ```
 
-问题：玩家会在点击前做视觉修正，记录到的是**修正后**的位置，过冲被低估。表现为每轮只建议 3-8% 的调整，永远收敛不到。
+Problem: players visually correct before clicking, so the recorded position is already the corrected one. Each round suggested only a 3-8% change and never converged.
 
-### v2：记录「停稳」位置（速度 < 25°/s 持续 70ms）
+### v2 — record the settled position (speed < 25°/s for 70 ms)
 
-效果最好的一次：
+Best convergence observed:
 
 ```text
-cm/360   过冲
+cm/360   overshoot
 23.2     +7.4%
 24.9     +4.8%
 26.1     +2.9%
@@ -45,97 +43,103 @@ cm/360   过冲
 27.7     +2.3%
 ```
 
-**单调下降，最后两轮只差 0.7%。**
+Monotonic decrease; the last two rounds differed by 0.7%.
 
-### v3：记录「弹道终点」（速度首次从 >200°/s 掉到 <40°/s）
+### v3 — record the ballistic endpoint (speed dropping below 40°/s)
 
-**失败。** 截到的是减速途中的点，散布 ±15%，而待测偏差只有 5%，信噪比不足：
-
-```text
-cm/360   过冲        过头球数:不足球数
-23.2     +8.7%       20:13
-25.2     +16.0%      20:14
-29.2     +3.3%       22:7
-51.5     -0.7%       15:16
-```
-过冲在 +16% 和 -0.7% 之间乱跳，符号都不稳定。
-
-### v4：回到点击时刻 + 排除已命中 + 累计池化
-
-- 用点击那一刻的位置（零延迟，符合直觉）
-- **命中（角度误差 ≤ 球半径）的球不计入过冲统计**——命中代表「能控制住」，不是「有偏差」
-- 把所有轮次的样本换算成「该样本建议的 cm/360」，取总中位数，避免单轮噪声
-
-结果：480 个样本收敛到 27.2 cm/360，最终偏差 -0.1%。
-
-## 三、踩过的坑
-
-### 1. 自动回填导致漂移
-
-「再测一轮」自动填入建议值，但噪声大时每轮都建议一个偏差，**累积起来会把值带到荒谬的地方**（实测从 23.2 漂到 8.0，等于 8cm 转一圈）。
-
-修复：单步变化超过 35% 就不填；增加「清空累计」按钮。
-
-### 2. 限时训练的死亡螺旋
+**Failed.** This captures a point mid-deceleration. Scatter was about ±15% while the bias being measured was about 5%, so the signal-to-noise ratio was too low:
 
 ```text
-允许时间 = 近 10 次【命中】用时的 90%
-→ 只有快的算命中 → 中位数越来越小 → 允许时间越来越短
-→ 更多人超时 → 剩下的命中更快 → 继续收紧……
+cm/360   overshoot   overshoots : undershoots
+23.2     +8.7%       20 : 13
+25.2     +16.0%      20 : 14
+29.2     +3.3%       22 : 7
+51.5     -0.7%       15 : 16
 ```
 
-实测命中率 60% → 30% → 25%，球半径同时放大，两个控制器互相打架。
+The sign flipped between rounds.
 
-修复：
+### v4 — click position, hits excluded, pooled samples
+
+- Use the click position (zero latency, matches what the player feels)
+- **Exclude hits** (angular error within ball radius) from the bias estimate: a hit means "control was sufficient", not "there was a bias"
+- Pool every trial across runs, convert each to the cm/360 it implies, take the global median
+
+Result: 480 samples converged to 27.2 cm/360 with a final bias of -0.1%.
+
+## Pitfalls encountered
+
+### 1. Auto-fill drift
+
+"Run again" filled the suggested value automatically. With noisy data each round suggested a small change, and the sequence drifted to an absurd value (23.2 to 8.0, i.e. 8 cm per full turn).
+
+Fix: refuse to auto-fill when the change exceeds 35%; add a "clear pool" button.
+
+### 2. Death spiral in the time limit
+
 ```text
-限时开 → 球固定，只调时间：命中率≥85% 收紧 6%，<70% 放松 7%
-限时关 → 时间固定，只调球
-允许时间 = 近 8 次中位用时 × 系数（锚定在真实速度上）
+allowed time = 0.9 * median of HIT times
+-> only fast attempts count as hits
+-> the median falls
+-> the allowed time falls
+-> more timeouts, the surviving hits are faster still
 ```
 
-### 3. 视觉与判定不一致
+Measured hit rate fell 60% -> 30% -> 25% while the ball radius grew, because two controllers were fighting.
 
-球画出来的半径是 1.5°，但「命中」判定用的是甩动距离的 3%（约 0.6°）。**看着在球里却算没中。**
+Fix:
 
-修复：命中判定直接用角度与球半径比较。
+```text
+time-limit mode on  -> ball fixed, only the time limit adapts
+                       hit rate >= 85%: tighten 6%
+                       hit rate <  70%: relax 7%
+time-limit mode off -> time fixed, only the ball adapts
+```
 
-### 4. 角度差没有归一化
+### 3. Visual size did not match the hit test
+
+The ball was drawn at a 1.5° radius while the hit test used 3% of flick distance (about 0.6°). Players saw the crosshair inside the ball and still registered a miss.
+
+Fix: the hit test compares angular error directly against the drawn radius.
+
+### 4. Angles were not wrapped
 
 ```js
-// 错误
-Math.abs(tYaw - yaw)   // 目标 179°、当前 -179° → 算成 358°
+// wrong
+Math.abs(tYaw - yaw);      // target 179°, current -179° -> 358°
 
-// 正确
-wrapPi(tYaw - yaw)     // → 2°
+// correct
+wrapPi(tYaw - yaw);        // -> 2°
 ```
 
-**表现为「转到某个方向后就点不到球了」**——累计转角超过 ±180° 后判定永远失败。
+Symptom: "after I turn one direction I can no longer hit anything". Once accumulated rotation passed ±180° the test could never pass.
 
-### 5. `tan()` 在 90° 处翻转
+### 5. `tan()` flips at 90°
 
-用 `x = D·tan(yaw)` 计算目标的世界坐标，超过 ±90° 时符号翻转，**球被画到镜像位置**。
+Target world position was computed as `x = D * tan(yaw)`, which flips sign past ±90°, drawing the ball at a mirrored position.
 
-正确做法是球面坐标：
+Correct spherical placement:
+
 ```js
-x = D·cos(pitch)·sin(yaw)
-y = D·sin(pitch)
-z = D·cos(pitch)·cos(yaw)
+const x = D * Math.cos(pitch) * Math.sin(yaw);
+const y = D * Math.sin(pitch);
+const z = D * Math.cos(pitch) * Math.cos(yaw);
 ```
 
-### 6. 同步写磁盘导致报告被合并
+### 6. Synchronous disk writes merge input reports
 
-原始输入记录器如果每个 HID 报告都 `WriteLine` + `AutoFlush`，会阻塞消息循环，Windows 开始合并 `WM_INPUT`：
+A raw-input logger that calls `WriteLine` + `AutoFlush` per HID report blocks the message loop, and Windows begins coalescing `WM_INPUT`:
 
 ```text
-同步写盘   →  实测 124 Hz
-内存缓冲   →  实测 4207 Hz
+synchronous writes   -> measured 124 Hz
+memory buffering     -> measured 4207 Hz
 ```
 
-**同一只 8K 鼠标，两个数字差了 34 倍。** 测回报率时一定要先排除这个。
+A 34x difference on the same 8K mouse. Always rule this out before measuring polling rate.
 
-## 四、结论
+## Conclusions
 
-1. **灵敏度在 16–32 cm/360 区间内对表现无显著影响**，不必在这上面纠结
-2. 想校准就用过冲法，但**样本要池化、要排除命中、要防漂移**
-3. 训练要用**单一难度控制器**和 **85% 成功率**，否则反馈回路会发散
-4. 真正的手感差异来自引擎更替（CS:GO → CS2）和硬件更替，**只能靠重复重建肌肉记忆**
+1. **Sensitivity between 16 and 32 cm/360 has no significant effect** on measured performance; do not over-invest in tuning it.
+2. If you calibrate, use the overshoot method, but **pool samples, exclude hits, and guard against drift**.
+3. Use a **single difficulty controller** and an **85% success target**, otherwise the feedback loop diverges.
+4. Most of the felt difference after a hardware or engine change comes from rebuilding motor memory, which only repetition can fix.

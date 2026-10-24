@@ -277,6 +277,15 @@
     </div>
 
     <div class="card">
+      <div class="t">语言 / Language</div>
+      <div class="hint" style="margin:6px 0 14px">切换后页面会重新载入 / The page reloads after switching.</div>
+      <div class="swatches" id="langSw">
+        <div class="sw" data-lang="zh"><span class="dot" style="background:#b45309"></span>中文</div>
+        <div class="sw" data-lang="en"><span class="dot" style="background:#0f766e"></span>English</div>
+      </div>
+    </div>
+
+    <div class="card">
       <div class="t">界面主题</div>
       <div class="hint" style="margin:6px 0 16px">只影响网页界面，不影响训练场景。</div>
 
@@ -350,6 +359,52 @@ const SCENES=[
   {id:'cs',    name:'沙色', dot:'#e5484d'}
 ];
 
+
+/* ---------- i18n ---------- */
+const K_LANG='cs2at.lang';
+const EN={
+  '个人数据':'Stats','训练':'Drills','计划训练':'Plan','设置':'Settings','← 首页':'← Home',
+  '最佳成绩按模式分别记录，只存在本浏览器。':'Best results per mode, stored locally in this browser.',
+  '总训练组数':'Sets','训练天数':'Days','最低限时':'Best limit','最高命中率':'Best hit rate',
+  '各模式最佳':'Best per mode','最近记录':'Recent runs',
+  '模式':'Mode','最低限时':'Best limit','最高命中率':'Best hit','最快中位用时':'Fastest median','组数':'Sets',
+  '自适应随机':'Adaptive random','定角重复':'Blocked','小球精度':'Precision',
+  '日期':'Date','限时':'Limit','命中率':'Hit rate','中位用时':'Median',
+  '导出 JSON':'Export JSON','导入':'Import','清空全部数据':'Clear all data',
+  '还没有数据，去练一组吧':'No data yet — run a set','暂无记录':'No runs yet',
+  '先到设置页做一次灵敏度标定，之后每天按计划练。':'Calibrate once in Settings, then follow the plan.',
+  '四周计划，自动判断今天该练什么。':'Four-week plan; it knows what to do today.',
+  '这里的参数会自动带进所有训练页面。':'These values are passed to every trainer page.',
+  '灵敏度':'Sensitivity','鼠标 DPI':'Mouse DPI','CS 灵敏度':'CS sensitivity',
+  '灵敏度标定 · 过冲法':'Calibrator · overshoot','灵敏度标定 · 严格口径':'Calibrator · strict',
+  '测出你每次都甩过头还是不够，直接反推该填的值。':'Measures whether you overshoot or fall short, and derives the value.',
+  '同上，但只统计未命中的球，适合已经比较稳的人。':'Same, but only counts misses. For players who are already consistent.',
+  '语言 / Language':'Language',
+  '界面主题':'UI theme','只影响网页界面，不影响训练场景。':'Affects the UI only, not the training scene.',
+  '作者推荐':'Author picks','— 大肥鱼常用的两套，日用与夜用':'Two themes the author actually uses, day and night',
+  '浅色':'Light','深色':'Dark',
+  '训练场景配色':'Training scene palette','训练页 3D 场景的背景、网格与准星配色。':'Background, grid and crosshair colours in the trainer.',
+  '渲染帧率上限':'Frame-rate cap','显示实时帧率':'Show live FPS',
+  '性能模式（减少网格密度）':'Performance mode (lower grid density)',
+  '保存设置':'Save settings','已保存':'Saved','恢复默认':'Reset defaults',
+  '无限限制（跟随刷新率）':'Unlimited (follow refresh)',
+  '360° 转身需要':'360° needs'
+};
+let LANG='zh';
+function applyLang(){
+  try{
+    document.documentElement.setAttribute('lang', LANG==='en'?'en':'zh-CN');
+    if(LANG!=='en' || !document.createTreeWalker) return;
+    const w=document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    let n;
+    while((n=w.nextNode())){
+      const t=n.nodeValue.trim();
+      if(EN[t]) n.nodeValue=n.nodeValue.replace(t, EN[t]);
+    }
+  }catch(e){}
+}
+function setLang(l){ LANG=l; try{ localStorage.setItem(K_LANG,l); }catch(e){} }
+
 let cfg=load(K_CFG,{dpi:1000,yaw:0.013052,sens:1.92,cm:36.5});
 
 function applyTheme(id){
@@ -364,6 +419,7 @@ function show(t){
   if(t==='data') renderData();
   if(t==='play') renderDrills();
   if(t==='set')  fillSettings();
+  applyLang();
 }
 document.querySelectorAll('nav a').forEach(a=>a.addEventListener('click',e=>{
   e.preventDefault(); location.hash=a.dataset.t; show(a.dataset.t);
@@ -462,6 +518,12 @@ function fillSettings(){
     localStorage.setItem(K_SCENE, el.dataset.sc); fillSettings();
   }));
 
+  const langNow = LANG;
+  const ls=document.getElementById('langSw');
+  if(ls){ ls.querySelectorAll('.sw').forEach(el=>el.classList.toggle('on', el.dataset.lang===langNow));
+    ls.querySelectorAll('.sw').forEach(el=>el.addEventListener('click',()=>{
+      setLang(el.dataset.lang); location.reload();
+    })); }
   updateCalc();
 }
 ['iDpi','iYaw','iSens','iCm'].forEach(id=>{
@@ -489,7 +551,9 @@ $('defBtn').addEventListener('click',()=>{
 });
 
 cfg=load(K_CFG,cfg);
+LANG=(function(){ try{ return localStorage.getItem(K_LANG)||'zh'; }catch(e){ return 'zh'; } })();
 show((location.hash||'#data').slice(1));
+applyLang();
 </script>
 </body>
 </html>

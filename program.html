@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>四周训练计划 · CS2 Aim Tools</title>
+<style>
+  :root{color-scheme:dark}
+  *{box-sizing:border-box}
+  body{margin:0;background:#0b0f14;color:#e6edf3;font-family:"Microsoft YaHei","Segoe UI",system-ui,sans-serif;line-height:1.7}
+  .wrap{max-width:860px;margin:0 auto;padding:36px 22px 60px}
+  a.back{color:#8b949e;text-decoration:none;font-size:13px}
+  a.back:hover{color:#58a6ff}
+  h1{font-size:24px;margin:14px 0 4px;color:#58a6ff}
+  .sub{color:#8b949e;font-size:14px;margin-bottom:26px}
+  .panel{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:20px 22px;margin-bottom:18px}
+  .panel h2{font-size:16px;margin:0 0 12px;color:#e6edf3}
+  .row{display:flex;gap:16px;flex-wrap:wrap}
+  .stat{flex:1;min-width:120px}
+  .stat .k{font-size:12px;color:#8b949e}
+  .stat .v{font-size:22px;font-weight:700;color:#58a6ff}
+  .task{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid #21262d}
+  .task:last-child{border-bottom:none}
+  .task .t{font-weight:600}
+  .task .n{font-size:13px;color:#8b949e}
+  .go{margin-left:auto;padding:8px 18px;background:#238636;border:1px solid #2ea043;color:#fff;
+    border-radius:7px;text-decoration:none;font-size:14px;white-space:nowrap}
+  .go:hover{background:#2ea043}
+  .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:10px}
+  .cell{aspect-ratio:1;border-radius:5px;background:#21262d;display:flex;align-items:center;
+    justify-content:center;font-size:11px;color:#6e7681}
+  .cell.done{background:#238636;color:#fff}
+  .cell.today{outline:2px solid #58a6ff}
+  .cell.rest{background:#161b22;color:#30363d}
+  textarea{width:100%;height:70px;background:#0d1117;border:1px solid #30363d;color:#e6edf3;
+    border-radius:7px;padding:10px;font-family:Consolas,monospace;font-size:13px;resize:vertical}
+  button{padding:9px 20px;background:#21262d;border:1px solid #30363d;color:#e6edf3;border-radius:7px;
+    font-size:14px;cursor:pointer;font-family:inherit}
+  button:hover{background:#2d333b}
+  button.main{background:#238636;border-color:#2ea043;color:#fff}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}
+  td,th{padding:6px 8px;border-bottom:1px solid #21262d;text-align:left}
+  th{color:#8b949e;font-weight:500}
+  .hint{font-size:13px;color:#8b949e}
+  code{background:#21262d;padding:1px 6px;border-radius:4px;font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="index.html">← 返回首页</a>
+  <h1>四周训练计划</h1>
+  <div class="sub">每天 15 分钟 · 5 天训练 2 天休息 · 命中率保持 70-85%</div>
+
+  <div class="panel">
+    <div class="row">
+      <div class="stat"><div class="k">第几天</div><div class="v" id="dayNo">—</div></div>
+      <div class="stat"><div class="k">当前阶段</div><div class="v" id="weekNo">—</div></div>
+      <div class="stat"><div class="k">已完成</div><div class="v" id="doneNo">0</div></div>
+      <div class="stat"><div class="k">连续</div><div class="v" id="streakNo">0</div></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2 id="todayTitle">今日任务</h2>
+    <div id="tasks"></div>
+    <div style="margin-top:16px;display:flex;gap:10px">
+      <button class="main" id="markDone">标记今天完成</button>
+      <button id="resetAll">重新开始（清空记录）</button>
+    </div>
+    <div class="hint" id="todayHint" style="margin-top:10px"></div>
+  </div>
+
+  <div class="panel">
+    <h2>进度</h2>
+    <div class="hint">绿色 = 已完成，蓝色边框 = 今天，深色 = 休息日</div>
+    <div class="grid" id="grid"></div>
+  </div>
+
+  <div class="panel">
+    <h2>训练记录</h2>
+    <div class="hint">在训练页点「复制本组数据」，粘贴到这里保存。</div>
+    <textarea id="logInput" placeholder="2026-10-24  限时450ms  命中率83%  中位436ms  超时5次"></textarea>
+    <div style="margin-top:10px;display:flex;gap:10px">
+      <button class="main" id="addLog">保存这条</button>
+      <button id="copyAll">复制全部</button>
+    </div>
+    <table id="logTable"></table>
+  </div>
+</div>
+
+<script>
+const K_START='cs2at.start', K_LOG='cs2at.log', K_CFG='cs2at.cfg';
+const $=id=>document.getElementById(id);
+const todayStr=()=>{ const d=new Date(),p=n=>String(n).padStart(2,'0'); return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); };
+const dayIdx=()=>{ const s=localStorage.getItem(K_START); if(!s) return -1; return Math.floor((new Date(todayStr())-new Date(s))/86400000); };
+const weekOf=d=>Math.min(4, Math.floor(Math.max(0,d)/7)+1);
+
+function cfgQuery(){
+  try{ const c=JSON.parse(localStorage.getItem(K_CFG)||'{}');
+    const p=[]; if(c.dpi) p.push('dpi='+c.dpi); if(c.cm) p.push('cm='+c.cm);
+    if(c.yaw) p.push('yaw='+c.yaw); if(c.sens) p.push('sens='+c.sens);
+    return p.length? '&'+p.join('&') : '';
+  }catch(e){ return ''; }
+}
+
+function planFor(w){
+  const base='tools/aim-trainer.html';
+  if(w===1) return [
+    {t:'热身 · 定角重复', u:base+'?mode=block&count=40&limit=0', n:'两个角度各 8 球，让手热起来，不记录'},
+    {t:'主练 · 自适应随机 ×2', u:base+'?mode=random&count=40&limit=1', n:'只追命中率 80%，不要主动抢时间'},
+    {t:'精度 · 小球 0.7°', u:base+'?mode=precision&count=40&limit=0', n:'记录命中率，目标 35%+'}
+  ];
+  if(w===2) return [
+    {t:'热身 · 定角重复', u:base+'?mode=block&count=40&limit=0', n:'同上'},
+    {t:'主练 · 自适应随机 ×2', u:base+'?mode=random&count=40&limit=1', n:'开始前把限时设为昨天的最低值'},
+    {t:'精度 · 小球 0.7°', u:base+'?mode=precision&count=40&limit=0', n:'记录命中率'}
+  ];
+  if(w===3) return [
+    {t:'热身 · 定角重复 ×2', u:base+'?mode=block&count=40&limit=0', n:'两个角度各一轮'},
+    {t:'主练 · 自适应随机 ×2', u:base+'?mode=random&count=40&limit=1', n:'限时继续压'},
+    {t:'精度 · 小球 0.7°', u:base+'?mode=precision&count=40&limit=0', n:'目标 40%+'},
+    {t:'死斗 · 只打头', u:'', n:'实战 10 分钟，单发爆头，打完回中'}
+  ];
+  return [
+    {t:'热身 · 定角重复', u:base+'?mode=block&count=40&limit=0', n:'激活手感'},
+    {t:'主练 · 自适应随机', u:base+'?mode=random&count=40&limit=1', n:'一组就够'},
+    {t:'实战', u:'', n:'剩下的时间全部实战，不测数据'}
+  ];
+}
+
+function render(){
+  const d=dayIdx();
+  if(d<0){ localStorage.setItem(K_START, todayStr()); return location.reload(); }
+  const w=weekOf(d);
+  $('dayNo').textContent='第 '+(d+1)+' 天';
+  $('weekNo').textContent='第 '+w+' 周';
+  const log=JSON.parse(localStorage.getItem(K_LOG)||'[]');
+  $('doneNo').textContent=log.length;
+
+  // 连续天数
+  let streak=0; const set=new Set(log.map(x=>x.slice(0,10)));
+  for(let i=0;i<60;i++){ const dt=new Date(Date.now()-i*86400000);
+    const p=n=>String(n).padStart(2,'0');
+    const k=dt.getFullYear()+'-'+p(dt.getMonth()+1)+'-'+p(dt.getDate());
+    if(set.has(k)) streak++; else if(i>0) break; }
+  $('streakNo').textContent=streak;
+
+  const isRest=(d%7===5||d%7===6);
+  $('todayTitle').textContent='今日任务 · 第 '+(d+1)+' 天（第 '+w+' 周）';
+  $('todayHint').textContent = isRest
+    ? '今天是休息日。睡够 7-8 小时，技能靠睡眠巩固。'
+    : '做完一项就在训练页点「复制本组数据」，粘到下面的记录里。';
+
+  const q=cfgQuery();
+  const tasks=planFor(w);
+  $('tasks').innerHTML = tasks.map(t=>{
+    const href=t.u? (t.u+q):'';
+    const btn = href? '<a class="go" target="_blank" href="'+href+'">开始</a>' : '<span class="go" style="background:#21262d;border-color:#30363d;color:#6e7681">实战</span>';
+    return '<div class="task"><div><div class="t">'+t.t+'</div><div class="n">'+t.n+'</div></div>'+btn+'</div>';
+  }).join('');
+
+  // 进度格
+  let g='';
+  for(let i=0;i<28;i++){
+    const dt=new Date(new Date(localStorage.getItem(K_START)).getTime()+i*86400000);
+    const p=n=>String(n).padStart(2,'0');
+    const k=dt.getFullYear()+'-'+p(dt.getMonth()+1)+'-'+p(dt.getDate());
+    const done=set.has(k);
+    const rest=(i%7===5||i%7===6);
+    const cls='cell'+(done?' done':rest?' rest':'')+(i===d?' today':'');
+    g+='<div class="'+cls+'" title="'+k+'">'+(i+1)+'</div>';
+  }
+  $('grid').innerHTML=g;
+
+  // 记录表
+  if(log.length){
+    $('logTable').innerHTML='<tr><th>日期</th><th>数据</th></tr>'+
+      log.slice().reverse().slice(0,20).map(l=>'<tr><td>'+l.slice(0,10)+'</td><td>'+l.slice(10)+'</td></tr>').join('');
+  } else $('logTable').innerHTML='';
+}
+
+$('markDone').addEventListener('click',()=>{
+  const log=JSON.parse(localStorage.getItem(K_LOG)||'[]');
+  if(log.some(x=>x.startsWith(todayStr()))){ alert('今天已经标记过了'); return; }
+  log.push(todayStr()+'  已完成');
+  localStorage.setItem(K_LOG, JSON.stringify(log));
+  render();
+});
+
+$('resetAll').addEventListener('click',()=>{
+  if(!confirm('清空所有进度和记录？')) return;
+  localStorage.removeItem(K_START); localStorage.removeItem(K_LOG);
+  location.reload();
+});
+
+$('addLog').addEventListener('click',()=>{
+  const v=$('logInput').value.trim(); if(!v) return;
+  const log=JSON.parse(localStorage.getItem(K_LOG)||'[]');
+  log.push(v); localStorage.setItem(K_LOG, JSON.stringify(log));
+  $('logInput').value=''; render();
+});
+
+$('copyAll').addEventListener('click',()=>{
+  const log=JSON.parse(localStorage.getItem(K_LOG)||'[]');
+  const txt=log.join('\n');
+  if(navigator.clipboard) navigator.clipboard.writeText(txt).then(()=>alert('已复制 '+log.length+' 条'));
+  else alert(txt);
+});
+
+render();
+</script>
+</body>
+</html>

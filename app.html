@@ -277,9 +277,17 @@
     </div>
 
     <div class="card">
-      <div class="t" style="margin-bottom:12px">界面主题</div>
-      <div class="swatches" id="themes"></div>
-      <div class="hint" style="margin:12px 0 0">只影响网页界面，不影响训练场景。</div>
+      <div class="t">界面主题</div>
+      <div class="hint" style="margin:6px 0 16px">只影响网页界面，不影响训练场景。</div>
+
+      <div class="grp">作者推荐 <span class="gsub">— 大肥鱼常用的两套，日用与夜用</span></div>
+      <div class="swatches" id="thRec"></div>
+
+      <div class="grp">浅色</div>
+      <div class="swatches" id="thLight"></div>
+
+      <div class="grp">深色</div>
+      <div class="swatches" id="thDark"></div>
     </div>
 
     <div class="card">
@@ -323,14 +331,14 @@ const save=(k,v)=>{ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){}
 const MODE_NAME={random:'自适应随机', block:'定角重复', precision:'小球精度'};
 
 const THEMES=[
-  {id:'jade',  name:'墨玉 ★', dot:'#7fbfa6'},
-  {id:'ink',   name:'墨鱼', dot:'#0f766e'},
-  {id:'light', name:'明亮', dot:'#f4f6f9'},
-  {id:'sand',  name:'暖砂', dot:'#f7f2e8'},
-  {id:'forest',name:'森林', dot:'#1f6f45'},
-  {id:'mono',  name:'极简灰', dot:'#23272e'},
-  {id:'cyber', name:'赛博', dot:'#7c3aed'},
-  {id:'night', name:'深蓝', dot:'#0b0f14'}
+  {id:'jade',  name:'墨玉', dot:'#7fbfa6', kind:'rec'},
+  {id:'ink',   name:'墨鱼', dot:'#0f766e', kind:'rec'},
+  {id:'light', name:'明亮', dot:'#f4f6f9', kind:'light'},
+  {id:'sand',  name:'暖砂', dot:'#f7f2e8', kind:'light'},
+  {id:'forest',name:'森林', dot:'#1f6f45', kind:'dark'},
+  {id:'mono',  name:'极简灰', dot:'#23272e', kind:'dark'},
+  {id:'cyber', name:'赛博', dot:'#7c3aed', kind:'dark'},
+  {id:'night', name:'深蓝', dot:'#0b0f14', kind:'dark'}
 ];
 const SCENES=[
   {id:'classic', name:'经典', dot:'#f85149'},
@@ -438,8 +446,11 @@ function fillSettings(){
   $('iFpsShow').checked=localStorage.getItem(K_FPSSHOW)!=='0';
 
   const theme=localStorage.getItem(K_THEME)||'jade';
-  $('themes').innerHTML=THEMES.map(t=>'<div class="sw'+(t.id===theme?' on':'')+'" data-th="'+t.id+'">'+
-    '<span class="dot" style="background:'+t.dot+'"></span>'+t.name+'</div>').join('');
+  function swHTML(list){ return list.map(t=>'<div class="sw'+(t.id===theme?' on':'')+'" data-th="'+t.id+'">'+
+    '<span class="dot" style="background:'+t.dot+'"></span>'+t.name+'</div>').join(''); }
+  $('thRec').innerHTML   = swHTML(THEMES.filter(t=>t.kind==='rec'));
+  $('thLight').innerHTML = swHTML(THEMES.filter(t=>t.kind==='light'));
+  $('thDark').innerHTML  = swHTML(THEMES.filter(t=>t.kind==='dark'));
   document.querySelectorAll('.sw[data-th]').forEach(el=>el.addEventListener('click',()=>{
     applyTheme(el.dataset.th); fillSettings();
   }));

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-theme="ink">
+<html lang="zh-CN" data-theme="jade">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -11,6 +11,12 @@
     --line:#e2dccf; --line2:#d3ccbb; --txt:#202b2c; --dim:#6d7a7b; --dim2:#9aa5a4;
     --acc:#0f766e; --acc2:#115e59; --ok:#15803d; --warn:#b45309;
     --head:#f7f5f0e6; --shade:30 43 44; --ring:#0f766e33;
+  }
+  html[data-theme="jade"]{
+    --bg:#101917; --bg2:#152220; --panel:#16211f; --panel2:#1d2b28;
+    --line:#2a3a36; --line2:#374b46; --txt:#efeade; --dim:#93a8a1; --dim2:#6b807a;
+    --acc:#7fbfa6; --acc2:#5aa78c; --ok:#a3d977; --warn:#e0a458;
+    --head:#101917e6; --shade:0 0 0; --ring:#7fbfa633;
   }
   html[data-theme="light"]{
     --bg:#f4f6f9; --bg2:#e9eef4; --panel:#fff; --panel2:#eef2f7;
@@ -317,6 +323,7 @@ const save=(k,v)=>{ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){}
 const MODE_NAME={random:'自适应随机', block:'定角重复', precision:'小球精度'};
 
 const THEMES=[
+  {id:'jade',  name:'墨玉 ★', dot:'#7fbfa6'},
   {id:'ink',   name:'墨鱼', dot:'#0f766e'},
   {id:'light', name:'明亮', dot:'#f4f6f9'},
   {id:'sand',  name:'暖砂', dot:'#f7f2e8'},
@@ -327,6 +334,7 @@ const THEMES=[
 ];
 const SCENES=[
   {id:'classic', name:'经典', dot:'#f85149'},
+  {id:'jade',  name:'墨玉', dot:'#e0a458'},
   {id:'ink',   name:'墨鱼', dot:'#ffb020'},
   {id:'light', name:'浅灰', dot:'#eef1f4'},
   {id:'night', name:'暗蓝', dot:'#58a6ff'},
@@ -340,7 +348,7 @@ function applyTheme(id){
   document.documentElement.setAttribute('data-theme', id);
   localStorage.setItem(K_THEME, id);
 }
-applyTheme(localStorage.getItem(K_THEME)||'ink');
+applyTheme(localStorage.getItem(K_THEME)||'jade');
 
 function show(t){
   document.querySelectorAll('section').forEach(s=>s.classList.toggle('on', s.id===t));
@@ -429,7 +437,7 @@ function fillSettings(){
   $('iFps').value=localStorage.getItem(K_FPS)||'0';
   $('iFpsShow').checked=localStorage.getItem(K_FPSSHOW)!=='0';
 
-  const theme=localStorage.getItem(K_THEME)||'ink';
+  const theme=localStorage.getItem(K_THEME)||'jade';
   $('themes').innerHTML=THEMES.map(t=>'<div class="sw'+(t.id===theme?' on':'')+'" data-th="'+t.id+'">'+
     '<span class="dot" style="background:'+t.dot+'"></span>'+t.name+'</div>').join('');
   document.querySelectorAll('.sw[data-th]').forEach(el=>el.addEventListener('click',()=>{
@@ -464,7 +472,7 @@ $('saveBtn').addEventListener('click',()=>{
 });
 $('defBtn').addEventListener('click',()=>{
   cfg={dpi:1000,yaw:0.013052,sens:1.92,cm:36.5}; save(K_CFG,cfg);
-  localStorage.setItem(K_THEME,'ink'); applyTheme('ink');
+  localStorage.setItem(K_THEME,'jade'); applyTheme('jade');
   localStorage.setItem(K_SCENE,'classic');
   fillSettings();
 });

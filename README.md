@@ -185,6 +185,11 @@ Two consecutive rounds differed by 0.7%, so the run was marked converged. Final 
 
 ---
 
+## Authors
+
+- **[@i11usoryCat](https://github.com/i11usoryCat)** — project owner. Hardware and measurement work, calibration methodology validation, test data.
+- **大肥鱼 (Dafeiyu)** — design and implementation.
+
 ## License
 
 [MIT](LICENSE)

@@ -55,6 +55,7 @@
 
 <div id="res" class="overlay"><div id="resBody"></div>
   <div><button id="again" class="btn">再来一组</button>
+  <button id="copy" class="btn alt">复制本组数据</button>
   <button id="close" class="btn alt">关闭</button></div>
 </div>
 
@@ -207,11 +208,26 @@ function finish(){
     '<div style="margin-top:14px;font-size:14px;color:#8b949e">'+
     '总计 '+trial+' 球 · 命中率 '+Math.round(overallHit*100)+'% · 中位用时 '+overallMT.toFixed(0)+' ms · 超时 '+timeouts+' 次 · 最长连击 '+bestStreak+
     '</div>';
+  const d=new Date(), pad=n=>String(n).padStart(2,'0');
+  const minLim = blocks.length? Math.min.apply(null, blocks.map(b=>b.lim)) : allowed;
+  window.__logLine = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+
+    '  限时'+Math.round(minLim)+'ms  命中率'+Math.round(overallHit*100)+'%'+
+    '  中位'+overallMT.toFixed(0)+'ms  超时'+timeouts+'次';
   res.classList.add('show');
 }
 
 go.addEventListener('click',e=>{ e.stopPropagation(); start(); });
 document.getElementById('again').addEventListener('click',e=>{ e.stopPropagation(); start(); });
+document.getElementById('copy').addEventListener('click', function(e){
+  e.stopPropagation();
+  var t = window.__logLine || '';
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(t).then(function(){
+      e.target.textContent='已复制 ✓';
+      setTimeout(function(){ e.target.textContent='复制本组数据'; }, 1500);
+    }).catch(function(){ alert(t); });
+  } else { alert(t); }
+});
 document.getElementById('close').addEventListener('click',e=>{ e.stopPropagation(); res.classList.remove('show'); msg.classList.add('show'); });
 
 document.addEventListener('mousedown',e=>{

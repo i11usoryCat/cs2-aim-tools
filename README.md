@@ -88,6 +88,10 @@ cm_new = cm_current × (1 + f_median)
 - **费茨定律**：`MT = a + b·log2(2D/W)`，降低 W（球半径）或提高 D（距离）都会增加难度
 - **单控制器**：同一时刻只调一个变量（限时模式下调时间、否则调球半径），避免两个反馈回路互相冲突
 
+## 训练计划
+
+完整的四周训练方案见 [docs/training-plan.md](docs/training-plan.md)。
+
 ## 注意事项
 
 - 浏览器 `movementX/Y` 在 Windows 指针速度 6/11（默认）下等效于鼠标 counts；改过指针速度会让换算偏高或偏低

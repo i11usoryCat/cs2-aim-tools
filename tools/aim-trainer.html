@@ -361,16 +361,12 @@ function loop(){
     const p=project(tw,th,td);
     if(p){
       const rad=Math.max(5, f*Math.tan(radius*D2R));
-      // 暗色光晕，保证任何背景上都跳出来
-      const halo=ctx.createRadialGradient(p.sx,p.sy,rad*0.8,p.sx,p.sy,rad*2.4);
-      halo.addColorStop(0,'rgba(0,0,0,'+SC.halo+')'); halo.addColorStop(1,'rgba(0,0,0,0)');
-      ctx.fillStyle=halo; ctx.beginPath(); ctx.arc(p.sx,p.sy,rad*2.4,0,Math.PI*2); ctx.fill();
-      // 实心目标 + 白环
+      // 实心目标 + 细环
       ctx.beginPath(); ctx.arc(p.sx,p.sy,rad,0,Math.PI*2);
       ctx.fillStyle=SC.tgtFill; ctx.fill();
-      ctx.strokeStyle=SC.ring; ctx.lineWidth=Math.max(1.5,rad*0.10); ctx.stroke();
+      ctx.strokeStyle=SC.ring; ctx.lineWidth=Math.max(1.2,rad*0.07); ctx.stroke();
       // 中心点
-      ctx.beginPath(); ctx.arc(p.sx,p.sy,rad*0.20,0,Math.PI*2);
+      ctx.beginPath(); ctx.arc(p.sx,p.sy,rad*0.16,0,Math.PI*2);
       ctx.fillStyle=SC.edge; ctx.fill();
       if(limitChk.checked){
         const left=Math.max(0, 1-(now-tSpawn)/allowed);

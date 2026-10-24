@@ -99,6 +99,10 @@
     border-radius:2px; background:var(--acc);
   }
   .sp{flex:1}
+  .lang{display:flex; gap:0; border:1px solid var(--line); border-radius:8px; overflow:hidden; margin-right:8px}
+  .lang span{padding:6px 12px; font-size:12.5px; color:var(--dim); cursor:pointer; transition:.15s; user-select:none}
+  .lang span:hover{background:var(--panel2); color:var(--txt)}
+  .lang span.on{background:var(--acc); color:#fff; font-weight:600}
   .home{
     color:var(--dim); text-decoration:none; font-size:13px;
     padding:7px 13px; border:1px solid var(--line); border-radius:9px;
@@ -209,6 +213,9 @@
     <a href="#set"  data-t="set">设置</a>
   </nav>
   <div class="sp"></div>
+  <div class="lang" id="langSw">
+    <span data-lang="zh">中</span><span data-lang="en">EN</span>
+  </div>
   <a class="home" href="index.html">← 首页</a>
 </header>
 
@@ -273,15 +280,6 @@
           <div class="t">灵敏度标定 · 严格口径</div>
           <div class="d">同上，但只统计未命中的球，适合已经比较稳的人。</div>
         </a>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="t">语言 / Language</div>
-      <div class="hint" style="margin:6px 0 14px">切换后页面会重新载入 / The page reloads after switching.</div>
-      <div class="swatches" id="langSw">
-        <div class="sw" data-lang="zh"><span class="dot" style="background:#b45309"></span>中文</div>
-        <div class="sw" data-lang="en"><span class="dot" style="background:#0f766e"></span>English</div>
       </div>
     </div>
 
@@ -420,6 +418,14 @@ function show(t){
   if(t==='play') renderDrills();
   if(t==='set')  fillSettings();
   applyLang();
+(function bindLang(){
+  const ls=document.getElementById('langSw');
+  if(!ls) return;
+  ls.querySelectorAll('span[data-lang]').forEach(el=>{
+    el.classList.toggle('on', el.dataset.lang===LANG);
+    el.addEventListener('click',()=>{ if(el.dataset.lang===LANG) return; setLang(el.dataset.lang); location.reload(); });
+  });
+})();
 }
 document.querySelectorAll('nav a').forEach(a=>a.addEventListener('click',e=>{
   e.preventDefault(); location.hash=a.dataset.t; show(a.dataset.t);
@@ -518,12 +524,6 @@ function fillSettings(){
     localStorage.setItem(K_SCENE, el.dataset.sc); fillSettings();
   }));
 
-  const langNow = LANG;
-  const ls=document.getElementById('langSw');
-  if(ls){ ls.querySelectorAll('.sw').forEach(el=>el.classList.toggle('on', el.dataset.lang===langNow));
-    ls.querySelectorAll('.sw').forEach(el=>el.addEventListener('click',()=>{
-      setLang(el.dataset.lang); location.reload();
-    })); }
   updateCalc();
 }
 ['iDpi','iYaw','iSens','iCm'].forEach(id=>{

@@ -1,48 +1,56 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="light">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>四周训练计划 · CS2 Aim Tools</title>
 <style>
-  :root{color-scheme:dark}
+  :root{color-scheme:light dark}
+
+  html[data-theme="light"]{--bg:#f4f6f9;--panel:#fff;--panel2:#eef2f7;--line:#d9e0e9;--txt:#1a2230;--dim:#5b6879;--acc:#2f6feb}
+  html[data-theme="sand"]{--bg:#f7f2e8;--panel:#fffdf8;--panel2:#f3ece0;--line:#e0d5c2;--txt:#33291c;--dim:#7b6a54;--acc:#c2410c}
+  html[data-theme="forest"]{--bg:#0f1a14;--panel:#16241b;--panel2:#1d2f22;--line:#2a4433;--txt:#e8f2ea;--dim:#8aa697;--acc:#4ade80}
+  html[data-theme="mono"]{--bg:#15171b;--panel:#1c1f24;--panel2:#23272e;--line:#2e333b;--txt:#e8eaee;--dim:#98a0aa;--acc:#c9d1d9}
+  html[data-theme="cyber"]{--bg:#120a1f;--panel:#1b1032;--panel2:#241542;--line:#3a2166;--txt:#f1eaff;--dim:#a98fd6;--acc:#c084fc}
+  html[data-theme="night"]{--bg:#0b0f14;--panel:#151b24;--panel2:#1b232e;--line:#2a3442;--txt:#e6edf3;--dim:#8b949e;--acc:#58a6ff}
+
   *{box-sizing:border-box}
-  body{margin:0;background:#0b0f14;color:#e6edf3;font-family:"Microsoft YaHei","Segoe UI",system-ui,sans-serif;line-height:1.7}
+  body{margin:0;background:var(--bg);color:var(--txt);font-family:"Microsoft YaHei","Segoe UI",system-ui,sans-serif;line-height:1.7}
   .wrap{max-width:860px;margin:0 auto;padding:36px 22px 60px}
-  a.back{color:#8b949e;text-decoration:none;font-size:13px}
-  a.back:hover{color:#58a6ff}
-  h1{font-size:24px;margin:14px 0 4px;color:#58a6ff}
-  .sub{color:#8b949e;font-size:14px;margin-bottom:26px}
-  .panel{background:#161b22;border:1px solid #30363d;border-radius:10px;padding:20px 22px;margin-bottom:18px}
-  .panel h2{font-size:16px;margin:0 0 12px;color:#e6edf3}
+  a.back{color:var(--dim);text-decoration:none;font-size:13px}
+  a.back:hover{color:var(--acc)}
+  h1{font-size:24px;margin:14px 0 4px;color:var(--acc)}
+  .sub{color:var(--dim);font-size:14px;margin-bottom:26px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px 22px;margin-bottom:18px}
+  .panel h2{font-size:16px;margin:0 0 12px;color:var(--txt)}
   .row{display:flex;gap:16px;flex-wrap:wrap}
   .stat{flex:1;min-width:120px}
-  .stat .k{font-size:12px;color:#8b949e}
-  .stat .v{font-size:22px;font-weight:700;color:#58a6ff}
-  .task{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid #21262d}
+  .stat .k{font-size:12px;color:var(--dim)}
+  .stat .v{font-size:22px;font-weight:700;color:var(--acc)}
+  .task{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--panel2)}
   .task:last-child{border-bottom:none}
   .task .t{font-weight:600}
-  .task .n{font-size:13px;color:#8b949e}
-  .go{margin-left:auto;padding:8px 18px;background:#238636;border:1px solid #2ea043;color:#fff;
+  .task .n{font-size:13px;color:var(--dim)}
+  .go{margin-left:auto;padding:8px 18px;background:var(--acc);border:1px solid var(--acc);color:#fff;
     border-radius:7px;text-decoration:none;font-size:14px;white-space:nowrap}
-  .go:hover{background:#2ea043}
+  .go:hover{background:var(--acc)}
   .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:10px}
-  .cell{aspect-ratio:1;border-radius:5px;background:#21262d;display:flex;align-items:center;
-    justify-content:center;font-size:11px;color:#6e7681}
-  .cell.done{background:#238636;color:#fff}
-  .cell.today{outline:2px solid #58a6ff}
-  .cell.rest{background:#161b22;color:#30363d}
-  textarea{width:100%;height:70px;background:#0d1117;border:1px solid #30363d;color:#e6edf3;
+  .cell{aspect-ratio:1;border-radius:5px;background:var(--panel2);display:flex;align-items:center;
+    justify-content:center;font-size:11px;color:var(--dim)}
+  .cell.done{background:var(--acc);color:#fff}
+  .cell.today{outline:2px solid var(--acc)}
+  .cell.rest{background:var(--panel);color:var(--line)}
+  textarea{width:100%;height:70px;background:var(--bg);border:1px solid var(--line);color:var(--txt);
     border-radius:7px;padding:10px;font-family:Consolas,monospace;font-size:13px;resize:vertical}
-  button{padding:9px 20px;background:#21262d;border:1px solid #30363d;color:#e6edf3;border-radius:7px;
+  button{padding:9px 20px;background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:7px;
     font-size:14px;cursor:pointer;font-family:inherit}
   button:hover{background:#2d333b}
-  button.main{background:#238636;border-color:#2ea043;color:#fff}
+  button.main{background:var(--acc);border-color:var(--acc);color:#fff}
   table{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}
-  td,th{padding:6px 8px;border-bottom:1px solid #21262d;text-align:left}
-  th{color:#8b949e;font-weight:500}
-  .hint{font-size:13px;color:#8b949e}
-  code{background:#21262d;padding:1px 6px;border-radius:4px;font-size:12px}
+  td,th{padding:6px 8px;border-bottom:1px solid var(--panel2);text-align:left}
+  th{color:var(--dim);font-weight:500}
+  .hint{font-size:13px;color:var(--dim)}
+  code{background:var(--panel2);padding:1px 6px;border-radius:4px;font-size:12px}
 </style>
 </head>
 <body>
@@ -89,6 +97,8 @@
 </div>
 
 <script>
+(function(){ try{ var t=localStorage.getItem('cs2at.theme')||'light';
+  document.documentElement.setAttribute('data-theme', t); }catch(e){} })();
 const K_START='cs2at.start', K_LOG='cs2at.log', K_CFG='cs2at.cfg';
 const $=id=>document.getElementById(id);
 const todayStr=()=>{ const d=new Date(),p=n=>String(n).padStart(2,'0'); return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate()); };
@@ -155,7 +165,7 @@ function render(){
   const tasks=planFor(w);
   $('tasks').innerHTML = tasks.map(t=>{
     const href=t.u? (t.u+q):'';
-    const btn = href? '<a class="go" target="_blank" href="'+href+'">开始</a>' : '<span class="go" style="background:#21262d;border-color:#30363d;color:#6e7681">实战</span>';
+    const btn = href? '<a class="go" target="_blank" href="'+href+'">开始</a>' : '<span class="go" style="background:var(--panel2);border-color:var(--line);color:var(--dim)">实战</span>';
     return '<div class="task"><div><div class="t">'+t.t+'</div><div class="n">'+t.n+'</div></div>'+btn+'</div>';
   }).join('');
 

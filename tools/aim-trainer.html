@@ -117,10 +117,10 @@ function grid(){
   const perf = (function(){ try{ return localStorage.getItem('cs2at.perf')==='1'; }catch(e){ return false; } })();
   const R=44, step = perf? 8 : 3;
   for(let v=-R;v<=R;v+=step){
-    line3(v,-EYE,-R,v,-EYE,R,(v===0)?'rgba(88,166,255,.55)':'rgba(64,76,90,1)');
-    line3(-R,-EYE,v,R,-EYE,v,(v===0)?'rgba(88,166,255,.55)':'rgba(64,76,90,1)');
-    if(!perf){ line3(v,4.2,-R,v,4.2,R,'rgba(50,60,72,1)');
-               line3(-R,4.2,v,R,4.2,v,'rgba(50,60,72,1)'); }
+    line3(v,-EYE,-R,v,-EYE,R,(v===0)? SC.major : SC.minor);
+    line3(-R,-EYE,v,R,-EYE,v,(v===0)? SC.major : SC.minor);
+    if(!perf){ line3(v,4.2,-R,v,4.2,R,SC.ceil);
+               line3(-R,4.2,v,R,4.2,v,SC.ceil); }
   }
 }
 
@@ -141,6 +141,11 @@ function start(){
     fpsShow=localStorage.getItem('cs2at.fpsShow')!=='0';
   }catch(e){}
   lastDraw=0; fpsFrames=0; fpsLast=performance.now(); fpsVal=0;
+  try{
+    SC = SCENES[localStorage.getItem('cs2at.scene')||'night'] || SCENES.night;
+    document.body.style.background = SC.bg;
+    hud.style.color = SC.txt;
+  }catch(e){}
   mode=(document.getElementById('mode')||{value:'random'}).value||'random';
   if(mode==='precision'){ radius=0.7; limitChk.checked=false; }
   else if(mode==='block'){ radius=R0; limitChk.checked=false; blockLeft=0; }
@@ -321,7 +326,7 @@ function loop(){
   fpsFrames++;
   if(now-fpsLast>=500){ fpsVal=Math.round(fpsFrames*1000/(now-fpsLast)); fpsFrames=0; fpsLast=now; }
 
-  ctx.fillStyle='#0b0f14'; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle=SC.bg; ctx.fillRect(0,0,W,H);
   grid();
 
   if(alive){
@@ -331,10 +336,10 @@ function loop(){
     if(p){
       const rad=Math.max(4, f*Math.tan(radius*D2R));
       ctx.beginPath(); ctx.arc(p.sx,p.sy,rad,0,Math.PI*2);
-      ctx.fillStyle='rgba(248,81,73,.30)'; ctx.fill();
-      ctx.strokeStyle='#f85149'; ctx.lineWidth=2.5; ctx.stroke();
+      ctx.fillStyle=SC.tgtFill; ctx.fill();
+      ctx.strokeStyle=SC.tgt; ctx.lineWidth=2.5; ctx.stroke();
       ctx.beginPath(); ctx.arc(p.sx,p.sy,rad*0.22,0,Math.PI*2);
-      ctx.fillStyle='#f85149'; ctx.fill();
+      ctx.fillStyle=SC.tgt; ctx.fill();
       if(limitChk.checked){
         const left=Math.max(0, 1-(now-tSpawn)/allowed);
         ctx.beginPath();
@@ -345,7 +350,7 @@ function loop(){
     }
   }
 
-  ctx.strokeStyle='#3fb950'; ctx.lineWidth=3;
+  ctx.strokeStyle=SC.cross; ctx.lineWidth=3;
   const g2=15*devicePixelRatio, cx=W/2, cy=H/2;
   ctx.beginPath();
   ctx.moveTo(cx-g2,cy); ctx.lineTo(cx-5,cy);

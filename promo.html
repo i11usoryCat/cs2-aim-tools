@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>CS2 Aim Tools · Promo</title>
+<style>
+  :root{--bg:#0d1413;--ink:#efeade;--dim:#8fa39c;--acc:#7fbfa6;--amber:#e0a458}
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);overflow:hidden;
+    font-family:"Microsoft YaHei UI","Microsoft YaHei",system-ui,sans-serif;cursor:none}
+  #stage{position:fixed;inset:0}
+  .scene{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    opacity:0;transition:opacity .6s ease;pointer-events:none}
+  .scene.on{opacity:1}
+  .vign{position:fixed;inset:0;pointer-events:none;
+    background:radial-gradient(ellipse at 50% 45%,transparent 45%,#0d1413 100%)}
+
+  /* 1 标题 */
+  .t1{text-align:center}
+  .t1 h1{font-size:clamp(40px,7vw,92px);margin:0;letter-spacing:6px;font-weight:800;
+    background:linear-gradient(120deg,#efeade 10%,var(--acc) 55%,var(--amber) 95%);
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .t1 .sub{margin-top:18px;color:var(--dim);font-size:clamp(14px,1.5vw,20px);letter-spacing:3px}
+  .ring{width:96px;height:96px;border-radius:50%;border:3px solid var(--amber);margin:0 auto 34px;
+    position:relative;animation:pulse 2.2s ease-out infinite}
+  .ring::after{content:"";position:absolute;inset:34px;border-radius:50%;background:var(--amber)}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 #e0a45855}70%{box-shadow:0 0 0 42px #e0a45800}100%{box-shadow:0 0 0 0 #e0a45800}}
+
+  /* 2 三点 */
+  .pts{display:flex;gap:56px;flex-wrap:wrap;justify-content:center;max-width:1100px}
+  .pt{text-align:center;opacity:0;transform:translateY(18px)}
+  .scene.on .pt{animation:rise .7s cubic-bezier(.2,.8,.2,1) forwards}
+  .scene.on .pt:nth-child(2){animation-delay:.25s}
+  .scene.on .pt:nth-child(3){animation-delay:.5s}
+  @keyframes rise{to{opacity:1;transform:none}}
+  .pt .n{font-size:clamp(34px,4vw,58px);font-weight:800;color:var(--acc);letter-spacing:1px}
+  .pt .l{margin-top:6px;color:var(--dim);font-size:clamp(13px,1.2vw,17px);letter-spacing:2px}
+
+  /* 3 功能卡 */
+  .cards{display:flex;gap:22px;flex-wrap:wrap;justify-content:center;max-width:1180px;padding:0 40px}
+  .card{width:320px;background:#16211f;border:1px solid #2a3a36;border-radius:18px;padding:26px 28px;
+    opacity:0;transform:translateY(26px)}
+  .scene.on .card{animation:rise .8s cubic-bezier(.2,.8,.2,1) forwards}
+  .scene.on .card:nth-child(2){animation-delay:.18s}
+  .scene.on .card:nth-child(3){animation-delay:.36s}
+  .card h3{margin:0 0 10px;font-size:21px;color:var(--amber);letter-spacing:1px}
+  .card p{margin:0;color:var(--dim);font-size:15px;line-height:1.8}
+
+  /* 4 演示 */
+  #demo{width:100%;height:100%}
+  .cap{position:absolute;left:0;right:0;bottom:9%;text-align:center;color:var(--dim);
+    font-size:clamp(13px,1.3vw,18px);letter-spacing:3px}
+
+  /* 5 结尾 */
+  .end{text-align:center}
+  .end h2{font-size:clamp(28px,4vw,52px);margin:0 0 16px;letter-spacing:4px}
+  .end .url{font-size:clamp(15px,1.8vw,24px);color:var(--acc);letter-spacing:2px;
+    border:1px solid #2a3a36;padding:14px 28px;border-radius:12px;display:inline-block}
+  .end .tag{margin-top:26px;color:var(--dim);font-size:clamp(12px,1.1vw,16px);letter-spacing:3px}
+  .prog{position:fixed;left:0;bottom:0;height:2px;background:var(--amber);width:0;transition:width .2s linear}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="scene" id="s1">
+    <div class="t1">
+      <div class="ring"></div>
+      <h1>甩枪训练中心</h1>
+      <div class="sub">浏览器端 · 无需安装 · 不读取游戏数据</div>
+    </div>
+  </div>
+
+  <div class="scene" id="s2">
+    <div class="pts">
+      <div class="pt"><div class="n">3</div><div class="l">种训练模式</div></div>
+      <div class="pt"><div class="n">85%</div><div class="l">自适应难度</div></div>
+      <div class="pt"><div class="n">0</div><div class="l">上传的数据</div></div>
+    </div>
+  </div>
+
+  <div class="scene" id="s3">
+    <div class="cards">
+      <div class="card"><h3>灵敏度标定</h3><p>测出你每次都甩过头还是不够，直接反推应该填的值，不再靠感觉。</p></div>
+      <div class="card"><h3>自适应训练</h3><p>球的大小与限时按 85% 成功率自动调节，难度永远卡在学得动的区间。</p></div>
+      <div class="card"><h3>四周计划</h3><p>每天十五分钟，按天推进，自动记录进度与成绩。</p></div>
+    </div>
+  </div>
+
+  <div class="scene" id="s4">
+    <canvas id="demo"></canvas>
+    <div class="cap">看到球 → 甩过去 → 手停 → 点击</div>
+  </div>
+
+  <div class="scene" id="s5">
+    <div class="end">
+      <h2>立刻开始</h2>
+      <div class="url">i11usorycat.github.io/cs2-aim-tools</div>
+      <div class="tag">开源 · MIT · by 大肥鱼</div>
+    </div>
+  </div>
+</div>
+<div class="vign"></div>
+<div class="prog" id="prog"></div>
+
+<script>
+const SCENES=[['s1',0],['s2',3600],['s3',8000],['s4',15000],['s5',30000]];
+const TOTAL=36000;
+let t0=performance.now(), started=false;
+
+function show(id){ document.querySelectorAll('.scene').forEach(s=>s.classList.toggle('on', s.id===id)); }
+
+/* 演示：3D 网格 + 琥珀球 + 准星 */
+(function(){
+  const cv=document.getElementById('demo'), ctx=cv.getContext('2d');
+  let W=0,H=0,f=1;
+  function size(){ W=cv.width=innerWidth*devicePixelRatio; H=cv.height=innerHeight*devicePixelRatio;
+    cv.style.width=innerWidth+'px'; cv.style.height=innerHeight+'px';
+    f=(W/2)/Math.tan(45*Math.PI/180); }
+  addEventListener('resize',size); size();
+
+  const D2R=Math.PI/180;
+  let yaw=0,pitch=0,tYaw=0,tPitch=0,nextAt=0,alive=false;
+  const DIST=10,EYE=1.6,NEAR=.25;
+
+  function toCam(x,y,z){
+    const cy=Math.cos(yaw),sy=Math.sin(yaw);
+    const x1=x*cy-z*sy, z1=x*sy+z*cy;
+    const cp=Math.cos(pitch), sp=Math.sin(pitch);
+    return {x:x1,y:y*cp-z1*sp,z:y*sp+z1*cp};
+  }
+  const pc=c=>({sx:W/2+(c.x/c.z)*f, sy:H/2-(c.y/c.z)*f});
+  function line3(x1,y1,z1,x2,y2,z2,col){
+    let a=toCam(x1,y1,z1), b=toCam(x2,y2,z2);
+    if(a.z<NEAR&&b.z<NEAR) return;
+    if(a.z<NEAR){const t=(NEAR-a.z)/(b.z-a.z); a={x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t,z:NEAR};}
+    else if(b.z<NEAR){const t=(NEAR-b.z)/(a.z-b.z); b={x:b.x+(a.x-b.x)*t,y:b.y+(a.y-b.y)*t,z:NEAR};}
+    const pa=pc(a),pb=pc(b);
+    ctx.strokeStyle=col; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(pa.sx,pa.sy); ctx.lineTo(pb.sx,pb.sy); ctx.stroke();
+  }
+
+  let holdT=0;
+  function frame(now){
+    requestAnimationFrame(frame);
+    if(!document.getElementById('s4').classList.contains('on')) return;
+
+    if(!nextAt) nextAt=now+400;
+    if(!alive && now>=nextAt){
+      tYaw=yaw+(Math.random()<.5?-1:1)*(14+Math.random()*12)*D2R;
+      tPitch=pitch+(Math.random()*2-1)*6*D2R;
+      alive=true; holdT=0;
+    }
+    if(alive){
+      // 准星平滑追向目标，模拟一次甩动
+      const k=0.16;
+      yaw += (tYaw-yaw)*k; pitch += (tPitch-pitch)*k;
+      if(Math.abs(tYaw-yaw)<0.004 && Math.abs(tPitch-pitch)<0.004){
+        if(!holdT) holdT=now;
+        if(now-holdT>420){ alive=false; nextAt=now+300; }
+      }
+    }
+
+    ctx.fillStyle='#12181d'; ctx.fillRect(0,0,W,H);
+    const R=44, step=3;
+    for(let v=-R;v<=R;v+=step){
+      line3(v,-EYE,-R,v,-EYE,R, v===0?'rgba(127,191,166,.45)':'rgba(58,74,82,1)');
+      line3(-R,-EYE,v,R,-EYE,v, v===0?'rgba(127,191,166,.45)':'rgba(58,74,82,1)');
+      line3(v,4.2,-R,v,4.2,R,'rgba(44,58,66,1)');
+      line3(-R,4.2,v,R,4.2,v,'rgba(44,58,66,1)');
+    }
+    if(alive){
+      const cp=Math.cos(tPitch);
+      const tx=DIST*cp*Math.sin(tYaw), ty=DIST*Math.sin(tPitch), tz=DIST*cp*Math.cos(tYaw);
+      const c=toCam(tx,ty,tz);
+      if(c.z>NEAR){
+        const p=pc(c), rad=Math.max(10,f*Math.tan(1.5*D2R));
+        const halo=ctx.createRadialGradient(p.sx,p.sy,rad*.9,p.sx,p.sy,rad*2.3);
+        halo.addColorStop(0,'rgba(0,0,0,.22)'); halo.addColorStop(1,'rgba(0,0,0,0)');
+        ctx.fillStyle=halo; ctx.beginPath(); ctx.arc(p.sx,p.sy,rad*2.3,0,Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(p.sx,p.sy,rad,0,Math.PI*2);
+        ctx.fillStyle='rgba(224,164,88,.9)'; ctx.fill();
+        ctx.strokeStyle='#fff6e6'; ctx.lineWidth=2.5; ctx.stroke();
+        ctx.beginPath(); ctx.arc(p.sx,p.sy,rad*.22,0,Math.PI*2);
+        ctx.fillStyle='#e0a458'; ctx.fill();
+      }
+    }
+    // 准星（双层描边）
+    const g=16*devicePixelRatio, cx=W/2, cy=H/2;
+    function cross(col,w){
+      ctx.strokeStyle=col; ctx.lineWidth=w; ctx.beginPath();
+      ctx.moveTo(cx-g,cy); ctx.lineTo(cx-5,cy);
+      ctx.moveTo(cx+5,cy); ctx.lineTo(cx+g,cy);
+      ctx.moveTo(cx,cy-g); ctx.lineTo(cx,cy-5);
+      ctx.moveTo(cx,cy+5); ctx.lineTo(cx,cy+g);
+      ctx.stroke();
+    }
+    cross('#000',5*devicePixelRatio); cross('#7fbfa6',2*devicePixelRatio);
+  }
+  requestAnimationFrame(frame);
+})();
+
+/* 时间轴 */
+let idx=0;
+function tick(now){
+  const el=now-t0;
+  while(idx<SCENES.length-1 && el>=SCENES[idx+1][1]){ idx++; show(SCENES[idx][0]); }
+  if(!started){ started=true; show(SCENES[0][0]); }
+  document.getElementById('prog').style.width=Math.min(100, el/TOTAL*100)+'%';
+  if(el>=TOTAL){ t0=now; idx=0; show(SCENES[0][0]); }
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>

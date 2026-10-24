@@ -59,6 +59,14 @@
     font-size:12.5px;padding:0 22px 70px;line-height:2.1}
   .foot a{color:var(--acc);text-decoration:none}
   .foot code{background:#efece4;padding:2px 7px;border-radius:6px;font-size:12px;color:#115e59}
+  .eggword{display:inline-block;margin-left:10px;font-family:Georgia,serif;font-style:italic;
+    font-size:12px;color:#c9c2b4;cursor:pointer;letter-spacing:.5px;transition:color .2s;user-select:none}
+  .eggword:hover{color:var(--acc)}
+  #toast{position:fixed;left:50%;bottom:56px;transform:translate(-50%,14px);z-index:99;
+    background:#202b2c;color:#f0ece2;padding:13px 24px;border-radius:12px;font-size:14.5px;
+    letter-spacing:2px;opacity:0;pointer-events:none;transition:opacity .35s,transform .35s;
+    box-shadow:0 12px 32px -12px #202b2c66}
+  #toast.on{opacity:1;transform:translate(-50%,0)}
 </style>
 </head>
 <body>
@@ -69,7 +77,7 @@
   <div class="mark"></div>
   <h1>甩枪<em>训练</em>中心</h1>
   <div class="sub">浏览器端 · 无需安装 · 不读取游戏数据<br>标定 → 计划 → 每天十五分钟</div>
-  <div class="by"><a href="https://github.com/i11usoryCat" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">i11usoryCat</a> <span style="opacity:.5">×</span> <b>大肥鱼</b></div>
+  <div class="by"><a href="https://github.com/i11usoryCat" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">i11usoryCat</a> <span style="opacity:.5">×</span> <a href="dialogue.html" style="color:var(--gold);text-decoration:none" title="">大肥鱼</a></div>
   <button class="start" onclick="location.href='app.html'">开始</button>
   <div class="tip">建议使用 Chrome 或 Edge</div>
 </div>
@@ -109,6 +117,7 @@
   <a href="https://github.com/i11usoryCat/cs2-aim-tools">GitHub</a> ·
   <a href="https://github.com/i11usoryCat/cs2-aim-tools/blob/main/docs/methodology.md">方法论</a> ·
   <a href="https://github.com/i11usoryCat/cs2-aim-tools/blob/main/docs/training-plan.md">训练方案</a>
+  <span class="eggword" id="eggWord">vernier</span>
 </div>
 
 <script>
@@ -184,6 +193,16 @@
     }
   }catch(e){}
 })();
+(function(){
+  var w=document.getElementById('eggWord'), t=document.getElementById('toast'), timer=null;
+  if(!w||!t) return;
+  w.addEventListener('click',function(){
+    t.classList.add('on');
+    clearTimeout(timer);
+    timer=setTimeout(function(){ t.classList.remove('on'); }, 3200);
+  });
+})();
 </script>
+<div id="toast">若无可能，毋需添多。</div>
 </body>
 </html>

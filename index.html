@@ -148,9 +148,25 @@
   }
 
   // 只画，不管循环
+  let burst=null;
+  function dotFactor(p){
+    if(!burst) return 1;
+    const el=performance.now()-burst.t0;
+    const k=(el-(p.d||0)*burst.span)/burst.dur;
+    return Math.max(0,Math.min(1,k));
+  }
+  window.__fxResurface=function(cx,cy){
+    const cxd=cx*devicePixelRatio, cyd=cy*devicePixelRatio;
+    let maxD=1;
+    pts.forEach(function(p){ p.d=Math.hypot(p.x-cxd,p.y-cyd); if(p.d>maxD) maxD=p.d; });
+    pts.forEach(function(p){ p.d=p.d/maxD; });
+    burst={t0:performance.now(), dur:900, span:1100};
+  };
+
   function draw(){
     ctx.clearRect(0,0,W,H);
     const lim=(150*devicePixelRatio)**2;
+    if(burst && performance.now()-burst.t0 > burst.span+burst.dur+80) burst=null;
     const lineBase='rgba(15,118,110,';
     for(let i=0;i<pts.length;i++) for(let j=i+1;j<pts.length;j++){
       const dx=pts[i].x-pts[j].x, dy=pts[i].y-pts[j].y, d=dx*dx+dy*dy;
@@ -159,8 +175,10 @@
         ctx.beginPath(); ctx.moveTo(pts[i].x,pts[i].y); ctx.lineTo(pts[j].x,pts[j].y); ctx.stroke(); }
     }
     for(const p of pts){
+      const f=dotFactor(p);
+      if(f<=0.001) continue;
       ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
-      ctx.fillStyle='rgba('+p.c[0]+','+p.c[1]+','+p.c[2]+','+p.a+')'; ctx.fill();
+      ctx.fillStyle='rgba('+p.c[0]+','+p.c[1]+','+p.c[2]+','+(p.a*f)+')'; ctx.fill();
     }
   }
 
@@ -355,16 +373,7 @@ function rippleSwitch(lang, cx, cy){
     requestAnimationFrame(function(){
       layer.remove(); blocker.remove();
 
-      if(fx){
-        // 被水波打散的粒子：先沉下去，再从水底慢慢浮起来
-        fx.style.transition='none';
-        fx.style.opacity='0';
-        setTimeout(function(){
-          fx.style.transition='opacity .9s cubic-bezier(.4,0,.2,1)';
-          fx.style.opacity='0.9';
-          setTimeout(function(){ fx.style.transition=''; }, 1000);
-        }, 550);
-      }
+      try{ if(window.__fxResurface) window.__fxResurface(cx,cy); }catch(e){}   // 和波浪同方向，依次浮现
       htmlEl.style.overflow=prevOverflow;
       clearTimeout(watchdog);
       switching=false;

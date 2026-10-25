@@ -16,16 +16,24 @@
     border:1px solid transparent;transition:.15s;letter-spacing:.5px}
   #back:hover{color:var(--acc);border-color:var(--line);background:var(--panel)}
   #back.on{display:inline-block}
+  #grab{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;
+    background:rgba(0,0,0,.35);color:#fff;font-size:18px;letter-spacing:2px;cursor:pointer;
+    backdrop-filter:blur(2px)}
+  #grab.on{display:flex}
+  #msg.paused .pauseHide{display:none}
+  #msg.paused.showParams .pauseHide{display:block}
+  #msg.paused .pauseHide + a{display:none}
   .btn{margin-top:22px;padding:13px 40px;font-size:16px;font-family:inherit;cursor:pointer;
-    background:var(--acc);border:1px solid var(--acc);color:#fff;border-radius:8px;pointer-events:auto}
+    background:var(--acc);border:1px solid var(--acc);color:var(--on-acc);border-radius:8px;pointer-events:auto}
   .btn:hover{background:var(--acc)}
-  .btn.alt{background:var(--panel);border-color:var(--line);margin-left:10px}
+  .btn.alt{background:var(--panel);border-color:var(--line);margin-left:10px;color:var(--txt)}
+  .btn.alt:hover{background:var(--panel);border-color:var(--acc);color:var(--acc)}
   table{border-collapse:collapse;margin-top:12px}
   td,th{padding:6px 16px;text-align:right;border-bottom:1px solid var(--panel);font-size:14px}
   th{color:var(--dim);font-weight:500}
   input[type=checkbox]{width:16px;height:16px;vertical-align:-2px;pointer-events:auto}
   .fld{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--dim)}
-  .fld input,.fld select{padding:7px 9px;background:#0d1117;border:1px solid var(--line);color:var(--txt);
+  .fld input,.fld select{padding:7px 9px;background:var(--panel);border:1px solid var(--line);color:var(--txt);
     border-radius:7px;font-size:14px;font-family:inherit;width:112px}
   summary::-webkit-details-marker{display:none}
   .bigNum{font-size:86px;font-weight:800;line-height:1;color:var(--acc);
@@ -43,6 +51,7 @@
 </head>
 <body>
 <canvas id="c"></canvas>
+<div id="grab">点击画面开始</div>
 <a id="back" href="../app.html#play">← 返回</a>
 <div id="hud"></div>
 
@@ -50,14 +59,13 @@
   <div style="font-size:26px;color:var(--txt);font-weight:700;letter-spacing:2px">甩枪训练</div>
   <div style="margin-top:8px;color:var(--dim);font-size:14px">看到球 → 甩过去 → 手停 → 点击</div>
   <button id="go" class="btn" style="margin-top:26px;padding:16px 64px;font-size:18px;letter-spacing:2px">开 始</button>
-  <div id="sensHint" style="margin-top:14px;font-size:13px;color:#8b949e"></div>
+  <div id="sensHint" style="margin-top:14px;font-size:13px;color:var(--dim);cursor:pointer"
+       title="点击修改参数">…</div>
   <div id="bw" style="margin-top:10px;font-size:13px;color:#d29922"></div>
 
-  <details style="margin-top:22px;width:100%;max-width:520px;text-align:left">
-    <summary style="cursor:pointer;color:#8b949e;font-size:13px;text-align:center;list-style:none">
-      ▸ 高级设置
-    </summary>
-    <div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:12px;justify-content:center">
+  <button id="pauseMore" style="display:none;margin-top:16px;padding:9px 18px;border-radius:9px;border:1px solid var(--line);background:transparent;color:var(--dim);font-size:13px;font-family:inherit;cursor:pointer">参数 ▾</button>
+  <div class="pauseHide" style="margin-top:26px;width:100%;max-width:560px">
+    <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center">
       <label class="fld">模式
         <select id="mode">
           <option value="random">自适应随机</option>
@@ -65,23 +73,37 @@
           <option value="precision">小球精度</option>
         </select>
       </label>
+      <label class="fld">结束方式
+        <select id="endMode">
+          <option value="count">按球数</option>
+          <option value="time">按时间</option>
+        </select>
+      </label>
       <label class="fld">球数<input id="cnt" type="number" step="10" value="40"></label>
-      <label class="fld">DPI<input id="dpi" type="number" step="100" value="1000"></label>
-      <label class="fld">m_yaw<input id="yaw" type="number" step="0.0001" value="0.013052"></label>
-      <label class="fld">CS 灵敏度<input id="sens" type="number" step="0.01" placeholder="自动"></label>
-      <label class="fld">cm/360<input id="cm" type="number" step="0.1" value="36.5"></label>
+      <label class="fld">时长（秒）<input id="endTime" type="number" step="15" value="120"></label>
     </div>
-    <div style="margin-top:12px;display:flex;gap:18px;justify-content:center;font-size:13px;color:var(--dim)">
+    <div style="margin-top:14px;display:flex;gap:18px;justify-content:center;font-size:13px;color:var(--dim)">
       <label><input id="limit" type="checkbox" checked> 时间限制</label>
       <label><input id="shrink" type="checkbox"> 收缩模式</label>
     </div>
-  </details>
+    <div style="margin-top:18px;text-align:center">
+      <a href="../app.html#set" style="font-size:13px;color:var(--dim);text-decoration:none;
+        border-bottom:1px dashed var(--line);padding-bottom:2px">灵敏度 · 配色 · 更多参数 →</a>
+    </div>
+    <!-- 隐藏字段：由设置页带入，保证脚本不变 -->
+    <input id="dpi" type="hidden" value="1000">
+    <input id="yaw" type="hidden" value="0.013052">
+    <input id="sens" type="hidden" value="">
+    <input id="cm" type="hidden" value="36.5">
+  </div>
 </div>
 
 <div id="res" class="overlay"><div id="resBody"></div>
-  <div><button id="again" class="btn">再来一组</button>
-  <button id="copy" class="btn alt">复制本组数据</button>
-  <button id="close" class="btn alt">关闭</button></div>
+  <div><button id="again" class="btn" style="min-width:200px">再来一组</button>
+  <div style="margin-top:14px">
+    <button id="copy" class="btn alt">复制本组数据</button>
+    <button id="close" class="btn alt" style="border-color:transparent;background:transparent;color:var(--dim)">关闭</button>
+  </div></div>
 </div>
 
 <script>
@@ -98,7 +120,8 @@ const PITCH_LIM=75*Math.PI/180, D2R=Math.PI/180, R2D=180/Math.PI;
 
 let W=0,H=0,f=1;
 let yaw=0, pitch=0, tYaw=0, tPitch=0, sYaw=0, sPitch=0;
-let running=false, paused=false, pauseAt=0;
+const EN_UI=(function(){ try{ var q=new URLSearchParams(location.search); if(q.get('lang')) return q.get('lang')==='en'; return localStorage.getItem('cs2at.lang')==='en'; }catch(e){ return false; } })();
+let running=false, paused=false, pauseAt=0, endMode='count', endTime=120, endAt=0;
 let cm360=27.2, radius=R0, trial=0, hits=0, streak=0, bestStreak=0;
 let tSpawn=0, alive=false, nextAt=0;
 let times=[], errs=[], hitFlags=[], blocks=[], allowed=800, timeouts=0, timeFactor=1.25;
@@ -135,48 +158,84 @@ function line3(x1,y1,z1,x2,y2,z2,col){
   ctx.beginPath(); ctx.moveTo(pa.sx,pa.sy); ctx.lineTo(pb.sx,pb.sy); ctx.stroke();
 }
 const SCENES={
-  classic:{dark:true,halo:.24,bg:'#0b0f14',major:'rgba(88,166,255,.55)',minor:'rgba(64,76,90,1)',ceil:'rgba(50,60,72,1)',
+  classic:{dark:true,ui:'#58a6ff',halo:.24,bg:'#0b0f14',major:'rgba(88,166,255,.55)',minor:'rgba(64,76,90,1)',ceil:'rgba(50,60,72,1)',
        tgt:'#f85149',tgtFill:'rgba(248,81,73,.30)',ring:'rgba(248,81,73,.95)',cross:'#3fb950',edge:'#000000'},
-  lake:{dark:false,halo:.0,bg:'#eef4f6',major:'rgba(14,116,144,.45)',minor:'rgba(150,176,184,1)',ceil:'rgba(176,198,205,1)',
+  lake:{dark:false,ui:'#0e7490',halo:.0,bg:'#eef4f6',major:'rgba(14,116,144,.45)',minor:'rgba(150,176,184,1)',ceil:'rgba(176,198,205,1)',
        tgt:'#0e7490',tgtFill:'rgba(14,116,144,.85)',ring:'#ffffff',cross:'#14313a',edge:'#ffffff'},
-  jade:{dark:true,halo:.14,bg:'#101917',major:'rgba(127,191,166,.50)',minor:'rgba(58,84,78,1)',ceil:'rgba(44,64,60,1)',
+  jade:{dark:true,ui:'#7fbfa6',halo:.14,bg:'#101917',major:'rgba(127,191,166,.50)',minor:'rgba(58,84,78,1)',ceil:'rgba(44,64,60,1)',
        tgt:'#e0a458',tgtFill:'rgba(224,164,88,.85)',ring:'#fff6e6',cross:'#7fbfa6',edge:'#000000'},
-  ink:{dark:true,halo:.16,bg:'#12181d',major:'rgba(15,118,110,.55)',minor:'rgba(58,74,82,1)',ceil:'rgba(44,58,66,1)',
+  ink:{dark:true,ui:'#0f766e',halo:.16,bg:'#12181d',major:'rgba(15,118,110,.55)',minor:'rgba(58,74,82,1)',ceil:'rgba(44,58,66,1)',
        tgt:'#ffb020',tgtFill:'rgba(255,176,32,.85)',ring:'#ffffff',cross:'#ffffff',edge:'#000000'},
-  light:{dark:false,halo:.0,bg:'#eef1f4',major:'rgba(15,118,110,.45)',minor:'rgba(160,172,182,1)',ceil:'rgba(184,194,203,1)',
+  light:{dark:false,ui:'#2f6feb',halo:.0,bg:'#eef1f4',major:'rgba(15,118,110,.45)',minor:'rgba(160,172,182,1)',ceil:'rgba(184,194,203,1)',
        tgt:'#e8590c',tgtFill:'rgba(232,89,12,.85)',ring:'#ffffff',cross:'#111827',edge:'#ffffff'},
-  night:{dark:true,halo:.20,bg:'#0b0f14',major:'rgba(88,166,255,.50)',minor:'rgba(64,76,90,1)',ceil:'rgba(50,60,72,1)',
+  night:{dark:true,ui:'#58a6ff',halo:.20,bg:'#0b0f14',major:'rgba(88,166,255,.50)',minor:'rgba(64,76,90,1)',ceil:'rgba(50,60,72,1)',
        tgt:'#ff5f56',tgtFill:'rgba(255,95,86,.85)',ring:'#ffffff',cross:'#7ee787',edge:'#000000'},
-  mono:{dark:true,halo:.26,bg:'#0f1113',major:'rgba(200,205,215,.40)',minor:'rgba(88,92,100,1)',ceil:'rgba(70,73,80,1)',
+  mono:{dark:true,ui:'#c9d1d9',halo:.26,bg:'#0f1113',major:'rgba(200,205,215,.40)',minor:'rgba(88,92,100,1)',ceil:'rgba(70,73,80,1)',
        tgt:'#ffd166',tgtFill:'rgba(255,209,102,.85)',ring:'#000000',cross:'#ffffff',edge:'#000000'},
-  cs:{dark:true,halo:.18,bg:'#2b2620',major:'rgba(214,181,120,.45)',minor:'rgba(120,110,88,1)',ceil:'rgba(98,90,72,1)',
+  cs:{dark:true,ui:'#d6b578',halo:.18,bg:'#2b2620',major:'rgba(214,181,120,.45)',minor:'rgba(120,110,88,1)',ceil:'rgba(98,90,72,1)',
        tgt:'#e5484d',tgtFill:'rgba(229,72,77,.85)',ring:'#ffffff',cross:'#b8e986',edge:'#000000'}
 };
 // 站点主题 → 游戏场景（主站切什么，游戏就跟什么；?scene= 可单独覆盖）
-const THEME2SCENE={jade:'jade',ink:'ink',lake:'lake',light:'light',sand:'cs',forest:'jade',mono:'mono',cyber:'night',night:'night'};
+const THEME2SCENE={jade:'jade',ink:'ink',lake:'lake',light:'light',sand:'light',forest:'jade',mono:'mono',cyber:'night',night:'night'};
 function pickScene(){
   try{
     const q=new URLSearchParams(location.search);
     if(q.get('scene') && SCENES[q.get('scene')]) return q.get('scene');
-    const th=q.get('theme')||localStorage.getItem('cs2at.theme');
-    if(th && THEME2SCENE[th]) return THEME2SCENE[th];
     const sc=localStorage.getItem('cs2at.scene');
+    const userPicked=localStorage.getItem('cs2at.sceneUser')==='1';
+    if(userPicked && sc && SCENES[sc]) return sc;      // 自己选过的，优先
+    const th=q.get('theme')||localStorage.getItem('cs2at.theme');
+    if(th && THEME2SCENE[th]) return THEME2SCENE[th];  // 否则跟站点主题
     if(sc && SCENES[sc]) return sc;
   }catch(e){}
   return 'classic';
 }
 let SC = SCENES[pickScene()] || SCENES.classic;
-(function applySceneVars(){
-  const dark=!!SC.dark;
+const SITE_THEMES={
+  ink:{bg:'#12181d',panel:'#1a2226',line:'#2a3a36',txt:'#e6edf3',dim:'#93a8a1',acc:'#0f766e'},
+  jade:{bg:'#101917',panel:'#16211f',line:'#2a3a36',txt:'#efeade',dim:'#93a8a1',acc:'#7fbfa6'},
+  lake:{bg:'#eef4f6',panel:'#ffffff',line:'#d2e2e7',txt:'#14313a',dim:'#587a85',acc:'#0e7490'},
+  light:{bg:'#f4f6f9',panel:'#ffffff',line:'#dde4ed',txt:'#1a2230',dim:'#5b6879',acc:'#2f6feb'},
+  sand:{bg:'#f7f2e8',panel:'#fffdf8',line:'#e3d9c6',txt:'#33291c',dim:'#7b6a54',acc:'#c2410c'},
+  forest:{bg:'#0f1a14',panel:'#16241b',line:'#2a4433',txt:'#e8f2ea',dim:'#8aa697',acc:'#4ade80'},
+  mono:{bg:'#15171b',panel:'#1c1f24',line:'#2e333b',txt:'#e8eaee',dim:'#98a0aa',acc:'#c9d1d9'},
+  cyber:{bg:'#120a1f',panel:'#1b1032',line:'#3a2166',txt:'#f1eaff',dim:'#a98fd6',acc:'#c084fc'},
+  night:{bg:'#0b0f14',panel:'#151b24',line:'#2a3442',txt:'#e6edf3',dim:'#8b949e',acc:'#58a6ff'}
+};
+function siteTheme(){
+  try{
+    const q=new URLSearchParams(location.search);
+    return q.get('theme')||localStorage.getItem('cs2at.theme')||'jade';
+  }catch(e){ return 'jade'; }
+}
+function applyPageTheme(){
+  const t=SITE_THEMES[siteTheme()]||SITE_THEMES.jade;
   const r=document.documentElement.style;
-  r.setProperty('--bg', SC.bg);
+  r.setProperty('--bg',t.bg); r.setProperty('--panel',t.panel); r.setProperty('--line',t.line);
+  r.setProperty('--txt',t.txt); r.setProperty('--dim',t.dim); r.setProperty('--acc',t.acc);
+  r.setProperty('--on-acc','#ffffff');
+  const dark=(t.txt.indexOf('#e')===0||t.txt.indexOf('#f')===0);
+  r.setProperty('--overlay',dark?'rgba(10,14,18,.96)':'rgba(248,250,252,.97)');
+  document.body.style.background=t.bg;
+}
+
+function applyVars(sc){
+  const dark=!!sc.dark, r=document.documentElement.style;
+  const ui=sc.ui||sc.cross;
+  // 亮色主色上配深字
+  const rgb=(function(h){h=(h||'').replace('#','');if(h.length===3)h=h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+    const v=parseInt(h,16);return isNaN(v)?[255,255,255]:[(v>>16)&255,(v>>8)&255,v&255];})(ui);
+  const lum=(0.299*rgb[0]+0.587*rgb[1]+0.114*rgb[2])/255;
+  r.setProperty('--bg', sc.bg);
   r.setProperty('--txt', dark?'#e6edf3':'#14313a');
   r.setProperty('--dim', dark?'#8b949e':'#5b6b73');
   r.setProperty('--panel', dark?'#161d24':'#ffffff');
   r.setProperty('--line', dark?'#263039':'#d7e0e4');
-  r.setProperty('--acc', SC.cross);
+  r.setProperty('--acc', ui);
+  r.setProperty('--on-acc', lum>0.62?'#111820':'#ffffff');
   r.setProperty('--overlay', dark?'rgba(11,15,20,.96)':'rgba(238,244,246,.97)');
-})();
+}
+applyPageTheme();
 try{
   document.body.style.background=SC.bg;
   document.body.style.color = SC.dark? 'var(--txt)' : '#1f2b2c';
@@ -201,6 +260,9 @@ function doLock(){
 }
 
 function start(){
+  endMode=document.getElementById('endMode').value||'count';
+  endTime=Math.max(15, parseInt(document.getElementById('endTime').value)||120);
+  try{ localStorage.setItem('cs2at.endMode',endMode); localStorage.setItem('cs2at.endTime',String(endTime)); }catch(e){}
   TOTAL=parseInt(document.getElementById('cnt').value)||40;
   if(TOTAL<20) TOTAL=20; if(TOTAL>120) TOTAL=120;
   DPI=parseFloat(document.getElementById('dpi').value)||1000;
@@ -212,7 +274,7 @@ function start(){
   }catch(e){}
   lastDraw=0; fpsFrames=0; fpsLast=performance.now(); fpsVal=0;
   try{
-    SC = SCENES[localStorage.getItem('cs2at.scene')||'night'] || SCENES.night;
+    SC = SCENES[pickScene()] || SCENES.night;
     document.body.style.background = SC.bg;
     hud.style.color = SC.dark? 'var(--txt)' : '#1f2b2c';
   }catch(e){}
@@ -223,15 +285,17 @@ function start(){
       dpi: DPI, cm: cm360,
       yaw: (document.getElementById('yaw')||{}).value,
       sens: (document.getElementById('sens')||{}).value })); }catch(e){}
-  running=true; paused=false;
+  running=true; paused=false; hadLock=false; lockFails=0;
+  var g0=document.getElementById('grab'); if(g0) g0.classList.add('on');
   trial=0; hits=0; streak=0; bestStreak=0; if(mode==='random') radius=R0; allowed=800; timeouts=0; timeFactor=1.25;
   times=[]; errs=[]; hitFlags=[]; blocks=[]; blockTimes=[]; blockHits=0;
   msg.classList.remove('show'); res.classList.remove('show');
   yaw=0; pitch=0; alive=false;
   nextAt=performance.now()+300;
+  endAt = performance.now() + endTime*1000;
+  // 这一下只负责全屏；鼠标锁定留给"点击画面"那一下
   if(!document.fullscreenElement && document.documentElement.requestFullscreen)
-    document.documentElement.requestFullscreen().catch(()=>{});
-  doLock();
+    document.documentElement.requestFullscreen().catch(function(){});
 }
 
 function spawn(){
@@ -304,7 +368,8 @@ function judge(){
   alive=false;
   feedback={ err:err, hit:hit, mt:mt, over:overtime, until:now+600 };
 
-  if(trial>=TOTAL){ finish(); return; }
+  if((endMode==='count' && trial>=TOTAL)){ finish(); return; }
+  if(endMode==='time' && performance.now()>=endAt){ finish(); return; }
   nextAt=now+150+Math.random()*250;
 }
 
@@ -312,6 +377,8 @@ let feedback=null;
 
 function finish(){
   running=false; alive=false;
+  if(document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(function(){});
+  var gz=document.getElementById('grab'); if(gz) gz.classList.remove('on');
   if(document.pointerLockElement) document.exitPointerLock();
   const overallHit=hits/trial, overallMT=med(times.filter((v,i)=>hitFlags[i]));
   let rows='';
@@ -367,19 +434,52 @@ document.getElementById('copy').addEventListener('click', function(e){
 });
 document.getElementById('close').addEventListener('click',e=>{ e.stopPropagation(); res.classList.remove('show'); msg.classList.add('show'); });
 
+document.addEventListener('mousedown', function(e){
+  if(running && !paused && !document.pointerLockElement){ needLock=false; doLock(); }
+});
 document.addEventListener('mousedown',e=>{
   if(!running) return;
-  if(paused){ resume(); return; }
+  if(paused){ if(e.target.closest('#go')) resume(); return; }
   if(e.target.tagName==='BUTTON'||e.target.tagName==='INPUT') return;
+  if(!document.pointerLockElement) return;   // 还没锁住鼠标，这口不算开枪
   judge();
 });
 
 function pause(){ if(!running||paused)return; paused=true; pauseAt=performance.now();
-  go.textContent='继续'; msg.classList.add('show'); if(document.pointerLockElement) document.exitPointerLock(); }
-function resume(){ if(!paused)return; const d=performance.now()-pauseAt;
+  go.textContent='继续'; msg.classList.add('show'); msg.classList.add('paused'); if(document.pointerLockElement) document.exitPointerLock(); }
+function resume(){ msg.classList.remove('paused'); if(endMode==='time'){ endAt += performance.now()-pauseAt; } if(!paused)return; const d=performance.now()-pauseAt;
   if(alive) tSpawn+=d; nextAt+=d; paused=false; msg.classList.remove('show'); doLock(); }
-document.addEventListener('pointerlockchange',()=>{ if(!document.pointerLockElement && running && !paused) pause(); });
-document.addEventListener('pointerlockerror',()=>{ if(running) pause(); });
+let hadLock=false, lockFails=0;
+document.addEventListener('pointerlockchange', function(){
+  if(document.pointerLockElement){ hadLock=true; lockFails=0; return; }
+  if(running && !paused && hadLock) pause();   // 只有"本来锁着、后来丢了"才暂停
+});
+document.addEventListener('fullscreenchange', function(){
+  if(document.fullscreenElement && running && !paused && !document.pointerLockElement) setTimeout(doLock, 120);
+});
+document.addEventListener('pointerlockerror', function(){
+  if(!running || paused) return;
+  lockFails++;
+  if(lockFails<=3){ setTimeout(doLock, 260); return; }   // 多试几次
+  needLock=true;                                          // 还不行就让用户点一下画面
+});
+let needLock=false;
+(function(){
+  var g=document.getElementById('grab');
+  function sync(){
+    g.classList.toggle('on', running && !paused && !document.pointerLockElement);
+  }
+  function grab(e){
+    e.preventDefault(); e.stopPropagation();
+    doLock();   // 全屏已经由"开始"那一下完成了
+  }
+  g.addEventListener('click', grab);
+  g.addEventListener('mousedown', function(e){ e.stopPropagation(); });
+  document.addEventListener('pointerlockchange', sync);
+  document.addEventListener('pointerlockerror', sync);
+  document.addEventListener('fullscreenchange', sync);
+  setInterval(sync, 400);
+})();
 
 addEventListener('pointerrawupdate',e=>{
   if(!running||paused) return;
@@ -459,13 +559,18 @@ function loop(){
     ctx.textAlign='center';
     ctx.font='bold '+(26*devicePixelRatio)+'px "Microsoft YaHei"';
     ctx.fillStyle= feedback.hit? '#3fb950' : '#f85149';
-    ctx.fillText(feedback.over? '超时' : feedback.hit? '命中 '+Math.round(feedback.mt)+'ms' : '偏 '+(feedback.err-radius).toFixed(2)+'°', W/2, H*0.28);
+    ctx.fillText(feedback.over ? (EN_UI?'TIMEOUT':'超时')
+      : feedback.hit ? ((EN_UI?'HIT ':'命中 ')+Math.round(feedback.mt)+'ms')
+      : ((EN_UI?'OFF ':'偏 ')+(feedback.err-radius).toFixed(2)+'°'), W/2, H*0.28);
     ctx.textAlign='left';
   }
 
   const recent=hitFlags.slice(-10);
   const rate=recent.length? Math.round(recent.filter(Boolean).length/recent.length*100) : 0;
-  hud.innerHTML='第 <b>'+(trial+1)+'</b>/'+TOTAL+' &nbsp; 球半径 <b>'+radius.toFixed(2)+'°</b> &nbsp; '+cm360.toFixed(1)+' cm/360<br>'+
+  hud.innerHTML=(endMode==='time'
+      ? '剩余 <b>'+Math.max(0,Math.ceil((endAt-performance.now())/1000))+'</b>s &nbsp; 已打 <b>'+trial+'</b> 球'
+      : '第 <b>'+(trial+1)+'</b>/'+TOTAL)
+      +' &nbsp; 球半径 <b>'+radius.toFixed(2)+'°</b> &nbsp; '+cm360.toFixed(1)+' cm/360<br>'+
     '近 10 球命中率 <b>'+rate+'%</b> &nbsp; 连击 <b>'+streak+'</b>'+(limitChk.checked? ' &nbsp; 限时 <b>'+Math.round(allowed)+'ms</b>':'')+'<br>'+
     (fpsShow? ' <span style="color:var(--acc)">· '+fpsVal+' fps</span>':'')+
     '<br><span style="font-size:13px;color:#6e7681">看到球 → 甩过去 → 手停 → 点击</span>';
@@ -492,13 +597,13 @@ requestAnimationFrame(loop);
     var s = y>0 ? 360/((c/2.54)*d)/y : 0;
     if(y<=0){
       var sA = 360/((c/2.54)*d)/0.022, sB = 360/((c/2.54)*d)/0.0165;
-      hint.innerHTML = '→ CS 灵敏度：m_yaw 0.022 → <b style="color:var(--acc)">'+sA.toFixed(2)+
+      hint.innerHTML = '→ 游戏灵敏度：m_yaw 0.022 → <b style="color:var(--acc)">'+sA.toFixed(2)+
         '</b>　m_yaw 0.0165 → <b style="color:var(--acc)">'+sB.toFixed(2)+'</b>' +
         '<br><span style="color:#6e7681;font-size:13px">'+c.toFixed(1)+' cm/360 · DPI '+d+
         ' · 180° 转身 '+(c/2).toFixed(1)+' cm</span>';
       return;
     }
-    var txt = '→ 对应 <b style="color:var(--acc)">' + (y>0? 'CS 灵敏度 '+s.toFixed(2) : 'cm/360 '+c.toFixed(1)) + '</b>';
+    var txt = '→ 对应 <b style="color:var(--acc)">' + (y>0? '游戏灵敏度 '+s.toFixed(2) : 'cm/360 '+c.toFixed(1)) + '</b>';
     txt += ' &nbsp;<span style="color:#6e7681">(' + c.toFixed(1) + ' cm/360 · DPI ' + d + (y>0? ' · m_yaw '+y : '') + ')</span>';
     if(y>0) txt += '<br><span style="color:#6e7681;font-size:13px">360° 转身需要 ' + c.toFixed(1) + ' cm，180° 需要 ' + (c/2).toFixed(1) + ' cm</span>';
     hint.innerHTML = txt;
@@ -560,7 +665,7 @@ requestAnimationFrame(loop);
     '开 始':'START',
     '▸ 高级设置':'▸ Advanced',
     '模式':'Mode','球数':'Shots','时间限制':'Time limit','收缩模式':'Shrink',
-    '← 返回':'← Back','自动':'auto','CS 灵敏度':'CS sensitivity','目标大小':'Dot size','球大小':'Dot size','再来一组':'Again','复制本组数据':'Copy this set','关闭':'Close','继续':'Continue',
+    '← 返回':'← Back','自动':'auto','游戏灵敏度':'Game sensitivity','目标大小':'Dot size','球大小':'Dot size','再来一组':'Again','复制本组数据':'Copy this set','关闭':'Close','继续':'Continue',
     '自适应随机':'Adaptive random','定角重复':'Fixed angle','小球精度':'Precision',
     '中位用时':'Median','分段数据':'Per-segment','阶段':'Set','用时':'Time','命中率':'Hit rate',
     '限时':'Limit','球半径':'Radius','超时':'Timeouts','次':'','近 10 球命中率':'Last 10',
@@ -568,14 +673,14 @@ requestAnimationFrame(loop);
   };
   var RULES=[
     [/^→ 对应\s*$/,'→ '],
-    [/^CS 灵敏度 ([\d.]+)$/,'CS sensitivity $1'],
+    [/^游戏灵敏度 ([\d.]+)$/,'Game sensitivity $1'],
     [/^cm\/360 ([\d.]+)$/,'cm/360 $1'],
     [/^命中$/,'HIT'],[/^偏$/,'OFF'],[/^超时$/,'MISS'],
     [/^第 (\d+) 球$/,'Shot $1'],
     [/^第 (\d+) 段$/,'Set $1'],
     [/^超时 (\d+) 次$/,'$1 timeouts'],
     [/^球半径 ([\d.]+)$/,'Radius $1'],
-    [/^→ 对应 CS 灵敏度 ([\d.]+)/,'→ CS sensitivity $1'],
+    [/^→ 对应 游戏灵敏度 ([\d.]+)/,'→ Game sensitivity $1'],
     [/^→ 对应 cm\/360 ([\d.]+)/,'→ cm/360 $1'],
     [/^360° 转身需要 ([\d.]+) cm，180° 需要 ([\d.]+) cm$/,'360° needs $1 cm · 180° needs $2 cm'],
     [/^中位用时 ([\d]+) ms/,'Median $1 ms'],
@@ -632,6 +737,87 @@ requestAnimationFrame(loop);
     if(document.fullscreenElement) return;   // 全屏时 Esc 只退出全屏，不离开页面
     location.href='../app.html#play';
   });
+})();
+
+/* ===== 暂停面板：参数折叠 ===== */
+(function(){
+  var more=document.getElementById('pauseMore'), msg=document.getElementById('msg');
+  if(!more||!msg) return;
+  function sync(){
+    var paused=msg.classList.contains('paused');
+    more.style.display = paused ? 'inline-block' : 'none';
+    more.textContent = msg.classList.contains('showParams') ? '收起参数 ▴' : '参数 ▾';
+  }
+  more.addEventListener('click', function(e){
+    e.stopPropagation();
+    msg.classList.toggle('showParams');
+    sync();
+  });
+  new MutationObserver(sync).observe(msg,{attributes:true,attributeFilter:['class']});
+  sync();
+})();
+
+/* ===== 交互补丁：场景色块 / 可点提示 ===== */
+(function(){
+  var row=document.getElementById('sceneRow');
+  var adv=document.getElementById('adv');
+  var hint=document.getElementById('sensHint');
+  var NAMES={classic:'经典',lake:'湖泊',jade:'墨玉',ink:'墨鱼',light:'浅灰',night:'暗蓝',mono:'纯黑',cs:'沙色'};
+
+  function current(){
+    var keys=Object.keys(SCENES);
+    for(var i=0;i<keys.length;i++){ if(SCENES[keys[i]]===SC) return keys[i]; }
+    return 'classic';
+  }
+
+  function paint(){
+    if(!row) return;
+    var cur=current();
+    var isAuto=(function(){ try{ return localStorage.getItem('cs2at.sceneUser')!=='1'; }catch(e){ return true; } })();
+    var html='<button data-follow="1" style="display:flex;align-items:center;gap:7px;padding:6px 11px;border-radius:9px;'
+      +'border:1px solid '+(isAuto?'var(--acc)':'var(--line)')+';background:transparent;cursor:pointer;font-size:12.5px;'
+      +'font-family:inherit;color:'+(isAuto?'var(--txt)':'var(--dim)')+'">跟随主题</button>';
+    html += Object.keys(SCENES).map(function(k){
+      var s=SCENES[k];
+      var on=(k===cur)?'border-color:var(--acc);color:var(--txt)':'border-color:var(--line);color:var(--dim)';
+      return '<button data-scene="'+k+'" style="display:flex;align-items:center;gap:7px;padding:6px 11px;'
+        +'border-radius:9px;border:1px solid;background:transparent;cursor:pointer;font-size:12.5px;font-family:inherit;'+on+'">'
+        +'<span style="width:11px;height:11px;border-radius:50%;background:'+s.bg+';border:1px solid '+s.cross+'"></span>'
+        +NAMES[k]+'</button>';
+    }).join('');
+    row.innerHTML=html;
+
+    row.querySelector('[data-follow]').addEventListener('click', function(){
+      try{ localStorage.removeItem('cs2at.sceneUser'); }catch(e){}
+      SC=SCENES[pickScene()];   // 只换训练场景
+      paint();
+    });
+    row.querySelectorAll('[data-scene]').forEach(function(b){
+      b.addEventListener('click', function(){
+        var k=b.dataset.scene;
+        try{ localStorage.setItem('cs2at.scene', k); localStorage.setItem('cs2at.sceneUser','1'); }catch(e){}
+        SC=SCENES[k];          // 只换训练场景（球/准星/背景），界面不动
+        paint();
+      });
+    });
+  }
+  paint();
+
+  // 灵敏度那行：点一下展开参数
+  if(hint){
+    hint.title='去设置里改灵敏度';
+    hint.addEventListener('click', function(e){ e.stopPropagation(); location.href='../app.html#set'; });
+  }
+})();
+
+/* 恢复上次的结束方式 */
+(function(){
+  try{
+    var m=localStorage.getItem('cs2at.endMode'), t=localStorage.getItem('cs2at.endTime');
+    var sm=document.getElementById('endMode'), st=document.getElementById('endTime');
+    if(m && sm) sm.value=m;
+    if(t && st) st.value=t;
+  }catch(e){}
 })();
 </script>
 </body>

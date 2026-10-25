@@ -15,7 +15,7 @@
   #back:hover{color:var(--acc);border-color:var(--line);background:var(--panel)}
   #back.on{display:inline-block}
   .btn{margin-top:24px;padding:13px 40px;font-size:16px;font-family:inherit;cursor:pointer;
-    background:var(--acc);border:1px solid var(--acc);color:#fff;border-radius:8px;pointer-events:auto}
+    background:var(--acc);border:1px solid var(--acc);color:var(--on-acc);border-radius:8px;pointer-events:auto}
   .btn:hover{background:var(--acc)}
   input{width:110px;padding:8px;background:var(--panel);border:1px solid var(--line);color:var(--txt);
     border-radius:6px;font-size:15px;text-align:center;pointer-events:auto}
@@ -25,7 +25,7 @@
   #resBody{max-height:78vh;overflow:auto}
   td,th{padding:9px 20px;text-align:right;border-bottom:1px solid var(--panel)}
   th{color:var(--dim);font-weight:500}
-  .big{font-size:30px;font-weight:700;color:#3fb950}
+  .big{font-size:30px;font-weight:700;color:var(--acc)}
 </style>
 </head>
 <body>
@@ -34,16 +34,16 @@
 <div id="ui"></div>
 
 <div id="msg" class="overlay show">
-  <div style="font-size:19px;color:#58a6ff;margin-bottom:10px">灵敏度标定 · 过冲法（全样本）</div>
+  <div style="font-size:19px;color:var(--acc);margin-bottom:10px">灵敏度标定 · 过冲法（全样本）</div>
   <div>每次只出现一个球。看到球后<b>最快速度甩过去并点击</b>。<br>
-  程序记录你甩完的落点，算出你<b>冲过头还是没到</b>。<br><span style="color:#3fb950">本版本：全部球都计入统计</span></div>
+  程序记录你甩完的落点，算出你<b>冲过头还是没到</b>。<br><span style="color:var(--acc)">本版本：全部球都计入统计</span></div>
   <div style="margin-top:22px;color:#8b949e;font-size:14px">
     鼠标 DPI：<input id="dpi" type="number" step="100" value="1000" style="width:90px">
     &nbsp;m_yaw：<input id="yaw" type="number" step="0.0001" value="0.022" style="width:100px"><br>
     <span style="margin-top:10px;display:inline-block">当前 cm/360：<input id="cm" type="number" step="0.1" value="27"></span>
-      <span style="margin-top:10px;display:inline-block">&nbsp;CS 灵敏度：<input id="sens" type="number" step="0.01" value="" placeholder="自动" style="width:90px"></span>
+      <span style="margin-top:10px;display:inline-block">&nbsp;游戏灵敏度：<input id="sens" type="number" step="0.01" value="" placeholder="自动" style="width:90px"></span>
     &nbsp;&nbsp;球数：<input id="n" type="number" step="10" value="40" style="width:80px">
-    &nbsp;球大小：<select id="bs" style="padding:7px;background:#161b22;border:1px solid #30363d;color:#e6edf3;border-radius:6px;font-size:14px;pointer-events:auto">
+    &nbsp;球大小：<select id="bs" style="padding:7px;background:var(--panel);border:1px solid #30363d;color:#e6edf3;border-radius:6px;font-size:14px;pointer-events:auto">
       <option value="2.0">大（2.0°）</option>
       <option value="1.5" selected>标准（1.5°）</option>
       <option value="1.0">小（1.0°）</option>
@@ -61,16 +61,16 @@
 
 <script>
 const SCENES={
-  classic:{dark:true,bg:'#0b0f14',major:'rgba(88,166,255,.55)',minor:'rgba(64,76,90,1)',ceil:'rgba(50,60,72,1)',tgt:'#f85149',tgtFill:'rgba(248,81,73,.30)',cross:'#3fb950'},
-  lake:{dark:false,bg:'#eef4f6',major:'rgba(14,116,144,.45)',minor:'rgba(150,176,184,1)',ceil:'rgba(176,198,205,1)',tgt:'#0e7490',tgtFill:'rgba(14,116,144,.85)',cross:'#14313a'},
-  jade:{dark:true,bg:'#101917',major:'rgba(127,191,166,.50)',minor:'rgba(58,84,78,1)',ceil:'rgba(44,64,60,1)',tgt:'#e0a458',tgtFill:'rgba(224,164,88,.85)',cross:'#7fbfa6'},
-  ink:{dark:true,bg:'#12181d',major:'rgba(15,118,110,.55)',minor:'rgba(58,74,82,1)',ceil:'rgba(44,58,66,1)',tgt:'#ffb020',tgtFill:'rgba(255,176,32,.85)',cross:'#ffffff'},
-  light:{dark:false,bg:'#eef1f4',major:'rgba(15,118,110,.45)',minor:'rgba(160,172,182,1)',ceil:'rgba(184,194,203,1)',tgt:'#e8590c',tgtFill:'rgba(232,89,12,.85)',cross:'#111827'},
-  night:{dark:true,bg:'#0b0f14',major:'rgba(88,166,255,.50)',minor:'rgba(64,76,90,1)',ceil:'rgba(50,60,72,1)',tgt:'#ff5f56',tgtFill:'rgba(255,95,86,.85)',cross:'#7ee787'},
-  mono:{dark:true,bg:'#0f1113',major:'rgba(200,205,215,.40)',minor:'rgba(88,92,100,1)',ceil:'rgba(70,73,80,1)',tgt:'#ffd166',tgtFill:'rgba(255,209,102,.85)',cross:'#ffffff'},
-  cs:{dark:true,bg:'#2b2620',major:'rgba(214,181,120,.45)',minor:'rgba(120,110,88,1)',ceil:'rgba(98,90,72,1)',tgt:'#e5484d',tgtFill:'rgba(229,72,77,.85)',cross:'#b8e986'}
+  classic:{dark:true,ui:'#58a6ff',bg:'#0b0f14',major:'rgba(88,166,255,.55)',minor:'rgba(64,76,90,1)',ceil:'rgba(50,60,72,1)',tgt:'#f85149',tgtFill:'rgba(248,81,73,.30)',cross:'var(--acc)'},
+  lake:{dark:false,ui:'#0e7490',bg:'#eef4f6',major:'rgba(14,116,144,.45)',minor:'rgba(150,176,184,1)',ceil:'rgba(176,198,205,1)',tgt:'#0e7490',tgtFill:'rgba(14,116,144,.85)',cross:'#14313a'},
+  jade:{dark:true,ui:'#7fbfa6',bg:'#101917',major:'rgba(127,191,166,.50)',minor:'rgba(58,84,78,1)',ceil:'rgba(44,64,60,1)',tgt:'#e0a458',tgtFill:'rgba(224,164,88,.85)',cross:'#7fbfa6'},
+  ink:{dark:true,ui:'#0f766e',bg:'#12181d',major:'rgba(15,118,110,.55)',minor:'rgba(58,74,82,1)',ceil:'rgba(44,58,66,1)',tgt:'#ffb020',tgtFill:'rgba(255,176,32,.85)',cross:'#ffffff'},
+  light:{dark:false,ui:'#2f6feb',bg:'#eef1f4',major:'rgba(15,118,110,.45)',minor:'rgba(160,172,182,1)',ceil:'rgba(184,194,203,1)',tgt:'#e8590c',tgtFill:'rgba(232,89,12,.85)',cross:'#111827'},
+  night:{dark:true,ui:'#58a6ff',bg:'#0b0f14',major:'rgba(88,166,255,.50)',minor:'rgba(64,76,90,1)',ceil:'rgba(50,60,72,1)',tgt:'#ff5f56',tgtFill:'rgba(255,95,86,.85)',cross:'#7ee787'},
+  mono:{dark:true,ui:'#c9d1d9',bg:'#0f1113',major:'rgba(200,205,215,.40)',minor:'rgba(88,92,100,1)',ceil:'rgba(70,73,80,1)',tgt:'#ffd166',tgtFill:'rgba(255,209,102,.85)',cross:'#ffffff'},
+  cs:{dark:true,ui:'#d6b578',bg:'#2b2620',major:'rgba(214,181,120,.45)',minor:'rgba(120,110,88,1)',ceil:'rgba(98,90,72,1)',tgt:'#e5484d',tgtFill:'rgba(229,72,77,.85)',cross:'#b8e986'}
 };
-const THEME2SCENE={jade:'jade',ink:'ink',lake:'lake',light:'light',sand:'cs',forest:'jade',mono:'mono',cyber:'night',night:'night'};
+const THEME2SCENE={jade:'jade',ink:'ink',lake:'lake',light:'light',sand:'light',forest:'jade',mono:'mono',cyber:'night',night:'night'};
 function pickScene(){
   try{
     const q=new URLSearchParams(location.search);
@@ -88,9 +88,14 @@ const SC=SCENES[pickScene()]||SCENES.classic;
   r.setProperty('--bg',SC.bg);
   r.setProperty('--txt',dark?'#e6edf3':'#14313a');
   r.setProperty('--dim',dark?'#8b949e':'#5b6b73');
-  r.setProperty('--panel',dark?'#161b22':'#ffffff');
+  r.setProperty('--panel',dark?'var(--panel)':'#ffffff');
   r.setProperty('--line',dark?'#30363d':'#d7e0e4');
-  r.setProperty('--acc',SC.cross);
+  const ui=SC.ui||SC.cross;
+  const rgb=(function(h){h=(h||'').replace('#','');if(h.length===3)h=h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+    const v=parseInt(h,16);return isNaN(v)?[255,255,255]:[(v>>16)&255,(v>>8)&255,v&255];})(ui);
+  const lum=(0.299*rgb[0]+0.587*rgb[1]+0.114*rgb[2])/255;
+  r.setProperty('--acc',ui);
+  r.setProperty('--on-acc', lum>0.62?'#111820':'#ffffff');
   r.setProperty('--overlay',dark?'rgba(11,15,20,.96)':'rgba(238,244,246,.97)');
 })();
 
@@ -169,7 +174,7 @@ function start(){
   cmInput.value=cm360.toFixed(1);
   nTrial=parseInt(document.getElementById('n').value)||40;
   if(nTrial<10) nTrial=10; if(nTrial>300) nTrial=300;
-  running=true; paused=false; trial=0; result={f:[],t:[],lat:[],dist:[],hit:[],err:[]};
+  running=true; paused=false; trial=0; result={f:[],t:[],lat:[],dist:[],hit:[],err:[],pts:[]};
   msg.classList.remove('show'); res.classList.remove('show');
   yaw=0; pitch=0; newTarget();
   if(!document.fullscreenElement && document.documentElement.requestFullscreen)
@@ -203,6 +208,7 @@ function judge(now){
   result.hit.push(errDeg <= ballDeg);
   result.err.push(errDeg);
   result.f.push(ratio-1);
+  try{ if(!result.pts) result.pts=[]; result.pts.push({a:(ratio-1)*L*R2D, l:(dxC*(-uy)+dyC*ux)*R2D, hit:(errDeg<=ballDeg)}); }catch(e){}
   result.lat.push(lat/L);
   result.dist.push(L*R2D);
   result.t.push(now-tSpawn);
@@ -254,7 +260,7 @@ function finish(){
   const np=Math.round(negF.length/Math.max(1,posF.length+negF.length)*100);
 
   resBody.innerHTML=
-    '<div style="font-size:17px;color:#58a6ff;margin-bottom:4px">结果</div>'+
+    '<div style="font-size:17px;color:var(--acc);margin-bottom:4px">结果</div>'+
     '<table class="rt">'+
     row('甩动 / 用时', dm.toFixed(1)+'° / '+tm.toFixed(0)+' ms')+
     row('横向偏差', lm.toFixed(1)+'%')+
@@ -267,15 +273,53 @@ function finish(){
     row('累计 · 仅未命中', (impliedMiss.length? med(impliedMiss).toFixed(1)+' cm → sens <b>'+sensOf(med(impliedMiss)).toFixed(2)+'</b>' : '-'))+
     '</table>'+
     '<div style="margin-top:12px;font-size:14px">'+verdict+'</div>'+
-    (conv? '<div style="margin-top:8px;color:#3fb950;font-weight:700">✓ 连续两轮变化 &lt;1%，已收敛 —— 可以定稿</div>' : '');
+    (conv? '<div style="margin-top:8px;color:var(--acc);font-weight:700">✓ 连续两轮变化 &lt;1%，已收敛 —— 可以定稿</div>' : '');
   res.classList.add('show');
+  try{ addScatter(); }catch(e){}
+}
+
+function addScatter(){
+  var old=document.getElementById('scatter'); if(old) old.remove();
+  var pts=(result.pts||[]).slice();
+  if(!pts.length) return;
+  var cv=document.createElement('canvas');
+  cv.id='scatter';
+  var dpr=devicePixelRatio||1, S=260;
+  cv.width=S*dpr; cv.height=S*dpr;
+  cv.style.cssText='display:block;margin:14px auto 0;width:'+S+'px;height:'+S+'px;border-radius:12px;background:var(--panel)';
+  var g=cv.getContext('2d'); g.scale(dpr,dpr);
+  var c=S/2;
+  var maxR=Math.max(1, ...pts.map(function(p){ return Math.hypot(p.a,p.l); }));
+  var k=(S*0.42)/maxR;
+
+  // 网格
+  g.strokeStyle='rgba(139,148,158,.28)'; g.lineWidth=1;
+  g.beginPath(); g.moveTo(c,8); g.lineTo(c,S-8); g.moveTo(8,c); g.lineTo(S-8,c); g.stroke();
+  g.beginPath(); g.arc(c,c,Math.max(2,ballDeg*k),0,Math.PI*2); g.strokeStyle='rgba(139,148,158,.45)'; g.stroke();
+
+  // 落点：a 向上偏（过头在上），l 向右
+  pts.forEach(function(p){
+    var x=c+p.l*k, y=c-p.a*k;
+    g.beginPath(); g.arc(x,y,3.2,0,Math.PI*2);
+    g.fillStyle=p.hit?'rgba(63,185,80,.85)':'rgba(248,81,73,.85)'; g.fill();
+  });
+
+  // 中心
+  g.beginPath(); g.arc(c,c,2,0,Math.PI*2); g.fillStyle='rgba(88,166,255,.9)'; g.fill();
+
+  var cap=document.createElement('div');
+  cap.style.cssText='text-align:center;font-size:12px;color:var(--dim);margin-top:6px';
+  cap.textContent='落点：上=过头 下=不足 · 圈内=命中';
+
+  var body=document.getElementById('resBody');
+  if(body){ body.appendChild(cv); body.appendChild(cap); }
 }
 
 go.addEventListener('click',e=>{ e.stopPropagation(); if(paused) resume(); else start(); });
 document.getElementById('clr').addEventListener('click',e=>{
   e.stopPropagation();
   allRuns.length=0;
-  resBody.innerHTML+='<div style="margin-top:10px;color:#3fb950;font-size:13px">累计已清空</div>';
+  resBody.innerHTML+='<div style="margin-top:10px;color:var(--acc);font-size:13px">累计已清空</div>';
 });
 
 again.addEventListener('click',e=>{
@@ -381,7 +425,7 @@ requestAnimationFrame(loop);
   var ok = (typeof window !== 'undefined') && ('onpointerrawupdate' in window);
   if(!ok){
     el.innerHTML = '⚠️ 当前浏览器不支持 pointerrawupdate，采样精度会降低<br>' +
-      '建议使用 <b style="color:#3fb950">Chrome</b> 或 <b style="color:#3fb950">Edge</b>';
+      '建议使用 <b style="color:var(--acc)">Chrome</b> 或 <b style="color:var(--acc)">Edge</b>';
   }
 })();
 
@@ -393,7 +437,7 @@ requestAnimationFrame(loop);
     var d = num('dpi',1000), y = num('yaw', document.getElementById('yaw')?0.022:0), c = num('cm',27);
     if(!(d>0 && c>0)) { hint.textContent=''; return; }
     var s = y>0 ? 360/((c/2.54)*d)/y : 0;
-    var txt = '→ 对应 <b style="color:#3fb950">' + (y>0? 'CS 灵敏度 '+s.toFixed(2) : 'cm/360 '+c.toFixed(1)) + '</b>';
+    var txt = '→ 对应 <b style="color:var(--acc)">' + (y>0? '游戏灵敏度 '+s.toFixed(2) : 'cm/360 '+c.toFixed(1)) + '</b>';
     txt += ' &nbsp;<span style="color:#6e7681">(' + c.toFixed(1) + ' cm/360 · DPI ' + d + (y>0? ' · m_yaw '+y : '') + ')</span>';
     if(y>0) txt += '<br><span style="color:#6e7681;font-size:13px">360° 转身需要 ' + c.toFixed(1) + ' cm，180° 需要 ' + (c/2).toFixed(1) + ' cm</span>';
     hint.innerHTML = txt;
@@ -441,7 +485,7 @@ requestAnimationFrame(loop);
     '冲过头还是没到':'overshot or undershot',
     '。':'.',
     '开始':'START','重新开始':'Restart','结束':'End','结果':'Result',
-    '鼠标 DPI':'Mouse DPI','当前 cm/360':'Current cm/360','CS 灵敏度':'CS sensitivity',
+    '鼠标 DPI':'Mouse DPI','当前 cm/360':'Current cm/360','游戏灵敏度':'Game sensitivity',
     '球数':'Shots','球大小':'Dot size','标准（1.5°）':'Standard (1.5°)','大（2.2°）':'Large (2.2°)','小（1.0°）':'Small (1.0°)',
     '中位偏移':'Median offset','偏慢':'too slow','偏快':'too fast',
     '建议灵敏度':'Suggested sensitivity','当前灵敏度':'Current sensitivity','误差':'error',
@@ -450,8 +494,8 @@ requestAnimationFrame(loop);
   };
   var RULES=[
     [/^→ 对应\s*$/,'→ '],
-    [/^CS 灵敏度 ([\d.]+)$/,'CS sensitivity $1'],
-    [/^→ 对应 CS 灵敏度 ([\d.]+)/,'→ CS sensitivity $1'],
+    [/^游戏灵敏度 ([\d.]+)$/,'Game sensitivity $1'],
+    [/^→ 对应 游戏灵敏度 ([\d.]+)/,'→ Game sensitivity $1'],
     [/^→ 对应 cm\/360 ([\d.]+)/,'→ cm/360 $1'],
     [/^360° 转身需要 ([\d.]+) cm，180° 需要 ([\d.]+) cm$/,'360° needs $1 cm · 180° needs $2 cm'],
     [/^第 (\d+) 球$/,'Shot $1'],

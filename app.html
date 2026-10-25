@@ -470,7 +470,7 @@
       <div class="row">
         <div><div class="k">鼠标 DPI</div><input id="iDpi" type="number" step="100" value="1000"></div>
         <div><div class="k">m_yaw</div><input id="iYaw" type="number" step="0.0001" value="0.013052"></div>
-        <div><div class="k">CS 灵敏度</div><input id="iSens" type="number" step="0.01" value="1.92"></div>
+        <div><div class="k">游戏灵敏度</div><input id="iSens" type="number" step="0.01" value="1.92"></div>
         <div><div class="k">cm/360</div><input id="iCm" type="number" step="0.1" value="36.5"></div>
       </div>
       <div class="hint" id="calcHint" style="margin:12px 0 0"></div>
@@ -577,7 +577,7 @@ const EN={
   '先到设置页做一次灵敏度标定，之后每天按计划练。':'Calibrate once in Settings, then follow the plan.',
   '四周计划，自动判断今天该练什么。':'Four-week plan; it knows what to do today.',
   '这里的参数会自动带进所有训练页面。':'These values are passed to every trainer page.',
-  '灵敏度':'Sensitivity','鼠标 DPI':'Mouse DPI','CS 灵敏度':'CS sensitivity',
+  '灵敏度':'Sensitivity','鼠标 DPI':'Mouse DPI','游戏灵敏度':'Game sensitivity',
   '灵敏度标定 · 过冲法':'Calibrator · overshoot','灵敏度标定 · 严格口径':'Calibrator · strict',
   '测出你每次都甩过头还是不够，直接反推该填的值。':'Measures whether you overshoot or fall short, and derives the value.',
   '同上，但只统计未命中的球，适合已经比较稳的人。':'Same, but only counts misses. For players who are already consistent.',
@@ -652,10 +652,11 @@ applyTheme(localStorage.getItem(K_THEME)||'jade');
 function show(t){
   document.querySelectorAll('section').forEach(s=>s.classList.toggle('on', s.id===t));
   document.querySelectorAll('nav a').forEach(a=>a.classList.toggle('on', a.dataset.t===t));
+  applyLang();                       // 先把语言定下来，再渲染动态内容
   if(t==='data') renderData();
   if(t==='play') renderDrills();
   if(t==='set')  fillSettings();
-  applyLang();
+  applyLang();                       // 渲染完再翻一次（兜住新插入的文本）
 }
 
 let switching=false, watchdog=null;
@@ -831,7 +832,7 @@ function renderDrills(){
      dEN:'0.7° dots, no limit. For one-shot precision.',
      u:'tools/aim-trainer.html?mode=precision&count=40&limit=0'+q}
   ];
-  const drillEN=(document.documentElement.getAttribute('lang')==='en');
+  const drillEN=(typeof LANG!=='undefined' && LANG==='en');
   $('drillGrid').innerHTML=items.map(i=>
     '<a class="tile" href="'+i.u+'"><div class="t">'+i.t+'</div><div class="d">'+(drillEN?i.dEN:i.d)+'</div></a>').join('');
 }

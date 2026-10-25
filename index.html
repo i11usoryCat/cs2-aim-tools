@@ -256,60 +256,40 @@ var EN={
   var LANG='zh';
   try{ LANG=localStorage.getItem('cs2at.lang')||'zh'; }catch(e){}
 
-  const __ORIG=new WeakMap();   // 记住每个文本节点的原文，来回切换不累积
-function translateRoot(root, lang){
-  try{
+  function translateRoot(root, lang){
     if(!root || !document.createTreeWalker) return;
-    const map = (lang==='en') ? EN : ZH;
-    const w=document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-    let n;
+    var w=document.createTreeWalker(root, NodeFilter.SHOW_TEXT), n;
     while((n=w.nextNode())){
-      let orig=__ORIG.get(n);
-      if(orig===undefined){ orig=n.nodeValue; __ORIG.set(n, orig); }
-      const t=orig.trim();
+      var t=n.nodeValue.trim();
       if(!t) continue;
-      n.nodeValue = map[t] ? orig.replace(t, map[t]) : orig;
+      if(lang==='en'){ if(EN[t]) n.nodeValue=n.nodeValue.replace(t, EN[t]); }
+      else { if(ZH[t]) n.nodeValue=n.nodeValue.replace(t, ZH[t]); }
     }
-  }catch(e){}
-}
+  }
+  function applyLang(lang){
+    document.documentElement.setAttribute('lang', lang==='en'?'en':'zh-CN');
+    translateRoot(document.body, lang);
+  }
+  function markSwitch(lang){
+    var box=document.getElementById('langTop');
+    if(box) box.querySelectorAll('span[data-l]').forEach(function(el){ el.classList.toggle('on', el.dataset.l===lang); });
+  }
 
-function markSwitch(l){
-  try{
-    document.querySelectorAll('#langTop span[data-l]').forEach(function(el){
-      el.classList.toggle('on', el.dataset.l===l);
-    });
-  }catch(e){}
-}
-function applyLang(l){
-  l = l || LANG;
-  document.documentElement.setAttribute('lang', l==='en'?'en':'zh-CN');
-  translateRoot(document.body, l);
-  markSwitch(l);
-  try{
-    const map=(l==='en')?EN:ZH;
-    document.querySelectorAll('[title],[placeholder]').forEach(function(el){
-      ['title','placeholder'].forEach(function(a){
-        if(!el.hasAttribute(a)) return;
-        const key='__o_'+a;
-        if(!el.dataset[key]) el.dataset[key]=el.getAttribute(a);
-        const orig=el.dataset[key], t=orig.trim();
-        el.setAttribute(a, map[t]||orig);
-      });
-    });
-  }catch(e){}
-}
 
-function setLang(l){ LANG=l; try{ localStorage.setItem('cs2at.lang', l); }catch(e){} }
-var switching=false, watchdog=null;
+  function storeLang(l){ try{ localStorage.setItem('cs2at.lang', l); }catch(e){} }
+
+let switching=false, watchdog=null;
+
 function rippleSwitch(lang, cx, cy){
   if(switching) return;
   switching=true;
 
+  var fx=document.getElementById('fx');
+
   clearTimeout(watchdog);
   watchdog=setTimeout(function(){
     if(switching){
-      try{ LANG=lang; setLang(lang); applyLang(); }catch(e){}
-            try{ if(window.__vRender) window.__vRender(); }catch(e){}
+      try{ LANG=lang; localStorage.setItem('cs2at.lang',lang); applyLang(lang); markSwitch(lang); }catch(e){}
       document.querySelectorAll('.langBlocker,.langLayer,.langCanvas').forEach(function(el){ el.remove(); });
       try{ document.documentElement.style.overflow=''; }catch(e){}
       switching=false;
@@ -331,16 +311,16 @@ function rippleSwitch(lang, cx, cy){
   blocker.addEventListener('touchmove', stopScroll, {passive:false});
 
   // ① 按钮先切（这是用户看到的第一个反馈）
-  var lsReal=document.getElementById('langSw');
-  if(lsReal) lsReal.querySelectorAll('span[data-lang]').forEach(function(el){ el.classList.toggle('on', el.dataset.l===lang); });
+  var lsReal=document.getElementById('langTop');
+  if(lsReal) lsReal.querySelectorAll('span[data-l]').forEach(function(el){ el.classList.toggle('on', el.dataset.l===lang); });
 
   // ② 复制当前页面（旧语言），塞进滚动容器
   var scroller=null, layer=null;
   try{
     var src=document.body.cloneNode(true);
     src.querySelectorAll('script,iframe,canvas').forEach(function(el){ el.remove(); });
-    var hSrc=src.querySelector('header');
-    if(hSrc){ hSrc.style.background='var(--bg)'; hSrc.style.backdropFilter='none'; hSrc.style.webkitBackdropFilter='none'; }
+    var hSrc=src.querySelector('#langTop');
+    if(hSrc){ hSrc.style.background='var(--bg)'; }
     scroller=document.createElement('div');
     scroller.style.cssText='position:absolute;inset:0;overflow:auto;scrollbar-width:none;-ms-overflow-style:none';
     scroller.appendChild(src);
@@ -353,15 +333,17 @@ function rippleSwitch(lang, cx, cy){
       +'clip-path:circle(0px at '+cx+'px '+cy+'px)';
     layer.appendChild(scroller);
 
+
+
     translateRoot(layer, lang);   // 复制层翻成新语言
-    try{ window.__vRender(scroller, lang==='en'?'en':'zh-CN'); }catch(e){}   // 日历/星期/月份也画成目标语言
+    layer.querySelectorAll('#langTop span[data-l]').forEach(function(el){ el.classList.toggle('on', el.dataset.l===lang); });
     document.body.appendChild(layer);
     scroller.scrollTop=scrollTop;
     requestAnimationFrame(function(){ scroller.scrollTop=scrollTop; });
   }catch(e){ layer=null; }
 
   if(!layer){
-    try{ LANG=lang; setLang(lang); applyLang(); try{ if(window.__vRender) window.__vRender(); }catch(e){} }catch(e){}
+    try{ LANG=lang; localStorage.setItem('cs2at.lang',lang); applyLang(lang); markSwitch(lang); }catch(e){}
     blocker.remove(); htmlEl.style.overflow=prevOverflow;
     switching=false; return;
   }
@@ -401,16 +383,15 @@ function rippleSwitch(lang, cx, cy){
     if(t<1){ requestAnimationFrame(step); return; }
 
     // ④ 遮罩盖满之后，真实页面才切语言
-    try{ LANG=lang; setLang(lang); applyLang(); try{ if(window.__vRender) window.__vRender(); }catch(e){} }catch(e){}
-    try{
-      var lsF=document.getElementById('langSw');
-      if(lsF) lsF.querySelectorAll('span[data-lang]').forEach(function(el){ el.classList.toggle('on', el.dataset.l===lang); });
-    }catch(e){}
+    try{ LANG=lang; localStorage.setItem('cs2at.lang',lang); applyLang(lang); markSwitch(lang); }catch(e){}
+    try{ markSwitch(lang); }catch(e){}
 
     layer.style.clipPath='circle(300vmax at '+cx+'px '+cy+'px)';
     cv.width=0; cv.height=0; cv.remove();
     requestAnimationFrame(function(){
       layer.remove(); blocker.remove();
+
+      try{ if(window.__fxResurface) window.__fxResurface(cx,cy); }catch(e){}   // 和波浪同方向，依次浮现
       htmlEl.style.overflow=prevOverflow;
       clearTimeout(watchdog);
       switching=false;

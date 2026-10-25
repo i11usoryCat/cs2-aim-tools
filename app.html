@@ -668,12 +668,14 @@ function rippleSwitch(lang, cx, cy){
   clearTimeout(watchdog);
   watchdog=setTimeout(function(){
     if(switching){
-      try{ LANG=lang; setLang(lang); applyLang(); try{ if(window.__vRender) window.__vRender(); }catch(e){} }catch(e){}
+      try{ LANG=lang; setLang(lang); applyLang(); }catch(e){}
+      try{ show((location.hash||'#data').slice(1)); }catch(e){}
+      try{ if(window.__vRender) window.__vRender(); }catch(e){}
       document.querySelectorAll('.langBlocker,.langLayer,.langCanvas').forEach(function(el){ el.remove(); });
       try{ document.documentElement.style.overflow=''; }catch(e){}
       switching=false;
     }
-  }, 6000);
+  }, 3000);
 
   var blocker=document.createElement('div');
   blocker.className='langBlocker';

@@ -142,27 +142,16 @@
   const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
   let W=0,H=0,pts=[],ACC=[15,118,110],DIM=[109,122,123],started=false;
 
-  function hex2rgb(h){
-    h=(h||'').trim().replace('#','');
-    if(h.length===3) h=h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
-    const v=parseInt(h,16);
-    if(isNaN(v)||h.length!==6) return [15,118,110];
-    return [(v>>16)&255,(v>>8)&255,v&255];
-  }
-  function readTheme(){
-    const cs=getComputedStyle(document.documentElement);
-    ACC=hex2rgb(cs.getPropertyValue('--acc'));
-    DIM=hex2rgb(cs.getPropertyValue('--dim') || cs.getPropertyValue('--dim2'));
-  }
+  const COLORS=[[15,118,110],[180,83,9],[32,43,44]];   // 原来的三色，照旧
   function pickColor(){
-    return Math.random()<0.6 ? {c:ACC, a:0.38} : {c:DIM, a:0.30};
+    return { c: COLORS[(Math.random()*COLORS.length)|0], a: 0.55 };
   }
 
   // 只画，不管循环
   function draw(){
     ctx.clearRect(0,0,W,H);
     const lim=(150*devicePixelRatio)**2;
-    const lineBase='rgba('+ACC[0]+','+ACC[1]+','+ACC[2]+',';
+    const lineBase='rgba(15,118,110,';
     for(let i=0;i<pts.length;i++) for(let j=i+1;j<pts.length;j++){
       const dx=pts[i].x-pts[j].x, dy=pts[i].y-pts[j].y, d=dx*dx+dy*dy;
       if(d<lim){ ctx.strokeStyle=lineBase+(0.10*(1-d/lim))+')';
@@ -198,15 +187,8 @@
     draw();   // 尺寸变了会清空画布，这里立刻补画
   }
 
-  readTheme();
   addEventListener('resize',resize);
   resize();
-
-  new MutationObserver(function(){
-    readTheme();
-    pts.forEach(function(pt){ const pc=pickColor(); pt.c=pc.c; pt.a=pc.a; });
-    draw();
-  }).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
 
   const qs=new URLSearchParams(location.search);
   const noMotion=qs.get('motion')==='0';      // 想彻底停：加 ?motion=0

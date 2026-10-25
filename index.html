@@ -248,11 +248,17 @@ function rippleSwitch(lang, cx, cy){
   if(switching) return;
   switching=true;
 
+  // 粒子浮到遮罩上面，动画期间继续飘
+  var fx=document.getElementById('fx');
+  var fxZ=fx?fx.style.zIndex:'';
+  if(fx){ fx.style.zIndex='9002'; }
+
   clearTimeout(watchdog);
   watchdog=setTimeout(function(){
     if(switching){
       try{ LANG=lang; localStorage.setItem('cs2at.lang',lang); applyLang(lang); markSwitch(lang); }catch(e){}
       document.querySelectorAll('.langBlocker,.langLayer,.langCanvas').forEach(function(el){ el.remove(); });
+      try{ if(fx) fx.style.zIndex=fxZ; }catch(e){}
       try{ document.documentElement.style.overflow=''; }catch(e){}
       switching=false;
     }
@@ -350,6 +356,7 @@ function rippleSwitch(lang, cx, cy){
     cv.width=0; cv.height=0; cv.remove();
     requestAnimationFrame(function(){
       layer.remove(); blocker.remove();
+      if(fx) fx.style.zIndex=fxZ;
       htmlEl.style.overflow=prevOverflow;
       clearTimeout(watchdog);
       switching=false;

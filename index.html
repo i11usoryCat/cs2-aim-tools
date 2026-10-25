@@ -182,7 +182,7 @@
       if(p.y<0||p.y>H) p.vy*=-1;
     }
     draw();
-    if(!reduce) requestAnimationFrame(step);
+    if(!noMotion) requestAnimationFrame(step);   // 只有 ?motion=0 才停
   }
 
   function resize(){

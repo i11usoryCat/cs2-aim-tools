@@ -347,10 +347,6 @@
   html{scrollbar-width:none}
   html::-webkit-scrollbar{display:none}
   ::-webkit-scrollbar{width:0;height:0}
-  /* 双语文案：由 html[lang] 决定显示哪一个，不依赖 JS 重绘 */
-  .tx-en{display:none}
-  html[lang="en"] .tx-en{display:inline}
-  html[lang="en"] .tx-zh{display:none}
 </style>
 </head>
 <body>
@@ -576,6 +572,9 @@ const EN={
   '各模式最佳':'Best per mode','最近记录':'Recent runs',
   '模式':'Mode','最低限时':'Best limit','最高命中率':'Best hit','最快中位用时':'Fastest median','组数':'Sets',
   '自适应随机':'Adaptive random','定角重复':'Fixed angle','小球精度':'Precision',
+  '球与限时按 85% 成功率自动调节，主练用这个。':'Size and limit auto-adjust to hold ~85% success. For main practice.',
+  '同一角度连打 8 球，形成运动程序，热身用。':'Eight shots on one angle to build a motor program. For warm-up.',
+  '0.7° 小球，无时限，练一次定位的精度。':'0.7° dots, no limit. For one-shot precision.',
   '日期':'Date','限时':'Limit','命中率':'Hit rate','中位用时':'Median',
   '导出 JSON':'Export JSON','导入':'Import','清空全部数据':'Clear all data',
   '还没有数据，去练一组吧':'No data yet — run a set','暂无记录':'No runs yet',
@@ -622,23 +621,46 @@ const EN={
 let LANG='zh';
 const ZH={};
 Object.keys(EN).forEach(k=>{ ZH[EN[k]]=k; });
+const __ORIG=new WeakMap();   // 记住每个文本节点的原文，来回切换不累积
+function L(zh,en){ return (LANG==='en') ? en : zh; }
+
 function translateRoot(root, lang){
   try{
     if(!root || !document.createTreeWalker) return;
+    const map = (lang==='en') ? EN : ZH;
     const w=document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     let n;
     while((n=w.nextNode())){
-      const t=n.nodeValue.trim();
+      let orig=__ORIG.get(n);
+      if(orig===undefined){ orig=n.nodeValue; __ORIG.set(n, orig); }
+      const t=orig.trim();
       if(!t) continue;
-      try{ if(n.parentElement && n.parentElement.closest('[data-keep]')) continue; }catch(e){}
-      if(lang==='en'){ if(EN[t]) n.nodeValue=n.nodeValue.replace(t, EN[t]); }
-      else { if(ZH[t]) n.nodeValue=n.nodeValue.replace(t, ZH[t]); }
+      n.nodeValue = map[t] ? orig.replace(t, map[t]) : orig;
     }
   }catch(e){}
 }
 function applyLang(){
   document.documentElement.setAttribute('lang', LANG==='en'?'en':'zh-CN');
   translateRoot(document.body, LANG);
+  // 开关状态跟 LANG 对齐（波浪没跑完也不会错位）
+  try{
+    document.querySelectorAll('#langSw span[data-lang]').forEach(function(el){
+      el.classList.toggle('on', el.dataset.lang===LANG);
+    });
+  }catch(e){}
+  // 属性文本：text 节点遍历碰不到 title / placeholder
+  try{
+    const map=(LANG==='en')?EN:ZH;
+    document.querySelectorAll('[title],[placeholder]').forEach(function(el){
+      ['title','placeholder'].forEach(function(a){
+        if(!el.hasAttribute(a)) return;
+        const key='__o_'+a;
+        if(!el.dataset[key]) el.dataset[key]=el.getAttribute(a);
+        const orig=el.dataset[key], t=orig.trim();
+        el.setAttribute(a, map[t]||orig);
+      });
+    });
+  }catch(e){}
 }
 function setLang(l){ LANG=l; try{ localStorage.setItem(K_LANG,l); }catch(e){} }
 
@@ -840,12 +862,8 @@ function renderDrills(){
      dEN:'0.7° dots, no limit. For one-shot precision.',
      u:'tools/aim-trainer.html?mode=precision&count=40&limit=0'+q}
   ];
-  const T_EN={'自适应随机':'Adaptive random','定角重复':'Fixed angle','小球精度':'Precision'};
   $('drillGrid').innerHTML=items.map(function(it){
-    return '<a class="tile" href="'+it.u+'">'
-      + '<div class="t"><span data-keep class="tx-zh">'+it.t+'</span><span data-keep class="tx-en">'+(T_EN[it.t]||it.t)+'</span></div>'
-      + '<div class="d"><span data-keep class="tx-zh">'+it.d+'</span><span data-keep class="tx-en">'+it.dEN+'</span></div>'
-      + '</a>';
+    return '<a class="tile" href="'+it.u+'"><div class="t">'+it.t+'</div><div class="d">'+it.d+'</div></a>';
   }).join('');
 }
 
@@ -899,7 +917,7 @@ function updateCalc(){
   const EN_UI=(document.documentElement.getAttribute('lang')==='en');
   $('calcHint').textContent = EN_UI
     ? '360° turn needs '+c.toFixed(1)+' cm · 180° needs '+(c/2).toFixed(1)+' cm · sensitivity '+s.toFixed(2)+' (m_yaw '+y+' · DPI '+d+')'
-    : '360° 转身需要 '+c.toFixed(1)+' cm · 180° 需要 '+(c/2).toFixed(1)+' cm · sensitivity '+s.toFixed(2)+'（m_yaw '+y+' · DPI '+d+'）';
+    : L('360° 转身需要','360° turn needs ')+c.toFixed(1)+' cm · '+L('180° 需要','180° needs ')+(c/2).toFixed(1)+' cm · sensitivity '+s.toFixed(2)+'（m_yaw '+y+' · DPI '+d+'）';
 }
 function fillSettings(){
   $('iDpi').value=cfg.dpi; $('iYaw').value=cfg.yaw; $('iSens').value=cfg.sens; $('iCm').value=cfg.cm;
@@ -1449,6 +1467,20 @@ bindLang();
 initPlan();
 (function purgeStale(){
   document.querySelectorAll('.langBlocker,.langLayer,.langCanvas').forEach(function(el){ el.remove(); });
+})();
+</script>
+<script>
+/* 版本号连点 7 次 → 小肥鱼 */
+(function(){
+  var t=document.getElementById('buildTag'); if(!t) return;
+  var n=0, timer=null;
+  t.style.cursor='default'; t.style.userSelect='none';
+  t.addEventListener('click', function(e){
+    e.preventDefault();
+    n++; clearTimeout(timer);
+    timer=setTimeout(function(){ n=0; }, 2500);
+    if(n>=7){ n=0; location.href='小肥鱼.html'; }
+  });
 })();
 </script>
 </body>

@@ -256,149 +256,21 @@ var EN={
   var LANG='zh';
   try{ LANG=localStorage.getItem('cs2at.lang')||'zh'; }catch(e){}
 
-  function translateRoot(root, lang){
-    if(!root || !document.createTreeWalker) return;
-    var w=document.createTreeWalker(root, NodeFilter.SHOW_TEXT), n;
-    while((n=w.nextNode())){
-      var t=n.nodeValue.trim();
-      if(!t) continue;
-      if(lang==='en'){ if(EN[t]) n.nodeValue=n.nodeValue.replace(t, EN[t]); }
-      else { if(ZH[t]) n.nodeValue=n.nodeValue.replace(t, ZH[t]); }
-    }
-  }
-  function applyLang(lang){
-    document.documentElement.setAttribute('lang', lang==='en'?'en':'zh-CN');
-    translateRoot(document.body, lang);
-  }
-  function markSwitch(lang){
-    var box=document.getElementById('langTop');
-    if(box) box.querySelectorAll('span[data-l]').forEach(function(el){ el.classList.toggle('on', el.dataset.l===lang); });
-  }
-
-
-  function storeLang(l){ try{ localStorage.setItem('cs2at.lang', l); }catch(e){} }
-
-let switching=false, watchdog=null;
-
-function rippleSwitch(lang, cx, cy){
-  if(switching) return;
-  switching=true;
-
-  var fx=document.getElementById('fx');
-
-  clearTimeout(watchdog);
-  watchdog=setTimeout(function(){
-    if(switching){
-      try{ LANG=lang; localStorage.setItem('cs2at.lang',lang); applyLang(lang); markSwitch(lang); }catch(e){}
-      document.querySelectorAll('.langBlocker,.langLayer,.langCanvas').forEach(function(el){ el.remove(); });
-      try{ document.documentElement.style.overflow=''; }catch(e){}
-      switching=false;
-    }
-  }, 3000);
-
-  var blocker=document.createElement('div');
-  blocker.className='langBlocker';
-  blocker.style.cssText='position:fixed;inset:0;z-index:9500;cursor:default;background:transparent;touch-action:none';
-  document.body.appendChild(blocker);
-
-  var htmlEl=document.documentElement;
-  var prevOverflow=htmlEl.style.overflow;
-  var scrollTop=window.scrollY||0;
-  htmlEl.style.overflow='hidden';
-
-  var stopScroll=function(ev){ ev.preventDefault(); };
-  blocker.addEventListener('wheel', stopScroll, {passive:false});
-  blocker.addEventListener('touchmove', stopScroll, {passive:false});
-
-  // ① 按钮先切（这是用户看到的第一个反馈）
-  var lsReal=document.getElementById('langTop');
-  if(lsReal) lsReal.querySelectorAll('span[data-l]').forEach(function(el){ el.classList.toggle('on', el.dataset.l===lang); });
-
-  // ② 复制当前页面（旧语言），塞进滚动容器
-  var scroller=null, layer=null;
+  const __ORIG=new WeakMap();   // 记住每个文本节点的原文，来回切换不累积
+function translateRoot(root, lang){
   try{
-    var src=document.body.cloneNode(true);
-    src.querySelectorAll('script,iframe,canvas').forEach(function(el){ el.remove(); });
-    var hSrc=src.querySelector('#langTop');
-    if(hSrc){ hSrc.style.background='var(--bg)'; }
-    scroller=document.createElement('div');
-    scroller.style.cssText='position:absolute;inset:0;overflow:auto;scrollbar-width:none;-ms-overflow-style:none';
-    scroller.appendChild(src);
-
-    layer=document.createElement('div');
-    layer.className='langLayer';
-    layer.style.cssText='position:fixed;inset:0;z-index:9000;pointer-events:none;overflow:hidden;'
-      +'background:var(--bg);contain:layout paint;transform:translateZ(0);'
-      +'backface-visibility:hidden;isolation:isolate;'
-      +'clip-path:circle(0px at '+cx+'px '+cy+'px)';
-    layer.appendChild(scroller);
-
-
-
-    translateRoot(layer, lang);   // 复制层翻成新语言
-    layer.querySelectorAll('#langTop span[data-l]').forEach(function(el){ el.classList.toggle('on', el.dataset.l===lang); });
-    document.body.appendChild(layer);
-    scroller.scrollTop=scrollTop;
-    requestAnimationFrame(function(){ scroller.scrollTop=scrollTop; });
-  }catch(e){ layer=null; }
-
-  if(!layer){
-    try{ LANG=lang; localStorage.setItem('cs2at.lang',lang); applyLang(lang); markSwitch(lang); }catch(e){}
-    blocker.remove(); htmlEl.style.overflow=prevOverflow;
-    switching=false; return;
-  }
-
-  // ③ 波纹
-  var cv=document.createElement('canvas');
-  var ctx2=cv.getContext('2d'), dpr=devicePixelRatio||1;
-  cv.className='langCanvas';
-  cv.style.cssText='position:fixed;inset:0;z-index:9001;pointer-events:none';
-  cv.width=innerWidth*dpr; cv.height=innerHeight*dpr;
-  cv.style.width=innerWidth+'px'; cv.style.height=innerHeight+'px';
-  document.body.appendChild(cv);
-
-  var acc=(getComputedStyle(htmlEl).getPropertyValue('--acc')||'#0f766e').trim().replace('#','');
-  if(acc.length===3) acc=acc[0]+acc[0]+acc[1]+acc[1]+acc[2]+acc[2];
-  var av=parseInt(acc,16), ACC='15,118,110';
-  if(!isNaN(av)) ACC=((av>>16)&255)+','+((av>>8)&255)+','+(av&255);
-
-  var maxD=Math.hypot(Math.max(cx,innerWidth-cx),Math.max(cy,innerHeight-cy))+70;
-  var DUR=2600, t0=null;
-
-  function ring(R,w,a){
-    if(R<=0) return;
-    ctx2.beginPath(); ctx2.arc(cx*dpr,cy*dpr,R*dpr,0,Math.PI*2);
-    ctx2.strokeStyle='rgba('+ACC+','+a+')'; ctx2.lineWidth=w*dpr; ctx2.stroke();
-  }
-
-  function step(now){
-    if(t0===null) t0=now;
-    var t=Math.min(1,(now-t0)/DUR);
-    var e=t<0.5? 4*t*t*t : 1-Math.pow(-2*t+2,3)/2;
-    var R=maxD*e;
-    layer.style.clipPath='circle('+R+'px at '+cx+'px '+cy+'px)';
-    ctx2.clearRect(0,0,cv.width,cv.height);
-    var fade=Math.max(0,1-Math.pow(t,1.6));
-    ring(R,2.2,0.75*fade); ring(R*0.93,1.4,0.40*fade); ring(R*1.05,1.0,0.22*fade);
-    if(t<1){ requestAnimationFrame(step); return; }
-
-    // ④ 遮罩盖满之后，真实页面才切语言
-    try{ LANG=lang; localStorage.setItem('cs2at.lang',lang); applyLang(lang); markSwitch(lang); }catch(e){}
-    try{ markSwitch(lang); }catch(e){}
-
-    layer.style.clipPath='circle(300vmax at '+cx+'px '+cy+'px)';
-    cv.width=0; cv.height=0; cv.remove();
-    requestAnimationFrame(function(){
-      layer.remove(); blocker.remove();
-
-      try{ if(window.__fxResurface) window.__fxResurface(cx,cy); }catch(e){}   // 和波浪同方向，依次浮现
-      htmlEl.style.overflow=prevOverflow;
-      clearTimeout(watchdog);
-      switching=false;
-      try{ window.scrollTo(0,scrollTop); }catch(e){}
-    });
-  }
-  requestAnimationFrame(step);
+    if(!root || !document.createTreeWalker) return;
+    const map = (lang==='en') ? EN : ZH;
+    const w=document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    let n;
+    while((n=w.nextNode())){
+      let orig=__ORIG.get(n);
+      if(orig===undefined){ orig=n.nodeValue; __ORIG.set(n, orig); }
+      const t=orig.trim();
+      if(!t) continue;
+      n.nodeValue = map[t] ? orig.replace(t, map[t]) : orig;
+    }
+  }catch(e){}
 }
 
   applyLang(LANG);
@@ -497,6 +369,20 @@ function rippleSwitch(lang, cx, cy){
     diag.select(); try{ document.execCommand('copy'); }catch(e){}
     this.textContent='已复制'; var b=this; setTimeout(function(){ b.textContent='复制诊断信息'; },1400);
   };
+})();
+</script>
+<script>
+/* 版本号连点 7 次 → 小肥鱼 */
+(function(){
+  var t=document.getElementById('buildTag'); if(!t) return;
+  var n=0, timer=null;
+  t.style.cursor='default'; t.style.userSelect='none';
+  t.addEventListener('click', function(e){
+    e.preventDefault();
+    n++; clearTimeout(timer);
+    timer=setTimeout(function(){ n=0; }, 2500);
+    if(n>=7){ n=0; location.href='小肥鱼.html'; }
+  });
 })();
 </script>
 </body>

@@ -452,7 +452,6 @@
   <div class="panel">
     <h2>训练记录</h2>
     <div class="hint">在训练页点「复制本组数据」，粘贴到这里保存。</div>
-    <div id="buildTag" style="margin-top:10px;font-size:12px;color:var(--dim);letter-spacing:1px">版本 build 2026-10-26 · 3</div>
     <textarea id="logInput" placeholder="2026-10-24  限时450ms  命中率83%  中位436ms  超时5次"></textarea>
     <div style="margin-top:10px;display:flex;gap:10px">
       <button class="main" id="addLog">保存这条</button>
@@ -471,7 +470,7 @@
       <div class="row">
         <div><div class="k">鼠标 DPI</div><input id="iDpi" type="number" step="100" value="1000"></div>
         <div><div class="k">m_yaw</div><input id="iYaw" type="number" step="0.0001" value="0.013052"></div>
-        <div><div class="k">游戏灵敏度</div><input id="iSens" type="number" step="0.01" value="1.92"></div>
+        <div><div class="k">CS 灵敏度</div><input id="iSens" type="number" step="0.01" value="1.92"></div>
         <div><div class="k">cm/360</div><input id="iCm" type="number" step="0.1" value="36.5"></div>
       </div>
       <div class="hint" id="calcHint" style="margin:12px 0 0"></div>
@@ -581,7 +580,7 @@ const EN={
   '先到设置页做一次灵敏度标定，之后每天按计划练。':'Calibrate once in Settings, then follow the plan.',
   '四周计划，自动判断今天该练什么。':'Four-week plan; it knows what to do today.',
   '这里的参数会自动带进所有训练页面。':'These values are passed to every trainer page.',
-  '灵敏度':'Sensitivity','鼠标 DPI':'Mouse DPI','游戏灵敏度':'Game sensitivity',
+  '灵敏度':'Sensitivity','鼠标 DPI':'Mouse DPI','CS 灵敏度':'CS sensitivity',
   '灵敏度标定 · 过冲法':'Calibrator · overshoot','灵敏度标定 · 严格口径':'Calibrator · strict',
   '测出你每次都甩过头还是不够，直接反推该填的值。':'Measures whether you overshoot or fall short, and derives the value.',
   '同上，但只统计未命中的球，适合已经比较稳的人。':'Same, but only counts misses. For players who are already consistent.',
@@ -621,46 +620,23 @@ const EN={
 let LANG='zh';
 const ZH={};
 Object.keys(EN).forEach(k=>{ ZH[EN[k]]=k; });
-const __ORIG=new WeakMap();   // 记住每个文本节点的原文，来回切换不累积
-function L(zh,en){ return (LANG==='en') ? en : zh; }
-
 function translateRoot(root, lang){
   try{
     if(!root || !document.createTreeWalker) return;
-    const map = (lang==='en') ? EN : ZH;
     const w=document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     let n;
     while((n=w.nextNode())){
-      let orig=__ORIG.get(n);
-      if(orig===undefined){ orig=n.nodeValue; __ORIG.set(n, orig); }
-      const t=orig.trim();
+      const t=n.nodeValue.trim();
       if(!t) continue;
-      n.nodeValue = map[t] ? orig.replace(t, map[t]) : orig;
+      if(lang==='en'){ if(EN[t]) n.nodeValue=n.nodeValue.replace(t, EN[t]); }
+      else { if(ZH[t]) n.nodeValue=n.nodeValue.replace(t, ZH[t]); }
     }
   }catch(e){}
 }
-function applyLang(){
-  document.documentElement.setAttribute('lang', LANG==='en'?'en':'zh-CN');
-  translateRoot(document.body, LANG);
-  // 开关状态跟 LANG 对齐（波浪没跑完也不会错位）
-  try{
-    document.querySelectorAll('#langSw span[data-lang]').forEach(function(el){
-      el.classList.toggle('on', el.dataset.lang===LANG);
-    });
-  }catch(e){}
-  // 属性文本：text 节点遍历碰不到 title / placeholder
-  try{
-    const map=(LANG==='en')?EN:ZH;
-    document.querySelectorAll('[title],[placeholder]').forEach(function(el){
-      ['title','placeholder'].forEach(function(a){
-        if(!el.hasAttribute(a)) return;
-        const key='__o_'+a;
-        if(!el.dataset[key]) el.dataset[key]=el.getAttribute(a);
-        const orig=el.dataset[key], t=orig.trim();
-        el.setAttribute(a, map[t]||orig);
-      });
-    });
-  }catch(e){}
+function applyLang(l){
+  l = l || LANG;
+  document.documentElement.setAttribute('lang', l==='en'?'en':'zh-CN');
+  translateRoot(document.body, l);
 }
 function setLang(l){ LANG=l; try{ localStorage.setItem(K_LANG,l); }catch(e){} }
 
@@ -680,12 +656,23 @@ applyTheme(localStorage.getItem(K_THEME)||'jade');
 function show(t){
   document.querySelectorAll('section').forEach(s=>s.classList.toggle('on', s.id===t));
   document.querySelectorAll('nav a').forEach(a=>a.classList.toggle('on', a.dataset.t===t));
-  applyLang();                       // 先把语言定下来，再渲染动态内容
   if(t==='data') renderData();
   if(t==='play') renderDrills();
   if(t==='set')  fillSettings();
-  applyLang();                       // 渲染完再翻一次（兜住新插入的文本）
+  applyLang();
 }
+
+
+
+(function bindWhy(){
+  const t=document.getElementById('playTitle');
+  if(!t) return;
+  let n=0;
+  t.addEventListener('click',()=>{
+    n++;
+    if(n>=4){ location.href='训练彩蛋.html'; }
+  });
+})();
 
 let switching=false, watchdog=null;
 
@@ -809,16 +796,6 @@ function rippleSwitch(lang, cx, cy){
   requestAnimationFrame(step);
 }
 
-(function bindWhy(){
-  const t=document.getElementById('playTitle');
-  if(!t) return;
-  let n=0;
-  t.addEventListener('click',()=>{
-    n++;
-    if(n>=4){ location.href='训练彩蛋.html'; }
-  });
-})();
-
 function bindLang(){
   const ls=document.getElementById('langSw');
   if(!ls) return;
@@ -862,9 +839,9 @@ function renderDrills(){
      dEN:'0.7° dots, no limit. For one-shot precision.',
      u:'tools/aim-trainer.html?mode=precision&count=40&limit=0'+q}
   ];
-  $('drillGrid').innerHTML=items.map(function(it){
-    return '<a class="tile" href="'+it.u+'"><div class="t">'+it.t+'</div><div class="d">'+it.d+'</div></a>';
-  }).join('');
+  const drillEN=false;   // 说明已进词典，渲染只出中文，翻译交给 translateRoot
+$('drillGrid').innerHTML=items.map(i=>
+    '<a class="tile" href="'+i.u+'"><div class="t">'+i.t+'</div><div class="d">'+(drillEN?i.dEN:i.d)+'</div></a>').join('');
 }
 
 function renderData(){
@@ -917,7 +894,7 @@ function updateCalc(){
   const EN_UI=(document.documentElement.getAttribute('lang')==='en');
   $('calcHint').textContent = EN_UI
     ? '360° turn needs '+c.toFixed(1)+' cm · 180° needs '+(c/2).toFixed(1)+' cm · sensitivity '+s.toFixed(2)+' (m_yaw '+y+' · DPI '+d+')'
-    : L('360° 转身需要','360° turn needs ')+c.toFixed(1)+' cm · '+L('180° 需要','180° needs ')+(c/2).toFixed(1)+' cm · sensitivity '+s.toFixed(2)+'（m_yaw '+y+' · DPI '+d+'）';
+    : '360° 转身需要 '+c.toFixed(1)+' cm · 180° 需要 '+(c/2).toFixed(1)+' cm · sensitivity '+s.toFixed(2)+'（m_yaw '+y+' · DPI '+d+'）';
 }
 function fillSettings(){
   $('iDpi').value=cfg.dpi; $('iYaw').value=cfg.yaw; $('iSens').value=cfg.sens; $('iCm').value=cfg.cm;
@@ -1461,27 +1438,11 @@ render();
   });
 })();
 
-document.querySelectorAll('.langBlocker,.langLayer,.langCanvas').forEach(function(el){ el.remove(); });
 applyLang();
 bindLang();
 initPlan();
-(function purgeStale(){
-  document.querySelectorAll('.langBlocker,.langLayer,.langCanvas').forEach(function(el){ el.remove(); });
-})();
 </script>
-<script>
-/* 版本号连点 7 次 → 小肥鱼 */
-(function(){
-  var t=document.getElementById('buildTag'); if(!t) return;
-  var n=0, timer=null;
-  t.style.cursor='default'; t.style.userSelect='none';
-  t.addEventListener('click', function(e){
-    e.preventDefault();
-    n++; clearTimeout(timer);
-    timer=setTimeout(function(){ n=0; }, 2500);
-    if(n>=7){ n=0; location.href='小肥鱼.html'; }
-  });
-})();
-</script>
+
+
 </body>
 </html>

@@ -108,21 +108,6 @@
     transition:.15s;user-select:none}
   .langTop span:hover{background:var(--panel);color:var(--txt)}
   .langTop span.on{background:var(--acc);color:#fff;font-weight:600}
-  #fbMask{position:fixed;inset:0;z-index:9800;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.55)}
-  #fbMask.on{display:flex}
-  #fbBox{width:min(520px,92vw);background:var(--panel);border:1px solid var(--line);border-radius:16px;
-    padding:26px 26px 22px;text-align:left;box-shadow:0 30px 80px -30px rgba(0,0,0,.6)}
-  #fbBox h3{margin:0 0 6px;font-size:17px;color:var(--txt);font-weight:700;letter-spacing:1px}
-  #fbBox p{margin:0 0 16px;font-size:13px;line-height:1.85;color:var(--dim)}
-  #fbBox .acts{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
-  #fbBox a,#fbBox button{height:40px;padding:0 18px;display:inline-flex;align-items:center;justify-content:center;
-    font-size:13.5px;font-family:inherit;border-radius:10px;border:1px solid var(--line);background:transparent;
-    color:var(--txt);cursor:pointer;text-decoration:none}
-  #fbBox a:hover,#fbBox button:hover{border-color:var(--acc);color:var(--acc)}
-  #fbBox .main{background:var(--acc);border-color:var(--acc);color:#fff}
-  #fbDiag{margin-top:14px;display:none;width:100%;height:132px;font:12px/1.6 Consolas,monospace;
-    background:var(--bg);border:1px solid var(--line);border-radius:10px;color:var(--dim);padding:10px;resize:none}
-  #fbDiag.on{display:block}
 </style>
 </head>
 <body>
@@ -149,7 +134,7 @@
   <a href="https://github.com/i11usoryCat/cs2-aim-tools/blob/main/docs/methodology.md">方法论</a> ·
   <a href="https://github.com/i11usoryCat/cs2-aim-tools/blob/main/docs/training-plan.md">训练方案</a> ·
   <a href="#" id="fbLink">反馈</a>
-  <div id="buildTag" style="margin-top:8px;font-size:12px;color:var(--dim);letter-spacing:1px">版本 build 2026-10-26 · 3</div>
+  <div id="buildTag" style="margin-top:8px;font-size:12px;color:var(--dim);letter-spacing:1px">版本 build 2026-10-26 · 4</div>
 </div>
 </div>
 
@@ -250,7 +235,7 @@ var EN={
     '按天推进，自动记录进度与数据。':'Day by day, with progress tracking.',
     '原始输入记录器':'Raw input recorder',
     'C# 单文件，验证真实回报率与报告间隔抖动。':'Single-file C# tool to verify polling rate and report jitter.',
-    '方法论':'Methodology','训练方案':'Training plan','反馈':'Feedback'
+    '方法论':'Methodology','训练方案':'Training plan'
   };
   var ZH={}; Object.keys(EN).forEach(function(k){ ZH[EN[k]]=k; });
   var LANG='zh';
@@ -267,6 +252,7 @@ var EN={
     }
   }
   function applyLang(lang){
+    lang = lang || LANG;
     document.documentElement.setAttribute('lang', lang==='en'?'en':'zh-CN');
     translateRoot(document.body, lang);
   }
@@ -412,8 +398,7 @@ function rippleSwitch(lang, cx, cy){
       var cx=r.left+r.width/2, cy=r.top+r.height/2;
       var target=el.dataset.l;
 
-      try{ LANG=target; try{ localStorage.setItem('cs2at.lang', target); }catch(e2){} markSwitch(target); applyLang(target); }catch(e3){}
-      try{ rippleSwitch(target, cx, cy); }catch(e4){}
+      rippleSwitch(target, cx, cy);
     });
   });
 
@@ -462,57 +447,19 @@ function rippleSwitch(lang, cx, cy){
   })();
 })();
 </script>
-<div id="fbMask"><div id="fbBox">
-  <h3>反馈</h3>
-  <p>说清楚三件事就够：<b>哪一页</b>、<b>你点了什么</b>、<b>你期望看到什么</b>。<br>附上诊断信息，能省掉一半来回。</p>
-  <div class="acts">
-    <button class="main" id="fbCopy">复制诊断信息</button>
-    <a id="fbIssue" target="_blank" rel="noopener">在 GitHub 提 issue</a>
-    <button id="fbClose">关闭</button>
-  </div>
-  <textarea id="fbDiag" readonly></textarea>
-</div></div>
-<script>
-(function(){
-  var mask=document.getElementById('fbMask'), diag=document.getElementById('fbDiag');
-  var link=document.getElementById('fbLink');
-  function build(){
-    var t=document.documentElement.getAttribute('data-theme')||'jade';
-    var l='zh'; try{ l=localStorage.getItem('cs2at.lang')||'zh'; }catch(e){}
-    return ['页面: '+location.pathname.split('/').pop(),
-      '语言: '+l+'   主题: '+t,
-      '窗口: '+innerWidth+'x'+innerHeight+' @'+(devicePixelRatio||1)+'x',
-      '浏览器: '+navigator.userAgent,
-      '时间: '+new Date().toLocaleString('zh-CN')].join('\n');
-  }
-  function open(){
-    diag.value=build(); diag.classList.add('on');
-    var body='## 哪一页\n'+location.pathname.split('/').pop()+'\n\n## 我做了什么\n\n\n## 期望看到什么\n\n\n## 诊断信息\n```\n'+diag.value+'\n```\n';
-    document.getElementById('fbIssue').href='https://github.com/i11usoryCat/cs2-aim-tools/issues/new?title='+encodeURIComponent('[反馈] ')+'&body='+encodeURIComponent(body);
-    mask.classList.add('on');
-  }
-  if(link) link.addEventListener('click', function(e){ e.preventDefault(); open(); });
-  document.getElementById('fbClose').onclick=function(){ mask.classList.remove('on'); };
-  mask.addEventListener('click', function(e){ if(e.target===mask) mask.classList.remove('on'); });
-  document.getElementById('fbCopy').onclick=function(){
-    diag.select(); try{ document.execCommand('copy'); }catch(e){}
-    this.textContent='已复制'; var b=this; setTimeout(function(){ b.textContent='复制诊断信息'; },1400);
-  };
-})();
-</script>
 <script>
 /* 版本号连点 7 次 → 小肥鱼 */
 (function(){
   var t=document.getElementById('buildTag'); if(!t) return;
   var n=0, timer=null;
-  t.style.cursor='default'; t.style.userSelect='none';
   t.addEventListener('click', function(e){
-    e.preventDefault();
-    n++; clearTimeout(timer);
+    e.preventDefault(); n++; clearTimeout(timer);
     timer=setTimeout(function(){ n=0; }, 2500);
     if(n>=7){ n=0; location.href='小肥鱼.html'; }
   });
 })();
 </script>
+
+
 </body>
 </html>

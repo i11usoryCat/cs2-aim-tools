@@ -76,7 +76,7 @@
   .by b{color:var(--gold);letter-spacing:1px}
 
   .start{
-    margin-top:44px;min-width:238px;padding:17px 40px;font-size:17px;font-weight:700;letter-spacing:4px;text-align:center;
+    margin-top:44px;min-width:172px;padding:17px 30px;font-size:17px;font-weight:700;letter-spacing:4px;text-align:center;
     font-family:inherit;color:#fff;cursor:pointer;border:none;border-radius:14px;
     background:linear-gradient(150deg,var(--acc),var(--acc2));
     box-shadow:0 16px 34px -14px color-mix(in srgb,var(--acc) 55%,transparent);
@@ -248,17 +248,13 @@ function rippleSwitch(lang, cx, cy){
   if(switching) return;
   switching=true;
 
-  // 粒子浮到遮罩上面，动画期间继续飘
   var fx=document.getElementById('fx');
-  var fxZ=fx?fx.style.zIndex:'';
-  if(fx){ fx.style.zIndex='9002'; }
 
   clearTimeout(watchdog);
   watchdog=setTimeout(function(){
     if(switching){
       try{ LANG=lang; localStorage.setItem('cs2at.lang',lang); applyLang(lang); markSwitch(lang); }catch(e){}
       document.querySelectorAll('.langBlocker,.langLayer,.langCanvas').forEach(function(el){ el.remove(); });
-      try{ if(fx) fx.style.zIndex=fxZ; }catch(e){}
       try{ document.documentElement.style.overflow=''; }catch(e){}
       switching=false;
     }
@@ -300,6 +296,8 @@ function rippleSwitch(lang, cx, cy){
       +'backface-visibility:hidden;isolation:isolate;'
       +'clip-path:circle(0px at '+cx+'px '+cy+'px)';
     layer.appendChild(scroller);
+
+
 
     translateRoot(layer, lang);   // 复制层翻成新语言
     layer.querySelectorAll('#langTop span[data-l]').forEach(function(el){ el.classList.toggle('on', el.dataset.l===lang); });
@@ -356,7 +354,17 @@ function rippleSwitch(lang, cx, cy){
     cv.width=0; cv.height=0; cv.remove();
     requestAnimationFrame(function(){
       layer.remove(); blocker.remove();
-      if(fx) fx.style.zIndex=fxZ;
+
+      if(fx){
+        // 被水波打散的粒子：先沉下去，再从水底慢慢浮起来
+        fx.style.transition='none';
+        fx.style.opacity='0';
+        setTimeout(function(){
+          fx.style.transition='opacity .9s cubic-bezier(.4,0,.2,1)';
+          fx.style.opacity='0.9';
+          setTimeout(function(){ fx.style.transition=''; }, 1000);
+        }, 550);
+      }
       htmlEl.style.overflow=prevOverflow;
       clearTimeout(watchdog);
       switching=false;

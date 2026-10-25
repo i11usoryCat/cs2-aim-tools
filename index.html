@@ -412,7 +412,8 @@ function rippleSwitch(lang, cx, cy){
       var cx=r.left+r.width/2, cy=r.top+r.height/2;
       var target=el.dataset.l;
 
-      rippleSwitch(target, cx, cy);
+      try{ LANG=target; try{ localStorage.setItem('cs2at.lang', target); }catch(e2){} markSwitch(target); applyLang(target); }catch(e3){}
+      try{ rippleSwitch(target, cx, cy); }catch(e4){}
     });
   });
 

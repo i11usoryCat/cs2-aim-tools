@@ -347,6 +347,10 @@
   html{scrollbar-width:none}
   html::-webkit-scrollbar{display:none}
   ::-webkit-scrollbar{width:0;height:0}
+  /* 双语文案：由 html[lang] 决定显示哪一个，不依赖 JS 重绘 */
+  .tx-en{display:none}
+  html[lang="en"] .tx-en{display:inline}
+  html[lang="en"] .tx-zh{display:none}
 </style>
 </head>
 <body>
@@ -626,6 +630,7 @@ function translateRoot(root, lang){
     while((n=w.nextNode())){
       const t=n.nodeValue.trim();
       if(!t) continue;
+      try{ if(n.parentElement && n.parentElement.closest('[data-keep]')) continue; }catch(e){}
       if(lang==='en'){ if(EN[t]) n.nodeValue=n.nodeValue.replace(t, EN[t]); }
       else { if(ZH[t]) n.nodeValue=n.nodeValue.replace(t, ZH[t]); }
     }
@@ -835,9 +840,13 @@ function renderDrills(){
      dEN:'0.7° dots, no limit. For one-shot precision.',
      u:'tools/aim-trainer.html?mode=precision&count=40&limit=0'+q}
   ];
-  const drillEN=(typeof LANG!=='undefined' && LANG==='en');
-  $('drillGrid').innerHTML=items.map(i=>
-    '<a class="tile" href="'+i.u+'"><div class="t">'+i.t+'</div><div class="d">'+(drillEN?i.dEN:i.d)+'</div></a>').join('');
+  const T_EN={'自适应随机':'Adaptive random','定角重复':'Fixed angle','小球精度':'Precision'};
+  $('drillGrid').innerHTML=items.map(function(it){
+    return '<a class="tile" href="'+it.u+'">'
+      + '<div class="t"><span data-keep class="tx-zh">'+it.t+'</span><span data-keep class="tx-en">'+(T_EN[it.t]||it.t)+'</span></div>'
+      + '<div class="d"><span data-keep class="tx-zh">'+it.d+'</span><span data-keep class="tx-en">'+it.dEN+'</span></div>'
+      + '</a>';
+  }).join('');
 }
 
 function renderData(){

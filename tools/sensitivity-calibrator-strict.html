@@ -4,27 +4,32 @@
 <meta charset="utf-8">
 <title>灵敏度标定 · 过冲法</title>
 <style>
-  html,body{margin:0;height:100%;background:#0b0f14;overflow:hidden;color:#e6edf3;font-family:"Microsoft YaHei",sans-serif}
+  html,body{margin:0;height:100%;background:var(--bg);overflow:hidden;color:var(--txt);font-family:"Microsoft YaHei",sans-serif}
   canvas{display:block;cursor:none}
   #ui{position:fixed;left:24px;top:20px;font-size:14px;line-height:1.9;pointer-events:none;text-shadow:0 0 6px #000}
   .overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;
-    text-align:center;font-size:16px;line-height:2;color:#c9d1d9;background:rgba(11,15,20,.96)}
+    text-align:center;font-size:16px;line-height:2;color:var(--txt);background:var(--overlay)}
   .overlay.show{display:flex}
+  #back{position:fixed;left:16px;top:14px;z-index:40;display:none;font-size:13px;color:var(--dim);
+    text-decoration:none;padding:7px 12px;border-radius:9px;border:1px solid transparent;transition:.15s}
+  #back:hover{color:var(--acc);border-color:var(--line);background:var(--panel)}
+  #back.on{display:inline-block}
   .btn{margin-top:24px;padding:13px 40px;font-size:16px;font-family:inherit;cursor:pointer;
-    background:#238636;border:1px solid #2ea043;color:#fff;border-radius:8px;pointer-events:auto}
-  .btn:hover{background:#2ea043}
-  input{width:110px;padding:8px;background:#161b22;border:1px solid #30363d;color:#e6edf3;
+    background:var(--acc);border:1px solid var(--acc);color:#fff;border-radius:8px;pointer-events:auto}
+  .btn:hover{background:var(--acc)}
+  input{width:110px;padding:8px;background:var(--panel);border:1px solid var(--line);color:var(--txt);
     border-radius:6px;font-size:15px;text-align:center;pointer-events:auto}
   table{border-collapse:collapse;margin-top:8px}
   .rt td,.rt th{padding:5px 14px;font-size:14px}
   #res{overflow:auto;padding:20px}
   #resBody{max-height:78vh;overflow:auto}
-  td,th{padding:9px 20px;text-align:right;border-bottom:1px solid #21262d}
-  th{color:#8b949e;font-weight:500}
+  td,th{padding:9px 20px;text-align:right;border-bottom:1px solid var(--panel)}
+  th{color:var(--dim);font-weight:500}
   .big{font-size:30px;font-weight:700;color:#3fb950}
 </style>
 </head>
 <body>
+<a id="back" href="../app.html#play">← 返回</a>
 <canvas id="c"></canvas>
 <div id="ui"></div>
 
@@ -58,6 +63,40 @@
   <button id="clr" class="btn" style="margin-top:10px;background:#21262d;border-color:#30363d;font-size:14px;padding:9px 26px">清空累计（输入值保留）</button></div>
 
 <script>
+const SCENES={
+  classic:{dark:true,bg:'#0b0f14',major:'rgba(88,166,255,.55)',minor:'rgba(64,76,90,1)',ceil:'rgba(50,60,72,1)',tgt:'#f85149',tgtFill:'rgba(248,81,73,.30)',cross:'#3fb950'},
+  lake:{dark:false,bg:'#eef4f6',major:'rgba(14,116,144,.45)',minor:'rgba(150,176,184,1)',ceil:'rgba(176,198,205,1)',tgt:'#0e7490',tgtFill:'rgba(14,116,144,.85)',cross:'#14313a'},
+  jade:{dark:true,bg:'#101917',major:'rgba(127,191,166,.50)',minor:'rgba(58,84,78,1)',ceil:'rgba(44,64,60,1)',tgt:'#e0a458',tgtFill:'rgba(224,164,88,.85)',cross:'#7fbfa6'},
+  ink:{dark:true,bg:'#12181d',major:'rgba(15,118,110,.55)',minor:'rgba(58,74,82,1)',ceil:'rgba(44,58,66,1)',tgt:'#ffb020',tgtFill:'rgba(255,176,32,.85)',cross:'#ffffff'},
+  light:{dark:false,bg:'#eef1f4',major:'rgba(15,118,110,.45)',minor:'rgba(160,172,182,1)',ceil:'rgba(184,194,203,1)',tgt:'#e8590c',tgtFill:'rgba(232,89,12,.85)',cross:'#111827'},
+  night:{dark:true,bg:'#0b0f14',major:'rgba(88,166,255,.50)',minor:'rgba(64,76,90,1)',ceil:'rgba(50,60,72,1)',tgt:'#ff5f56',tgtFill:'rgba(255,95,86,.85)',cross:'#7ee787'},
+  mono:{dark:true,bg:'#0f1113',major:'rgba(200,205,215,.40)',minor:'rgba(88,92,100,1)',ceil:'rgba(70,73,80,1)',tgt:'#ffd166',tgtFill:'rgba(255,209,102,.85)',cross:'#ffffff'},
+  cs:{dark:true,bg:'#2b2620',major:'rgba(214,181,120,.45)',minor:'rgba(120,110,88,1)',ceil:'rgba(98,90,72,1)',tgt:'#e5484d',tgtFill:'rgba(229,72,77,.85)',cross:'#b8e986'}
+};
+const THEME2SCENE={jade:'jade',ink:'ink',lake:'lake',light:'light',sand:'cs',forest:'jade',mono:'mono',cyber:'night',night:'night'};
+function pickScene(){
+  try{
+    const q=new URLSearchParams(location.search);
+    if(q.get('scene') && SCENES[q.get('scene')]) return q.get('scene');
+    const th=q.get('theme')||localStorage.getItem('cs2at.theme');
+    if(th && THEME2SCENE[th]) return THEME2SCENE[th];
+    const sc=localStorage.getItem('cs2at.scene');
+    if(sc && SCENES[sc]) return sc;
+  }catch(e){}
+  return 'classic';
+}
+const SC=SCENES[pickScene()]||SCENES.classic;
+(function(){
+  const dark=!!SC.dark, r=document.documentElement.style;
+  r.setProperty('--bg',SC.bg);
+  r.setProperty('--txt',dark?'#e6edf3':'#14313a');
+  r.setProperty('--dim',dark?'#8b949e':'#5b6b73');
+  r.setProperty('--panel',dark?'#161b22':'#ffffff');
+  r.setProperty('--line',dark?'#30363d':'#d7e0e4');
+  r.setProperty('--acc',SC.cross);
+  r.setProperty('--overlay',dark?'rgba(11,15,20,.96)':'rgba(238,244,246,.97)');
+})();
+
 const cv=document.getElementById('c'), ctx=cv.getContext('2d');
 const ui=document.getElementById('ui');
 const msg=document.getElementById('msg'), go=document.getElementById('go');
@@ -273,10 +312,10 @@ addEventListener('pointerrawupdate',e=>{
 function grid(){
   const R=44, step=3;
   for(let v=-R; v<=R; v+=step){
-    line3(v,-EYE,-R, v,-EYE,R, (v===0)?'rgba(88,166,255,.60)':'rgba(72,84,98,1)');
-    line3(-R,-EYE,v, R,-EYE,v, (v===0)?'rgba(88,166,255,.60)':'rgba(72,84,98,1)');
-    line3(v, 4.2,-R, v, 4.2,R, 'rgba(56,66,78,1)');
-    line3(-R, 4.2,v, R, 4.2,v, 'rgba(56,66,78,1)');
+    line3(v,-EYE,-R, v,-EYE,R, (v===0)?SC.major:SC.minor);
+    line3(-R,-EYE,v, R,-EYE,v, (v===0)?'rgba(88,166,255,.60)':SC.minor);
+    line3(v, 4.2,-R, v, 4.2,R, SC.ceil);
+    line3(-R, 4.2,v, R, 4.2,v, SC.ceil);
   }
   for(let i=0;i<8;i++){
     const a=i*Math.PI/4, px=Math.sin(a)*18, pz=Math.cos(a)*18;
@@ -295,7 +334,7 @@ function loop(){
   if(spd>200) fastSeen=true;
   if(fastSeen && !stopPos && spd<40) stopPos={yaw:yaw, pitch:pitch};
 
-  ctx.fillStyle='#0b0f14'; ctx.fillRect(0,0,W,H);
+  ctx.fillStyle=SC.bg; ctx.fillRect(0,0,W,H);
   grid();
 
   const cp2=Math.cos(tPitch);
@@ -304,13 +343,13 @@ function loop(){
   if(p){
     const rad=Math.max(5, f*Math.tan(ballDeg*D2R));
     ctx.beginPath(); ctx.arc(p.sx,p.sy,rad,0,Math.PI*2);
-    ctx.fillStyle='rgba(248,81,73,.30)'; ctx.fill();
-    ctx.strokeStyle='#f85149'; ctx.lineWidth=2.5; ctx.stroke();
+    ctx.fillStyle=SC.tgtFill; ctx.fill();
+    ctx.strokeStyle=SC.tgt; ctx.lineWidth=2.5; ctx.stroke();
     ctx.beginPath(); ctx.arc(p.sx,p.sy,rad*0.25,0,Math.PI*2);
-    ctx.fillStyle='#f85149'; ctx.fill();
+    ctx.fillStyle=SC.tgt; ctx.fill();
   }
 
-  ctx.strokeStyle='#3fb950'; ctx.lineWidth=3;
+  ctx.strokeStyle=SC.cross; ctx.lineWidth=3;
   const g2=15*devicePixelRatio, cx=W/2, cy=H/2;
   ctx.beginPath();
   ctx.moveTo(cx-g2,cy); ctx.lineTo(cx-5,cy);
@@ -388,6 +427,78 @@ requestAnimationFrame(loop);
   sn.addEventListener('input', function(){ if(busy)return; busy=true; toCm(); busy=false; if(window.__updSensHint) window.__updSensHint(); });
   [dpi,yaw,cm].forEach(function(el){ if(!el) return; el.addEventListener('input', function(){ if(busy)return; busy=true; toSens(); busy=false; }); });
   toSens();
+})();
+
+/* ===== 英文界面 ===== */
+(function(){
+  var EN=(function(){ try{ var q=new URLSearchParams(location.search); if(q.get('lang')) return q.get('lang')==='en'; return localStorage.getItem('cs2at.lang')==='en'; }catch(e){ return false; } })();
+  if(!EN) return;
+  var D={
+    '灵敏度标定 · 过冲法':'Sensitivity calibration · overshoot',
+    '灵敏度标定 · 过冲法（全样本）':'Sensitivity calibration · overshoot (all samples)',
+    '每次只出现一个球。看到球后最快速甩过去并点击。':'One dot at a time. Flick to it as fast as you can and click.',
+    '程序记录你甩完的落点，算出你冲过头还是没到。':'It records where you land and whether you overshot or undershot.',
+    '本版本：全部球都计入统计':'This build: every dot counts',
+    '每次只出现一个球。看到球后':'One dot at a time. Spot it, ',
+    '最快速度甩过去并点击':'flick as fast as you can and click',
+    '程序记录你甩完的落点，算出你':'It records where you land — ',
+    '冲过头还是没到':'overshot or undershot',
+    '。':'.',
+    '开始':'START','重新开始':'Restart','结束':'End','结果':'Result',
+    '鼠标 DPI':'Mouse DPI','当前 cm/360':'Current cm/360','CS 灵敏度':'CS sensitivity',
+    '球数':'Shots','球大小':'Dot size','标准（1.5°）':'Standard (1.5°)','大（2.2°）':'Large (2.2°)','小（1.0°）':'Small (1.0°)',
+    '中位偏移':'Median offset','偏慢':'too slow','偏快':'too fast',
+    '建议灵敏度':'Suggested sensitivity','当前灵敏度':'Current sensitivity','误差':'error',
+    '复制结果':'Copy result','关闭':'Close','继续':'Continue',
+    '过冲':'Overshoot','欠冲':'Undershoot','命中':'Hit','超时':'Timeout'
+  };
+  var RULES=[
+    [/^→ 对应\s*$/,'→ '],
+    [/^CS 灵敏度 ([\d.]+)$/,'CS sensitivity $1'],
+    [/^→ 对应 CS 灵敏度 ([\d.]+)/,'→ CS sensitivity $1'],
+    [/^→ 对应 cm\/360 ([\d.]+)/,'→ cm/360 $1'],
+    [/^360° 转身需要 ([\d.]+) cm，180° 需要 ([\d.]+) cm$/,'360° needs $1 cm · 180° needs $2 cm'],
+    [/^第 (\d+) 球$/,'Shot $1'],
+    [/^([\d.]+) cm\/360 · DPI (\d+) · m_yaw ([\d.]+)$/,'$1 cm/360 · DPI $2 · m_yaw $3']
+  ];
+  var D2={}; for(var k in D){ D2[k.replace(/\s+/g,'')]=D[k]; }
+  function tr(t){
+    var s=t.trim(); if(!s) return t;
+    var m=s.match(/^(.+?)[:：]$/);
+    if(m && D[m[1]]!==undefined) return t.replace(s, D[m[1]]+':');
+    if(D[s]!==undefined) return t.replace(s,D[s]);
+    var flat=s.replace(/\s+/g,'');
+    if(D2[flat]!==undefined) return t.replace(s, D2[flat]);
+    for(var i=0;i<RULES.length;i++) if(RULES[i][0].test(s)) return t.replace(s, s.replace(RULES[i][0], RULES[i][1]));
+    return t;
+  }
+  function walk(){
+    var w=document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null), n;
+    while((n=w.nextNode())){ var v=n.nodeValue; if(!v||!/[\u4e00-\u9fa5]/.test(v)) continue; var nv=tr(v); if(nv!==v) n.nodeValue=nv; }
+    document.querySelectorAll('option').forEach(function(o){ var t=o.textContent.trim(); if(D[t]) o.textContent=D[t]; });
+  }
+  walk();
+  new MutationObserver(walk).observe(document.body,{childList:true,subtree:true,characterData:true});
+})();
+
+</script>
+
+<script>
+(function(){
+  var back=document.getElementById('back');
+  ['mousedown','pointerdown','mouseup','pointerup','click'].forEach(function(t){
+    back.addEventListener(t, function(e){ e.stopPropagation(); }, true);
+  });
+  function sync(){
+    var shown=document.querySelectorAll('.overlay.show').length>0;
+    if(back) back.classList.toggle('on', shown);
+  }
+  ['msg','res'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el) new MutationObserver(sync).observe(el,{attributes:true,attributeFilter:['class']});
+  });
+  sync();
+  addEventListener('keydown', function(e){ if(e.key==='Escape') location.href='../app.html#play'; });
 })();
 </script>
 </body>

@@ -582,7 +582,10 @@ const EN={
   '测出你每次都甩过头还是不够，直接反推该填的值。':'Measures whether you overshoot or fall short, and derives the value.',
   '同上，但只统计未命中的球，适合已经比较稳的人。':'Same, but only counts misses. For players who are already consistent.',
   '语言 / Language':'Language',
-  '界面主题':'UI theme','只影响网页界面，不影响训练场景。':'Affects the UI only, not the training scene.',
+  '界面主题':'UI theme',
+  '墨玉':'Jade','墨鱼':'Ink','湖泊':'Lake','明亮':'Light','暖砂':'Sand','森林':'Forest','极简灰':'Mono','赛博':'Cyber','深蓝':'Night',
+  '经典':'Classic','浅灰':'Light grey','暗蓝':'Night blue','纯黑':'Mono black','沙色':'Sand',
+  '训练场景':'Training scene','背景、网格、准星的颜色。':'Background, grid and crosshair colours in the trainer.','只影响网页界面，不影响训练场景。':'Affects the UI only, not the training scene.',
   '作者推荐':'Author picks','— 大肥鱼常用的两套，日用与夜用':'— two themes the author actually uses, day and night',
   '浅色':'Light','深色':'Dark',
 
@@ -603,8 +606,13 @@ const EN={
   '渲染帧率上限':'Frame-rate cap','显示实时帧率':'Show live FPS',
   '性能模式（减少网格密度）':'Performance mode (lower grid density)',
   '保存设置':'Save settings','已保存':'Saved','恢复默认':'Reset defaults',
-  '无限限制（跟随刷新率）':'Unlimited (follow refresh)',
-  '360° 转身需要':'360° needs'
+  '无限制（跟随刷新率）':'Unlimited (follow refresh)',
+  '360° 转身需要':'360° needs',
+  '导入 JSON':'Import JSON',
+  '分享':'Share',
+  '做完一项就在训练页点「复制本组数据」，粘到下面的记录里。':'After each drill, hit "Copy this set" on the drills page and paste it below.',
+  '今天是休息日。睡够 7-8 小时，技能靠睡眠巩固。':'Rest day. Sleep 7–8 hours — skill consolidates overnight.',
+  '在训练页点「复制本组数据」，粘贴到这里保存。':'Hit "Copy this set" on the drills page, then paste it here.',
 };
 let LANG='zh';
 const ZH={};
@@ -813,12 +821,19 @@ function cfgQ(){
 function renderDrills(){
   const q=cfgQ();
   const items=[
-    {t:'自适应随机',d:'球与限时按 85% 成功率自动调节，主练用这个。',u:'tools/aim-trainer.html?mode=random&count=40&limit=1'+q},
-    {t:'定角重复',d:'同一角度连打 8 球，形成运动程序，热身用。',u:'tools/aim-trainer.html?mode=block&count=40&limit=0'+q},
-    {t:'小球精度',d:'0.7° 小球，无时限，练一次定位的精度。',u:'tools/aim-trainer.html?mode=precision&count=40&limit=0'+q}
+    {t:'自适应随机',d:'球与限时按 85% 成功率自动调节，主练用这个。',
+     dEN:'Size and limit auto-adjust to hold ~85% success. For main practice.',
+     u:'tools/aim-trainer.html?mode=random&count=40&limit=1'+q},
+    {t:'定角重复',d:'同一角度连打 8 球，形成运动程序，热身用。',
+     dEN:'Eight shots on one angle to build a motor program. For warm-up.',
+     u:'tools/aim-trainer.html?mode=block&count=40&limit=0'+q},
+    {t:'小球精度',d:'0.7° 小球，无时限，练一次定位的精度。',
+     dEN:'0.7° dots, no limit. For one-shot precision.',
+     u:'tools/aim-trainer.html?mode=precision&count=40&limit=0'+q}
   ];
+  const drillEN=(document.documentElement.getAttribute('lang')==='en');
   $('drillGrid').innerHTML=items.map(i=>
-    '<a class="tile" href="'+i.u+'"><div class="t">'+i.t+'</div><div class="d">'+i.d+'</div></a>').join('');
+    '<a class="tile" href="'+i.u+'"><div class="t">'+i.t+'</div><div class="d">'+(drillEN?i.dEN:i.d)+'</div></a>').join('');
 }
 
 function renderData(){
@@ -868,8 +883,10 @@ $('clrBtn').addEventListener('click',()=>{
 function num(el,def){ const v=parseFloat(el.value); return isFinite(v)? v: def; }
 function updateCalc(){
   const d=num($('iDpi'),1000), y=num($('iYaw'),0.013052), c=num($('iCm'),36.5), s=num($('iSens'),1.92);
-  $('calcHint').textContent='360° 转身需要 '+c.toFixed(1)+' cm · 180° 需要 '+(c/2).toFixed(1)+
-    ' cm · sensitivity '+s.toFixed(2)+'（m_yaw '+y+' · DPI '+d+'）';
+  const EN_UI=(document.documentElement.getAttribute('lang')==='en');
+  $('calcHint').textContent = EN_UI
+    ? '360° turn needs '+c.toFixed(1)+' cm · 180° needs '+(c/2).toFixed(1)+' cm · sensitivity '+s.toFixed(2)+' (m_yaw '+y+' · DPI '+d+')'
+    : '360° 转身需要 '+c.toFixed(1)+' cm · 180° 需要 '+(c/2).toFixed(1)+' cm · sensitivity '+s.toFixed(2)+'（m_yaw '+y+' · DPI '+d+'）';
 }
 function fillSettings(){
   $('iDpi').value=cfg.dpi; $('iYaw').value=cfg.yaw; $('iSens').value=cfg.sens; $('iCm').value=cfg.cm;
@@ -884,14 +901,14 @@ function fillSettings(){
   $('thLight').innerHTML = swHTML(THEMES.filter(t=>t.kind==='light'));
   $('thDark').innerHTML  = swHTML(THEMES.filter(t=>t.kind==='dark'));
   document.querySelectorAll('.sw[data-th]').forEach(el=>el.addEventListener('click',()=>{
-    applyTheme(el.dataset.th); fillSettings();
+    applyTheme(el.dataset.th); fillSettings(); try{ applyLang(LANG); }catch(err){}
   }));
 
   const scene=localStorage.getItem(K_SCENE)||'classic';
   $('scenes').innerHTML=SCENES.map(t=>'<div class="sw'+(t.id===scene?' on':'')+'" data-sc="'+t.id+'">'+
     '<span class="dot" style="background:'+t.dot+'"></span>'+t.name+'</div>').join('');
   document.querySelectorAll('.sw[data-sc]').forEach(el=>el.addEventListener('click',()=>{
-    localStorage.setItem(K_SCENE, el.dataset.sc); fillSettings();
+    localStorage.setItem(K_SCENE, el.dataset.sc); fillSettings(); try{ applyLang(LANG); }catch(err){}
   }));
 
   updateCalc();
@@ -993,6 +1010,10 @@ function cfgQuery(){
   try{ const c=JSON.parse(localStorage.getItem(K_CFG)||'{}');
     const p=[]; if(c.dpi) p.push('dpi='+c.dpi); if(c.cm) p.push('cm='+c.cm);
     if(c.yaw) p.push('yaw='+c.yaw); if(c.sens) p.push('sens='+c.sens);
+    try{
+      const th=document.documentElement.getAttribute('data-theme'); if(th) p.push('theme='+th);
+      if(LANG==='en') p.push('lang=en');
+    }catch(e){}
     return p.length? '&'+p.join('&') : '';
   }catch(e){ return ''; }
 }

@@ -4,34 +4,51 @@
 <meta charset="utf-8">
 <title>甩枪训练 · 自适应难度</title>
 <style>
-  html,body{margin:0;height:100%;background:#0b0f14;overflow:hidden;color:#e6edf3;font-family:"Microsoft YaHei",sans-serif}
+  html,body{margin:0;height:100%;background:var(--bg);overflow:hidden;color:var(--txt);font-family:"Microsoft YaHei",sans-serif}
   canvas{display:block;cursor:none}
   #hud{position:fixed;left:22px;top:16px;font-size:14px;line-height:1.9;pointer-events:none;text-shadow:0 0 6px #000}
-  #hud b{color:#58a6ff}
+  #hud b{color:var(--acc)}
   .overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;
-    text-align:center;font-size:16px;line-height:2;color:#c9d1d9;background:rgba(11,15,20,.96);overflow:auto;padding:24px}
+    text-align:center;font-size:16px;line-height:2;color:var(--txt);background:var(--overlay);overflow:auto;padding:24px}
   .overlay.show{display:flex}
+  #back{position:fixed;left:16px;top:14px;z-index:40;display:none;
+    font-size:13px;color:var(--dim);text-decoration:none;padding:7px 12px;border-radius:9px;
+    border:1px solid transparent;transition:.15s;letter-spacing:.5px}
+  #back:hover{color:var(--acc);border-color:var(--line);background:var(--panel)}
+  #back.on{display:inline-block}
   .btn{margin-top:22px;padding:13px 40px;font-size:16px;font-family:inherit;cursor:pointer;
-    background:#238636;border:1px solid #2ea043;color:#fff;border-radius:8px;pointer-events:auto}
-  .btn:hover{background:#2ea043}
-  .btn.alt{background:#21262d;border-color:#30363d;margin-left:10px}
+    background:var(--acc);border:1px solid var(--acc);color:#fff;border-radius:8px;pointer-events:auto}
+  .btn:hover{background:var(--acc)}
+  .btn.alt{background:var(--panel);border-color:var(--line);margin-left:10px}
   table{border-collapse:collapse;margin-top:12px}
-  td,th{padding:6px 16px;text-align:right;border-bottom:1px solid #21262d;font-size:14px}
-  th{color:#8b949e;font-weight:500}
+  td,th{padding:6px 16px;text-align:right;border-bottom:1px solid var(--panel);font-size:14px}
+  th{color:var(--dim);font-weight:500}
   input[type=checkbox]{width:16px;height:16px;vertical-align:-2px;pointer-events:auto}
-  .fld{display:flex;flex-direction:column;gap:5px;font-size:12px;color:#8b949e}
-  .fld input,.fld select{padding:7px 9px;background:#0d1117;border:1px solid #30363d;color:#e6edf3;
+  .fld{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--dim)}
+  .fld input,.fld select{padding:7px 9px;background:#0d1117;border:1px solid var(--line);color:var(--txt);
     border-radius:7px;font-size:14px;font-family:inherit;width:112px}
   summary::-webkit-details-marker{display:none}
+  .bigNum{font-size:86px;font-weight:800;line-height:1;color:var(--acc);
+    font-variant-numeric:tabular-nums;letter-spacing:-4px}
+  .bigNum i{font-style:normal;font-size:30px;font-weight:600;color:var(--dim);margin-left:4px;letter-spacing:0}
+  .bigSub{margin-top:10px;font-size:14px;color:var(--dim)}
+  .more{margin-top:22px;text-align:left;min-width:420px}
+  .more>summary{cursor:pointer;list-style:none;font-size:13px;color:var(--dim);text-align:center}
+  .more>summary::-webkit-details-marker{display:none}
+  .more>summary::before{content:"▸ ";color:var(--acc)}
+  .more[open]>summary::before{content:"▾ "}
+  .more table{margin-top:14px}
+  .moreFoot{margin-top:10px;font-size:12.5px;color:var(--dim);text-align:center}
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
+<a id="back" href="../app.html#play">← 返回</a>
 <div id="hud"></div>
 
 <div id="msg" class="overlay show">
-  <div style="font-size:26px;color:#e9eef3;font-weight:700;letter-spacing:2px">甩枪训练</div>
-  <div style="margin-top:8px;color:#9fb0bd;font-size:14px">看到球 → 甩过去 → 手停 → 点击</div>
+  <div style="font-size:26px;color:var(--txt);font-weight:700;letter-spacing:2px">甩枪训练</div>
+  <div style="margin-top:8px;color:var(--dim);font-size:14px">看到球 → 甩过去 → 手停 → 点击</div>
   <button id="go" class="btn" style="margin-top:26px;padding:16px 64px;font-size:18px;letter-spacing:2px">开 始</button>
   <div id="sensHint" style="margin-top:14px;font-size:13px;color:#8b949e"></div>
   <div id="bw" style="margin-top:10px;font-size:13px;color:#d29922"></div>
@@ -54,7 +71,7 @@
       <label class="fld">CS 灵敏度<input id="sens" type="number" step="0.01" placeholder="自动"></label>
       <label class="fld">cm/360<input id="cm" type="number" step="0.1" value="36.5"></label>
     </div>
-    <div style="margin-top:12px;display:flex;gap:18px;justify-content:center;font-size:13px;color:#9fb0bd">
+    <div style="margin-top:12px;display:flex;gap:18px;justify-content:center;font-size:13px;color:var(--dim)">
       <label><input id="limit" type="checkbox" checked> 时间限制</label>
       <label><input id="shrink" type="checkbox"> 收缩模式</label>
     </div>
@@ -135,10 +152,34 @@ const SCENES={
   cs:{dark:true,halo:.18,bg:'#2b2620',major:'rgba(214,181,120,.45)',minor:'rgba(120,110,88,1)',ceil:'rgba(98,90,72,1)',
        tgt:'#e5484d',tgtFill:'rgba(229,72,77,.85)',ring:'#ffffff',cross:'#b8e986',edge:'#000000'}
 };
-let SC = SCENES[ (function(){ try{ return localStorage.getItem('cs2at.scene')||'classic'; }catch(e){ return 'ink'; } })() ] || SCENES.classic;
+// 站点主题 → 游戏场景（主站切什么，游戏就跟什么；?scene= 可单独覆盖）
+const THEME2SCENE={jade:'jade',ink:'ink',lake:'lake',light:'light',sand:'cs',forest:'jade',mono:'mono',cyber:'night',night:'night'};
+function pickScene(){
+  try{
+    const q=new URLSearchParams(location.search);
+    if(q.get('scene') && SCENES[q.get('scene')]) return q.get('scene');
+    const th=q.get('theme')||localStorage.getItem('cs2at.theme');
+    if(th && THEME2SCENE[th]) return THEME2SCENE[th];
+    const sc=localStorage.getItem('cs2at.scene');
+    if(sc && SCENES[sc]) return sc;
+  }catch(e){}
+  return 'classic';
+}
+let SC = SCENES[pickScene()] || SCENES.classic;
+(function applySceneVars(){
+  const dark=!!SC.dark;
+  const r=document.documentElement.style;
+  r.setProperty('--bg', SC.bg);
+  r.setProperty('--txt', dark?'#e6edf3':'#14313a');
+  r.setProperty('--dim', dark?'#8b949e':'#5b6b73');
+  r.setProperty('--panel', dark?'#161d24':'#ffffff');
+  r.setProperty('--line', dark?'#263039':'#d7e0e4');
+  r.setProperty('--acc', SC.cross);
+  r.setProperty('--overlay', dark?'rgba(11,15,20,.96)':'rgba(238,244,246,.97)');
+})();
 try{
   document.body.style.background=SC.bg;
-  document.body.style.color = SC.dark? '#e9eef3' : '#1f2b2c';
+  document.body.style.color = SC.dark? 'var(--txt)' : '#1f2b2c';
 }catch(e){}
 
 
@@ -173,7 +214,7 @@ function start(){
   try{
     SC = SCENES[localStorage.getItem('cs2at.scene')||'night'] || SCENES.night;
     document.body.style.background = SC.bg;
-    hud.style.color = SC.dark? '#e9eef3' : '#1f2b2c';
+    hud.style.color = SC.dark? 'var(--txt)' : '#1f2b2c';
   }catch(e){}
   mode=(document.getElementById('mode')||{value:'random'}).value||'random';
   if(mode==='precision'){ radius=0.7; limitChk.checked=false; }
@@ -277,11 +318,14 @@ function finish(){
   blocks.forEach(b=>{
     rows+='<tr><td>第 '+b.n+' 段</td><td>'+b.mt.toFixed(0)+' ms</td><td>'+Math.round(b.hit*100)+'%</td><td>'+Math.round(b.lim)+' ms</td><td>'+b.r.toFixed(2)+'°</td></tr>';
   });
-  resBody.innerHTML='<div style="font-size:18px;color:#58a6ff">训练报告</div>'+
-    '<table><tr><th>阶段</th><th>命中用时(中位)</th><th>命中率</th><th>限时</th><th>球半径</th></tr>'+rows+'</table>'+
-    '<div style="margin-top:14px;font-size:14px;color:#8b949e">'+
-    '总计 '+trial+' 球 · 命中率 '+Math.round(overallHit*100)+'% · 中位用时 '+overallMT.toFixed(0)+' ms · 超时 '+timeouts+' 次 · 最长连击 '+bestStreak+
-    '</div>';
+  // 直觉优先：先给一个数，细节收起来
+  resBody.innerHTML =
+    '<div class="bigNum">'+Math.round(overallHit*100)+'<i>%</i></div>'+
+    '<div class="bigSub">中位用时 '+overallMT.toFixed(0)+' ms &nbsp;·&nbsp; '+trial+' 球 &nbsp;·&nbsp; 最长连击 '+bestStreak+'</div>'+
+    '<details class="more"><summary>分段数据</summary>'+
+      '<table><tr><th>阶段</th><th>用时</th><th>命中率</th><th>限时</th><th>球半径</th></tr>'+rows+'</table>'+
+      '<div class="moreFoot">超时 '+timeouts+' 次</div>'+
+    '</details>';
   const d=new Date(), pad=n=>String(n).padStart(2,'0');
   const minLim = blocks.length? Math.min.apply(null, blocks.map(b=>b.lim)) : allowed;
   window.__logLine = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+
@@ -423,7 +467,7 @@ function loop(){
   const rate=recent.length? Math.round(recent.filter(Boolean).length/recent.length*100) : 0;
   hud.innerHTML='第 <b>'+(trial+1)+'</b>/'+TOTAL+' &nbsp; 球半径 <b>'+radius.toFixed(2)+'°</b> &nbsp; '+cm360.toFixed(1)+' cm/360<br>'+
     '近 10 球命中率 <b>'+rate+'%</b> &nbsp; 连击 <b>'+streak+'</b>'+(limitChk.checked? ' &nbsp; 限时 <b>'+Math.round(allowed)+'ms</b>':'')+'<br>'+
-    (fpsShow? ' <span style="color:#3fb950">· '+fpsVal+' fps</span>':'')+
+    (fpsShow? ' <span style="color:var(--acc)">· '+fpsVal+' fps</span>':'')+
     '<br><span style="font-size:13px;color:#6e7681">看到球 → 甩过去 → 手停 → 点击</span>';
 }
 requestAnimationFrame(loop);
@@ -434,7 +478,7 @@ requestAnimationFrame(loop);
   var ok = (typeof window !== 'undefined') && ('onpointerrawupdate' in window);
   if(!ok){
     el.innerHTML = '⚠️ 当前浏览器不支持 pointerrawupdate，采样精度会降低<br>' +
-      '建议使用 <b style="color:#3fb950">Chrome</b> 或 <b style="color:#3fb950">Edge</b>';
+      '建议使用 <b style="color:var(--acc)">Chrome</b> 或 <b style="color:var(--acc)">Edge</b>';
   }
 })();
 
@@ -448,13 +492,13 @@ requestAnimationFrame(loop);
     var s = y>0 ? 360/((c/2.54)*d)/y : 0;
     if(y<=0){
       var sA = 360/((c/2.54)*d)/0.022, sB = 360/((c/2.54)*d)/0.0165;
-      hint.innerHTML = '→ CS 灵敏度：m_yaw 0.022 → <b style="color:#3fb950">'+sA.toFixed(2)+
-        '</b>　m_yaw 0.0165 → <b style="color:#3fb950">'+sB.toFixed(2)+'</b>' +
+      hint.innerHTML = '→ CS 灵敏度：m_yaw 0.022 → <b style="color:var(--acc)">'+sA.toFixed(2)+
+        '</b>　m_yaw 0.0165 → <b style="color:var(--acc)">'+sB.toFixed(2)+'</b>' +
         '<br><span style="color:#6e7681;font-size:13px">'+c.toFixed(1)+' cm/360 · DPI '+d+
         ' · 180° 转身 '+(c/2).toFixed(1)+' cm</span>';
       return;
     }
-    var txt = '→ 对应 <b style="color:#3fb950">' + (y>0? 'CS 灵敏度 '+s.toFixed(2) : 'cm/360 '+c.toFixed(1)) + '</b>';
+    var txt = '→ 对应 <b style="color:var(--acc)">' + (y>0? 'CS 灵敏度 '+s.toFixed(2) : 'cm/360 '+c.toFixed(1)) + '</b>';
     txt += ' &nbsp;<span style="color:#6e7681">(' + c.toFixed(1) + ' cm/360 · DPI ' + d + (y>0? ' · m_yaw '+y : '') + ')</span>';
     if(y>0) txt += '<br><span style="color:#6e7681;font-size:13px">360° 转身需要 ' + c.toFixed(1) + ' cm，180° 需要 ' + (c/2).toFixed(1) + ' cm</span>';
     hint.innerHTML = txt;
@@ -496,6 +540,98 @@ requestAnimationFrame(loop);
     if(q.get('shrink')==='1'){ var sh=document.getElementById('shrink'); if(sh) sh.checked=true; }
     if(window.__updSensHint) window.__updSensHint();
   }catch(e){}
+})();
+
+/* ===== 英文界面（不改动游戏逻辑，只翻译渲染出来的文字）===== */
+(function(){
+  var EN = (function(){
+    try{
+      var q=new URLSearchParams(location.search);
+      if(q.get('lang')) return q.get('lang')==='en';
+      return localStorage.getItem('cs2at.lang')==='en';
+    }catch(e){ return false; }
+  })();
+  if(!EN) return;
+
+  var D={
+    '甩枪训练 · 自适应难度':'Flick trainer · adaptive',
+    '甩枪训练':'Flick trainer',
+    '看到球 → 甩过去 → 手停 → 点击':'See the dot → flick → stop → click',
+    '开 始':'START',
+    '▸ 高级设置':'▸ Advanced',
+    '模式':'Mode','球数':'Shots','时间限制':'Time limit','收缩模式':'Shrink',
+    '← 返回':'← Back','自动':'auto','CS 灵敏度':'CS sensitivity','目标大小':'Dot size','球大小':'Dot size','再来一组':'Again','复制本组数据':'Copy this set','关闭':'Close','继续':'Continue',
+    '自适应随机':'Adaptive random','定角重复':'Fixed angle','小球精度':'Precision',
+    '中位用时':'Median','分段数据':'Per-segment','阶段':'Set','用时':'Time','命中率':'Hit rate',
+    '限时':'Limit','球半径':'Radius','超时':'Timeouts','次':'','近 10 球命中率':'Last 10',
+    '连击':'Streak','球':'shots','建议使用':'Use','或':'or','当前':'Current'
+  };
+  var RULES=[
+    [/^→ 对应\s*$/,'→ '],
+    [/^CS 灵敏度 ([\d.]+)$/,'CS sensitivity $1'],
+    [/^cm\/360 ([\d.]+)$/,'cm/360 $1'],
+    [/^命中$/,'HIT'],[/^偏$/,'OFF'],[/^超时$/,'MISS'],
+    [/^第 (\d+) 球$/,'Shot $1'],
+    [/^第 (\d+) 段$/,'Set $1'],
+    [/^超时 (\d+) 次$/,'$1 timeouts'],
+    [/^球半径 ([\d.]+)$/,'Radius $1'],
+    [/^→ 对应 CS 灵敏度 ([\d.]+)/,'→ CS sensitivity $1'],
+    [/^→ 对应 cm\/360 ([\d.]+)/,'→ cm/360 $1'],
+    [/^360° 转身需要 ([\d.]+) cm，180° 需要 ([\d.]+) cm$/,'360° needs $1 cm · 180° needs $2 cm'],
+    [/^中位用时 ([\d]+) ms/,'Median $1 ms'],
+    [/^(\d+) 球/,'$1 shots'],
+    [/^近 10 球命中率 ([\d]+)%?$/,'Last 10: $1%'],
+    [/^最长连击 (\d+)$/,'Best streak $1']
+  ];
+  var D2={}; for(var k in D){ D2[k.replace(/\s+/g,'')]=D[k]; }
+  function tr(t){
+    var s=t.trim(); if(!s) return t;
+    if(D[s]!==undefined) return t.replace(s, D[s]);
+    for(var i=0;i<RULES.length;i++){ if(RULES[i][0].test(s)) return t.replace(s, s.replace(RULES[i][0], RULES[i][1])); }
+    return t;
+  }
+  function walk(){
+    var w=document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null), n;
+    while((n=w.nextNode())){
+      var v=n.nodeValue; if(!v || !/[\u4e00-\u9fa5]/.test(v)) continue;
+      var nv=tr(v);
+      if(nv!==v) n.nodeValue=nv;
+    }
+    document.querySelectorAll('option').forEach(function(o){
+      if(/[\u4e00-\u9fa5]/.test(o.textContent)){ var t=o.textContent.trim(); if(D[t]) o.textContent=D[t]; }
+    });
+    document.querySelectorAll('input[placeholder],button[title]').forEach(function(el){
+      var ph=el.getAttribute('placeholder'); if(ph && D[ph.trim()]) el.setAttribute('placeholder', D[ph.trim()]);
+    });
+    if(document.title.indexOf('甩枪训练')===0) document.title='Flick trainer · adaptive';
+  }
+  walk();
+  new MutationObserver(function(){ walk(); }).observe(document.body,{childList:true,subtree:true,characterData:true});
+})();
+
+</script>
+
+<script>
+(function(){
+  var back=document.getElementById('back');
+  var msg=document.getElementById('msg');
+  // 返回键不能被游戏的 mousedown（射击/继续）吃掉
+  ['mousedown','pointerdown','mouseup','pointerup','click'].forEach(function(t){
+    back.addEventListener(t, function(e){ e.stopPropagation(); }, true);
+  });
+  function sync(){
+    var on=back && msg && msg.classList.contains('show');
+    if(back) back.classList.toggle('on', !!on);
+  }
+  if(msg && back){
+    new MutationObserver(sync).observe(msg,{attributes:true,attributeFilter:['class']});
+    sync();
+  }
+  addEventListener('keydown', function(e){
+    if(e.key!=='Escape') return;
+    if(document.fullscreenElement) return;   // 全屏时 Esc 只退出全屏，不离开页面
+    location.href='../app.html#play';
+  });
 })();
 </script>
 </body>

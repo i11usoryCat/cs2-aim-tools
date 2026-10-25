@@ -273,6 +273,31 @@ function translateRoot(root, lang){
   }catch(e){}
 }
 
+function markSwitch(l){
+  try{
+    document.querySelectorAll('#langTop span[data-l]').forEach(function(el){
+      el.classList.toggle('on', el.dataset.l===l);
+    });
+  }catch(e){}
+}
+function applyLang(l){
+  document.documentElement.setAttribute('lang', l==='en'?'en':'zh-CN');
+  translateRoot(document.body, l);
+  markSwitch(l);
+  try{
+    const map=(l==='en')?EN:ZH;
+    document.querySelectorAll('[title],[placeholder]').forEach(function(el){
+      ['title','placeholder'].forEach(function(a){
+        if(!el.hasAttribute(a)) return;
+        const key='__o_'+a;
+        if(!el.dataset[key]) el.dataset[key]=el.getAttribute(a);
+        const orig=el.dataset[key], t=orig.trim();
+        el.setAttribute(a, map[t]||orig);
+      });
+    });
+  }catch(e){}
+}
+
   applyLang(LANG);
   markSwitch(LANG);
 

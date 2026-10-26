@@ -122,6 +122,17 @@
   }
   .home:hover{color:var(--acc); border-color:var(--acc)}
 
+  /* ——— 手机提示条 ——— */
+  #mobileTip{display:none;position:fixed;left:50%;bottom:18px;transform:translateX(-50%);
+    z-index:9300;align-items:center;gap:12px;padding:10px 14px 10px 20px;
+    background:var(--panel);border:1px solid var(--line);color:var(--txt);
+    border-radius:999px;font-size:13px;white-space:nowrap;max-width:calc(100vw - 20px);
+    box-shadow:0 12px 32px -14px color-mix(in srgb,var(--txt) 30%,transparent)}
+  #mobileTip button{font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;
+    background:var(--acc);color:#fff;border:none;border-radius:9px;padding:7px 14px;
+    white-space:nowrap;flex-shrink:0}
+  #mobileTip button:hover{filter:brightness(1.08)}
+
   /* ——— 布局 ——— */
   main{max-width:960px; margin:0 auto; padding:36px 26px 90px}
   section{display:none; scroll-margin-top:76px; animation:rise .28s cubic-bezier(.2,.8,.2,1)}
@@ -218,6 +229,23 @@
     header{padding:12px 16px}
     .logo{display:none}
     main{padding:26px 16px 70px}
+  }
+
+  /* 窄屏（约 520px 内）：压缩顶栏，保证语言切换不被裁掉 */
+  @media (max-width:520px){
+    header{gap:4px;padding:10px 12px}
+    .brand{margin-right:6px;gap:8px}
+    .brand .mark{width:34px;height:34px}
+    .brand-name{font-size:15px}
+    .brand-sub{display:none}
+    nav a{padding:8px 8px;font-size:12.5px}
+    nav a.on::after{left:8px;right:8px}
+    .lang{margin-right:4px}
+    .lang span{padding:5px 8px;font-size:12px}
+    .gear{width:30px;height:30px;margin-right:4px}
+    .gear svg{width:14px;height:14px}
+    #mobileTip{bottom:12px;padding:9px 12px 9px 16px;font-size:12.5px;gap:10px}
+    #mobileTip button{padding:6px 12px;font-size:12px}
   }
 
 /* ===== 计划页样式 ===== */
@@ -367,6 +395,7 @@
 </style>
 </head>
 <body>
+<div id="mobileTip" style="display:none"><span class="mtText">请用电脑打开（建议 Chrome / Edge）·</span><button type="button" id="mtCopy">复制链接</button></div>
 <script src="assets/scenes.js"></script>
 
 <header>
@@ -411,6 +440,11 @@
     <div class="card">
       <div class="t" style="margin-bottom:10px">各模式最佳</div>
       <table id="bestTable"></table>
+    </div>
+    <div class="card">
+      <div class="t" style="margin-bottom:10px">趋势（最近 60 组）</div>
+      <canvas id="trendCv" style="width:100%;height:220px;display:block"></canvas>
+      <div class="hint" id="trendLegend" style="margin:8px 0 0"></div>
     </div>
     <div class="card">
       <div class="t" style="margin-bottom:10px">最近记录</div>
@@ -469,7 +503,7 @@
 
   <div class="panel">
     <h2>训练记录</h2>
-    <div class="hint">在训练页点「复制本组数据」，粘贴到这里保存。</div>
+    <div class="hint">训练器成绩会自动计入日历；把「复制本组数据」粘到这里可留档详情。</div>
     <textarea id="logInput" placeholder="2026-10-24  限时450ms  命中率83%  中位436ms  超时5次"></textarea>
     <div style="margin-top:10px;display:flex;gap:10px">
       <button class="main" id="addLog">保存这条</button>
@@ -702,7 +736,7 @@ const EN={
   '个人数据':'Stats','训练':'Drills','计划训练':'Plan','设置':'Settings','← 首页':'← Home','瞄准 · 度量':'aim, measured',
   '最佳成绩按模式分别记录，只存在本浏览器。':'Best results per mode, stored locally in this browser.',
   '总训练组数':'Sets','训练天数':'Days','最低限时':'Best limit','最高命中率':'Best hit rate',
-  '各模式最佳':'Best per mode','最近记录':'Recent runs',
+  '各模式最佳':'Best per mode','最近记录':'Recent runs','趋势（最近 60 组）':'Trend (last 60 runs)',
   '模式':'Mode','最低限时':'Best limit','最高命中率':'Best hit','最快中位用时':'Fastest median','组数':'Sets',
   '自适应随机':'Adaptive random','定角重复':'Fixed angle','小球精度':'Precision',
   '状态快测':'State check','20 球定尺寸，30 秒测今天手感，结果进记录。':'20 dots at a fixed size — 30 seconds to check today\'s feel; results go to your log.',
@@ -778,7 +812,10 @@ const EN={
   '分享':'Share',
   '做完一项就在训练页点「复制本组数据」，粘到下面的记录里。':'After each drill, hit "Copy this set" on the drills page and paste it below.',
   '今天是休息日。睡够 7-8 小时，技能靠睡眠巩固。':'Rest day. Sleep 7–8 hours — skill consolidates overnight.',
-  '在训练页点「复制本组数据」，粘贴到这里保存。':'Hit "Copy this set" on the drills page, then paste it here.',
+  '训练器成绩会自动计入日历；把「复制本组数据」粘到这里可留档详情。':'Trainer results now count automatically; paste "Copy this set" here to archive details.',
+  '请用电脑打开（建议 Chrome / Edge）·':'Open on desktop (Chrome / Edge) ·',
+  '复制链接':'Copy link',
+  '已复制':'Copied',
 };
 let LANG='zh';
 const ZH={};
@@ -835,6 +872,10 @@ function applyTheme(id){
   try{
     const f=document.querySelector('iframe');
     if(f && f.contentWindow) f.contentWindow.postMessage({type:'theme', theme:id}, location.origin);
+  }catch(e){}
+  // 趋势图颜色跟主题走
+  try{
+    if($('data') && $('data').classList.contains('on')) drawTrend(load(K_RUNS,[]));
   }catch(e){}
 }
 function defaultTheme(){
@@ -1093,6 +1134,60 @@ function renderData(){
   tail.forEach(r=>{ rr+='<tr><td>'+r.d+'</td><td>'+(MODE_NAME[r.mode]||r.mode)+'</td><td>'+r.limit+
     ' ms</td><td>'+r.hit+'%</td><td>'+r.mt+' ms</td></tr>'; });
   $('runTable').innerHTML=rr;
+
+  drawTrend(runs);
+}
+
+/* 趋势曲线：命中率（左轴 0-100%）+ 中位用时/限时（右轴 ms） */
+function drawTrend(runs){
+  const cv=$('trendCv'); if(!cv) return;
+  const tail=runs.slice(-60);
+  const W=Math.max(320, cv.clientWidth||600), H=220, dpr=window.devicePixelRatio||1;
+  cv.width=W*dpr; cv.height=H*dpr;
+  const ctx=cv.getContext('2d'); ctx.scale(dpr,dpr); ctx.clearRect(0,0,W,H);
+  const css=getComputedStyle(document.documentElement);
+  const acc=css.getPropertyValue('--acc').trim()||'#7fbfa6';
+  const dim=css.getPropertyValue('--dim').trim()||'#8b949e';
+  const line=css.getPropertyValue('--line').trim()||'#2a3a36';
+  const txt=css.getPropertyValue('--txt').trim()||'#e6edf3';
+  const EN_UI=document.documentElement.getAttribute('lang')==='en';
+  const P={l:46,r:12,t:10,b:26};
+  const cw=W-P.l-P.r, ch=H-P.t-P.b;
+  // 网格（左轴：0-100%）
+  ctx.strokeStyle=line; ctx.lineWidth=1; ctx.font='11px "Microsoft YaHei UI"'; ctx.textAlign='right';
+  for(let i=0;i<=4;i++){
+    const y=P.t+ch-ch*i/4;
+    ctx.beginPath(); ctx.moveTo(P.l,y); ctx.lineTo(W-P.r,y); ctx.stroke();
+    ctx.fillStyle=dim; ctx.fillText(String(i*25), P.l-8, y+4);
+  }
+  if(!tail.length){
+    ctx.fillStyle=dim; ctx.textAlign='center'; ctx.font='13px "Microsoft YaHei UI"';
+    ctx.fillText(EN_UI?'No data yet — go run a set':'还没有数据，去练一组吧', W/2, P.t+ch/2);
+    $('trendLegend').innerHTML='';
+    return;
+  }
+  const x=i=>P.l+cw*(tail.length===1? 0.5 : i/(tail.length-1));
+  const linePath=(vals,ymin,ymax)=>{
+    ctx.beginPath();
+    vals.forEach((v,i)=>{ const y=P.t+ch*(1-(Math.min(ymax,Math.max(ymin,v))-ymin)/(ymax-ymin)); i? ctx.lineTo(x(i),y): ctx.moveTo(x(i),y); });
+    ctx.stroke();
+  };
+  // 中位用时 + 限时（右轴 0-900ms）
+  ctx.strokeStyle='#d29922'; ctx.lineWidth=1.6;
+  linePath(tail.map(r=>r.mt),0,900);
+  ctx.strokeStyle=dim; ctx.lineWidth=1.2; ctx.setLineDash([5,4]);
+  linePath(tail.map(r=>r.limit),0,900);
+  ctx.setLineDash([]);
+  // 命中率（左轴 0-100%）
+  ctx.strokeStyle=acc; ctx.lineWidth=2;
+  linePath(tail.map(r=>r.hit),0,100);
+  // 首尾日期
+  ctx.fillStyle=dim; ctx.textAlign='left'; ctx.font='11px "Microsoft YaHei UI"';
+  ctx.fillText(tail[0].d, P.l, H-8);
+  ctx.textAlign='right'; ctx.fillText(tail[tail.length-1].d, W-P.r, H-8);
+  // 图例
+  const lg=(c,zh,en)=>'<span style="white-space:nowrap;margin-right:16px"><span style="display:inline-block;width:10px;height:3px;background:'+c+';vertical-align:middle;margin-right:6px"></span>'+(EN_UI?en:zh)+'</span>';
+  $('trendLegend').innerHTML=lg(acc,'命中率','Hit rate')+lg('#d29922','中位用时','Median time')+lg(dim,'限时','Limit');
 }
 
 $('expBtn').addEventListener('click',()=>{
@@ -1572,7 +1667,7 @@ function render(root, lang){
   const isRest=(d%7===5||d%7===6);
   $('todayHint').textContent = isRest
     ? (LG==='en' ? 'Rest day. Sleep 7–8 hours — skill consolidates overnight.' : '今天是休息日。睡够 7-8 小时，技能靠睡眠巩固。')
-    : (LG==='en' ? 'After each drill, hit "Copy this set" on the drills page and paste it below.' : '做完一项就在训练页点「复制本组数据」，粘到下面的记录里。');
+    : (LG==='en' ? 'Trainer results now count automatically; paste "Copy this set" into the log to archive details.' : '训练器成绩会自动计入日历；把「复制本组数据」粘到记录里可留档详情。');
 
   const q=cfgQuery();
   const tasks=planFor(w);
@@ -1941,6 +2036,22 @@ render();
 applyLang();
 bindLang();
 initPlan();
+</script>
+
+<script>
+/* 手机提示条：触屏且小屏时显示，复制链接 */
+(function(){
+  var tip=document.getElementById('mobileTip'); if(!tip) return;
+  if(!(('ontouchstart' in window) || navigator.maxTouchPoints>0) || Math.min(screen.width,screen.height)>=900) return;
+  tip.style.display='flex';
+  var btn=document.getElementById('mtCopy'); if(!btn) return;
+  var isEn=function(){ return document.documentElement.getAttribute('lang')==='en'; };
+  btn.addEventListener('click', function(){
+    try{ navigator.clipboard.writeText(location.href).catch(function(){}); }catch(e){}
+    btn.textContent = isEn() ? 'Copied' : '已复制';
+    setTimeout(function(){ btn.textContent = isEn() ? 'Copy link' : '复制链接'; }, 2000);
+  });
+})();
 </script>
 
 

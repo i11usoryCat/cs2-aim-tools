@@ -108,7 +108,7 @@
 
   <div class="panel">
     <h2>训练记录</h2>
-    <div class="hint">在训练页点「复制本组数据」，粘贴到这里保存。</div>
+    <div class="hint">训练器成绩会自动计入日历；把「复制本组数据」粘到这里可留档详情。</div>
     <textarea id="logInput" placeholder="2026-10-24  限时450ms  命中率83%  中位436ms  超时5次"></textarea>
     <div style="margin-top:10px;display:flex;gap:10px">
       <button class="main" id="addLog">保存这条</button>
@@ -188,10 +188,19 @@ function render(){
   $('dayNo').textContent='第 '+(d+1)+' 天';
   $('weekNo').textContent='第 '+w+' 周';
   const log=JSON.parse(localStorage.getItem(K_LOG)||'[]');
-  $('doneNo').textContent=log.length;
+  // 同源自动并入训练器成绩日期（cs2at.runs）：练完自动计入，不用再复制粘贴
+  const set=new Set(log.map(x=>x.slice(0,10)));
+  try{
+    const hist=JSON.parse(localStorage.getItem('cs2at.runs')||'[]');
+    if(Array.isArray(hist)) hist.forEach(x=>{
+      const s=String(x.d||'').slice(0,10);
+      if(/^\d{4}-\d{2}-\d{2}$/.test(s)) set.add(s);
+    });
+  }catch(e){}
+  $('doneNo').textContent=set.size;
 
   // 连续天数
-  let streak=0; const set=new Set(log.map(x=>x.slice(0,10)));
+  let streak=0;
   for(let i=0;i<60;i++){ const dt=new Date(Date.now()-i*86400000);
     const p=n=>String(n).padStart(2,'0');
     const k=dt.getFullYear()+'-'+p(dt.getMonth()+1)+'-'+p(dt.getDate());
@@ -202,7 +211,7 @@ function render(){
   $('todayTitle').textContent='今日任务 · 第 '+(d+1)+' 天（第 '+w+' 周）';
   $('todayHint').textContent = isRest
     ? '今天是休息日。睡够 7-8 小时，技能靠睡眠巩固。'
-    : '做完一项就在训练页点「复制本组数据」，粘到下面的记录里。';
+    : '训练器成绩会自动计入日历；把「复制本组数据」粘到记录里可留档详情。';
 
   const q=cfgQuery();
   const tasks=planFor(w);

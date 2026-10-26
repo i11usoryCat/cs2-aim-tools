@@ -67,7 +67,7 @@ function pickScene(){
   try{
     const q=new URLSearchParams(location.search);
     if(q.get('scene') && SCENES[q.get('scene')]) return q.get('scene');
-    const th=q.get('theme')||localStorage.getItem('cs2at.theme');
+    const th=q.get('theme')||localStorage.getItem('cs2at.theme')||(function(){var d=new Date(),tm=d.getHours()*60+d.getMinutes();return (tm>=1410||tm<460)?'forest':'sand';})();
     if(th && THEME2SCENE[th]) return THEME2SCENE[th];
     const sc=localStorage.getItem('cs2at.scene');
     if(sc && SCENES[sc]) return sc;
@@ -234,8 +234,14 @@ function finish(){
   const lm=med(result.lat), tm=med(result.t), dm=med(result.dist);
   let cmNew=cm360*(1+fm);
   if(cmNew<8) cmNew=8; if(cmNew>80) cmNew=80;
-  const conv = lastSug>0 && Math.abs(cmNew-lastSug)/lastSug < 0.01;
-  lastSug = cmNew;
+  // 收敛判据：累计样本的 95% 置信区间半宽 <1%（不用两轮差——那是运气判据）
+  const fCum=[]; allRuns.forEach(r=>{ r.f.forEach(v=>fCum.push(v)); });
+  const nCum=fCum.length;
+  const fMeanC=nCum? fCum.reduce((x,y)=>x+y,0)/nCum : 0;
+  const fVarC=nCum>1? fCum.reduce((x,y)=>x+(y-fMeanC)*(y-fMeanC),0)/(nCum-1) : 0;
+  const SE=Math.sqrt(Math.max(0,fVarC)/Math.max(1,nCum));
+  const CI=1.96*SE;
+  const conv = nCum>=40 && CI < 0.01;
   result.summary={conv:conv, fm:fm, cmNew:cmNew, sensNew:sensOf(cmNew), sensNow:sensOf(cm360), tm:tm, lm:lm, dm:dm};
 
   const hitN=result.hit.filter(Boolean).length, totalN=result.f.length;
@@ -261,11 +267,13 @@ function finish(){
     row('不足', negF.length+' 球 ('+np+'%)，中位 '+(med(negF)*100).toFixed(1)+'%')+
     row('合计偏差', (fm>=0?'+':'')+(fm*100).toFixed(1)+'%', 'big')+
     row('本次', cm360.toFixed(1)+' → '+cmNew.toFixed(1)+' cm　'+sensOf(cm360).toFixed(2)+' → <b>'+sensOf(cmNew).toFixed(2)+'</b>')+
+    row('样本与置信', nCum+' 球 · SE '+(SE*100).toFixed(2)+'% · 95% CI ±'+(CI*100).toFixed(2)+'%')+
     row('累计 '+impliedAll.length+' 球 · 全部', med(impliedAll).toFixed(1)+' cm → sens <b>'+sensOf(med(impliedAll)).toFixed(2)+'</b>')+
     row('累计 · 仅未命中', (impliedMiss.length? med(impliedMiss).toFixed(1)+' cm → sens <b>'+sensOf(med(impliedMiss)).toFixed(2)+'</b>' : '-'))+
     '</table>'+
     '<div style="margin-top:12px;font-size:14px">'+verdict+'</div>'+
-    (conv? '<div style="margin-top:8px;color:var(--acc);font-weight:700">✓ 连续两轮变化 &lt;1%，已收敛 —— 可以定稿</div>' : '');
+    (conv? '<div style="margin-top:8px;color:var(--acc);font-weight:700">✓ 95% 置信区间半宽 &lt;1%，可以定稿</div>'
+         : '<div style="margin-top:8px;color:var(--dim);font-size:13px">继续测：当前 95% 置信区间 ±'+(CI*100).toFixed(2)+'%，到 ±1% 内再定稿（目前已 '+nCum+' 球）</div>');
   res.classList.add('show');
   try{ addScatter(); }catch(e){}
 }
@@ -484,7 +492,9 @@ requestAnimationFrame(loop);
     '中位偏移':'Median offset','偏慢':'too slow','偏快':'too fast',
     '建议灵敏度':'Suggested sensitivity','当前灵敏度':'Current sensitivity','误差':'error',
     '复制结果':'Copy result','关闭':'Close','继续':'Continue',
-    '过冲':'Overshoot','欠冲':'Undershoot','命中':'Hit','超时':'Timeout'
+    '过冲':'Overshoot','欠冲':'Undershoot','命中':'Hit','超时':'Timeout',
+    '样本与置信':'Samples & confidence',
+    '✓ 95% 置信区间半宽 <1%，可以定稿':'✓ 95% CI half-width <1% — finalize'
   };
   var RULES=[
     [/^→ 对应\s*$/,'→ '],
@@ -493,7 +503,9 @@ requestAnimationFrame(loop);
     [/^→ 对应 cm\/360 ([\d.]+)/,'→ cm/360 $1'],
     [/^360° 转身需要 ([\d.]+) cm，180° 需要 ([\d.]+) cm$/,'360° needs $1 cm · 180° needs $2 cm'],
     [/^第 (\d+) 球$/,'Shot $1'],
-    [/^([\d.]+) cm\/360 · DPI (\d+) · m_yaw ([\d.]+)$/,'$1 cm/360 · DPI $2 · m_yaw $3']
+    [/^([\d.]+) cm\/360 · DPI (\d+) · m_yaw ([\d.]+)$/,'$1 cm/360 · DPI $2 · m_yaw $3'],
+    [/^(\d+) 球 · SE ([\d.]+)% · 95% CI ±([\d.]+)%$/,'$1 shots · SE $2% · 95% CI ±$3%'],
+    [/^继续测：当前 95% 置信区间 ±([\d.]+)%，到 ±1% 内再定稿（目前已 (\d+) 球）$/,'Keep going: 95% CI ±$1% — finalize within ±1% (currently $2 shots)']
   ];
   var D2={}; for(var k in D){ D2[k.replace(/\s+/g,'')]=D[k]; }
   function tr(t){

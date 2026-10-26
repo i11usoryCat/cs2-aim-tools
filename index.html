@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-theme="jade">
+<html lang="zh-CN" data-theme="sand">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -265,6 +265,19 @@ var EN={
 
   function storeLang(l){ try{ localStorage.setItem('cs2at.lang', l); }catch(e){} }
 
+/* 主题色解析：兼容 hex 与 @property 注册后的 rgb() 计算值 */
+function parseColor(v){
+  try{
+    var s=String(v||'').trim();
+    var m=s.match(/rgba?\(([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/);
+    if(m) return Math.round(+m[1])+','+Math.round(+m[2])+','+Math.round(+m[3]);
+    var h=s.replace('#','');
+    if(h.length===3) h=h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+    if(/^[0-9a-fA-F]{6}$/.test(h)){ var n=parseInt(h,16); return ((n>>16)&255)+','+((n>>8)&255)+','+(n&255); }
+    return null;
+  }catch(e){ return null; }
+}
+
 let switching=false, watchdog=null;
 
 function rippleSwitch(lang, cx, cy){
@@ -344,10 +357,7 @@ function rippleSwitch(lang, cx, cy){
   cv.style.width=innerWidth+'px'; cv.style.height=innerHeight+'px';
   document.body.appendChild(cv);
 
-  var acc=(getComputedStyle(htmlEl).getPropertyValue('--acc')||'#0f766e').trim().replace('#','');
-  if(acc.length===3) acc=acc[0]+acc[0]+acc[1]+acc[1]+acc[2]+acc[2];
-  var av=parseInt(acc,16), ACC='15,118,110';
-  if(!isNaN(av)) ACC=((av>>16)&255)+','+((av>>8)&255)+','+(av&255);
+  var ACC=parseColor(getComputedStyle(htmlEl).getPropertyValue('--acc'))||'15,118,110';
 
   var maxD=Math.hypot(Math.max(cx,innerWidth-cx),Math.max(cy,innerHeight-cy))+70;
   var DUR=2600, t0=null;
@@ -407,8 +417,8 @@ function rippleSwitch(lang, cx, cy){
 (function(){
   try{
     var q=new URLSearchParams(location.search).get('theme');
-    var t=q || localStorage.getItem('cs2at.theme');
-    if(t) document.documentElement.setAttribute('data-theme', t);
+    var t=q || localStorage.getItem('cs2at.theme') || (function(){var d=new Date(),tm=d.getHours()*60+d.getMinutes();return (tm>=1410||tm<460)?'forest':'sand';})();
+    document.documentElement.setAttribute('data-theme', t);
   }catch(e){}
 })();
 

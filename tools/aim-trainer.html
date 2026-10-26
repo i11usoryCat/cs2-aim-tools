@@ -61,7 +61,7 @@
   <button id="go" class="btn" style="margin-top:26px;padding:16px 64px;font-size:18px;letter-spacing:2px">开 始</button>
   <div id="sensHint" style="margin-top:14px;font-size:13px;color:var(--dim);cursor:pointer"
        title="点击修改参数">…</div>
-  <div id="bw" style="margin-top:10px;font-size:13px;color:#d29922"></div>
+  <div id="bw" style="margin-top:10px;font-size:13px;color:var(--acc)"></div>
 
   <button id="pauseMore" style="display:none;margin-top:16px;padding:9px 18px;border-radius:9px;border:1px solid var(--line);background:transparent;color:var(--dim);font-size:13px;font-family:inherit;cursor:pointer">参数 ▾</button>
   <div class="pauseHide" style="margin-top:26px;width:100%;max-width:560px">
@@ -95,7 +95,7 @@
         border-bottom:1px dashed var(--line);padding-bottom:2px">灵敏度 · 配色 · 更多参数 →</a>
     </div>
     <!-- 隐藏字段：由设置页带入，保证脚本不变 -->
-    <input id="dpi" type="hidden" value="1000">
+    <input id="dpi" type="hidden" value="800">
     <input id="yaw" type="hidden" value="0.013052">
     <input id="sens" type="hidden" value="">
     <input id="cm" type="hidden" value="36.5">
@@ -137,6 +137,9 @@ let running=false, paused=false, pauseAt=0, endMode='count', endTime=120, endAt=
 let waiting=false, cdUntil=0, cdTimer=null, endStarted=false;
 let padMode='off';
 let device='mouse';   // 输入设备：设置页配置，mouse / pad / pen
+let crossType='cross', crossLen=16, crossWid=2, crossGap=4, crossDot=true, crossOutl=true;
+let dotSize='small', dotOutl=true, crossDyn='static';
+let dynAmt=0, dynLast=0;
 let padActive=false, padFirePrev=false, lastPadT=0;
 let penActive=false;
 let cm360=27.2, radius=R0, trial=0, hits=0, streak=0, bestStreak=0;
@@ -185,7 +188,7 @@ function pickScene(){
     const sc=localStorage.getItem('cs2at.scene');
     const userPicked=localStorage.getItem('cs2at.sceneUser')==='1';
     if(userPicked && sc && SCENES[sc]) return sc;      // 自己选过的，优先
-    const th=q.get('theme')||localStorage.getItem('cs2at.theme');
+    const th=q.get('theme')||localStorage.getItem('cs2at.theme')||(function(){var d=new Date(),tm=d.getHours()*60+d.getMinutes();return (tm>=1410||tm<460)?'forest':'sand';})();
     if(th && THEME2SCENE[th]) return THEME2SCENE[th];  // 否则跟站点主题
     if(sc && SCENES[sc]) return sc;
   }catch(e){}
@@ -206,8 +209,8 @@ const SITE_THEMES={
 function siteTheme(){
   try{
     const q=new URLSearchParams(location.search);
-    return q.get('theme')||localStorage.getItem('cs2at.theme')||'jade';
-  }catch(e){ return 'jade'; }
+    return q.get('theme')||localStorage.getItem('cs2at.theme')||(function(){var d=new Date(),tm=d.getHours()*60+d.getMinutes();return (tm>=1410||tm<460)?'forest':'sand';})();
+  }catch(e){ return 'sand'; }
 }
 function applyPageTheme(){
   const t=SITE_THEMES[siteTheme()]||SITE_THEMES.jade;
@@ -296,7 +299,7 @@ function start(){
   try{ localStorage.setItem('cs2at.endMode',endMode); localStorage.setItem('cs2at.endTime',String(endTime)); }catch(e){}
   TOTAL=parseInt(document.getElementById('cnt').value)||40;
   if(TOTAL<20) TOTAL=20; if(TOTAL>120) TOTAL=120;
-  DPI=parseFloat(document.getElementById('dpi').value)||1000;
+  DPI=parseFloat(document.getElementById('dpi').value)||800;
   cm360=parseFloat(document.getElementById('cm').value)||27.2;
   if(cm360<12) cm360=12; if(cm360>60) cm360=60;
   try{
@@ -310,6 +313,30 @@ function start(){
     SC = SCENES[pickScene()] || SCENES.night;
     document.body.style.background = SC.bg;
     hud.style.color = SC.dark? 'var(--txt)' : '#1f2b2c';
+  }catch(e){}
+  try{
+    // 自定义准星：覆盖场景配色里的 cross/edge
+    const q3=new URLSearchParams(location.search);
+    const cm=q3.get('crossMode')||localStorage.getItem('cs2at.crossMode');
+    if(cm==='custom'){
+      const cc=q3.get('crossColor')||localStorage.getItem('cs2at.crossColor');
+      const ce=q3.get('crossEdge')||localStorage.getItem('cs2at.crossEdge');
+      if(cc) SC.cross='#'+String(cc).replace('#','');
+      if(ce) SC.edge='#'+String(ce).replace('#','');
+    }
+  }catch(e){}
+  try{
+    // 准星样式/尺寸（设置页配置，本地存储直接读）
+    const g=function(k,d){ const v=localStorage.getItem(k); return v===null? d : v; };
+    crossType = g('cs2at.crossType','cross');
+    crossLen  = Math.max(1, Math.min(40, parseFloat(g('cs2at.crossLen','1'))||1));
+    crossWid  = Math.max(1, Math.min(10, parseFloat(g('cs2at.crossWid','1'))||1));
+    crossGap  = Math.max(0, Math.min(20, parseFloat(g('cs2at.crossGap','4'))||0));
+    crossDot  = g('cs2at.crossDot','1')==='1';
+    crossOutl = g('cs2at.crossOutline','1')==='1';
+    dotSize   = g('cs2at.dotSize','small');
+    dotOutl   = g('cs2at.dotOutline','1')==='1';
+    crossDyn  = g('cs2at.crossDyn','static');
   }catch(e){}
   mode=(document.getElementById('mode')||{value:'random'}).value||'random';
   if(mode==='precision'){ radius=0.7; limitChk.checked=false; }
@@ -362,7 +389,7 @@ function beginSession(){
   waiting=false;
   var cd=document.getElementById('cd'); if(cd) cd.classList.remove('show');
   if(cdTimer){ clearInterval(cdTimer); cdTimer=null; }
-  running=true; paused=false; hadLock=false; lockFails=0;   // lockFree 不在这里复位：只有真正锁成功才复位
+  running=true; paused=false; lockFails=0;   // hadLock/lockFree 都不在这里复位：ESC 丢锁要能暂停，无锁模式要延续
   // 抓取层显隐交给 sync()：这里不再强制显示，否则每局开始都会闪一下
   trial=0; hits=0; streak=0; bestStreak=0; if(mode==='random') radius=R0; allowed=800; timeouts=0; timeFactor=1.25;
   times=[]; errs=[]; hitFlags=[]; blocks=[]; blockTimes=[]; blockHits=0;
@@ -567,9 +594,17 @@ document.addEventListener('pointerdown',function(e){
 });
 
 function pause(){ if(!running||paused)return; paused=true; pauseAt=performance.now();
-  go.textContent='继续'; msg.classList.add('show'); msg.classList.add('paused'); if(document.pointerLockElement) document.exitPointerLock(); }
+  go.textContent='继续'; msg.classList.add('show'); msg.classList.add('paused'); if(document.pointerLockElement) document.exitPointerLock();
+  // ESC 只暂停、不退全屏：丢全屏就立刻要回来（同一按键手势内通常能成功）
+  if(!document.fullscreenElement && document.documentElement.requestFullscreen){
+    try{ document.documentElement.requestFullscreen().catch(function(){}); }catch(e){}
+  } }
 function resume(){ msg.classList.remove('paused'); if(endMode==='time'){ endAt += performance.now()-pauseAt; } if(!paused)return; const d=performance.now()-pauseAt;
-  if(alive) tSpawn+=d; nextAt+=d; paused=false; msg.classList.remove('show'); doLock(); }
+  if(alive) tSpawn+=d; nextAt+=d; paused=false; msg.classList.remove('show'); doLock();
+  // 点「继续」是有效手势：顺带把全屏要回来
+  if(!document.fullscreenElement && document.documentElement.requestFullscreen){
+    try{ document.documentElement.requestFullscreen().catch(function(){}); }catch(e){}
+  } }
 let hadLock=false, lockFails=0;
 document.addEventListener('pointerlockchange', function(){
   if(document.pointerLockElement){
@@ -621,6 +656,7 @@ function aimDelta(dx,dy){
   pitch -= (dy||0)*k;
   if(pitch>PITCH_LIM) pitch=PITCH_LIM;
   if(pitch<-PITCH_LIM) pitch=-PITCH_LIM;
+  bumpDyn(Math.hypot(dx||0, dy||0));
 }
 function penAim(e){
   // 笔：绝对坐标映射，悬停即可瞄准
@@ -628,10 +664,12 @@ function penAim(e){
   if(!running||paused) return;
   const f=(W/2)/Math.tan(FOVH/2*D2R);
   const nx=(e.clientX-W/2)/f, ny=(H/2-e.clientY)/f;
+  const oy=yaw, op=pitch;
   yaw=Math.atan(nx);
   pitch=Math.atan(ny);
   if(pitch>PITCH_LIM) pitch=PITCH_LIM;
   if(pitch<-PITCH_LIM) pitch=-PITCH_LIM;
+  bumpDyn(Math.hypot(yaw-oy, pitch-op)*f*0.5);
 }
 function applyPadCurve(v,dz,crv){
   const a=Math.abs(v);
@@ -656,6 +694,7 @@ function padPoll(dt){
       pitch = -ay*25*D2R;
       if(pitch>PITCH_LIM) pitch=PITCH_LIM;
       if(pitch<-PITCH_LIM) pitch=-PITCH_LIM;
+      bumpDyn((Math.abs(ax)+Math.abs(ay))*60);
     } else if(padMode==='raw'){
       // 原始输入：直接读摇杆原始值，不做死区/曲线/平滑，1:1 当角速度
       yaw += ax*dt; pitch -= ay*dt;
@@ -668,6 +707,7 @@ function padPoll(dt){
       yaw += vx*dt; pitch -= vy*dt;
       if(pitch>PITCH_LIM) pitch=PITCH_LIM;
       if(pitch<-PITCH_LIM) pitch=-PITCH_LIM;
+      bumpDyn((Math.abs(ax)+Math.abs(ay))*60);
     }
     let fire=false;
     try{ fire=!!(gp.buttons[0]&&gp.buttons[0].pressed)||!!(gp.buttons[7]&&gp.buttons[7].pressed); }catch(e){}
@@ -718,6 +758,17 @@ function loop(){
   drawFrame(now);
 }
 
+// 动态准星：输入速度驱动张开，随时间收回
+function bumpDyn(speed){
+  if(crossDyn!=='dyn') return;
+  dynAmt=Math.min(1, Math.max(dynAmt, speed*0.02));
+}
+function dynamicFactor(now){
+  dynAmt=Math.max(0, dynAmt-(now-(dynLast||now))*0.003);
+  dynLast=now;
+  return dynAmt;
+}
+
 // 渲染与输入分离：输入只改角度，绘制全走 rAF 主循环
 function drawFrame(now){
   lastDraw=now;
@@ -756,18 +807,38 @@ function drawFrame(now){
     }
   }
 
-  const g2=16*devicePixelRatio, cx=W/2, cy=H/2;
-  function drawCross(col,w){
-    ctx.strokeStyle=col; ctx.lineWidth=w;
-    ctx.beginPath();
-    ctx.moveTo(cx-g2,cy); ctx.lineTo(cx-5,cy);
-    ctx.moveTo(cx+5,cy); ctx.lineTo(cx+g2,cy);
-    ctx.moveTo(cx,cy-g2); ctx.lineTo(cx,cy-5);
-    ctx.moveTo(cx,cy+5); ctx.lineTo(cx,cy+g2);
-    ctx.stroke();
+  const cx=W/2, cy=H/2;
+  const dynF=dynamicFactor(now);
+  if(crossType==='dot'){
+    // 圆点准星：只有大小与边框
+    const r=(dotSize==='large'?6:3)*(1+0.4*dynF)*devicePixelRatio;
+    if(dotOutl){ ctx.beginPath(); ctx.arc(cx,cy,r+1.5*devicePixelRatio,0,Math.PI*2); ctx.fillStyle=SC.edge; ctx.fill(); }
+    ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fillStyle=SC.cross; ctx.fill();
+  } else {
+    // 十字准星：长/宽/间隙 + 中心点 + 描边；动态模式随移动速度张开
+    const len=(crossLen*(1+0.5*dynF))*devicePixelRatio;
+    const gap=(crossGap*(1+0.9*dynF))*devicePixelRatio;
+    const wd=crossWid*devicePixelRatio;
+    function drawBars(col,lw){
+      ctx.strokeStyle=col; ctx.lineWidth=lw;
+      ctx.beginPath();
+      ctx.moveTo(cx-gap-len,cy); ctx.lineTo(cx-gap,cy);
+      ctx.moveTo(cx+gap,cy); ctx.lineTo(cx+gap+len,cy);
+      ctx.moveTo(cx,cy-gap-len); ctx.lineTo(cx,cy-gap);
+      ctx.moveTo(cx,cy+gap); ctx.lineTo(cx,cy+gap+len);
+      ctx.stroke();
+    }
+    if(crossOutl) drawBars(SC.edge, wd+2.5*devicePixelRatio);
+    drawBars(SC.cross, wd);
+    if(crossDot){
+      // 中心点：小方块，粗细与十字线一致，偶数像素，绝对居中
+      let s=Math.max(2, Math.round(wd/devicePixelRatio));
+      if(s%2) s++;
+      const sPx=s*devicePixelRatio;
+      ctx.fillStyle=SC.cross;
+      ctx.fillRect(cx-sPx/2, cy-sPx/2, sPx, sPx);
+    }
   }
-  drawCross(SC.edge, 5*devicePixelRatio);
-  drawCross(SC.cross, 2*devicePixelRatio);
 
   if(feedback && now<feedback.until){
     ctx.textAlign='center';
@@ -793,7 +864,7 @@ function updateHud(now){
       +' &nbsp; 球半径 <b>'+radius.toFixed(2)+'°</b> &nbsp; '+cm360.toFixed(1)+' cm/360<br>'+
     '近 10 球命中率 <b>'+rate+'%</b> &nbsp; 连击 <b>'+streak+'</b>'+(limitChk.checked? ' &nbsp; 限时 <b>'+Math.round(allowed)+'ms</b>':'')+'<br>'+
     (fpsShow? ' <span style="color:var(--acc)">· '+fpsVal+' fps</span>':'')+
-    '<br><span style="font-size:13px;color:#6e7681">看到球 → 甩过去 → 手停 → 点击</span>';
+    '<br><span style="font-size:13px;color:var(--dim)">看到球 → 甩过去 → 手停 → 点击</span>';
   if(html!==hudLastHtml){ hudLastHtml=html; hud.innerHTML=html; }
 }
 requestAnimationFrame(loop);
@@ -813,20 +884,20 @@ requestAnimationFrame(loop);
   if(!hint) return;
   function num(id, def){ var el=document.getElementById(id); if(!el) return def; var v=parseFloat(el.value); return isFinite(v)? v : def; }
   function upd(){
-    var d = num('dpi',1000), y = num('yaw', document.getElementById('yaw')?0.022:0), c = num('cm',27);
+    var d = num('dpi',800), y = num('yaw', document.getElementById('yaw')?0.022:0), c = num('cm',27);
     if(!(d>0 && c>0)) { hint.textContent=''; return; }
     var s = y>0 ? 360/((c/2.54)*d)/y : 0;
     if(y<=0){
       var sA = 360/((c/2.54)*d)/0.022, sB = 360/((c/2.54)*d)/0.0165;
       hint.innerHTML = '→ 游戏灵敏度：m_yaw 0.022 → <b style="color:var(--acc)">'+sA.toFixed(2)+
         '</b>　m_yaw 0.0165 → <b style="color:var(--acc)">'+sB.toFixed(2)+'</b>' +
-        '<br><span style="color:#6e7681;font-size:13px">'+c.toFixed(1)+' cm/360 · DPI '+d+
+        '<br><span style="color:var(--dim);font-size:13px">'+c.toFixed(1)+' cm/360 · DPI '+d+
         ' · 180° 转身 '+(c/2).toFixed(1)+' cm</span>';
       return;
     }
     var txt = '→ 对应 <b style="color:var(--acc)">' + (y>0? '游戏灵敏度 '+s.toFixed(2) : 'cm/360 '+c.toFixed(1)) + '</b>';
-    txt += ' &nbsp;<span style="color:#6e7681">(' + c.toFixed(1) + ' cm/360 · DPI ' + d + (y>0? ' · m_yaw '+y : '') + ')</span>';
-    if(y>0) txt += '<br><span style="color:#6e7681;font-size:13px">360° 转身需要 ' + c.toFixed(1) + ' cm，180° 需要 ' + (c/2).toFixed(1) + ' cm</span>';
+    txt += ' &nbsp;<span style="color:var(--dim)">(' + c.toFixed(1) + ' cm/360 · DPI ' + d + (y>0? ' · m_yaw '+y : '') + ')</span>';
+    if(y>0) txt += '<br><span style="color:var(--dim);font-size:13px">360° 转身需要 ' + c.toFixed(1) + ' cm，180° 需要 ' + (c/2).toFixed(1) + ' cm</span>';
     hint.innerHTML = txt;
   }
   ['dpi','yaw','cm'].forEach(function(id){

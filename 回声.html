@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-theme="jade">
+<html lang="zh-CN" data-theme="sand">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -66,8 +66,8 @@
 (function(){
   try{
     var q=new URLSearchParams(location.search).get('theme');
-    var t=q||localStorage.getItem('cs2at.theme');
-    if(t) document.documentElement.setAttribute('data-theme', t);
+    var t=q||localStorage.getItem('cs2at.theme')||(function(){var d=new Date(),tm=d.getHours()*60+d.getMinutes();return (tm>=1410||tm<460)?'forest':'sand';})();
+    document.documentElement.setAttribute('data-theme', t);
   }catch(e){}
 })();
 </script>

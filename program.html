@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-theme="ink">
+<html lang="zh-CN" data-theme="sand">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -123,7 +123,7 @@
   function apply(t){ if(!t) return; document.documentElement.setAttribute('data-theme', t); }
   var q=null;
   try{ q=new URLSearchParams(location.search).get('theme'); }catch(e){}
-  try{ apply(q || localStorage.getItem('cs2at.theme') || 'ink'); }catch(e){ apply('ink'); }
+  try{ apply(q || localStorage.getItem('cs2at.theme') || (function(){var d=new Date(),tm=d.getHours()*60+d.getMinutes();return (tm>=1410||tm<460)?'forest':'sand';})()); }catch(e){ apply('sand'); }
   addEventListener('message', function(e){
     if(e && e.data && e.data.type==='theme'){ apply(e.data.theme); }
     if(e && e.data && e.data.type==='wantTheme'){

@@ -479,6 +479,8 @@ requestAnimationFrame(loop);
     '开始':'START','重新开始':'Restart','结束':'End','结果':'Result',
     '鼠标 DPI':'Mouse DPI','当前 cm/360':'Current cm/360','游戏灵敏度':'Game sensitivity',
     '球数':'Shots','球大小':'Dot size','标准（1.5°）':'Standard (1.5°)','大（2.2°）':'Large (2.2°)','小（1.0°）':'Small (1.0°)',
+    '大（2.0°）':'Large (2.0°)','很小（0.7°）':'Very small (0.7°)','极小（0.45°）':'Tiny (0.45°)',
+    '← 返回':'← Back','自动':'auto',
     '中位偏移':'Median offset','偏慢':'too slow','偏快':'too fast',
     '建议灵敏度':'Suggested sensitivity','当前灵敏度':'Current sensitivity','误差':'error',
     '复制结果':'Copy result','关闭':'Close','继续':'Continue',
@@ -508,6 +510,9 @@ requestAnimationFrame(loop);
     var w=document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null), n;
     while((n=w.nextNode())){ var v=n.nodeValue; if(!v||!/[\u4e00-\u9fa5]/.test(v)) continue; var nv=tr(v); if(nv!==v) n.nodeValue=nv; }
     document.querySelectorAll('option').forEach(function(o){ var t=o.textContent.trim(); if(D[t]) o.textContent=D[t]; });
+    document.querySelectorAll('input[placeholder]').forEach(function(el){
+      var ph=el.getAttribute('placeholder'); if(ph && D[ph.trim()]) el.setAttribute('placeholder', D[ph.trim()]);
+    });
   }
   walk();
   new MutationObserver(walk).observe(document.body,{childList:true,subtree:true,characterData:true});

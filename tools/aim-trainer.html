@@ -50,7 +50,7 @@
 </style>
 </head>
 <body>
-<canvas id="c"></canvas>
+<canvas id="c" style="touch-action:none"></canvas>
 <div id="grab">点击画面开始</div>
 <a id="back" href="../app.html#play">← 返回</a>
 <div id="hud"></div>
@@ -71,6 +71,8 @@
           <option value="random">自适应随机</option>
           <option value="block">定角重复</option>
           <option value="precision">小球精度</option>
+          <option value="wide">大角度甩枪</option>
+          <option value="track">移动跟枪</option>
         </select>
       </label>
       <label class="fld">结束方式
@@ -81,11 +83,13 @@
       </label>
       <label class="fld">球数<input id="cnt" type="number" step="10" value="40"></label>
       <label class="fld">时长（秒）<input id="endTime" type="number" step="15" value="120"></label>
+      <label class="fld">目标大小°<input id="sizeOv" type="number" step="0.1" min="0.35" max="3" placeholder="自动" style="width:70px"></label>
     </div>
     <div style="margin-top:14px;display:flex;gap:18px;justify-content:center;font-size:13px;color:var(--dim)">
       <label><input id="limit" type="checkbox" checked> 时间限制</label>
       <label><input id="shrink" type="checkbox"> 收缩模式</label>
     </div>
+    <!-- 输入设备（鼠标/手柄/绘画板）在设置页配置，这里只留训练参数 -->
     <div style="margin-top:18px;text-align:center">
       <a href="../app.html#set" style="font-size:13px;color:var(--dim);text-decoration:none;
         border-bottom:1px dashed var(--line);padding-bottom:2px">灵敏度 · 配色 · 更多参数 →</a>
@@ -98,6 +102,10 @@
   </div>
 </div>
 
+<div id="cd" class="overlay">
+  <div id="cdNum" style="font-size:72px;font-weight:700;color:var(--acc)">3</div>
+  <div id="cdHint" style="margin-top:8px;color:var(--dim);font-size:14px;letter-spacing:2px">准备好</div>
+</div>
 <div id="res" class="overlay"><div id="resBody"></div>
   <div><button id="again" class="btn" style="min-width:200px">再来一组</button>
   <div style="margin-top:14px">
@@ -108,7 +116,10 @@
 
 <script src="../assets/scenes.js"></script>
 <script>
-const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+const cv=document.getElementById('c');
+let ctx=null;
+try{ ctx=cv.getContext('2d',{desynchronized:true}); }catch(e){}
+if(!ctx) ctx=cv.getContext('2d');
 const hud=document.getElementById('hud');
 const msg=document.getElementById('msg'), go=document.getElementById('go');
 const res=document.getElementById('res'), resBody=document.getElementById('resBody');
@@ -123,11 +134,17 @@ let W=0,H=0,f=1;
 let yaw=0, pitch=0, tYaw=0, tPitch=0, sYaw=0, sPitch=0;
 const EN_UI=(function(){ try{ var q=new URLSearchParams(location.search); if(q.get('lang')) return q.get('lang')==='en'; return localStorage.getItem('cs2at.lang')==='en'; }catch(e){ return false; } })();
 let running=false, paused=false, pauseAt=0, endMode='count', endTime=120, endAt=0;
+let waiting=false, cdUntil=0, cdTimer=null, endStarted=false;
+let padMode='off';
+let device='mouse';   // 输入设备：设置页配置，mouse / pad / pen
+let padActive=false, padFirePrev=false, lastPadT=0;
+let penActive=false;
 let cm360=27.2, radius=R0, trial=0, hits=0, streak=0, bestStreak=0;
 let tSpawn=0, alive=false, nextAt=0;
 let times=[], errs=[], hitFlags=[], blocks=[], allowed=800, timeouts=0, timeFactor=1.25;
 let blockTimes=[], blockHits=0;
 let mode='random', blockLeft=0;
+let trackSpeed=10, tsYaw=0, tsPitch=0, tvYaw=0, tvPitch=0, tDur=2;
 let blockAnchorYaw=0, blockAnchorPitch=0, blockAmp=0, blockSide=1, blockAxis=[1,0], blockAxisIdx=0;
 let fpsCap=0, fpsShow=true, lastDraw=0, fpsFrames=0, fpsLast=0, fpsVal=0;
 
@@ -238,9 +255,39 @@ function grid(){
 }
 
 function doLock(){
+  function safeLock(){ try{ const p=cv.requestPointerLock(); if(p&&p.catch) p.catch(()=>{}); }catch(e){} }
   try{ const r=cv.requestPointerLock({unadjustedMovement:true});
-    if(r&&r.catch) r.catch(()=>{ try{cv.requestPointerLock()}catch(e){} }); }
-  catch(e){ try{cv.requestPointerLock()}catch(e2){} }
+    if(r&&r.catch) r.catch(safeLock); else safeLock(); }
+  catch(e){ safeLock(); }
+}
+
+function readDelay(){
+  try{
+    var q=new URLSearchParams(location.search);
+    if(q.get('delay')!==null){
+      var v=parseInt(q.get('delay'));
+      if(!isNaN(v)) return Math.max(0, Math.min(5, v));
+    }
+    var s=parseInt(localStorage.getItem('cs2at.delay'));
+    return isNaN(s)? 3 : Math.max(0, Math.min(5, s));
+  }catch(e){ return 3; }
+}
+
+// 分辨率只改训练内视角：按 CS2 的固定垂直 FOV(≈73.74°) 换水平视角
+function applyRes(){
+  try{
+    var q=new URLSearchParams(location.search);
+    var res=q.get('res') || localStorage.getItem('cs2at.res');
+    var w=q.get('w') || localStorage.getItem('cs2at.resW');
+    var h=q.get('h') || localStorage.getItem('cs2at.resH');
+    if(res==='custom'){
+      var cw=parseInt(w), ch=parseInt(h);
+      if(!isNaN(cw)&&!isNaN(ch)&&cw>0&&ch>0){ FOVH=2*Math.atan(0.75*(cw/ch))*R2D; return; }
+    }
+    var A={'16:9':16/9,'16:10':16/10,'4:3':4/3,'5:4':5/4,'1:1':1};
+    if(A[res]){ FOVH=2*Math.atan(0.75*A[res])*R2D; return; }
+  }catch(e){}
+  FOVH=90;   // 默认 4:3，和以前一样
 }
 
 function start(){
@@ -257,6 +304,8 @@ function start(){
     fpsShow=localStorage.getItem('cs2at.fpsShow')!=='0';
   }catch(e){}
   lastDraw=0; fpsFrames=0; fpsLast=performance.now(); fpsVal=0;
+  // 输入设备与手柄参数在设置页配置，这里只复位运行时状态
+  padFirePrev=false; lastPadT=0;
   try{
     SC = SCENES[pickScene()] || SCENES.night;
     document.body.style.background = SC.bg;
@@ -265,24 +314,68 @@ function start(){
   mode=(document.getElementById('mode')||{value:'random'}).value||'random';
   if(mode==='precision'){ radius=0.7; limitChk.checked=false; }
   else if(mode==='block'){ radius=R0; limitChk.checked=false; blockLeft=0; }
+  else if(mode==='wide'){ radius=Math.max(0.8, R0*0.8); limitChk.checked=false; }
+  else if(mode==='track'){ radius=R0; limitChk.checked=false; trackSpeed=10; }
+  try{
+    var sz=parseFloat(document.getElementById('sizeOv').value);
+    if(!isNaN(sz)&&sz>=0.35&&sz<=3) radius=sz;   // 自定义球大小覆盖各模式默认值
+  }catch(e){}
   try{ localStorage.setItem('cs2at.cfg', JSON.stringify({
       dpi: DPI, cm: cm360,
       yaw: (document.getElementById('yaw')||{}).value,
       sens: (document.getElementById('sens')||{}).value })); }catch(e){}
-  running=true; paused=false; hadLock=false; lockFails=0;
-  var g0=document.getElementById('grab'); if(g0) g0.classList.add('on');
+  applyRes(); resize();   // 训练内视角按分辨率设置
+  msg.classList.remove('show'); res.classList.remove('show');
+
+  // 流程：全屏 → 点击锁定光标 → 倒计时 → 首球。
+  // 现在只进入"等待锁定"状态，锁定成功（或笔/手柄）才走 beginCountdownOrSession
+  waiting=true; running=false; paused=false;
+  if(cdTimer){ clearInterval(cdTimer); cdTimer=null; }
+  var cd0=document.getElementById('cd'); if(cd0) cd0.classList.remove('show');
+  if(!document.fullscreenElement && document.documentElement.requestFullscreen)
+    document.documentElement.requestFullscreen().catch(function(){});
+  // 笔/手柄设备不用锁光标：直接开始倒计时
+  if(device==='pen' || device==='pad'){ setTimeout(beginCountdownOrSession, 60); }
+}
+
+function beginCountdownOrSession(){
+  if(!waiting) return;
+  var delay=readDelay();
+  if(delay>0){
+    // 倒计时：等待期间不算训练
+    cdUntil=performance.now()+delay*1000;
+    var cd=document.getElementById('cd'), num=document.getElementById('cdNum');
+    if(cd) cd.classList.add('show');
+    if(num) num.textContent=String(delay);
+    if(cdTimer) clearInterval(cdTimer);
+    cdTimer=setInterval(function(){
+      var left=Math.max(0, cdUntil-performance.now());
+      if(num) num.textContent=String(Math.ceil(left/1000));
+      if(left<=0){ if(cdTimer){ clearInterval(cdTimer); cdTimer=null; } beginSession(); }
+    },100);
+  } else {
+    beginSession();
+  }
+}
+
+function beginSession(){
+  waiting=false;
+  var cd=document.getElementById('cd'); if(cd) cd.classList.remove('show');
+  if(cdTimer){ clearInterval(cdTimer); cdTimer=null; }
+  running=true; paused=false; hadLock=false; lockFails=0;   // lockFree 不在这里复位：只有真正锁成功才复位
+  // 抓取层显隐交给 sync()：这里不再强制显示，否则每局开始都会闪一下
   trial=0; hits=0; streak=0; bestStreak=0; if(mode==='random') radius=R0; allowed=800; timeouts=0; timeFactor=1.25;
   times=[]; errs=[]; hitFlags=[]; blocks=[]; blockTimes=[]; blockHits=0;
-  msg.classList.remove('show'); res.classList.remove('show');
-  yaw=0; pitch=0; alive=false;
+  yaw=0; pitch=0; alive=false; endStarted=false;
   nextAt=performance.now()+300;
-  endAt = performance.now() + endTime*1000;
-  // 这一下只负责全屏；鼠标锁定留给"点击画面"那一下
+  endAt = performance.now() + endTime*1000;   // 整场计时从首球出生起（spawn 里重设）
   if(!document.fullscreenElement && document.documentElement.requestFullscreen)
     document.documentElement.requestFullscreen().catch(function(){});
 }
 
 function spawn(){
+  // 整场计时从首球出生那一刻算起
+  if(endMode==='time' && !endStarted){ endStarted=true; endAt=performance.now()+endTime*1000; }
   sYaw=yaw; sPitch=pitch;
   if(mode==='block'){
     if(blockLeft<=0){
@@ -301,6 +394,19 @@ function spawn(){
     tPitch= blockAnchorPitch + blockAxis[1]*off*0.62;
     if(tPitch> 13*D2R) tPitch= 13*D2R;
     if(tPitch<-13*D2R) tPitch=-13*D2R;
+  } else if(mode==='wide'){
+    const a=(Math.random()<0.5?-1:1)*(80+Math.random()*80)*D2R;   // 90-180° 回头枪
+    const b=(Math.random()*2-1)*10*D2R;
+    tYaw=yaw+a; tPitch=pitch+b;
+  } else if(mode==='track'){
+    // 移动目标：从准星附近起步，匀速直线漂移
+    tsYaw=yaw+(Math.random()<0.5?-1:1)*(2+Math.random()*4)*D2R;
+    tsPitch=pitch+(Math.random()*2-1)*3*D2R;
+    const dir=Math.random()*Math.PI*2;
+    tvYaw=Math.cos(dir)*trackSpeed*D2R;
+    tvPitch=Math.sin(dir)*trackSpeed*D2R*0.7;
+    tDur=1.5+Math.random()*1.0;
+    tYaw=tsYaw; tPitch=tsPitch;
   } else {
     const a=(Math.random()<0.5?-1:1)*(12+Math.random()*16)*D2R;
     const b=(Math.random()*2-1)*8*D2R;
@@ -316,7 +422,7 @@ function judge(){
   const now=performance.now();
   const err=Math.hypot(wrapPi(tYaw-yaw), wrapPi(tPitch-pitch))*R2D;
   const mt=now-tSpawn;
-  const overtime = limitChk.checked && mt>allowed;
+  const overtime = (limitChk.checked && mt>allowed) || (mode==='track' && mt>=tDur*1000-1);
   const hit = (err<=radius) && !overtime;
   if(overtime) timeouts++;
 
@@ -329,7 +435,12 @@ function judge(){
   if(trial%8===0){
     const recent=hitFlags.slice(-8);
     const rate=recent.filter(Boolean).length/8;
-    if(mode!=='random'){ /* 定角/精度模式不调难度 */ }
+    if(mode==='track'){
+      // 跟枪：命中率调速度与大小
+      if(rate>=0.70){ trackSpeed=Math.min(40, trackSpeed*1.10); radius=Math.max(RMIN, radius*0.95); }
+      else if(rate<0.50){ trackSpeed=Math.max(3, trackSpeed*0.90); radius=Math.min(RMAX, radius*1.08); }
+    }
+    else if(mode!=='random'){ /* 定角/精度/大角度模式不调难度 */ }
     else if(limitChk.checked){
       // 只调允许时间：锚定在你的实际速度上，再按命中率微调系数
       const base = med(times.slice(-8)) || 400;
@@ -369,10 +480,28 @@ function finish(){
   blocks.forEach(b=>{
     rows+='<tr><td>第 '+b.n+' 段</td><td>'+b.mt.toFixed(0)+' ms</td><td>'+Math.round(b.hit*100)+'%</td><td>'+Math.round(b.lim)+' ms</td><td>'+b.r.toFixed(2)+'°</td></tr>';
   });
-  // 直觉优先：先给一个数，细节收起来
+  // 直觉优先：先给一个数，细节收起来；再给一句人话建议
+  var advice='';
+  if(mode==='block'){ advice='热身不追分——手热了就进主练。'; }
+  else if(mode==='precision'){
+    advice = overallHit<0.25 ? '0.7° 很难，目标先定 25%，稳住手腕。'
+      : overallHit<0.35 ? '接近目标区了——继续练一次定位的精度。'
+      : '精度到位了，进主练吧。';
+  } else {
+    var toRate = trial? timeouts/trial : 0;
+    if(toRate>0.15){ advice='超时 '+timeouts+' 次偏多——先放宽限时，别抢时间。'; }
+    else if(!limitChk.checked){
+      advice = overallHit<0.60 ? '命中 '+Math.round(overallHit*100)+'%，偏慢——先稳准度，别追速度。'
+        : '命中 '+Math.round(overallHit*100)+'%——记下这个数，下次同样条件对比。';
+    }
+    else if(overallHit<0.70){ advice='这次命中 '+Math.round(overallHit*100)+'%，低于 70%——下组把限时放宽 20%，先找回节奏。'; }
+    else if(overallHit<0.85){ advice='命中 '+Math.round(overallHit*100)+'%，在调整区——保持难度，再打一组看趋势。'; }
+    else { advice='命中 '+Math.round(overallHit*100)+'%，稳了。下一组限时收紧 10%，继续加压。'; }
+  }
   resBody.innerHTML =
     '<div class="bigNum">'+Math.round(overallHit*100)+'<i>%</i></div>'+
     '<div class="bigSub">中位用时 '+overallMT.toFixed(0)+' ms &nbsp;·&nbsp; '+trial+' 球 &nbsp;·&nbsp; 最长连击 '+bestStreak+'</div>'+
+    '<div style="margin-top:14px;color:var(--acc);font-size:15px;line-height:1.7">'+advice+'</div>'+
     '<details class="more"><summary>分段数据</summary>'+
       '<table><tr><th>阶段</th><th>用时</th><th>命中率</th><th>限时</th><th>球半径</th></tr>'+rows+'</table>'+
       '<div class="moreFoot">超时 '+timeouts+' 次</div>'+
@@ -418,14 +547,22 @@ document.getElementById('copy').addEventListener('click', function(e){
 });
 document.getElementById('close').addEventListener('click',e=>{ e.stopPropagation(); res.classList.remove('show'); msg.classList.add('show'); });
 
-document.addEventListener('mousedown', function(e){
-  if(running && !paused && !document.pointerLockElement){ needLock=false; doLock(); }
+document.addEventListener('pointerdown', function(e){
+  if(e.pointerType==='pen'){ penActive=true; return; }   // 笔不抢指针锁
+  if(device!=='mouse') return;                            // 手柄/绘画板设备不抢指针锁
+  if((running||waiting) && !paused && !document.pointerLockElement && !lockFree){ doLock(); }
 });
-document.addEventListener('mousedown',e=>{
+document.addEventListener('pointerdown',function(e){
+  if(e.pointerType==='pen') penActive=true;
+  if(waiting && !running){
+    if(e.pointerType==='pen') beginCountdownOrSession();   // 笔点一下=锁定完成
+    return;
+  }
   if(!running) return;
   if(paused){ if(e.target.closest('#go')) resume(); return; }
   if(e.target.tagName==='BUTTON'||e.target.tagName==='INPUT') return;
-  if(!document.pointerLockElement) return;   // 还没锁住鼠标，这口不算开枪
+  if(e.pointerType==='pen'){ if((e.pressure===undefined?1:e.pressure)>=0.05){ judge(); } return; }   // 笔：接触即击发，防误触阈值
+  if(!document.pointerLockElement && !lockFree) return;   // 还没锁住鼠标，这口不算开枪（无锁模式除外）
   judge();
 });
 
@@ -435,23 +572,36 @@ function resume(){ msg.classList.remove('paused'); if(endMode==='time'){ endAt +
   if(alive) tSpawn+=d; nextAt+=d; paused=false; msg.classList.remove('show'); doLock(); }
 let hadLock=false, lockFails=0;
 document.addEventListener('pointerlockchange', function(){
-  if(document.pointerLockElement){ hadLock=true; lockFails=0; return; }
+  if(document.pointerLockElement){
+    hadLock=true; lockFails=0; lockFree=false;   // 真锁上了 → 恢复正常模式
+    if(waiting && !running) beginCountdownOrSession();   // 锁定成功 → 倒计时 → 首球
+    return;
+  }
   if(running && !paused && hadLock) pause();   // 只有"本来锁着、后来丢了"才暂停
 });
 document.addEventListener('fullscreenchange', function(){
-  if(document.fullscreenElement && running && !paused && !document.pointerLockElement) setTimeout(doLock, 120);
+  if(document.fullscreenElement && running && !paused && !document.pointerLockElement && device==='mouse') setTimeout(doLock, 120);
+  if(!document.fullscreenElement && waiting && !running){
+    // 等待锁定时按 Esc → 回到开始界面
+    waiting=false;
+    if(cdTimer){ clearInterval(cdTimer); cdTimer=null; }
+    var g0=document.getElementById('grab'); if(g0) g0.classList.remove('on');
+    msg.classList.add('show');
+  }
 });
 document.addEventListener('pointerlockerror', function(){
-  if(!running || paused) return;
+  if((!running && !waiting) || paused) return;
   lockFails++;
   if(lockFails<=3){ setTimeout(doLock, 260); return; }   // 多试几次
-  needLock=true;                                          // 还不行就让用户点一下画面
+  lockFree=true;                                          // 彻底锁不上 → 无锁模式照常练
+  if(waiting && !running) beginCountdownOrSession();
 });
-let needLock=false;
+let lockFree=false;
 (function(){
   var g=document.getElementById('grab');
   function sync(){
-    g.classList.toggle('on', running && !paused && !document.pointerLockElement);
+    // 只有鼠标设备需要「点击锁定」提示
+    g.classList.toggle('on', device==='mouse' && (running||waiting) && !paused && !document.pointerLockElement && !penActive && !lockFree && !padActive);
   }
   function grab(e){
     e.preventDefault(); e.stopPropagation();
@@ -465,32 +615,112 @@ let needLock=false;
   setInterval(sync, 400);
 })();
 
-addEventListener('pointerrawupdate',e=>{
-  if(!running||paused) return;
+function aimDelta(dx,dy){
   const k=(360/((cm360/2.54)*DPI))*D2R;
-  yaw += (e.movementX||0)*k;
-  pitch -= (e.movementY||0)*k;
+  yaw += (dx||0)*k;
+  pitch -= (dy||0)*k;
   if(pitch>PITCH_LIM) pitch=PITCH_LIM;
   if(pitch<-PITCH_LIM) pitch=-PITCH_LIM;
+}
+function penAim(e){
+  // 笔：绝对坐标映射，悬停即可瞄准
+  penActive=true;
+  if(!running||paused) return;
+  const f=(W/2)/Math.tan(FOVH/2*D2R);
+  const nx=(e.clientX-W/2)/f, ny=(H/2-e.clientY)/f;
+  yaw=Math.atan(nx);
+  pitch=Math.atan(ny);
+  if(pitch>PITCH_LIM) pitch=PITCH_LIM;
+  if(pitch<-PITCH_LIM) pitch=-PITCH_LIM;
+}
+function applyPadCurve(v,dz,crv){
+  const a=Math.abs(v);
+  if(a<=dz) return 0;
+  const t=(a-dz)/(1-dz);
+  return Math.pow(t, crv)*(v>0?1:-1);
+}
+function padPoll(dt){
+  if(device!=='pad' || padMode==='off') return;
+  try{
+    const gps=navigator.getGamepads? navigator.getGamepads() : null;
+    if(!gps) return;
+    const gp=gps[0];
+    if(!gp || !gp.connected) return;
+    padActive=true;
+    if(waiting){ beginCountdownOrSession(); return; }   // 手柄即"锁定完成"
+    if(!running||paused) return;
+    const ax=gp.axes[2]||0, ay=gp.axes[3]||0;
+    if(padMode==='abs'){
+      // 绝对式：摇杆位置 = 视角
+      yaw  = ax*45*D2R;
+      pitch = -ay*25*D2R;
+      if(pitch>PITCH_LIM) pitch=PITCH_LIM;
+      if(pitch<-PITCH_LIM) pitch=-PITCH_LIM;
+    } else if(padMode==='raw'){
+      // 原始输入：直接读摇杆原始值，不做死区/曲线/平滑，1:1 当角速度
+      yaw += ax*dt; pitch -= ay*dt;
+      if(pitch>PITCH_LIM) pitch=PITCH_LIM;
+      if(pitch<-PITCH_LIM) pitch=-PITCH_LIM;
+    } else {
+      // 速度式：固定手感（死区 15%、线性、360°/s）
+      const vx=applyPadCurve(ax,0.15,1.0)*360*D2R;
+      const vy=applyPadCurve(ay,0.15,1.0)*360*D2R;
+      yaw += vx*dt; pitch -= vy*dt;
+      if(pitch>PITCH_LIM) pitch=PITCH_LIM;
+      if(pitch<-PITCH_LIM) pitch=-PITCH_LIM;
+    }
+    let fire=false;
+    try{ fire=!!(gp.buttons[0]&&gp.buttons[0].pressed)||!!(gp.buttons[7]&&gp.buttons[7].pressed); }catch(e){}
+    if(fire && !padFirePrev){ if(running && !paused && alive) judge(); }
+    padFirePrev=fire;
+  }catch(e){}
+}
+let haveRaw=false;
+addEventListener('pointerrawupdate',function(e){
+  haveRaw=true;
+  if(!running||paused) return;
+  var evs=(e.getCoalescedEvents && e.getCoalescedEvents().length)? e.getCoalescedEvents() : [e];
+  for(var i=0;i<evs.length;i++) aimDelta(evs[i].movementX, evs[i].movementY);
+},true);
+addEventListener('pointermove',function(e){
+  if(e.pointerType==='mouse' && haveRaw) return;   // 鼠标走 raw，不重复处理
+  if(!running||paused) return;
+  if(e.pointerType==='pen'){ penAim(e); return; }
+  aimDelta(e.movementX, e.movementY);
 },true);
 
 function loop(){
   requestAnimationFrame(loop);
-  if(!running||paused) return;
 
   const now=performance.now();
-  if(alive && limitChk.checked && now-tSpawn>allowed){ judge(); }
+  const dt=Math.min(0.1, lastPadT? (now-lastPadT)/1000 : 0.016); lastPadT=now;
+  padPoll(dt);   // 等待期也轮询：手柄可触发"锁定完成 → 倒计时"
+  if(!running||paused) return;
+
+  if(alive && limitChk.checked && mode!=='track' && now-tSpawn>allowed){ judge(); }
   if(!alive && now>=nextAt) spawn();
+  if(alive && mode==='track'){
+    const el=(now-tSpawn)/1000;
+    tYaw=tsYaw+tvYaw*el; tPitch=tsPitch+tvPitch*el;
+    if(tPitch> 12*D2R){ tPitch=12*D2R; tvPitch=-Math.abs(tvPitch); }
+    if(tPitch<-12*D2R){ tPitch=-12*D2R; tvPitch=Math.abs(tvPitch); }
+    if(el>=tDur){ judge(); }   // 没跟住 → 按超时算
+  }
   if(alive && shrinkChk.checked){
     const el=(now-tSpawn)/1000;
     radius=Math.max(RMIN, radius*Math.pow(0.88, 1/60));
   }
 
-  // 帧率上限
+  // 帧率上限（FPS 只统计主循环帧）
   if(fpsCap){ const gap=1000/fpsCap; if(now-lastDraw < gap-1) return; }
-  lastDraw=now;
   fpsFrames++;
   if(now-fpsLast>=500){ fpsVal=Math.round(fpsFrames*1000/(now-fpsLast)); fpsFrames=0; fpsLast=now; }
+  drawFrame(now);
+}
+
+// 渲染与输入分离：输入只改角度，绘制全走 rAF 主循环
+function drawFrame(now){
+  lastDraw=now;
 
   ctx.fillStyle=SC.bg; ctx.fillRect(0,0,W,H);
   grid();
@@ -549,15 +779,22 @@ function loop(){
     ctx.textAlign='left';
   }
 
+  updateHud(now);
+}
+
+let hudLastHtml='';
+function updateHud(now){
+  // 内容不变就不碰 DOM：每帧重建 innerHTML 是帧时间抖动的主要来源
   const recent=hitFlags.slice(-10);
   const rate=recent.length? Math.round(recent.filter(Boolean).length/recent.length*100) : 0;
-  hud.innerHTML=(endMode==='time'
+  const html=(endMode==='time'
       ? '剩余 <b>'+Math.max(0,Math.ceil((endAt-performance.now())/1000))+'</b>s &nbsp; 已打 <b>'+trial+'</b> 球'
       : '第 <b>'+(trial+1)+'</b>/'+TOTAL)
       +' &nbsp; 球半径 <b>'+radius.toFixed(2)+'°</b> &nbsp; '+cm360.toFixed(1)+' cm/360<br>'+
     '近 10 球命中率 <b>'+rate+'%</b> &nbsp; 连击 <b>'+streak+'</b>'+(limitChk.checked? ' &nbsp; 限时 <b>'+Math.round(allowed)+'ms</b>':'')+'<br>'+
     (fpsShow? ' <span style="color:var(--acc)">· '+fpsVal+' fps</span>':'')+
     '<br><span style="font-size:13px;color:#6e7681">看到球 → 甩过去 → 手停 → 点击</span>';
+  if(html!==hudLastHtml){ hudLastHtml=html; hud.innerHTML=html; }
 }
 requestAnimationFrame(loop);
 
@@ -627,6 +864,14 @@ requestAnimationFrame(loop);
     set('cm',q.get('cm')); set('yaw',q.get('yaw')); set('sens',q.get('sens'));
     if(q.get('limit')==='0'){ var l=document.getElementById('limit'); if(l) l.checked=false; }
     if(q.get('shrink')==='1'){ var sh=document.getElementById('shrink'); if(sh) sh.checked=true; }
+    set('sizeOv', q.get('size'));
+    // 输入设备与手柄参数：全部来自设置页（URL 参数优先，本地存储兜底）
+    device = q.get('device') || localStorage.getItem('cs2at.device') || 'mouse';
+    if(device!=='pad'){
+      padMode='off';
+    } else {
+      padMode = q.get('padMode') || localStorage.getItem('cs2at.padMode') || 'vel';
+    }
     if(window.__updSensHint) window.__updSensHint();
   }catch(e){}
 })();
@@ -649,8 +894,13 @@ requestAnimationFrame(loop);
     '开 始':'START',
     '▸ 高级设置':'▸ Advanced',
     '模式':'Mode','球数':'Shots','时间限制':'Time limit','收缩模式':'Shrink',
+    '结束方式':'End condition','按球数':'By count','按时间':'By time','时长（秒）':'Duration (s)',
+    '灵敏度 · 配色 · 更多参数 →':'Sensitivity · palette · more →','去设置里改灵敏度':'Change sensitivity in settings',
+    '手柄瞄准':'Gamepad aim','速度式':'Velocity','绝对式':'Absolute','原始输入':'Raw input',
     '← 返回':'← Back','自动':'auto','游戏灵敏度':'Game sensitivity','目标大小':'Dot size','球大小':'Dot size','再来一组':'Again','复制本组数据':'Copy this set','关闭':'Close','继续':'Continue',
+    '准备好':'Get ready',
     '自适应随机':'Adaptive random','定角重复':'Fixed angle','小球精度':'Precision',
+    '大角度甩枪':'Wide flick','移动跟枪':'Moving target','目标大小°':'Target size °',
     '中位用时':'Median','分段数据':'Per-segment','阶段':'Set','用时':'Time','命中率':'Hit rate',
     '限时':'Limit','球半径':'Radius','超时':'Timeouts','次':'','近 10 球命中率':'Last 10',
     '连击':'Streak','球':'shots','建议使用':'Use','或':'or','当前':'Current'
@@ -667,10 +917,21 @@ requestAnimationFrame(loop);
     [/^→ 对应 游戏灵敏度 ([\d.]+)/,'→ Game sensitivity $1'],
     [/^→ 对应 cm\/360 ([\d.]+)/,'→ cm/360 $1'],
     [/^360° 转身需要 ([\d.]+) cm，180° 需要 ([\d.]+) cm$/,'360° needs $1 cm · 180° needs $2 cm'],
+    [/^中位用时 ([\d]+) ms\s*·\s*([\d]+) 球\s*·\s*最长连击 ([\d]+)$/,'Median $1 ms · $2 shots · best streak $3'],
     [/^中位用时 ([\d]+) ms/,'Median $1 ms'],
     [/^(\d+) 球/,'$1 shots'],
     [/^近 10 球命中率 ([\d]+)%?$/,'Last 10: $1%'],
-    [/^最长连击 (\d+)$/,'Best streak $1']
+    [/^最长连击 (\d+)$/,'Best streak $1'],
+    [/^热身不追分——手热了就进主练。$/,'Warm-up is not about score — once the hands are warm, move to main practice.'],
+    [/^0\.7° 很难，目标先定 25%，稳住手腕。$/,'0.7° is brutal — aim for 25% first and keep the wrist steady.'],
+    [/^接近目标区了——继续练一次定位的精度。$/,'Close to the target zone — keep training one-shot precision.'],
+    [/^精度到位了，进主练吧。$/,'Precision is there — move on to main practice.'],
+    [/^超时 (\d+) 次偏多——先放宽限时，别抢时间。$/,'$1 timeouts is a lot — loosen the limit first; don\'t race the clock.'],
+    [/^命中 (\d+)%，偏慢——先稳准度，别追速度。$/,'$1% — slow-ish. Lock accuracy first; speed comes later.'],
+    [/^命中 (\d+)%——记下这个数，下次同样条件对比。$/,'$1% — write this number down; compare under the same conditions next time.'],
+    [/^这次命中 (\d+)%，低于 70%——下组把限时放宽 20%，先找回节奏。$/,'$1% this time — below 70%. Loosen the limit 20% next set and get your rhythm back.'],
+    [/^命中 (\d+)%，在调整区——保持难度，再打一组看趋势。$/,'$1% — in the tuning zone. Keep the difficulty and run one more set to see the trend.'],
+    [/^命中 (\d+)%，稳了。下一组限时收紧 10%，继续加压。$/,'$1% — solid. Tighten the limit 10% next set and keep pushing.']
   ];
   var D2={}; for(var k in D){ D2[k.replace(/\s+/g,'')]=D[k]; }
   function tr(t){
@@ -689,8 +950,9 @@ requestAnimationFrame(loop);
     document.querySelectorAll('option').forEach(function(o){
       if(/[\u4e00-\u9fa5]/.test(o.textContent)){ var t=o.textContent.trim(); if(D[t]) o.textContent=D[t]; }
     });
-    document.querySelectorAll('input[placeholder],button[title]').forEach(function(el){
+    document.querySelectorAll('input[placeholder],[title]').forEach(function(el){
       var ph=el.getAttribute('placeholder'); if(ph && D[ph.trim()]) el.setAttribute('placeholder', D[ph.trim()]);
+      var ti=el.getAttribute('title'); if(ti && D[ti.trim()]) el.setAttribute('title', D[ti.trim()]);
     });
     if(document.title.indexOf('甩枪训练')===0) document.title='Flick trainer · adaptive';
   }

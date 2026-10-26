@@ -467,13 +467,26 @@
 
     <div class="card">
       <div class="t" style="margin-bottom:10px">灵敏度</div>
+      <div class="row" style="margin-bottom:12px;align-items:flex-end">
+        <div><div class="k">游戏</div>
+          <select id="iGame" style="padding:8px;background:var(--panel);border:1px solid var(--line);color:var(--txt);border-radius:7px;font-size:14px">
+            <option value="cs2">CS2 / CS:GO</option>
+            <option value="val">Valorant</option>
+            <option value="apex">Apex Legends</option>
+            <option value="ow2">Overwatch 2</option>
+            <option value="r6">Rainbow Six Siege</option>
+          </select>
+        </div>
+        <button id="gameConv" class="main" style="padding:9px 18px">更改灵敏度</button>
+      </div>
       <div class="row">
         <div><div class="k">鼠标 DPI</div><input id="iDpi" type="number" step="100" value="1000"></div>
         <div><div class="k">m_yaw</div><input id="iYaw" type="number" step="0.0001" value="0.013052"></div>
-        <div><div class="k">CS 灵敏度</div><input id="iSens" type="number" step="0.01" value="1.92"></div>
+        <div><div class="k" id="sensLabel">灵敏度 · CS2 / CS:GO</div><input id="iSens" type="number" step="0.01" value="1.92"></div>
         <div><div class="k">cm/360</div><input id="iCm" type="number" step="0.1" value="36.5"></div>
       </div>
       <div class="hint" id="calcHint" style="margin:12px 0 0"></div>
+      <div class="hint" id="gameConvHint" style="margin-top:10px">先选游戏，再改下面的灵敏度；点「更改灵敏度」按该游戏换算，DPI 不动。只按腰射，开镜倍率不适用。</div>
       <div class="row" style="margin-top:14px">
         <a class="tile" style="flex:1;min-width:240px" href="tools/sensitivity-calibrator.html">
           <div class="t">灵敏度标定 · 过冲法</div>
@@ -483,6 +496,50 @@
           <div class="t">灵敏度标定 · 严格口径</div>
           <div class="d">同上，但只统计未命中的球，适合已经比较稳的人。</div>
         </a>
+      </div>
+      <div class="hint" style="margin-top:12px">换鼠标、改 DPI 或手感发飘，先回来重新标定一次。</div>
+    </div>
+
+    <div class="card">
+      <div class="t">输入设备</div>
+      <div class="hint" style="margin:6px 0 16px">选训练时的输入设备；手柄瞄准方式在这里调。</div>
+      <div class="row" style="align-items:flex-end">
+        <div><div class="k">设备</div>
+          <select id="iDev" style="padding:8px;background:var(--panel);border:1px solid var(--line);color:var(--txt);border-radius:7px;font-size:14px">
+            <option value="mouse">鼠标</option>
+            <option value="pad">手柄</option>
+            <option value="pen">绘画板 / 绘画笔</option>
+          </select>
+        </div>
+        <div id="padSet" style="display:none"><div class="k">手柄瞄准</div>
+          <select id="iPadMode" style="padding:8px;background:var(--panel);border:1px solid var(--line);color:var(--txt);border-radius:7px;font-size:14px">
+            <option value="vel">速度式</option>
+            <option value="abs">绝对式</option>
+            <option value="raw">原始输入</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="t">训练画面</div>
+      <div class="hint" style="margin:6px 0 16px">只影响训练器里的视角，不改变网页界面。</div>
+      <div class="row">
+        <div><div class="k">开始倒计时（秒）</div><input id="iDelay" type="number" min="0" max="5" step="1" value="3"></div>
+        <div><div class="k">训练分辨率</div>
+          <select id="iRes" style="padding:8px;background:var(--panel);border:1px solid var(--line);color:var(--txt);border-radius:7px;font-size:14px">
+            <option value="16:9">16:9</option>
+            <option value="16:10">16:10</option>
+            <option value="4:3">4:3</option>
+            <option value="5:4">5:4</option>
+            <option value="1:1">1:1</option>
+            <option value="custom">自定义</option>
+          </select>
+          <span id="resCustom" style="display:none;margin-left:8px">
+            <input id="iResW" type="number" min="100" max="7680" value="1440"> ×
+            <input id="iResH" type="number" min="100" max="4320" value="1080">
+          </span>
+        </div>
       </div>
     </div>
 
@@ -538,7 +595,7 @@ const K_CFG='cs2at.cfg', K_BEST='cs2at.best', K_RUNS='cs2at.runs', K_PERF='cs2at
 const $=id=>document.getElementById(id);
 const load=(k,d)=>{ try{ const v=localStorage.getItem(k); return v? JSON.parse(v): d; }catch(e){ return d; } };
 const save=(k,v)=>{ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} };
-const MODE_NAME={random:'自适应随机', block:'定角重复', precision:'小球精度'};
+const MODE_NAME={random:'自适应随机', block:'定角重复', precision:'小球精度', wide:'大角度甩枪', track:'移动跟枪'};
 
 const THEMES=[
   {id:'jade',  name:'墨玉', dot:'#7fbfa6', kind:'rec'},
@@ -571,6 +628,10 @@ const EN={
   '各模式最佳':'Best per mode','最近记录':'Recent runs',
   '模式':'Mode','最低限时':'Best limit','最高命中率':'Best hit','最快中位用时':'Fastest median','组数':'Sets',
   '自适应随机':'Adaptive random','定角重复':'Fixed angle','小球精度':'Precision',
+  '状态快测':'State check','20 球定尺寸，30 秒测今天手感，结果进记录。':'20 dots at a fixed size — 30 seconds to check today\'s feel; results go to your log.',
+  '大角度甩枪':'Wide flick','移动跟枪':'Moving target',
+  '90-180° 回头枪，练转身定位，CS 最常用的场景。':'90–180° turn shots — the most common CS scenario.',
+  '目标匀速漂移，跟着点。VAL / APEX / OW 的核心项目。':'Targets drift at a steady speed — click while tracking. Core skill for VAL / APEX / OW.',
   '球与限时按 85% 成功率自动调节，主练用这个。':'Size and limit auto-adjust to hold ~85% success. For main practice.',
   '同一角度连打 8 球，形成运动程序，热身用。':'Eight shots on one angle to build a motor program. For warm-up.',
   '0.7° 小球，无时限，练一次定位的精度。':'0.7° dots, no limit. For one-shot precision.',
@@ -581,10 +642,24 @@ const EN={
   '四周计划，自动判断今天该练什么。':'Four-week plan; it knows what to do today.',
   '这里的参数会自动带进所有训练页面。':'These values are passed to every trainer page.',
   '灵敏度':'Sensitivity','鼠标 DPI':'Mouse DPI','CS 灵敏度':'CS sensitivity',
+  '换鼠标、改 DPI 或手感发飘，先回来重新标定一次。':'New mouse, DPI change, or drifting feel — come back and recalibrate first.',
+  '游戏':'Game','更改灵敏度':'Apply sensitivity',
+  '灵敏度 · CS2 / CS:GO':'Sensitivity · CS2 / CS:GO',
+  '先选游戏，再改下面的灵敏度；点「更改灵敏度」按该游戏换算，DPI 不动。只按腰射，开镜倍率不适用。':'Pick the game first, then set its sensitivity below; "Apply sensitivity" converts it with DPI unchanged. Hipfire only — ADS multipliers are not covered.',
+  '游戏灵敏度得是正数':'Enter a positive sensitivity',
   '灵敏度标定 · 过冲法':'Calibrator · overshoot','灵敏度标定 · 严格口径':'Calibrator · strict',
   '测出你每次都甩过头还是不够，直接反推该填的值。':'Measures whether you overshoot or fall short, and derives the value.',
   '同上，但只统计未命中的球，适合已经比较稳的人。':'Same, but only counts misses. For players who are already consistent.',
   '语言 / Language':'Language',
+  '输入设备':'Input device',
+  '选训练时的输入设备；手柄瞄准方式在这里调。':'Pick the training input device; gamepad aim style is tuned here.',
+  '设备':'Device','鼠标':'Mouse','手柄':'Gamepad','绘画板 / 绘画笔':'Drawing tablet / pen',
+  '手柄瞄准':'Gamepad aim','速度式':'Velocity','绝对式':'Absolute','原始输入':'Raw input',
+  '训练画面':'Training view',
+  '只影响训练器里的视角，不改变网页界面。':'Affects only the in-training view, not the site UI.',
+  '开始倒计时（秒）':'Start countdown (s)',
+  '训练分辨率':'Training resolution',
+  '自定义':'Custom',
   '界面主题':'UI theme',
   '墨玉':'Jade','墨鱼':'Ink','湖泊':'Lake','明亮':'Light','暖砂':'Sand','森林':'Forest','极简灰':'Mono','赛博':'Cyber','深蓝':'Night',
   '经典':'Classic','浅灰':'Light grey','暗蓝':'Night blue','纯黑':'Mono black','沙色':'Sand',
@@ -596,6 +671,7 @@ const EN={
   '今日训练':'Today','每一项都能改、删掉或再加一项；计划名双击可直接改。':'Every row is editable — delete or add rows; double-click a plan name to rename.',
   '改名':'Rename','删除这套计划':'Delete this plan','＋ 新建':'＋ New','＋ 添加一项':'＋ Add a row',
   '热身':'Warm-up','主练':'Main','精度':'Accuracy','新项目':'New item',
+  '标准':'Standard','精简':'Lite','加量':'Heavy','双击改名':'Double-click to rename',
   '进度':'Progress','绿色 = 已完成 · 描边 = 今天 · 淡色 = 休息日':'Green = done · outlined = today · faded = rest day',
   '标记今天完成':'Mark today done','重新开始（清空记录）':'Start over (clear log)',
   '训练记录':'Training log','保存这条':'Save entry','复制全部':'Copy all',
@@ -610,6 +686,8 @@ const EN={
   '性能模式（减少网格密度）':'Performance mode (lower grid density)',
   '保存设置':'Save settings','已保存':'Saved','恢复默认':'Reset defaults',
   '无限制（跟随刷新率）':'Unlimited (follow refresh)',
+  '60 帧':'60 fps','120 帧':'120 fps','144 帧':'144 fps','240 帧':'240 fps',
+  '2026-10-24  限时450ms  命中率83%  中位436ms  超时5次':'e.g. 2026-10-24  limit 450ms  hit 83%  median 436ms  overtime 5',
   '360° 转身需要':'360° needs',
   '导入 JSON':'Import JSON',
   '分享':'Share',
@@ -620,16 +698,20 @@ const EN={
 let LANG='zh';
 const ZH={};
 Object.keys(EN).forEach(k=>{ ZH[EN[k]]=k; });
+const __ORIG=new WeakMap();   // 记住每个文本节点的原文，来回切换不累积
+function L(zh,en){ return (LANG==='en') ? en : zh; }
 function translateRoot(root, lang){
   try{
     if(!root || !document.createTreeWalker) return;
+    const map = (lang==='en') ? EN : ZH;
     const w=document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     let n;
     while((n=w.nextNode())){
-      const t=n.nodeValue.trim();
+      let orig=__ORIG.get(n);
+      if(orig===undefined){ orig=n.nodeValue; __ORIG.set(n, orig); }
+      const t=orig.trim();
       if(!t) continue;
-      if(lang==='en'){ if(EN[t]) n.nodeValue=n.nodeValue.replace(t, EN[t]); }
-      else { if(ZH[t]) n.nodeValue=n.nodeValue.replace(t, ZH[t]); }
+      n.nodeValue = map[t] ? orig.replace(t, map[t]) : orig;
     }
   }catch(e){}
 }
@@ -637,6 +719,25 @@ function applyLang(l){
   l = l || LANG;
   document.documentElement.setAttribute('lang', l==='en'?'en':'zh-CN');
   translateRoot(document.body, l);
+  // 开关状态跟 LANG 对齐（波浪没跑完也不会错位）
+  try{
+    document.querySelectorAll('#langSw span[data-lang]').forEach(function(el){
+      el.classList.toggle('on', el.dataset.lang===l);
+    });
+  }catch(e){}
+  // 属性文本：text 节点遍历碰不到 title / placeholder
+  try{
+    const map=(l==='en')?EN:ZH;
+    document.querySelectorAll('[title],[placeholder]').forEach(function(el){
+      ['title','placeholder'].forEach(function(a){
+        if(!el.hasAttribute(a)) return;
+        const key='__o_'+a;
+        if(!el.dataset[key]) el.dataset[key]=el.getAttribute(a);
+        const orig=el.dataset[key], t=orig.trim();
+        el.setAttribute(a, map[t]||orig);
+      });
+    });
+  }catch(e){}
 }
 function setLang(l){ LANG=l; try{ localStorage.setItem(K_LANG,l); }catch(e){} }
 
@@ -670,7 +771,7 @@ function show(t){
   let n=0;
   t.addEventListener('click',()=>{
     n++;
-    if(n>=4){ location.href='训练彩蛋.html'; }
+    if(n>=4){ location.href='关于练枪.html'; }
   });
 })();
 
@@ -686,6 +787,7 @@ function rippleSwitch(lang, cx, cy){
       try{ LANG=lang; setLang(lang); applyLang(); }catch(e){}
       try{ show((location.hash||'#data').slice(1)); }catch(e){}
       try{ if(window.__vRender) window.__vRender(); }catch(e){}
+      try{ if(window.__planRender) window.__planRender(); }catch(e){}
       document.querySelectorAll('.langBlocker,.langLayer,.langCanvas').forEach(function(el){ el.remove(); });
       try{ document.documentElement.style.overflow=''; }catch(e){}
       switching=false;
@@ -737,7 +839,7 @@ function rippleSwitch(lang, cx, cy){
   }catch(e){ layer=null; }
 
   if(!layer){
-    try{ LANG=lang; setLang(lang); applyLang(); try{ if(window.__vRender) window.__vRender(); }catch(e){} }catch(e){}
+    try{ LANG=lang; setLang(lang); applyLang(); try{ if(window.__vRender) window.__vRender(); }catch(e){} try{ if(window.__planRender) window.__planRender(); }catch(e){} }catch(e){}
     blocker.remove(); htmlEl.style.overflow=prevOverflow;
     switching=false; return;
   }
@@ -777,7 +879,7 @@ function rippleSwitch(lang, cx, cy){
     if(t<1){ requestAnimationFrame(step); return; }
 
     // ④ 遮罩盖满之后，真实页面才切语言
-    try{ LANG=lang; setLang(lang); applyLang(); try{ if(window.__vRender) window.__vRender(); }catch(e){} }catch(e){}
+    try{ LANG=lang; setLang(lang); applyLang(); try{ if(window.__vRender) window.__vRender(); }catch(e){} try{ if(window.__planRender) window.__planRender(); }catch(e){} }catch(e){}
     try{
       var lsF=document.getElementById('langSw');
       if(lsF) lsF.querySelectorAll('span[data-lang]').forEach(function(el){ el.classList.toggle('on', el.dataset.lang===lang); });
@@ -824,11 +926,24 @@ function cfgQ(){
   if(cfg.cm)  p.push('cm='+cfg.cm);
   if(cfg.yaw) p.push('yaw='+cfg.yaw);
   if(cfg.sens)p.push('sens='+cfg.sens);
+  try{
+    const d=parseInt(localStorage.getItem('cs2at.delay'));
+    if(!isNaN(d)) p.push('delay='+Math.max(0,Math.min(5,d)));
+    const r=localStorage.getItem('cs2at.res');
+    if(r){ p.push('res='+r);
+      if(r==='custom'){ p.push('w='+(localStorage.getItem('cs2at.resW')||'1440')); p.push('h='+(localStorage.getItem('cs2at.resH')||'1080')); } }
+    const dev=localStorage.getItem('cs2at.device');
+    if(dev) p.push('device='+dev);
+    if(dev==='pad'){ p.push('padMode='+(localStorage.getItem('cs2at.padMode')||'vel')); }
+  }catch(e){}
   return p.length? '&'+p.join('&'):'';
 }
 function renderDrills(){
   const q=cfgQ();
   const items=[
+    {t:'状态快测',d:'20 球定尺寸，30 秒测今天手感，结果进记录。',
+     dEN:'20 dots at a fixed size — 30 seconds to check today\'s feel; results go to your log.',
+     u:'tools/aim-trainer.html?mode=random&count=20&limit=0'+q},
     {t:'自适应随机',d:'球与限时按 85% 成功率自动调节，主练用这个。',
      dEN:'Size and limit auto-adjust to hold ~85% success. For main practice.',
      u:'tools/aim-trainer.html?mode=random&count=40&limit=1'+q},
@@ -837,7 +952,13 @@ function renderDrills(){
      u:'tools/aim-trainer.html?mode=block&count=40&limit=0'+q},
     {t:'小球精度',d:'0.7° 小球，无时限，练一次定位的精度。',
      dEN:'0.7° dots, no limit. For one-shot precision.',
-     u:'tools/aim-trainer.html?mode=precision&count=40&limit=0'+q}
+     u:'tools/aim-trainer.html?mode=precision&count=40&limit=0'+q},
+    {t:'大角度甩枪',d:'90-180° 回头枪，练转身定位，CS 最常用的场景。',
+     dEN:'90–180° turn shots — the most common CS scenario.',
+     u:'tools/aim-trainer.html?mode=wide&count=30&limit=0'+q},
+    {t:'移动跟枪',d:'目标匀速漂移，跟着点。VAL / APEX / OW 的核心项目。',
+     dEN:'Targets drift at a steady speed — click while tracking. Core skill for VAL / APEX / OW.',
+     u:'tools/aim-trainer.html?mode=track&count=30&limit=0'+q}
   ];
   const drillEN=false;   // 说明已进词典，渲染只出中文，翻译交给 translateRoot
 $('drillGrid').innerHTML=items.map(i=>
@@ -890,7 +1011,7 @@ $('clrBtn').addEventListener('click',()=>{
 
 function num(el,def){ const v=parseFloat(el.value); return isFinite(v)? v: def; }
 function updateCalc(){
-  const d=num($('iDpi'),1000), y=num($('iYaw'),0.013052), c=num($('iCm'),36.5), s=num($('iSens'),1.92);
+  const d=num($('iDpi'),1000), y=num($('iYaw'),0.013052), c=num($('iCm'),36.5), s=num($('iSens'),1.92)/gameScale();
   const EN_UI=(document.documentElement.getAttribute('lang')==='en');
   $('calcHint').textContent = EN_UI
     ? '360° turn needs '+c.toFixed(1)+' cm · 180° needs '+(c/2).toFixed(1)+' cm · sensitivity '+s.toFixed(2)+' (m_yaw '+y+' · DPI '+d+')'
@@ -901,6 +1022,21 @@ function fillSettings(){
   $('iPerf').checked=localStorage.getItem(K_PERF)==='1';
   $('iFps').value=localStorage.getItem(K_FPS)||'0';
   $('iFpsShow').checked=localStorage.getItem(K_FPSSHOW)!=='0';
+  try{
+    const d=parseInt(localStorage.getItem('cs2at.delay'));
+    $('iDelay').value = isNaN(d)? 3 : Math.max(0,Math.min(5,d));
+    const r=localStorage.getItem('cs2at.res')||'4:3';
+    $('iRes').value = ['16:9','16:10','4:3','5:4','1:1','custom'].indexOf(r)>=0? r : '4:3';
+    $('iResW').value = localStorage.getItem('cs2at.resW')||'1440';
+    $('iResH').value = localStorage.getItem('cs2at.resH')||'1080';
+    $('resCustom').style.display = ($('iRes').value==='custom')? '' : 'none';
+    const dev=localStorage.getItem('cs2at.device')||'mouse';
+    $('iDev').value = ['mouse','pad','pen'].indexOf(dev)>=0? dev : 'mouse';
+    const pm=localStorage.getItem('cs2at.padMode');
+    $('iPadMode').value = ['vel','abs','raw'].indexOf(pm)>=0? pm : 'vel';
+    $('padSet').style.display = ($('iDev').value==='pad')? '' : 'none';
+    syncGameScale();
+  }catch(e){}
 
   const theme=localStorage.getItem(K_THEME)||'jade';
   function swHTML(list){ return list.map(t=>'<div class="sw'+(t.id===theme?' on':'')+'" data-th="'+t.id+'">'+
@@ -936,13 +1072,58 @@ $('saveBtn').addEventListener('click',()=>{
   localStorage.setItem(K_PERF, $('iPerf').checked? '1':'0');
   localStorage.setItem(K_FPS, $('iFps').value||'0');
   localStorage.setItem(K_FPSSHOW, $('iFpsShow').checked? '1':'0');
-  const b=$('saveBtn'); b.textContent='已保存'; setTimeout(()=>b.textContent='保存设置',1200);
+  try{
+    localStorage.setItem('cs2at.delay', String(Math.max(0,Math.min(5,parseInt($('iDelay').value)||3))));
+    localStorage.setItem('cs2at.res', $('iRes').value);
+    localStorage.setItem('cs2at.resW', $('iResW').value);
+    localStorage.setItem('cs2at.resH', $('iResH').value);
+    localStorage.setItem('cs2at.device', $('iDev').value);
+    localStorage.setItem('cs2at.padMode', $('iPadMode').value);
+  }catch(e){}
+  const b=$('saveBtn'); b.textContent=L('已保存','Saved'); setTimeout(()=>b.textContent=L('保存设置','Save settings'),1200);
 });
 $('defBtn').addEventListener('click',()=>{
   cfg={dpi:1000,yaw:0.013052,sens:1.92,cm:36.5}; save(K_CFG,cfg);
   localStorage.setItem(K_THEME,'jade'); applyTheme('jade');
   localStorage.setItem(K_SCENE,'classic');
   fillSettings();
+});
+$('iRes').addEventListener('change',()=>{ $('resCustom').style.display = $('iRes').value==='custom' ? '' : 'none'; });
+$('iDev').addEventListener('change',()=>{
+  $('padSet').style.display = $('iDev').value==='pad'? '' : 'none';
+});
+
+/* 游戏灵敏度切换：先选游戏，再改灵敏度；点「更改灵敏度」按该游戏换算，DPI 不动。
+   yaw 表经 KovaaK / Ubisoft 官方 / keymap.io 交叉核对。cs2 即本站刻度（1:1） */
+const GAME_YAW={'cs2':0,'val':0.07,'apex':0.022,'ow2':0.0066,'r6':0.00572957795};
+function gameYaw(){ const v=GAME_YAW[$('iGame').value]; return v===undefined? 0 : v; }
+function gameScale(){ const gy=gameYaw(); if(gy===0) return 1; const sy=num($('iYaw'),0.013052)||0.013052; return sy/gy; }
+function syncGameScale(){
+  try{
+    const scale=gameScale();
+    const name=$('iGame').selectedOptions[0].textContent;
+    $('sensLabel').textContent = L('灵敏度 · ','Sensitivity · ')+name;
+    $('iSens').value = String(Math.round(cfg.sens*scale*10000)/10000);
+    updateCalc();
+  }catch(e){}
+}
+$('iGame').addEventListener('change', syncGameScale);
+$('gameConv').addEventListener('click',()=>{
+  try{
+    const gy=gameYaw(), sy=num($('iYaw'),0.013052)||0.013052;
+    const scale = gy===0 ? 1 : sy/gy;
+    const disp=parseFloat($('iSens').value);
+    if(!isFinite(disp)||disp<=0){ $('gameConvHint').textContent=L('游戏灵敏度得是正数','Enter a positive sensitivity'); return; }
+    const dpi=num($('iDpi'),1000);
+    const internal = disp/scale;                       // 本站灵敏度
+    const cm = 914.4/(disp*(gy===0? sy : gy)*dpi);     // 真实 cm/360，DPI 不动
+    cfg.sens=Math.round(internal*10000)/10000; cfg.cm=Math.round(cm*100)/100;
+    cfg.dpi=dpi; cfg.yaw=sy;
+    save(K_CFG,cfg);
+    $('iSens').value=String(disp); $('iCm').value=String(cfg.cm);
+    $('gameConvHint').textContent=L('已切换：cm/360 ','Switched: cm/360 ')+cfg.cm+L(' · 本站灵敏度 ',' · site sensitivity ')+cfg.sens.toFixed(4)+L('，DPI '," (DPI ")+dpi+L(' 不变',' unchanged)');
+    updateCalc();
+  }catch(e){}
 });
 
 cfg=load(K_CFG,cfg);
@@ -1021,6 +1202,14 @@ function cfgQuery(){
     try{
       const th=document.documentElement.getAttribute('data-theme'); if(th) p.push('theme='+th);
       if(LANG==='en') p.push('lang=en');
+      const d=parseInt(localStorage.getItem('cs2at.delay'));
+      if(!isNaN(d)) p.push('delay='+Math.max(0,Math.min(5,d)));
+      const r=localStorage.getItem('cs2at.res');
+      if(r){ p.push('res='+r);
+        if(r==='custom'){ p.push('w='+(localStorage.getItem('cs2at.resW')||'1440')); p.push('h='+(localStorage.getItem('cs2at.resH')||'1080')); } }
+      const dev=localStorage.getItem('cs2at.device');
+      if(dev) p.push('device='+dev);
+      if(dev==='pad'){ p.push('padMode='+(localStorage.getItem('cs2at.padMode')||'vel')); }
     }catch(e){}
     return p.length? '&'+p.join('&') : '';
   }catch(e){ return ''; }
@@ -1051,6 +1240,32 @@ function planFor(w){
   ];
 }
 
+  // 任务标题/说明的英文对照（render 时按语言取）
+  const TSK_EN={
+    '热身 · 定角重复':'Warm-up · blocked',
+    '热身 · 定角重复 ×2':'Warm-up · blocked ×2',
+    '主练 · 自适应随机 ×2':'Main · adaptive random ×2',
+    '主练 · 自适应随机':'Main · adaptive random',
+    '精度 · 小球 0.7°':'Precision · 0.7° dots',
+    '死斗 · 只打头':'Deathmatch · headshots only',
+    '实战':'Live matches'
+  };
+  const NOTE_EN={
+    '两个角度各 8 球，让手热起来，不记录':'8 shots per angle on two angles, to warm up; not recorded',
+    '只追命中率 80%，不要主动抢时间':'Chase 80% hit rate only — don\'t race the clock',
+    '记录命中率，目标 35%+':'Record hit rate, target 35%+',
+    '同上':'Same as above',
+    '开始前把限时设为昨天的最低值':'Set the limit to yesterday\'s lowest before starting',
+    '记录命中率':'Record hit rate',
+    '两个角度各一轮':'One round on each of two angles',
+    '限时继续压':'Keep pressing the limit down',
+    '目标 40%+':'Target 40%+',
+    '实战 10 分钟，单发爆头，打完回中':'10 min live, one-tap headshots, recenter after each kill',
+    '激活手感':'Wake the hands up',
+    '一组就够':'One set is enough',
+    '剩下的时间全部实战，不测数据':'The rest of the time: live matches, no measuring'
+  };
+
 function render(root, lang){
   const D = root || document;
   const $ = function(id){ return D.querySelector('#'+id); };
@@ -1077,15 +1292,19 @@ function render(root, lang){
 
   const isRest=(d%7===5||d%7===6);
   $('todayHint').textContent = isRest
-    ? '今天是休息日。睡够 7-8 小时，技能靠睡眠巩固。'
-    : '做完一项就在训练页点「复制本组数据」，粘到下面的记录里。';
+    ? (LG==='en' ? 'Rest day. Sleep 7–8 hours — skill consolidates overnight.' : '今天是休息日。睡够 7-8 小时，技能靠睡眠巩固。')
+    : (LG==='en' ? 'After each drill, hit "Copy this set" on the drills page and paste it below.' : '做完一项就在训练页点「复制本组数据」，粘到下面的记录里。');
 
   const q=cfgQuery();
   const tasks=planFor(w);
   ($('tasks')||{}).innerHTML = tasks.map(t=>{
     const href=t.u? (t.u+q):'';
-    const btn = href? '<a class="go" target="_blank" href="'+href+'">开始</a>' : '<span class="go" style="background:var(--panel2);border-color:var(--line);color:var(--dim)">实战</span>';
-    return '<div class="task"><div><div class="t">'+t.t+'</div><div class="n">'+t.n+'</div></div>'+btn+'</div>';
+    const tt=LG==='en' ? (TSK_EN[t.t]||t.t) : t.t;
+    const nn=LG==='en' ? (NOTE_EN[t.n]||t.n) : t.n;
+    const btn = href
+      ? '<a class="go" target="_blank" href="'+href+'">'+(LG==='en'?'Start':'开始')+'</a>'
+      : '<span class="go" style="background:var(--panel2);border-color:var(--line);color:var(--dim)">'+(LG==='en'?'Live':'实战')+'</span>';
+    return '<div class="task"><div><div class="t">'+tt+'</div><div class="n">'+nn+'</div></div>'+btn+'</div>';
   }).join('');
 
   // 进度格
@@ -1106,7 +1325,7 @@ function render(root, lang){
     const done=set.has(k);
     const rest=((dt.getDay()+6)%7)>=5;       // 六、日
     const cls='cell'+(done?' done':rest?' rest':'')+(i===d?' today':'');
-    g+='<div class="'+cls+'" title="'+k+(done?' · 已完成':'')+'">'+dt.getDate()+'</div>';
+    g+='<div class="'+cls+'" title="'+k+(done? (LG==='en'?' · done':' · 已完成'):'')+'">'+dt.getDate()+'</div>';
   }
   const total=wd+28, tail=(7-total%7)%7;
   for(let i=0;i<tail;i++) g+='<div class="cell blank"></div>';
@@ -1121,7 +1340,7 @@ function render(root, lang){
 
   // 记录表
   if(log.length){
-    $('logTable').innerHTML='<tr><th>日期</th><th>数据</th></tr>'+
+    $('logTable').innerHTML='<tr><th>'+(LG==='en'?'Date':'日期')+'</th><th>'+(LG==='en'?'Data':'数据')+'</th></tr>'+
       log.slice().reverse().slice(0,20).map(l=>'<tr><td>'+l.slice(0,10)+'</td><td>'+l.slice(10)+'</td></tr>').join('');
   } else $('logTable').innerHTML='';
 }
@@ -1130,14 +1349,14 @@ function render(root, lang){
 
 $('markDone').addEventListener('click',()=>{
   const log=JSON.parse(localStorage.getItem(K_LOG)||'[]');
-  if(log.some(x=>x.startsWith(todayStr()))){ alert('今天已经标记过了'); return; }
+  if(log.some(x=>x.startsWith(todayStr()))){ alert(L('今天已经标记过了','Already marked today')); return; }
   log.push(todayStr()+'  已完成');
   localStorage.setItem(K_LOG, JSON.stringify(log));
   render();
 });
 
 $('resetAll').addEventListener('click',()=>{
-  if(!confirm('清空所有进度和记录？')) return;
+  if(!confirm(L('清空所有进度和记录？','Clear all progress and records?'))) return;
   localStorage.removeItem(K_START); localStorage.removeItem(K_LOG);
   location.reload();
 });
@@ -1152,7 +1371,7 @@ $('addLog').addEventListener('click',()=>{
 $('copyAll').addEventListener('click',()=>{
   const log=JSON.parse(localStorage.getItem(K_LOG)||'[]');
   const txt=log.join('\n');
-  if(navigator.clipboard) navigator.clipboard.writeText(txt).then(()=>alert('已复制 '+log.length+' 条'));
+  if(navigator.clipboard) navigator.clipboard.writeText(txt).then(()=>alert(L('已复制 ','Copied ')+log.length+L(' 条',' entries')));
   else alert(txt);
 });
 
@@ -1191,7 +1410,8 @@ render();
   const isEN=function(){ return document.documentElement.getAttribute('lang')==='en'; };
   const L=function(zh,en){ return isEN()? en : zh; };
   const PLAN_ZH={'标准':'Standard','精简':'Lite','加量':'Heavy'};
-  const ROW_ZH={'热身':'Warm-up','主练':'Main','精度':'Accuracy','新项目':'New item'};
+  const ROW_ZH={'热身':'Warm-up','主练':'Main','精度':'Accuracy','新项目':'New item',
+    '自适应随机':'Adaptive random','定角重复':'Fixed angle','小球精度':'Precision'};
   const dispName=function(n){ return isEN() && PLAN_ZH[n] ? PLAN_ZH[n] : n; };
   const dispRow=function(n){ return isEN() && ROW_ZH[n] ? ROW_ZH[n] : n; };
 
@@ -1215,7 +1435,7 @@ render();
     if(ops){
       const empty=!plan.rows.length;
       ops.innerHTML='<span data-rename="1">改名</span>'+
-        '<span data-share="1"'+(empty?' class="off" title="没有项目可分享"':'')+'>分享</span>'+
+        '<span data-share="1"'+(empty?' class="off" title="'+L('没有项目可分享','Nothing to share yet')+'"':'')+'>分享</span>'+
         '<span data-import="1">导入</span>'+
         (st.plans.length>1?'<span class="warn right" data-delplan="1">删除这套计划</span>':'');
       const rn=ops.querySelector('[data-rename]');
@@ -1263,7 +1483,7 @@ render();
 
     function decAny(code){
       const raw=String(code).trim();
-      if(raw.slice(0,2)!=='V1') throw new Error('要以 V1 开头');
+      if(raw.slice(0,2)!=='V1') throw new Error(L('要以 V1 开头','Must start with V1'));
       const rows=[]; let name='';
 
       if(raw.indexOf('|')>=0){
@@ -1279,15 +1499,15 @@ render();
         let i=0;
         while(i<body.length){
           const c=body[i];
-          if(!C2M[c]) throw new Error('无法识别的字符 '+c);
+          if(!C2M[c]) throw new Error(L('无法识别的字符 ','Unrecognized character ')+c);
           i++; let num='';
           while(i<body.length && /[0-9]/.test(body[i])){ num+=body[i]; i++; }
           const n=parseInt(num,10);
-          if(!n) throw new Error('组数缺失');
+          if(!n) throw new Error(L('组数缺失','Missing set count'));
           rows.push({t:'', m:C2M[c], s:Math.max(1,Math.min(20,n))});
         }
       }
-      if(!rows.length) throw new Error('内容为空');
+      if(!rows.length) throw new Error(L('内容为空','Empty content'));
 
       // 空名字 → 当前语言的默认名；重名自动编号
       const defName=function(mode){ return L(DEF[mode][0], DEF[mode][1]); };
@@ -1304,20 +1524,20 @@ render();
       const code=encAuto(plan);
       const short=code.indexOf('|')<0;
       sb.innerHTML='<div class="shareRow"><input id="shareOut" readonly value="'+code+'">'+
-        '<button id="shareCopy">复制</button></div>'+
-        '<div class="shareTip2">'+code.length+' 字符 · '+
-        (short?'名字都是默认的，没写进码里':'把你改过的名字也带上了')+'</div>';
+        '<button id="shareCopy">'+L('复制','Copy')+'</button></div>'+
+        '<div class="shareTip2">'+code.length+L(' 字符 · ',' chars · ')+
+        (short?L('名字都是默认的，没写进码里','All names are default — not encoded'):L('把你改过的名字也带上了','Your custom names are included'))+'</div>';
       document.getElementById('shareOut').select();
       document.getElementById('shareCopy').onclick=function(){
         const o=document.getElementById('shareOut'); o.select();
         try{ document.execCommand('copy'); }catch(e){}
-        this.textContent='已复制'; const b=this;
-        setTimeout(function(){ b.textContent='复制'; },1400);
+        this.textContent=L('已复制','Copied'); const b=this;
+        setTimeout(function(){ b.textContent=L('复制','Copy'); },1400);
       };
     }
     function showImport(){
-      sb.innerHTML='<div class="shareRow"><input id="shareIn" placeholder="粘贴分享码，例如 V1b2r4p2">'+
-        '<button id="shareOk">导入</button><button id="shareCancel">取消</button></div>'+
+      sb.innerHTML='<div class="shareRow"><input id="shareIn" placeholder="'+L('粘贴分享码，例如 V1b2r4p2','Paste a share code, e.g. V1b2r4p2')+'">'+
+        '<button id="shareOk">'+L('导入','Import')+'</button><button id="shareCancel">'+L('取消','Cancel')+'</button></div>'+
         '<div class="shareTip" id="shareTip"></div>';
       document.getElementById('shareIn').focus();
       document.getElementById('shareCancel').onclick=function(){ sb.innerHTML=''; };
@@ -1329,7 +1549,7 @@ render();
           const v=load(), id='p'+(Date.now()%100000);
           v.plans.push({id:id, name:(obj.n||L('分享','Shared')+(v.plans.length+1)).slice(0,10), rows:obj.rows});
           v.active=id; save(v); render();
-        }catch(e){ tip.textContent='导入失败：'+e.message; }
+        }catch(e){ tip.textContent=L('导入失败：','Import failed: ')+e.message; }
       };
     }
 
@@ -1338,16 +1558,16 @@ render();
       return '<div class="prow">'+
         '<input class="nmIn" data-i="'+i+'" value="'+dispRow(r.t||'')+'" placeholder="'+L('项目名','Name')+'" maxlength="8">'+
         '<select data-i="'+i+'">'+MODES.map(function(m){
-          return '<option value="'+m.id+'"'+(m.id===r.m?' selected':'')+'>'+m.name+'</option>';
+          return '<option value="'+m.id+'"'+(m.id===r.m?' selected':'')+'>'+dispRow(m.name)+'</option>';
         }).join('')+'</select>'+
         '<div class="stepper">'+
           '<button data-step="-1" data-i="'+i+'">−</button>'+
           '<span>'+(r.s*40)+L(' 球',' balls')+'</span>'+
           '<button data-step="1" data-i="'+i+'">+</button>'+
         '</div>'+
-        '<button class="del" data-del="'+i+'" title="删掉这项">×</button>'+
+        '<button class="del" data-del="'+i+'" title="'+L('删掉这项','Delete this row')+'">×</button>'+
       '</div>';
-    }).join('') : '<div class="emptyRows">还没有项目，点下面的「＋ 添加一项」开始。</div>';
+    }).join('') : '<div class="emptyRows">'+L('还没有项目，点下面的「＋ 添加一项」开始。','No items yet — use "＋ Add a row" below.')+'</div>';
 
     function edit(fn){ const v=load(); fn(cur(v)); save(v); render(); }
 
@@ -1419,6 +1639,7 @@ render();
       v.active=id; save(v); render();
     };
   }
+  window.__planRender = render;   // 切换语言后重画计划选择器/操作行/行项目
 
   // 第三个彩蛋：连点「今日训练」四次 → 八个字
   (function(){
@@ -1428,7 +1649,7 @@ render();
     t.addEventListener('click',function(){
       n++; clearTimeout(timer);
       timer=setTimeout(function(){ n=0; },1200);
-      if(n>=4){ n=0; location.href='计划彩蛋.html'; }
+      if(n>=4){ n=0; location.href='八个字.html'; }
     });
   })();
 

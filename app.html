@@ -654,15 +654,9 @@
       </div>
 
       <div id="crossParams" class="row" style="margin-top:14px;gap:22px;align-items:center;flex-wrap:wrap">
-        <div style="min-width:170px"><div class="k">长度 <span id="vCrossLen" style="color:var(--acc)">1</span></div><input id="iCrossLen" type="range" min="1" max="40" step="1" value="1"></div>
-        <div style="min-width:170px"><div class="k">粗细 <span id="vCrossWid" style="color:var(--acc)">1</span></div><input id="iCrossWid" type="range" min="1" max="10" step="1" value="1"></div>
-        <div style="min-width:170px"><div class="k">间隙 <span id="vCrossGap" style="color:var(--acc)">4</span></div><input id="iCrossGap" type="range" min="0" max="20" step="1" value="4"></div>
-        <div style="min-width:150px">
-          <label style="display:block"><input id="iCrossDot" type="checkbox" checked> 中心点</label>
-          <label style="display:block;margin-top:6px"><input id="iCrossOutline" type="checkbox" checked> 描边</label>
-          <label style="display:block;margin-top:6px"><input id="iHitFx" type="checkbox" checked> 命中特效（球闪光）</label>
-          <label style="display:block;margin-top:6px"><input id="iHitCross" type="checkbox" checked> 准星击中反馈</label>
-        </div>
+        <div style="min-width:150px"><div class="k">长度 <span id="vCrossLen" style="color:var(--acc)">1</span></div><input id="iCrossLen" type="range" min="1" max="40" step="1" value="1"></div>
+        <div style="min-width:150px"><div class="k">粗细 <span id="vCrossWid" style="color:var(--acc)">1</span></div><input id="iCrossWid" type="range" min="1" max="16" step="1" value="1"></div>
+        <div style="min-width:150px"><div class="k">间隙 <span id="vCrossGap" style="color:var(--acc)">4</span></div><input id="iCrossGap" type="range" min="0" max="20" step="1" value="4"></div>
       </div>
 
       <div id="dotParams" class="row" style="margin-top:14px;gap:22px;align-items:center;display:none">
@@ -672,8 +666,37 @@
             <option value="large">大</option>
           </select>
         </div>
-        <div>
-          <label style="display:block"><input id="iDotOutline" type="checkbox" checked> 边框</label>
+        <label><input id="iDotOutline" type="checkbox" checked> 边框</label>
+      </div>
+
+      <div class="row" style="margin-top:14px;gap:26px;align-items:center;flex-wrap:wrap">
+        <div style="min-width:150px"><div class="k">透明度 <span id="vCrossAlpha" style="color:var(--acc)">1.00</span></div><input id="iCrossAlpha" type="range" min="0.2" max="1" step="0.05" value="1"></div>
+        <label><input id="iCrossDot" type="checkbox" checked> 中心点</label>
+        <label><input id="iCrossOutline" type="checkbox" checked> 描边</label>
+      </div>
+
+      <div class="row" style="margin-top:14px;gap:26px;align-items:center;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:14px;font-size:13px;color:var(--dim)">
+        <div style="display:flex;align-items:center;gap:8px">命中特效
+          <select id="iHitFx" style="padding:5px 8px;background:var(--panel);border:1px solid var(--line);color:var(--txt);border-radius:6px;font-size:13px;width:auto;max-width:100%">
+            <option value="flash">闪光</option>
+            <option value="shatter">碎裂</option>
+            <option value="both">组合</option>
+            <option value="off">关</option>
+          </select>
+          <span id="hitFxMix" style="display:none;gap:12px;align-items:center">
+            <label><input id="mixFlash" type="checkbox" checked> 闪光</label>
+            <label><input id="mixShatter" type="checkbox" checked> 碎裂</label>
+          </span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">准星击中反馈
+          <select id="iHitCross" style="padding:5px 8px;background:var(--panel);border:1px solid var(--line);color:var(--txt);border-radius:6px;font-size:13px;width:auto;max-width:100%">
+            <option value="auto">自动（背景对比色）</option>
+            <option value="custom">自定义</option>
+            <option value="off">关</option>
+          </select>
+          <label id="hitCrossColorRow" style="display:none;gap:6px;align-items:center">颜色
+            <input id="iHitCrossColor" type="color" value="#ffffff" style="width:40px;height:26px;padding:0;border:1px solid var(--line);border-radius:6px;background:var(--panel)">
+          </label>
         </div>
       </div>
     </div>
@@ -697,11 +720,6 @@
       </div>
     </div>
 
-    <div class="row">
-      <button class="main" id="saveBtn">保存设置</button>
-      <button id="defBtn">恢复默认</button>
-    </div>
-
     <div class="card">
       <div class="t">数据管理</div>
       <div class="hint" style="margin:6px 0 16px">导出、导入或清空全部训练数据。</div>
@@ -710,6 +728,11 @@
         <label class="fileBtn">导入 JSON<input type="file" id="impFile" accept="application/json"></label>
         <button id="clrBtn">清空全部数据</button>
       </div>
+    </div>
+
+    <div class="row">
+      <button class="main" id="saveBtn">保存设置</button>
+      <button id="defBtn">恢复默认</button>
     </div>
   </section>
 </main>
@@ -720,7 +743,7 @@ const K_CFG='cs2at.cfg', K_BEST='cs2at.best', K_RUNS='cs2at.runs', K_PERF='cs2at
 const $=id=>document.getElementById(id);
 const load=(k,d)=>{ try{ const v=localStorage.getItem(k); return v? JSON.parse(v): d; }catch(e){ return d; } };
 const save=(k,v)=>{ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} };
-const MODE_NAME={random:'自适应随机', block:'定角重复', precision:'小球精度', wide:'大角度甩枪', track:'移动跟枪', check:'六维检查'};
+const MODE_NAME={random:'自适应随机', block:'定角重复', precision:'小球精度', wide:'大角度甩枪', track:'微调训练', check:'六维检查'};
 
 const THEMES=[
   {id:'jade',  name:'墨玉', dot:'#7fbfa6', kind:'rec'},
@@ -758,7 +781,7 @@ const EN={
   '自适应随机':'Adaptive random','定角重复':'Fixed angle','小球精度':'Precision',
   '六维检查':'Check-up','90 秒一局测六样：反应、第一枪、补救、微调、拉枪、稳定。打完告诉你怎么练。':'One 90-second run scores six skills — reaction, first shot, recovery, micro-adjust, flick, steadiness — then tells you what to train.',
   '状态快测':'State check','20 球定尺寸，30 秒测今天手感，结果进记录。':'20 dots at a fixed size — 30 seconds to check today\'s feel; results go to your log.',
-  '大角度甩枪':'Wide flick','移动跟枪':'Moving target',
+  '大角度甩枪':'Wide flick','微调训练':'Micro-adjust',
   '90-180° 回头枪，练转身定位，CS 最常用的场景。':'90–180° turn shots — the most common CS scenario.',
   '目标匀速漂移，跟着点。VAL / APEX / OW 的核心项目。':'Targets drift at a steady speed — click while tracking. Core skill for VAL / APEX / OW.',
   '球与限时按 85% 成功率自动调节，主练用这个。':'Size and limit auto-adjust to hold ~85% success. For main practice.',
@@ -816,7 +839,9 @@ const EN={
   '样式':'Style','十字':'Cross','圆点':'Dot','静态':'Static','动态':'Dynamic',
   '颜色来源':'Colour source','跟随场景':'Follow scene','主色':'Main','描边':'Outline',
   '长度':'Length','粗细':'Thickness','间隙':'Gap','中心点':'Center dot','边框':'Outline',
-  '命中特效（球闪光）':'Hit effect (ball flash)','准星击中反馈':'Crosshair hit flash',
+  '命中特效':'Hit effect','闪光':'Flash','碎裂':'Shatter','组合':'Combo','关':'Off',
+  '透明度':'Opacity',
+  '准星击中反馈':'Crosshair hit flash','自动（背景对比色）':'Auto (contrast to background)','颜色':'Colour',
   '大小':'Size','小':'Small','大':'Large',
   '分享准星':'Share crosshair','准星分享码：':'Crosshair share code: ','粘贴准星分享码':'Paste crosshair share code',
   '格式不对':'Invalid code','已导入准星':'Crosshair imported',
@@ -1124,7 +1149,7 @@ function renderDrills(){
     {t:'大角度甩枪',d:'90-180° 回头枪，练转身定位，CS 最常用的场景。',
      dEN:'90–180° turn shots — the most common CS scenario.',
      u:'tools/aim-trainer.html?mode=wide&count=30&limit=0'+q},
-    {t:'移动跟枪',d:'目标匀速漂移，跟着点。VAL / APEX / OW 的核心项目。',
+    {t:'微调训练',d:'目标匀速漂移，跟着点。VAL / APEX / OW 的核心项目。',
      dEN:'Targets drift at a steady speed — click while tracking. Core skill for VAL / APEX / OW.',
      u:'tools/aim-trainer.html?mode=track&count=30&limit=0'+q}
   ];
@@ -1197,7 +1222,7 @@ function renderData(){
 }
 
 /* 趋势曲线：按模式分线（混在一起会骗人）——命中率（左轴 0-100%）+ 中位用时/限时（右轴 ms） */
-const MODE_EN={random:'Adaptive random', block:'Fixed angle', precision:'Precision', wide:'Wide flick', track:'Moving target', check:'Check-up'};
+const MODE_EN={random:'Adaptive random', block:'Fixed angle', precision:'Precision', wide:'Wide flick', track:'Micro-adjust', check:'Check-up'};
 let trendMode=null;
 let runShowAll=false;
 function drawTrend(runs){
@@ -1432,11 +1457,13 @@ function updateScenePrev(){
             : 'width:'+wid+'px;height:'+len+'px;transform:translate(-50%,-50%) translateY('+(a[1]<0? -off : off)+'px)')+'"></div>';
       });
       if(hasDot){
-        // 中心点：小方块（不圆），粗细与十字线一致，偶数像素绝对居中
+        // 中心点：小方块（不圆），粗细与十字线一致，描边也覆盖它
         let s=Math.max(2, wid); if(s%2) s++;
-        h+='<div style="position:absolute;left:50%;top:50%;width:'+s+'px;height:'+s+'px;transform:translate(-50%,-50%);background:'+c.cc+'"></div>';
+        h+='<div style="position:absolute;left:50%;top:50%;width:'+s+'px;height:'+s+'px;transform:translate(-50%,-50%);background:'+c.cc+';box-shadow:'+sh+'"></div>';
       }
       box.innerHTML=h;
+      const al=Math.max(0.2,Math.min(1,parseFloat(XG('cs2at.crossAlpha','1'))||1));
+      box.style.opacity=String(al);
     }
   }catch(e){}
 }
@@ -1451,11 +1478,22 @@ function syncCrossUI(){
     $('iCrossLen').value=XG('cs2at.crossLen','1'); $('vCrossLen').textContent=$('iCrossLen').value;
     $('iCrossWid').value=XG('cs2at.crossWid','1');   $('vCrossWid').textContent=$('iCrossWid').value;
     $('iCrossGap').value=XG('cs2at.crossGap','4');   $('vCrossGap').textContent=$('iCrossGap').value;
+    const al=Math.max(0.2,Math.min(1,parseFloat(XG('cs2at.crossAlpha','1'))||1));
+    $('iCrossAlpha').value=String(al); $('vCrossAlpha').textContent=al.toFixed(2);
     $('iCrossDot').checked=XG('cs2at.crossDot','1')==='1';
     $('iCrossOutline').checked=XG('cs2at.crossOutline','1')==='1';
     $('iDotOutline').checked=XG('cs2at.dotOutline','1')==='1';
-    $('iHitFx').checked=XG('cs2at.hitFx','1')==='1';
-    $('iHitCross').checked=XG('cs2at.hitCross','1')==='1';
+    // 命中特效组合：展开勾选
+    const mix=XG('cs2at.hitFxMix','11');
+    $('mixFlash').checked=mix.charAt(0)==='1';
+    $('mixShatter').checked=mix.charAt(1)==='1';
+    $('hitFxMix').style.display = ($('iHitFx').value==='both')? 'inline-flex' : 'none';
+    let fx=XG('cs2at.hitFx','flash'); if(fx==='0') fx='off'; if(fx==='1') fx='flash';
+    $('iHitFx').value=['flash','shatter','both','off'].indexOf(fx)>=0? fx : 'flash';
+    let hc=XG('cs2at.hitCross','auto'); if(hc==='0') hc='off'; if(hc==='1') hc='auto';
+    $('iHitCross').value=['auto','custom','off'].indexOf(hc)>=0? hc : 'auto';
+    $('iHitCrossColor').value=XG('cs2at.hitCrossColor','#ffffff');
+    $('hitCrossColorRow').style.display = ($('iHitCross').value==='custom')? '' : 'none';
   }catch(e){}
 }
 $('iCrossType').addEventListener('change',()=>{
@@ -1476,12 +1514,27 @@ function slider(id,key,labelId){
 slider('iCrossLen','cs2at.crossLen','vCrossLen');
 slider('iCrossWid','cs2at.crossWid','vCrossWid');
 slider('iCrossGap','cs2at.crossGap','vCrossGap');
+$('iCrossAlpha').addEventListener('input',()=>{
+  try{ localStorage.setItem('cs2at.crossAlpha', $('iCrossAlpha').value); }catch(e){}
+  $('vCrossAlpha').textContent=parseFloat($('iCrossAlpha').value).toFixed(2);
+  updateScenePrev();
+});
 function chk(id,key){ const el=document.getElementById(id); if(!el) return; el.addEventListener('change',()=>{ try{ localStorage.setItem(key, el.checked?'1':'0'); }catch(e){} updateScenePrev(); }); }
 chk('iCrossDot','cs2at.crossDot');
 chk('iCrossOutline','cs2at.crossOutline');
 chk('iDotOutline','cs2at.dotOutline');
-chk('iHitFx','cs2at.hitFx');
-chk('iHitCross','cs2at.hitCross');
+$('iHitFx').addEventListener('change',()=>{
+  try{ localStorage.setItem('cs2at.hitFx',$('iHitFx').value); }catch(e){}
+  $('hitFxMix').style.display = ($('iHitFx').value==='both')? 'inline-flex' : 'none';
+});
+function saveMix(){ try{ localStorage.setItem('cs2at.hitFxMix', ($('mixFlash').checked?'1':'0')+($('mixShatter').checked?'1':'0')); }catch(e){} }
+$('mixFlash').addEventListener('change',saveMix);
+$('mixShatter').addEventListener('change',saveMix);
+$('iHitCross').addEventListener('change',()=>{
+  try{ localStorage.setItem('cs2at.hitCross',$('iHitCross').value); }catch(e){}
+  $('hitCrossColorRow').style.display = ($('iHitCross').value==='custom')? 'flex' : 'none';
+});
+$('iHitCrossColor').addEventListener('input',()=>{ try{ localStorage.setItem('cs2at.hitCrossColor',$('iHitCrossColor').value); }catch(e){} });
 $('iCrossMode').addEventListener('change',()=>{
   $('crossCustom').style.display = $('iCrossMode').value==='custom'? '' : 'none';
   try{ localStorage.setItem('cs2at.crossMode', $('iCrossMode').value); }catch(e){}

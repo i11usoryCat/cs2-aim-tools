@@ -74,7 +74,7 @@
           <option value="block">定角重复</option>
           <option value="precision">小球精度</option>
           <option value="wide">大角度甩枪</option>
-          <option value="track">移动跟枪</option>
+          <option value="track">微调训练</option>
           <option value="check">六维检查（90秒）</option>
         </select>
       </label>
@@ -158,14 +158,16 @@ const PITCH_LIM=75*Math.PI/180, D2R=Math.PI/180, R2D=180/Math.PI;
 let W=0,H=0,f=1;
 let yaw=0, pitch=0, tYaw=0, tPitch=0, sYaw=0, sPitch=0;
 const EN_UI=(function(){ try{ var q=new URLSearchParams(location.search); if(q.get('lang')) return q.get('lang')==='en'; return localStorage.getItem('cs2at.lang')==='en'; }catch(e){ return false; } })();
-// 命中特效 / 准星击中反馈：设置页可关，默认开
-const hitFxOn=(function(){ try{ return localStorage.getItem('cs2at.hitFx')!=='0'; }catch(e){ return true; } })();
-const hitCrossOn=(function(){ try{ return localStorage.getItem('cs2at.hitCross')!=='0'; }catch(e){ return true; } })();
+// 命中特效（flash/shatter/both/off）与准星击中反馈（auto/custom/off）
+const hitFxMode=(function(){ try{ var m=localStorage.getItem('cs2at.hitFx'); if(m==='0') m='off'; if(!m||m==='1') m='flash'; return m; }catch(e){ return 'flash'; } })();
+const hitCrossMode=(function(){ try{ var m=localStorage.getItem('cs2at.hitCross'); if(m==='0') m='off'; if(!m||m==='1') m='auto'; return m; }catch(e){ return 'auto'; } })();
+const hitCrossColor=(function(){ try{ return localStorage.getItem('cs2at.hitCrossColor')||''; }catch(e){ return ''; } })();
+const hitFxMix=(function(){ try{ return localStorage.getItem('cs2at.hitFxMix')||'11'; }catch(e){ return '11'; } })();
 let running=false, paused=false, pauseAt=0, endMode='count', endTime=120, endAt=0;
 let waiting=false, cdUntil=0, cdTimer=null, endStarted=false;
 let padMode='off';
 let device='mouse';   // 输入设备：设置页配置，mouse / pad / pen
-let crossType='cross', crossLen=16, crossWid=2, crossGap=4, crossDot=true, crossOutl=true;
+let crossType='cross', crossLen=16, crossWid=2, crossGap=4, crossDot=true, crossOutl=true, crossAlpha=1;
 let dotSize='small', dotOutl=true, crossDyn='static';
 let dynAmt=0, dynLast=0;
 let padActive=false, padFirePrev=false, lastPadT=0;
@@ -392,8 +394,9 @@ function start(){
     const g=function(k,d){ const v=localStorage.getItem(k); return v===null? d : v; };
     crossType = g('cs2at.crossType','cross');
     crossLen  = Math.max(1, Math.min(40, parseFloat(g('cs2at.crossLen','1'))||1));
-    crossWid  = Math.max(1, Math.min(10, parseFloat(g('cs2at.crossWid','1'))||1));
+    crossWid  = Math.max(1, Math.min(16, parseFloat(g('cs2at.crossWid','1'))||1));
     crossGap  = Math.max(0, Math.min(20, parseFloat(g('cs2at.crossGap','4'))||0));
+    crossAlpha= Math.max(0.2, Math.min(1, parseFloat(g('cs2at.crossAlpha','1'))||1));
     crossDot  = g('cs2at.crossDot','1')==='1';
     crossOutl = g('cs2at.crossOutline','1')==='1';
     dotSize   = g('cs2at.dotSize','small');
@@ -587,7 +590,18 @@ function judge(){
 
   alive=false;
   feedback={ err:err, hit:hit, mt:mt, over:overtime, until:now+600 };
-  if(hit){ hitFx={ty:tYaw, tp:tPitch, until:now+250}; hitCrossUntil=now+200; }   // 命中：球位置闪光渐隐 + 准星闪一下
+  if(hit){
+    hitFx={ty:tYaw, tp:tPitch, until:now+250}; hitCrossUntil=now+200;   // 命中：球位置特效 + 准星闪一下
+    if(hitFxMode==='shatter' || (hitFxMode==='both' && hitFxMix.charAt(1)==='1')){
+      // 碎裂：10 片碎屑随机方向飞散
+      const parts=[];
+      for(let i=0;i<10;i++){
+        const a=Math.random()*Math.PI*2, sp=(Math.random()*3.2+1.6)*devicePixelRatio;
+        parts.push({a:a, x:0, y:0, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp, r:(Math.random()*1.7+0.9)*devicePixelRatio, t:now+260+Math.random()*140});
+      }
+      hitFx.parts=parts;
+    }
+  }
 
   if((endMode==='count' && trial>=TOTAL)){ finish(); return; }
   if(endMode==='time' && performance.now()>=endAt){ finish(); return; }
@@ -1109,8 +1123,15 @@ function drawFrame(now){
 
   const cx=W/2, cy=H/2;
   const dynF=dynamicFactor(now);
-  // 准星击中反馈：命中后准星白闪 0.2 秒
-  const crossC=(hitCrossOn && hitCrossUntil>now)? 'rgba(255,255,255,.92)' : SC.cross;
+  // 准星击中反馈：命中后闪 0.2 秒——默认背景对比色，可自定义
+  let crossC=SC.cross;
+  if(hitCrossMode!=='off' && hitCrossUntil>now){
+    crossC = (hitCrossMode==='custom' && hitCrossColor)
+      ? hitCrossColor
+      : (SC.dark? 'rgba(255,255,255,.95)' : 'rgba(17,24,39,.95)');
+  }
+  ctx.save();
+  ctx.globalAlpha=crossAlpha;
   if(crossType==='dot'){
     // 圆点准星：只有大小与边框
     const r=(dotSize==='large'?6:3)*(1+0.4*dynF)*devicePixelRatio;
@@ -1133,27 +1154,46 @@ function drawFrame(now){
     if(crossOutl) drawBars(SC.edge, wd+2.5*devicePixelRatio);
     drawBars(crossC, wd);
     if(crossDot){
-      // 中心点：小方块，粗细与十字线一致，偶数像素，绝对居中
+      // 中心点：小方块，粗细与十字线一致；描边同样覆盖它
       let s=Math.max(2, Math.round(wd/devicePixelRatio));
       if(s%2) s++;
       const sPx=s*devicePixelRatio;
+      if(crossOutl){
+        ctx.fillStyle=SC.edge;
+        ctx.fillRect(cx-sPx/2-devicePixelRatio, cy-sPx/2-devicePixelRatio, sPx+2*devicePixelRatio, sPx+2*devicePixelRatio);
+      }
       ctx.fillStyle=crossC;
       ctx.fillRect(cx-sPx/2, cy-sPx/2, sPx, sPx);
     }
   }
+  ctx.restore();
 
-  // 命中特效：在球被点中的位置闪光，0.25 秒渐隐
-  if(hitFxOn && hitFx && now<hitFx.until){
+  // 命中特效：闪光 / 碎裂（在球被点中的位置）
+  if(hitFx && now<hitFx.until+200){
     const cp=Math.cos(hitFx.tp);
     const tp=project(DIST*cp*Math.sin(hitFx.ty), DIST*Math.sin(hitFx.tp), DIST*cp*Math.cos(hitFx.ty));
     if(tp){
-      const k=(hitFx.until-now)/250;
-      const fr=16*devicePixelRatio;
-      const fg=ctx.createRadialGradient(tp.sx,tp.sy,fr*0.5, tp.sx,tp.sy, fr*1.7);
-      fg.addColorStop(0, hexA(SC.tgt, (SC.dark? 0.28 : 0.18)*k));
-      fg.addColorStop(1,'rgba(0,0,0,0)');
-      ctx.fillStyle=fg;
-      ctx.beginPath(); ctx.arc(tp.sx,tp.sy,fr*1.7,0,Math.PI*2); ctx.fill();
+      if((hitFxMode==='flash' || (hitFxMode==='both' && hitFxMix.charAt(0)==='1')) && now<hitFx.until){
+        const k=(hitFx.until-now)/250;
+        const fr=16*devicePixelRatio;
+        const fg=ctx.createRadialGradient(tp.sx,tp.sy,fr*0.5, tp.sx,tp.sy, fr*1.7);
+        fg.addColorStop(0, hexA(SC.tgt, (SC.dark? 0.28 : 0.18)*k));
+        fg.addColorStop(1,'rgba(0,0,0,0)');
+        ctx.fillStyle=fg;
+        ctx.beginPath(); ctx.arc(tp.sx,tp.sy,fr*1.7,0,Math.PI*2); ctx.fill();
+      }
+      if(hitFx.parts){
+        const m=(now-(lastDraw||now))/16.7;
+        hitFx.parts.forEach(pt=>{
+          if(now>=pt.t) return;
+          pt.x+=pt.vx*m; pt.y+=pt.vy*m;
+          const k=Math.max(0,(pt.t-now)/140);
+          ctx.beginPath();
+          ctx.arc(tp.sx+pt.x, tp.sy+pt.y, pt.r, 0, Math.PI*2);
+          ctx.fillStyle=hexA(SC.tgt, Math.min(1, k));
+          ctx.fill();
+        });
+      }
     }
   }
 
@@ -1278,7 +1318,7 @@ requestAnimationFrame(loop);
     '← 返回':'← Back','自动':'auto','游戏灵敏度':'Game sensitivity','目标大小':'Dot size','球大小':'Dot size','再来一组':'Again','复制本组数据':'Copy this set','关闭':'Close','继续':'Continue',
     '准备好':'Get ready',
     '自适应随机':'Adaptive random','定角重复':'Fixed angle','小球精度':'Precision',
-    '大角度甩枪':'Wide flick','移动跟枪':'Moving target','六维检查（90秒）':'Check-up (90 s)','目标大小°':'Target size °',
+    '大角度甩枪':'Wide flick','移动跟枪':'Moving target','微调训练':'Micro-adjust','六维检查（90秒）':'Check-up (90 s)','目标大小°':'Target size °',
     '场景':'Scene','自动（跟随设置）':'Auto (follow settings)','自定义场景':'Custom scene','自定义':'Custom',
     '经典':'Classic','墨玉':'Jade','墨鱼':'Ink','浅灰':'Light grey','暗蓝':'Night blue','纯黑':'Pure black','沙色':'Sandstone',
     '中位用时':'Median','分段数据':'Per-segment','阶段':'Set','用时':'Time','命中率':'Hit rate',
@@ -1456,9 +1496,9 @@ requestAnimationFrame(loop);
       if(em) em.disabled=on;
       if(et) et.disabled=on;
       if(cnt) cnt.disabled=on;
-      // 标题跟着模式走：选六维检查不再是「甩枪训练」
+      // 标题跟着所选模式走（选项文案本身已按语言翻译）
       var tt=document.getElementById('titleTop');
-      if(tt) tt.textContent = on? (EN_UI? 'Check-up' : '六维检查') : (EN_UI? 'Flick trainer' : '甩枪训练');
+      if(tt && ms.options && ms.selectedIndex>=0) tt.textContent=ms.options[ms.selectedIndex].textContent;
       // 检查模式下死控件直接隐藏，换成一行只读说明
       var fe=document.getElementById('fldEnd'), fc=document.getElementById('fldCnt'), ft=document.getElementById('fldEndTime'), cn=document.getElementById('checkNote'), cr=document.getElementById('chkRow');
       if(fe) fe.style.display = on? 'none' : '';

@@ -183,9 +183,17 @@ function start(){
 }
 
 function pause(){ if(!running||paused) return; paused=true; pauseAt=performance.now();
-  go.textContent='继续'; msg.classList.add('show'); if(document.pointerLockElement) document.exitPointerLock(); }
+  go.textContent='继续'; msg.classList.add('show'); if(document.pointerLockElement) document.exitPointerLock();
+  // ESC 只暂停、不退全屏：丢全屏就立刻要回来
+  if(!document.fullscreenElement && document.documentElement.requestFullscreen){
+    try{ document.documentElement.requestFullscreen().catch(function(){}); }catch(e){}
+  } }
 function resume(){ if(!paused) return; const d=performance.now()-pauseAt; tSpawn+=d;
-  paused=false; msg.classList.remove('show'); doLock(); }
+  paused=false; msg.classList.remove('show'); doLock();
+  // 点「继续」是有效手势：顺带把全屏要回来
+  if(!document.fullscreenElement && document.documentElement.requestFullscreen){
+    try{ document.documentElement.requestFullscreen().catch(function(){}); }catch(e){}
+  } }
 
 function judge(now){
   const ey = yaw;      // 零延迟：用点击那一刻的位置
@@ -467,6 +475,16 @@ requestAnimationFrame(loop);
   }
   sn.addEventListener('input', function(){ if(busy)return; busy=true; toCm(); busy=false; if(window.__updSensHint) window.__updSensHint(); });
   [dpi,yaw,cm].forEach(function(el){ if(!el) return; el.addEventListener('input', function(){ if(busy)return; busy=true; toSens(); busy=false; }); });
+  // 读设置页保存的 DPI / m_yaw / cm/360（URL 参数优先）
+  try{
+    var q=new URLSearchParams(location.search);
+    var cfg=JSON.parse(localStorage.getItem('cs2at.cfg')||'null');
+    if(cfg){
+      if(!q.get('dpi') && cfg.dpi) dpi.value=cfg.dpi;
+      if(!q.get('yaw') && cfg.yaw) yaw.value=cfg.yaw;
+      if(!q.get('cm') && cfg.cm) cm.value=cfg.cm;
+    }
+  }catch(e){}
   toSens();
 })();
 

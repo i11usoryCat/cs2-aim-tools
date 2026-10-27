@@ -785,7 +785,7 @@ const EN={
   '全部 ▾':'All ▾','收起 ▴':'Collapse ▴',
   '模式':'Mode','最低限时':'Best limit','最高命中率':'Best hit','最快中位用时':'Fastest median','组数':'Sets',
   '自适应随机':'Adaptive random','定角重复':'Fixed angle','小球精度':'Precision',
-  '六维检查':'Check-up','90 秒一局测六样：反应、第一枪、补救、微调、拉枪、稳定。打完告诉你怎么练。':'One 90-second run scores six skills — reaction, first shot, recovery, micro-adjust, flick, steadiness — then tells you what to train.',
+  '六维检查':'Check-up','90 秒一局测六样：反应、第一枪、反应确定、微调、拉枪、稳定。打完告诉你怎么练。':'One 90-second run scores six skills — reaction, first shot, confirm, micro-adjust, flick, steadiness — then tells you what to train.',
   '状态快测':'State check','20 球定尺寸，30 秒测今天手感，结果进记录。':'20 dots at a fixed size — 30 seconds to check today\'s feel; results go to your log.',
   '大角度甩枪':'Wide flick','微调训练':'Micro-adjust',
   '90-180° 回头枪，练转身定位，CS 最常用的场景。':'90–180° turn shots — the most common CS scenario.',
@@ -1138,9 +1138,9 @@ function cfgQ(){
 function renderDrills(){
   const q=cfgQ();
   const items=[
-    {t:'六维检查',d:'90 秒一局测六样：反应、第一枪、补救、微调、拉枪、稳定。打完告诉你怎么练。',
-     dEN:'One 90-second run scores six skills — reaction, first shot, recovery, micro-adjust, flick, steadiness — then tells you what to train.',
-     u:'tools/aim-trainer.html?mode=check&count=40&limit=0&delay=0'+q},
+    {t:'六维检查',d:'90 秒一局测六样：反应、第一枪、反应确定、微调、拉枪、稳定。打完告诉你怎么练。',
+     dEN:'One 90-second run scores six skills — reaction, first shot, confirm, micro-adjust, flick, steadiness — then tells you what to train.',
+     u:'tools/aim-trainer.html?mode=check&count=40&limit=0'+q},
     {t:'状态快测',d:'20 球定尺寸，30 秒测今天手感，结果进记录。',
      dEN:'20 dots at a fixed size — 30 seconds to check today\'s feel; results go to your log.',
      u:'tools/aim-trainer.html?mode=random&count=20&limit=0'+q},

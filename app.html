@@ -442,7 +442,9 @@
       <table id="bestTable"></table>
     </div>
     <div class="card">
-      <div class="t" style="margin-bottom:10px">趋势（最近 60 组）</div>
+      <div class="t" style="margin-bottom:10px">趋势（最近 60 组）
+        <select id="trendMode" style="margin-left:12px;padding:5px 10px;background:var(--panel);border:1px solid var(--line);color:var(--txt);border-radius:7px;font-size:13px"></select>
+      </div>
       <canvas id="trendCv" style="width:100%;height:220px;display:block"></canvas>
       <div class="hint" id="trendLegend" style="margin:8px 0 0"></div>
     </div>
@@ -1138,10 +1140,24 @@ function renderData(){
   drawTrend(runs);
 }
 
-/* 趋势曲线：命中率（左轴 0-100%）+ 中位用时/限时（右轴 ms） */
+/* 趋势曲线：按模式分线（混在一起会骗人）——命中率（左轴 0-100%）+ 中位用时/限时（右轴 ms） */
+const MODE_EN={random:'Adaptive random', block:'Fixed angle', precision:'Precision', wide:'Wide flick', track:'Moving target'};
+let trendMode=null;
 function drawTrend(runs){
   const cv=$('trendCv'); if(!cv) return;
-  const tail=runs.slice(-60);
+  const sel=$('trendMode');
+  const EN_UI=document.documentElement.getAttribute('lang')==='en';
+  const usedModes=Object.keys(MODE_NAME).filter(m=>runs.some(r=>r.mode===m));
+  if(sel && sel.options.length===0 && usedModes.length){
+    usedModes.forEach(m=>{
+      const o=document.createElement('option');
+      o.value=m; o.textContent=EN_UI? (MODE_EN[m]||m) : MODE_NAME[m];
+      sel.appendChild(o);
+    });
+  }
+  if(!trendMode || usedModes.indexOf(trendMode)<0) trendMode = runs.length? runs[runs.length-1].mode : null;
+  if(sel && trendMode) sel.value=trendMode;
+  const tail=runs.filter(r=>r.mode===trendMode).slice(-60);
   const W=Math.max(320, cv.clientWidth||600), H=220, dpr=window.devicePixelRatio||1;
   cv.width=W*dpr; cv.height=H*dpr;
   const ctx=cv.getContext('2d'); ctx.scale(dpr,dpr); ctx.clearRect(0,0,W,H);
@@ -1149,20 +1165,19 @@ function drawTrend(runs){
   const acc=css.getPropertyValue('--acc').trim()||'#7fbfa6';
   const dim=css.getPropertyValue('--dim').trim()||'#8b949e';
   const line=css.getPropertyValue('--line').trim()||'#2a3a36';
-  const txt=css.getPropertyValue('--txt').trim()||'#e6edf3';
-  const EN_UI=document.documentElement.getAttribute('lang')==='en';
-  const P={l:46,r:12,t:10,b:26};
+  const P={l:46,r:44,t:10,b:26};
   const cw=W-P.l-P.r, ch=H-P.t-P.b;
-  // 网格（左轴：0-100%）
-  ctx.strokeStyle=line; ctx.lineWidth=1; ctx.font='11px "Microsoft YaHei UI"'; ctx.textAlign='right';
+  // 网格：左轴 0-100%，右轴 0-900ms
+  ctx.strokeStyle=line; ctx.lineWidth=1; ctx.font='11px "Microsoft YaHei UI"';
   for(let i=0;i<=4;i++){
     const y=P.t+ch-ch*i/4;
     ctx.beginPath(); ctx.moveTo(P.l,y); ctx.lineTo(W-P.r,y); ctx.stroke();
-    ctx.fillStyle=dim; ctx.fillText(String(i*25), P.l-8, y+4);
+    ctx.textAlign='right'; ctx.fillStyle=dim; ctx.fillText(String(i*25), P.l-8, y+4);
+    ctx.textAlign='left';  ctx.fillText(String(i*225), W-P.r+6, y+4);
   }
   if(!tail.length){
     ctx.fillStyle=dim; ctx.textAlign='center'; ctx.font='13px "Microsoft YaHei UI"';
-    ctx.fillText(EN_UI?'No data yet — go run a set':'还没有数据，去练一组吧', W/2, P.t+ch/2);
+    ctx.fillText(EN_UI? 'No data for this mode yet' : '这个模式还没有数据', W/2, P.t+ch/2);
     $('trendLegend').innerHTML='';
     return;
   }
@@ -1189,6 +1204,10 @@ function drawTrend(runs){
   const lg=(c,zh,en)=>'<span style="white-space:nowrap;margin-right:16px"><span style="display:inline-block;width:10px;height:3px;background:'+c+';vertical-align:middle;margin-right:6px"></span>'+(EN_UI?en:zh)+'</span>';
   $('trendLegend').innerHTML=lg(acc,'命中率','Hit rate')+lg('#d29922','中位用时','Median time')+lg(dim,'限时','Limit');
 }
+$('trendMode').addEventListener('change',()=>{
+  trendMode=$('trendMode').value;
+  drawTrend(load(K_RUNS,[]));
+});
 
 $('expBtn').addEventListener('click',()=>{
   const data={cfg:load(K_CFG,{}),best:load(K_BEST,{}),runs:load(K_RUNS,[]),exported:new Date().toISOString()};

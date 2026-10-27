@@ -1,7 +1,0 @@
-User-agent: *
-Disallow: /回声.html
-Disallow: /对话记录.html
-Disallow: /dialogue.html
-Disallow: /关于练枪.html
-Disallow: /八个字.html
-Disallow: /小肥鱼.html

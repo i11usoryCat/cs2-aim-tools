@@ -51,7 +51,7 @@
   .grid .cell.today{border:2px solid var(--acc);color:var(--acc);font-weight:700;
     box-shadow:0 0 0 3px color-mix(in srgb,var(--acc) 22%,transparent)}
   .grid .cell.rest.today{background:var(--panel2)}
-  .grid .cell.done.today{border-color:var(--txt)}
+  .grid .cell.done.today{border-color:var(--txt);color:#fff}
   
   textarea{width:100%;height:70px;background:var(--bg);border:1px solid var(--line);color:var(--txt);
     border-radius:7px;padding:10px;font-family:Consolas,monospace;font-size:13px;resize:vertical}
@@ -197,7 +197,11 @@ function render(){
       if(/^\d{4}-\d{2}-\d{2}$/.test(s)) set.add(s);
     });
   }catch(e){}
-  $('doneNo').textContent=set.size;
+  // 已完成：只数程序区间（28 天）内有记录的天数，不限区间外
+  const startT=new Date(localStorage.getItem(K_START)||todayStr()).getTime();
+  let doneIn=0;
+  set.forEach(k=>{ const t=new Date(k).getTime(); if(t>=startT && t<startT+28*86400000) doneIn++; });
+  $('doneNo').textContent=doneIn;
 
   // 连续天数
   let streak=0;
@@ -284,6 +288,70 @@ $('copyAll').addEventListener('click',()=>{
 });
 
 render();
+
+/* ===== 英文界面 ===== */
+(function(){
+  var EN=(function(){ try{ var q=new URLSearchParams(location.search); if(q.get('lang')) return q.get('lang')==='en'; return localStorage.getItem('cs2at.lang')==='en'; }catch(e){ return false; } })();
+  if(!EN) return;
+  var D={
+    '← 返回首页':'← Home','四周训练计划':'Four-week plan',
+    '每天 15 分钟 · 5 天训练 2 天休息 · 命中率保持 70-85%':'15 min a day · 5 on / 2 off · keep hit rate 70–85%',
+    '第几天':'Day','当前阶段':'Week','已完成':'Done','连续':'Streak','今日任务':'Today',
+    '标记今天完成':'Mark today done','重新开始（清空记录）':'Start over (clear log)',
+    '进度':'Progress','绿色 = 已完成 · 描边 = 今天 · 淡色 = 休息日':'Green = done · outlined = today · faded = rest day',
+    '训练记录':'Training log',
+    '训练器成绩会自动计入日历；把「复制本组数据」粘到这里可留档详情。':'Trainer results now count automatically; paste "Copy this set" here to archive details.',
+    '保存这条':'Save entry','复制全部':'Copy all',
+    '今天是休息日。睡够 7-8 小时，技能靠睡眠巩固。':'Rest day. Sleep 7–8 hours — skill consolidates overnight.',
+    '训练器成绩会自动计入日历；把「复制本组数据」粘到记录里可留档详情。':'Trainer results now count automatically; paste "Copy this set" into the log to archive details.',
+    '热身 · 定角重复':'Warm-up · Fixed angle','主练 · 自适应随机 ×2':'Main · Adaptive random ×2',
+    '精度 · 小球 0.7°':'Precision · 0.7° dots','热身 · 定角重复 ×2':'Warm-up · Fixed angle ×2',
+    '死斗 · 只打头':'Deathmatch · headshots only','主练 · 自适应随机':'Main · Adaptive random',
+    '实战':'Match play','两个角度各 8 球，让手热起来，不记录':'Two angles × 8 dots to warm up — not logged',
+    '只追命中率 80%，不要主动抢时间':'Chase 80% hit rate only — don\'t rush',
+    '记录命中率，目标 35%+':'Log hit rate — target 35%+','同上':'Same as above',
+    '开始前把限时设为昨天的最低值':'Set the limit to yesterday\'s best before starting',
+    '记录命中率':'Log hit rate','两个角度各一轮':'One round per angle',
+    '限时继续压':'Keep pushing the limit','目标 40%+':'Target 40%+',
+    '实战 10 分钟，单发爆头，打完回中':'10 min real match — single-tap headshots',
+    '激活手感':'Wake the hand','一组就够':'One set is enough',
+    '剩下的时间全部实战，不测数据':'Spend the rest on real matches — no data',
+    '开始':'Start','一':'Mon','二':'Tue','三':'Wed','四':'Thu','五':'Fri','六':'Sat','日':'Sun',
+    '日期':'Date','数据':'Data','今天已经标记过了':'Already marked today',
+    '清空所有进度和记录？':'Clear all progress and logs?','已复制':'Copied',
+    '2026-10-24  限时450ms  命中率83%  中位436ms  超时5次':'e.g. 2026-10-24  limit 450ms  hit 83%  median 436ms  overtime 5'
+  };
+  var RULES=[
+    [/^第 (\d+) 天$/,'Day $1'],
+    [/^第 (\d+) 周$/,'Week $1'],
+    [/^今日任务 · 第 (\d+) 天（第 (\d+) 周）$/,'Today · Day $1 (Week $2)'],
+    [/^(\d+) 年 (\d+) 月$/,'$2/$1'],
+    [/^(\d+) 年 (\d+) 月 — (\d+) 月$/,'$1/$2 — $3'],
+    [/^已复制 (\d+) 条$/,'Copied $1']
+  ];
+  var D2={}; for(var k in D){ D2[k.replace(/\s+/g,'')]=D[k]; }
+  function tr(t){
+    var s=t.trim(); if(!s) return t;
+    if(D[s]!==undefined) return t.replace(s,D[s]);
+    var flat=s.replace(/\s+/g,'');
+    if(D2[flat]!==undefined) return t.replace(s, D2[flat]);
+    for(var i=0;i<RULES.length;i++) if(RULES[i][0].test(s)) return t.replace(s, s.replace(RULES[i][0], RULES[i][1]));
+    return t;
+  }
+  function walk(){
+    var w=document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null), n;
+    while((n=w.nextNode())){ var v=n.nodeValue; if(!v||!/[\u4e00-\u9fa5]/.test(v)) continue; var nv=tr(v); if(nv!==v) n.nodeValue=nv; }
+    document.querySelectorAll('input[placeholder],textarea[placeholder]').forEach(function(el){
+      var ph=el.getAttribute('placeholder');
+      if(ph) el.setAttribute('placeholder', (D[ph.trim()]!==undefined? D[ph.trim()] : tr(ph)));
+    });
+    document.querySelectorAll('[title]').forEach(function(el){
+      el.setAttribute('title', el.getAttribute('title').replace(' · 已完成',' · done'));
+    });
+  }
+  walk();
+  new MutationObserver(walk).observe(document.body,{childList:true,subtree:true,characterData:true});
+})();
 </script>
 </body>
 </html>

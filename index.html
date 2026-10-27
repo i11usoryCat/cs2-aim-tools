@@ -112,7 +112,7 @@
   .foot{position:relative;z-index:2;text-align:center;color:var(--dim);
     font-size:12.5px;padding:0 22px 26px;line-height:1.9}
   .foot a{color:var(--acc);text-decoration:none}
-  .foot code{background:var(--bg2);padding:2px 7px;border-radius:6px;font-size:12px;color:var(--acc)}
+  .foot code{background:color-mix(in srgb,var(--txt) 8%,transparent);padding:2px 7px;border-radius:6px;font-size:12px;color:var(--acc)}
   .langTop{position:fixed;top:18px;right:22px;z-index:9600;display:flex;
     border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--bg)}
   .langTop span{padding:7px 13px;font-size:12.5px;color:var(--dim);cursor:pointer;
@@ -162,7 +162,7 @@
   <a href="https://github.com/i11usoryCat/cs2-aim-tools/blob/main/docs/methodology.md">方法论</a> ·
   <a href="https://github.com/i11usoryCat/cs2-aim-tools/blob/main/docs/training-plan.md">训练方案</a> ·
   <a href="#" id="fbLink">反馈</a>
-  <div id="buildTag" style="margin-top:8px;font-size:12px;color:var(--dim);letter-spacing:1px"><span>版本 build</span> 2026-10-26 · 4</div>
+  <div id="buildTag" style="margin-top:8px;font-size:12px;color:var(--dim);letter-spacing:1px"><span>版本 build</span> 2026-10-27 · 5</div>
 </div>
 </div>
 
@@ -174,7 +174,10 @@
 
   const COLORS=[[15,118,110],[180,83,9],[32,43,44]];   // 原来的三色，照旧
   function pickColor(){
-    return { c: COLORS[(Math.random()*COLORS.length)|0], a: 0.55 };
+    // 浅色主题上星点太显眼：换淡灰、降透明度
+    var light=false;
+    try{ var th=document.documentElement.getAttribute('data-theme'); light=(th==='ink'||th==='light'||th==='lake'||th==='sand'); }catch(e){}
+    return light? { c:[139,148,158], a:0.16 } : { c: COLORS[(Math.random()*COLORS.length)|0], a: 0.55 };
   }
 
   // 只画，不管循环

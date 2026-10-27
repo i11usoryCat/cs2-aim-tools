@@ -216,15 +216,9 @@ function finish(){
   if(document.pointerLockElement) document.exitPointerLock();
   allRuns.push({cm:cm360, f:result.f.slice()});
 
-  // 汇总估计：把每个样本换算成"它建议的 cm/360"，取中位
-  const impliedAll=[], impliedMiss=[];
-  allRuns.forEach(r=>{
-    r.f.forEach(v=>{
-      impliedAll.push(r.cm*(1+v));
-      if(Math.abs(v)>=0.03) impliedMiss.push(r.cm*(1+v));
-    });
-  });
-  const implied = impliedAll;
+  // 汇总估计：每个样本换算成"它建议的 cm/360"，最终数取累计均值（CI 就是为均值算的）
+  const impliedAll=[];
+  allRuns.forEach(r=>{ r.f.forEach(v=>{ impliedAll.push(r.cm*(1+v)); }); });
   const posF=[], negF=[];
   result.f.forEach((v,i)=>{ if(result.hit[i]) return; (v>0?posF:negF).push(v); });
   const missF = posF.concat(negF);
@@ -242,7 +236,8 @@ function finish(){
   const SE=Math.sqrt(Math.max(0,fVarC)/Math.max(1,nCum));
   const CI=1.96*SE;
   const conv = nCum>=40 && CI < 0.01;
-  result.summary={conv:conv, fm:fm, cmNew:cmNew, sensNew:sensOf(cmNew), sensNow:sensOf(cm360), tm:tm, lm:lm, dm:dm};
+  const meanCm = nCum? impliedAll.reduce((x,y)=>x+y,0)/nCum : cm360;
+  result.summary={conv:conv, fm:fm, cmNew:meanCm, sensNew:sensOf(meanCm), sensNow:sensOf(cm360), tm:tm, lm:lm, dm:dm};
 
   const hitN=result.hit.filter(Boolean).length, totalN=result.f.length;
   const row=(k,v,cls)=>'<tr><th>'+k+'</th><td'+(cls?' class="'+cls+'"':'')+'>'+v+'</td></tr>';
@@ -266,10 +261,8 @@ function finish(){
     row('过头', posF.length+' 球 ('+pp+'%)，中位 +'+(med(posF)*100).toFixed(1)+'%')+
     row('不足', negF.length+' 球 ('+np+'%)，中位 '+(med(negF)*100).toFixed(1)+'%')+
     row('合计偏差', (fm>=0?'+':'')+(fm*100).toFixed(1)+'%', 'big')+
-    row('本次', cm360.toFixed(1)+' → '+cmNew.toFixed(1)+' cm　'+sensOf(cm360).toFixed(2)+' → <b>'+sensOf(cmNew).toFixed(2)+'</b>')+
+    row('建议（累计 '+nCum+' 球 · 均值）', meanCm.toFixed(1)+' cm → sens <b>'+sensOf(meanCm).toFixed(2)+'</b>', 'big')+
     row('样本与置信', nCum+' 球 · SE '+(SE*100).toFixed(2)+'% · 95% CI ±'+(CI*100).toFixed(2)+'%')+
-    row('累计 '+impliedAll.length+' 球 · 全部', med(impliedAll).toFixed(1)+' cm → sens <b>'+sensOf(med(impliedAll)).toFixed(2)+'</b>')+
-    row('累计 · 仅未命中', (impliedMiss.length? med(impliedMiss).toFixed(1)+' cm → sens <b>'+sensOf(med(impliedMiss)).toFixed(2)+'</b>' : '-'))+
     '</table>'+
     '<div style="margin-top:12px;font-size:14px">'+verdict+'</div>'+
     (conv? '<div style="margin-top:8px;color:var(--acc);font-weight:700">✓ 95% 置信区间半宽 &lt;1%，可以定稿</div>'
@@ -505,6 +498,7 @@ requestAnimationFrame(loop);
     [/^第 (\d+) 球$/,'Shot $1'],
     [/^([\d.]+) cm\/360 · DPI (\d+) · m_yaw ([\d.]+)$/,'$1 cm/360 · DPI $2 · m_yaw $3'],
     [/^(\d+) 球 · SE ([\d.]+)% · 95% CI ±([\d.]+)%$/,'$1 shots · SE $2% · 95% CI ±$3%'],
+    [/^建议（累计 (\d+) 球 · 均值）$/,'Suggestion (cumulative $1 shots · mean)'],
     [/^继续测：当前 95% 置信区间 ±([\d.]+)%，到 ±1% 内再定稿（目前已 (\d+) 球）$/,'Keep going: 95% CI ±$1% — finalize within ±1% (currently $2 shots)']
   ];
   var D2={}; for(var k in D){ D2[k.replace(/\s+/g,'')]=D[k]; }

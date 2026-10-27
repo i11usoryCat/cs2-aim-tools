@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="sand">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>404 · 分毫 Vernier</title>
+<style>
+  html[data-theme="ink"]{--bg:#f7f5f0;--panel:#fffefb;--line:#e2dccf;--txt:#202b2c;--dim:#6d7a7b;--acc:#0f766e;--acc2:#115e59;--gold:#b45309}
+  html[data-theme="jade"]{--bg:#101917;--panel:#16211f;--line:#2a3a36;--txt:#efeade;--dim:#93a8a1;--acc:#7fbfa6;--acc2:#5aa78c;--gold:#e0a458}
+  html[data-theme="lake"]{--bg:#eef4f6;--panel:#ffffff;--line:#d2e2e7;--txt:#14313a;--dim:#587a85;--acc:#0e7490;--acc2:#0b5f78;--gold:#b7791f}
+  html[data-theme="light"]{--bg:#f4f6f9;--panel:#fff;--line:#dde4ed;--txt:#1a2230;--dim:#5b6879;--acc:#2f6feb;--acc2:#1d4ed8;--gold:#b26b00}
+  html[data-theme="sand"]{--bg:#f7f2e8;--panel:#fffdf8;--line:#e3d9c6;--txt:#33291c;--dim:#7b6a54;--acc:#c2410c;--acc2:#9a3412;--gold:#a16207}
+  html[data-theme="forest"]{--bg:#0f1a14;--panel:#16241b;--line:#2a4433;--txt:#e8f2ea;--dim:#8aa697;--acc:#4ade80;--acc2:#22c55e;--gold:#eab308}
+  html[data-theme="mono"]{--bg:#15171b;--panel:#1c1f24;--line:#2e333b;--txt:#e8eaee;--dim:#98a0aa;--acc:#c9d1d9;--acc2:#e5e7eb;--gold:#fbbf24}
+  html[data-theme="cyber"]{--bg:#120a1f;--panel:#1b1032;--line:#3a2166;--txt:#f1eaff;--dim:#a98fd6;--acc:#c084fc;--acc2:#a855f7;--gold:#fbbf24}
+  html[data-theme="night"]{--bg:#0b0f14;--panel:#151b24;--line:#2a3442;--txt:#e6edf3;--dim:#8b949e;--acc:#58a6ff;--acc2:#3b82f6;--gold:#d29922}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font-family:"Microsoft YaHei UI","Microsoft YaHei",system-ui,sans-serif;
+    display:flex;align-items:center;justify-content:center;min-height:100vh;line-height:2}
+  .box{text-align:center;padding:40px}
+  .code{font-size:72px;font-weight:700;color:var(--acc);letter-spacing:6px}
+  .msg{font-size:17px;margin:14px 0 26px;color:var(--txt)}
+  .sub{font-size:14px;color:var(--dim)}
+  a{display:inline-block;margin-top:26px;padding:12px 30px;background:var(--acc);border:1px solid var(--acc);
+    color:#fff;border-radius:8px;text-decoration:none;font-size:15px}
+  a:hover{background:var(--acc2);border-color:var(--acc2)}
+</style>
+<script>
+(function(){
+  try{
+    var q=new URLSearchParams(location.search).get('theme');
+    var t=q||localStorage.getItem('cs2at.theme')||(function(){var d=new Date(),tm=d.getHours()*60+d.getMinutes();return (tm>=1410||tm<460)?'forest':'sand';})();
+    document.documentElement.setAttribute('data-theme', t);
+  }catch(e){}
+})();
+</script>
+</head>
+<body>
+<div class="box">
+  <div class="code">404</div>
+  <div class="msg">走错路了 —— 这一页不存在</div>
+  <div class="sub">Wrong turn — this page does not exist.</div>
+  <a href="index.html">回到首页</a>
+</div>
+</body>
+</html>

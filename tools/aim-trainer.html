@@ -33,8 +33,10 @@
   th{color:var(--dim);font-weight:500}
   input[type=checkbox]{width:16px;height:16px;vertical-align:-2px;pointer-events:auto}
   .fld{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--dim)}
-  .fld input,.fld select{padding:7px 9px;background:var(--panel);border:1px solid var(--line);color:var(--txt);
+  .fld input{padding:7px 9px;background:var(--panel);border:1px solid var(--line);color:var(--txt);
     border-radius:7px;font-size:14px;font-family:inherit;width:112px}
+  .fld select{padding:7px 9px;background:var(--panel);border:1px solid var(--line);color:var(--txt);
+    border-radius:7px;font-size:14px;font-family:inherit;width:auto;max-width:100%}
   summary::-webkit-details-marker{display:none}
   .bigNum{font-size:86px;font-weight:800;line-height:1;color:var(--acc);
     font-variant-numeric:tabular-nums;letter-spacing:-4px}
@@ -56,7 +58,7 @@
 <div id="hud"></div>
 
 <div id="msg" class="overlay show">
-  <div style="font-size:26px;color:var(--txt);font-weight:700;letter-spacing:2px">甩枪训练</div>
+  <div id="titleTop" style="font-size:26px;color:var(--txt);font-weight:700;letter-spacing:2px">甩枪训练</div>
   <div style="margin-top:8px;color:var(--dim);font-size:14px">看到球 → 甩过去 → 手停 → 点击</div>
   <button id="go" class="btn" style="margin-top:26px;padding:16px 64px;font-size:18px;letter-spacing:2px">开 始</button>
   <div id="sensHint" style="margin-top:14px;font-size:13px;color:var(--dim);cursor:pointer"
@@ -73,6 +75,7 @@
           <option value="precision">小球精度</option>
           <option value="wide">大角度甩枪</option>
           <option value="track">移动跟枪</option>
+          <option value="check">六维检查（90秒）</option>
         </select>
       </label>
       <label class="fld">结束方式
@@ -84,6 +87,25 @@
       <label class="fld">球数<input id="cnt" type="number" step="10" value="40"></label>
       <label class="fld">时长（秒）<input id="endTime" type="number" step="15" value="120"></label>
       <label class="fld">目标大小°<input id="sizeOv" type="number" step="0.1" min="0.35" max="3" placeholder="自动" style="width:70px"></label>
+      <label class="fld">场景
+        <select id="sceneSel">
+          <option value="auto">自动（跟随设置）</option>
+          <option value="classic">经典</option>
+          <option value="jade">墨玉</option>
+          <option value="ink">墨鱼</option>
+          <option value="light">浅灰</option>
+          <option value="night">暗蓝</option>
+          <option value="mono">纯黑</option>
+          <option value="cs">沙色</option>
+          <option value="custom">自定义</option>
+        </select>
+      </label>
+      <label class="fld" id="customScene" style="display:none">自定义场景
+        <span style="display:flex;gap:6px">
+          <input type="color" id="scBg" value="#0b0f14" title="背景" style="width:36px;height:30px;padding:0;border:1px solid var(--line);border-radius:6px;background:var(--panel)">
+          <input type="color" id="scTgt" value="#f85149" title="目标" style="width:36px;height:30px;padding:0;border:1px solid var(--line);border-radius:6px;background:var(--panel)">
+        </span>
+      </label>
     </div>
     <div style="margin-top:14px;display:flex;gap:18px;justify-content:center;font-size:13px;color:var(--dim)">
       <label><input id="limit" type="checkbox" checked> 时间限制</label>
@@ -147,12 +169,28 @@ let tSpawn=0, alive=false, nextAt=0;
 let times=[], errs=[], hitFlags=[], blocks=[], allowed=800, timeouts=0, timeFactor=1.25;
 let blockTimes=[], blockHits=0;
 let mode='random', blockLeft=0;
+// 六维检查：固定配方（球类型与顺序），方向随机、间隔抖动——锁题目结构，不锁题目内容
+const CHECK_RECIPE=(function(){ const p=[]; for(let i=0;i<18;i++){ p.push('micro'); p.push('wide'); p.push('mid'); } for(let i=0;i<6;i++) p.push('mid'); return p; })();
+let checkIdx=0, checkCur=null, checkData=[], checkSpeed=0;
 let trackSpeed=10, tsYaw=0, tsPitch=0, tvYaw=0, tvPitch=0, tDur=2;
 let blockAnchorYaw=0, blockAnchorPitch=0, blockAmp=0, blockSide=1, blockAxis=[1,0], blockAxisIdx=0;
 let fpsCap=0, fpsShow=true, lastDraw=0, fpsFrames=0, fpsLast=0, fpsVal=0;
 
 const wrapPi=a=>{ while(a>Math.PI)a-=2*Math.PI; while(a<-Math.PI)a+=2*Math.PI; return a; };
 const med=a=>{ if(!a.length)return 0; const s=[...a].sort((x,y)=>x-y); return s[s.length>>1]; };
+function shade(hex, amt){   // 六位色值加亮/压暗
+  const h=String(hex||'').replace('#','');
+  if(!/^[0-9a-fA-F]{6}$/.test(h)) return hex;
+  const n=parseInt(h,16);
+  const c=[(n>>16)&255,(n>>8)&255,n&255].map(v=>Math.max(0,Math.min(255,v+amt)));
+  return 'rgb('+c[0]+','+c[1]+','+c[2]+')';
+}
+function hexA(hex,a){
+  const h=String(hex||'').replace('#','');
+  if(!/^[0-9a-fA-F]{6}$/.test(h)) return 'rgba(88,166,255,'+a+')';
+  const n=parseInt(h,16);
+  return 'rgba('+((n>>16)&255)+','+((n>>8)&255)+','+(n&255)+','+a+')';
+}
 
 function resize(){
   W=cv.width=innerWidth*devicePixelRatio; H=cv.height=innerHeight*devicePixelRatio;
@@ -315,6 +353,23 @@ function start(){
     hud.style.color = SC.dark? 'var(--txt)' : '#1f2b2c';
   }catch(e){}
   try{
+    // 参数面板的场景选择：自定义 = 只换背景与目标色；其余覆盖整份场景
+    const ssv=(document.getElementById('sceneSel')||{}).value;
+    if(ssv==='custom'){
+      const bg=(document.getElementById('scBg')||{}).value;
+      const tg=(document.getElementById('scTgt')||{}).value;
+      if(bg){ SC.bg=bg; }
+      if(tg){ SC.tgt=tg; SC.ring=tg; SC.tgtFill=tg; }
+      try{ localStorage.setItem('cs2at.sceneCustom', JSON.stringify({bg:bg||'',tg:tg||''})); }catch(e){}
+      document.body.style.background=SC.bg;
+    } else if(ssv && ssv!=='auto' && SCENES[ssv]){
+      SC = SCENES[ssv];
+      document.body.style.background = SC.bg;
+      hud.style.color = SC.dark? 'var(--txt)' : '#1f2b2c';
+      try{ localStorage.setItem('cs2at.scene', ssv); localStorage.setItem('cs2at.sceneUser','1'); }catch(e){}
+    }
+  }catch(e){}
+  try{
     // 自定义准星：覆盖场景配色里的 cross/edge
     const q3=new URLSearchParams(location.search);
     const cm=q3.get('crossMode')||localStorage.getItem('cs2at.crossMode');
@@ -343,6 +398,7 @@ function start(){
   else if(mode==='block'){ radius=R0; limitChk.checked=false; blockLeft=0; }
   else if(mode==='wide'){ radius=Math.max(0.8, R0*0.8); limitChk.checked=false; }
   else if(mode==='track'){ radius=R0; limitChk.checked=false; trackSpeed=10; }
+  else if(mode==='check'){ radius=0.7; limitChk.checked=false; checkIdx=0; checkData=[]; endMode='time'; endTime=90; }
   try{
     var sz=parseFloat(document.getElementById('sizeOv').value);
     if(!isNaN(sz)&&sz>=0.35&&sz<=3) radius=sz;   // 自定义球大小覆盖各模式默认值
@@ -393,6 +449,7 @@ function beginSession(){
   // 抓取层显隐交给 sync()：这里不再强制显示，否则每局开始都会闪一下
   trial=0; hits=0; streak=0; bestStreak=0; if(mode==='random') radius=R0; allowed=800; timeouts=0; timeFactor=1.25;
   times=[]; errs=[]; hitFlags=[]; blocks=[]; blockTimes=[]; blockHits=0;
+  if(mode==='check'){ checkIdx=0; checkData=[]; checkCur=null; checkSpeed=0; }
   yaw=0; pitch=0; alive=false; endStarted=false;
   nextAt=performance.now()+300;
   endAt = performance.now() + endTime*1000;   // 整场计时从首球出生起（spawn 里重设）
@@ -434,6 +491,23 @@ function spawn(){
     tvPitch=Math.sin(dir)*trackSpeed*D2R*0.7;
     tDur=1.5+Math.random()*1.0;
     tYaw=tsYaw; tPitch=tsPitch;
+  } else if(mode==='check'){
+    // 六维检查：配方决定球类型与角度档，方向随机（背不了板）
+    const k=CHECK_RECIPE[checkIdx%CHECK_RECIPE.length];
+    if(k==='micro'){
+      const a=(Math.random()<0.5?-1:1)*(2+Math.random()*6)*D2R;
+      const b=(Math.random()*2-1)*3*D2R;
+      tYaw=yaw+a; tPitch=pitch+b; radius=0.7;
+    } else if(k==='wide'){
+      const a=(Math.random()<0.5?-1:1)*(100+Math.random()*30)*D2R;
+      const b=(Math.random()*2-1)*10*D2R;
+      tYaw=yaw+a; tPitch=pitch+b; radius=1.2;
+    } else {
+      const a=(Math.random()<0.5?-1:1)*(15+Math.random()*30)*D2R;
+      const b=(Math.random()*2-1)*8*D2R;
+      tYaw=yaw+a; tPitch=pitch+b; radius=1.0;
+    }
+    checkCur={kind:k, moved:false, firstMove:null, firstStop:false, firstErr:0, lastFast:0};
   } else {
     const a=(Math.random()<0.5?-1:1)*(12+Math.random()*16)*D2R;
     const b=(Math.random()*2-1)*8*D2R;
@@ -454,6 +528,13 @@ function judge(){
   if(overtime) timeouts++;
 
   trial++; times.push(mt); errs.push(err); hitFlags.push(hit);
+  if(mode==='check'){
+    const c=checkCur||{kind:'mid', firstStop:true, firstErr:err, firstMove:null};
+    checkData.push({ kind:c.kind, react:(c.firstMove===null?null:Math.round(c.firstMove)),
+      firstErr:c.firstStop? c.firstErr : err, finalErr:err,
+      dx:wrapPi(tYaw-yaw)*R2D, dy:wrapPi(tPitch-pitch)*R2D, hit:hit, mt:mt });
+    checkIdx++;
+  }
   blockTimes.push(mt);
   if(hit){ hits++; streak++; blockHits++; if(streak>bestStreak) bestStreak=streak; }
   else streak=0;
@@ -492,10 +573,124 @@ function judge(){
 
   if((endMode==='count' && trial>=TOTAL)){ finish(); return; }
   if(endMode==='time' && performance.now()>=endAt){ finish(); return; }
-  nextAt=now+150+Math.random()*250;
+  nextAt = (mode==='check')? now+1200+Math.random()*500 : now+150+Math.random()*250;
 }
 
 let feedback=null;
+
+/* ===== 六维检查：评分与报告 ===== */
+function checkScores(){
+  const D=checkData;
+  if(D.length<12) return null;   // 数据太少不评分
+  const clamp=v=>Math.max(0,Math.min(100,Math.round(v)));
+  const mid=D.filter(d=>d.kind==='mid');
+  const micro=D.filter(d=>d.kind==='micro');
+  const wide=D.filter(d=>d.kind==='wide');
+  const react=mid.filter(d=>d.react!==null).map(d=>d.react);
+  const sReact=react.length? clamp(100-(med(react)-150)/3) : 50;         // 150ms=100，300ms=50，450ms=0
+  const firstPool=mid.concat(wide).map(d=>d.firstErr);
+  const sFirst=firstPool.length? clamp(100-med(firstPool)/0.03) : 50;     // 0°=100，3°=0
+  const secondPool=mid.concat(wide).map(d=>d.firstErr-d.finalErr);
+  const sSecond=secondPool.length? clamp(50+med(secondPool)*33) : 50;     // +1.5°=100，-1.5°=0
+  const sMicro=micro.length? clamp(micro.filter(d=>d.hit).length/micro.length*100) : 50;
+  const sWide=wide.length? clamp(
+      (wide.filter(d=>d.hit).length/wide.length*60) + (clamp(100-(med(wide.map(d=>d.mt))-300)/6)*0.4)) : 50;
+  const n3=Math.max(4,Math.floor(D.length/3));
+  const fst=D.slice(0,n3), lst=D.slice(-n3);
+  const hf=fst.filter(d=>d.hit).length/fst.length;
+  const hl=lst.filter(d=>d.hit).length/lst.length;
+  // 对称打分：持平=50，后半段更好→涨分（热身），掉→扣分
+  const sAttn=clamp(50+(hl-hf)*300);
+  return { react:sReact, first:sFirst, second:sSecond, micro:sMicro, wide:sWide, attn:sAttn };
+}
+function checkReportHtml(){
+  const S=window.__s6=checkScores();
+  if(!S){
+    window.__logLine=(EN_UI?'Check-up (not enough data)':'检查（数据不足）');
+    return '<div style="font-size:18px;color:var(--dim)">'+(EN_UI?'Not enough data — run it again.':'数据不足，再跑一次。')+'</div>';
+  }
+  const band=v=> v>=75? {c:'var(--acc)', t:EN_UI?'Strong':'强'} : v>=45? {c:'#d29922', t:EN_UI?'Mid':'中'} : {c:'#e5484d', t:EN_UI?'Weak':'弱'};
+  const ITEMS=[
+    {k:'react', zh:'反应', en:'Reaction'},
+    {k:'first', zh:'一次定位', en:'First placement'},
+    {k:'second',zh:'二次定位', en:'Correction'},
+    {k:'micro', zh:'微调', en:'Micro-adjust'},
+    {k:'wide',  zh:'拉枪', en:'Flick'},
+    {k:'attn',  zh:'注意力', en:'Attention'}
+  ];
+  // 对比上次检查（跳过刚存的本次记录）
+  let lastS6=null;
+  try{
+    const hist=JSON.parse(localStorage.getItem('cs2at.runs')||'[]');
+    for(let i=hist.length-2;i>=0;i--){ if(hist[i] && hist[i].mode==='check' && hist[i].s6){ lastS6=hist[i].s6; break; } }
+  }catch(e){}
+  const bars=ITEMS.map(function(i){
+    const v=S[i.k], b=band(v);
+    let dl='';
+    if(lastS6 && typeof lastS6[i.k]==='number'){
+      const d=v-lastS6[i.k];
+      if(d>=3) dl=' <span style="color:var(--acc);font-size:12px">▲+'+d+'</span>';
+      else if(d<=-3) dl=' <span style="color:#e5484d;font-size:12px">▼'+d+'</span>';
+    }
+    return '<div style="margin:7px 0"><div style="display:flex;justify-content:space-between;font-size:13px">'+
+      '<span>'+(EN_UI?i.en:i.zh)+'</span><span style="color:'+b.c+';font-weight:600">'+v+' · '+b.t+dl+'</span></div>'+
+      '<div style="height:6px;border-radius:3px;background:color-mix(in srgb,var(--txt) 12%,transparent)">'+
+      '<div style="width:'+v+'%;height:6px;border-radius:3px;background:'+b.c+'"></div></div></div>';
+  }).join('');
+  const RX={
+    react:{zh:'反应偏慢：打「自适应随机」+ 时间限制，逼自己出手。',en:'Slow reaction: run Adaptive random with a time limit to force quick shots.',u:'tools/aim-trainer.html?mode=random&count=40&limit=1',lab:{zh:'自适应随机',en:'Adaptive random'}},
+    first:{zh:'一次定位差：打「定角重复」，把第一下的落点练稳。',en:'First placement off: run Fixed angle to steady your first land point.',u:'tools/aim-trainer.html?mode=block&count=40&limit=0',lab:{zh:'定角重复',en:'Fixed angle'}},
+    second:{zh:'二次定位差：打「自适应随机」，练追补那一下。',en:'Correction weak: run Adaptive random to train the follow-up fix.',u:'tools/aim-trainer.html?mode=random&count=40&limit=1',lab:{zh:'自适应随机',en:'Adaptive random'}},
+    micro:{zh:'微调差：打「小球精度」0.7°，稳住手腕。',en:'Micro-adjust weak: run Precision 0.7° — steady the wrist.',u:'tools/aim-trainer.html?mode=precision&count=40&limit=0',lab:{zh:'小球精度',en:'Precision'}},
+    wide:{zh:'拉枪差：打「大角度甩枪」，练 90-180° 转身定位。',en:'Flicks weak: run Wide flick — 90–180° turn shots.',u:'tools/aim-trainer.html?mode=wide&count=20&limit=0',lab:{zh:'大角度甩枪',en:'Wide flick'}},
+    attn:{zh:'注意力掉得快：组数砍半，中间休息 60 秒再练。',en:'Attention drops: halve set size, rest 60 s between sets.',u:null,lab:{zh:'休息',en:'Rest'}}
+  };
+  const order=ITEMS.map(i=>i.k).filter(k=>S[k]<75);
+  const rx=order.slice(0,3).map(k=>RX[k]).filter(Boolean);
+  const okHtml='<div style="margin-top:16px;text-align:left;border-top:1px solid var(--line);padding-top:12px;font-size:14px;color:var(--acc)">'+
+    (EN_UI?'All six skills are mid or better — keep the routine, re-check next week.':'六项都在中上——按计划走，下周再查一次。')+'</div>';
+  const rxHtml=rx.length? '<div style="margin-top:16px;text-align:left;border-top:1px solid var(--line);padding-top:12px">'+
+    '<div style="font-size:13px;color:var(--dim);margin-bottom:6px">'+(EN_UI?'Next:':'接下来练')+'</div>'+
+    rx.map(function(r){
+      const nm=(EN_UI?r.lab.en:r.lab.zh);
+      return '<div style="margin:7px 0;font-size:14px;line-height:1.7">'+
+        (r.u? '<a href="'+r.u+'" target="_blank" style="color:var(--acc);text-decoration:none;font-weight:600">'+nm+'</a>' : '<b style="color:var(--acc)">'+nm+'</b>')+
+        ' — '+(EN_UI?r.en:r.zh)+'</div>';
+    }).join('')+'</div>' : okHtml;
+  window.__logLine='检查 '+(EN_UI?'check-up ':'')+ITEMS.map(i=>(EN_UI?i.en:i.zh)+' '+S[i.k]).join(' / ');
+  const vsHint=lastS6? '<div style="font-size:12px;color:var(--dim);margin-bottom:8px">'+(EN_UI?'▲/▼ vs your last check-up':'▲/▼ = 与上次检查相比')+'</div>' : '';
+  return '<div style="font-size:20px;color:var(--acc);font-weight:700">'+(EN_UI?'90-second check-up':'90 秒六维检查')+'</div>'+
+    '<div style="margin:6px 0 14px;color:var(--dim);font-size:14px">'+trial+' '+(EN_UI?'balls':'球')+'</div>'+
+    vsHint+
+    '<div style="max-width:520px;margin:0 auto;text-align:left">'+bars+'</div>'+
+    '<div style="margin-top:16px"><canvas id="checkScatter" style="width:100%;max-width:300px;aspect-ratio:1/1;display:block;margin:0 auto"></canvas>'+
+    '<div style="font-size:12px;color:var(--dim);margin-top:6px">'+(EN_UI?'Landing points · green = hit, amber = miss':'落点 · 绿 = 命中，琥珀 = 未中')+'</div></div>'+
+    rxHtml;
+}
+/* 落点图：每次击发的最终落点（相对目标），环 = 0.7° / 1.2° */
+function drawCheckScatter(){
+  try{
+    var cv=document.getElementById('checkScatter'); if(!cv) return;
+    var S=Math.min(cv.clientWidth||300, 300);
+    var dpr=window.devicePixelRatio||1;
+    cv.width=S*dpr; cv.height=S*dpr;
+    var ctx=cv.getContext('2d'); ctx.scale(dpr,dpr);
+    var cx=S/2, cy=S/2, px=34;   // 34px = 1°
+    var css=getComputedStyle(document.documentElement);
+    var dim=css.getPropertyValue('--dim').trim()||'#8b949e';
+    var acc=css.getPropertyValue('--acc').trim()||'#7fbfa6';
+    ctx.strokeStyle=dim; ctx.lineWidth=1;
+    [0.7,1.2].forEach(function(r){ ctx.beginPath(); ctx.arc(cx,cy,r*px,0,Math.PI*2); ctx.stroke(); });
+    ctx.beginPath(); ctx.moveTo(cx-8,cy); ctx.lineTo(cx+8,cy); ctx.moveTo(cx,cy-8); ctx.lineTo(cx,cy+8); ctx.stroke();
+    checkData.forEach(function(d){
+      var x=cx+d.dx*px, y=cy-d.dy*px;
+      if(Math.abs(x-cx)>S/2-4||Math.abs(y-cy)>S/2-4) return;
+      ctx.beginPath(); ctx.arc(x,y,d.kind==='micro'?2:2.6,0,Math.PI*2);
+      ctx.fillStyle=d.hit? acc : '#d29922';
+      ctx.fill();
+    });
+  }catch(e){}
+}
 
 function finish(){
   running=false; alive=false;
@@ -540,6 +735,7 @@ function finish(){
     '  中位'+overallMT.toFixed(0)+'ms  超时'+timeouts+'次';
   const _d=new Date(), _p=n=>String(n).padStart(2,'0');
   const TODAY=_d.getFullYear()+'-'+_p(_d.getMonth()+1)+'-'+_p(_d.getDate());
+  if(mode==='check') window.__s6=checkScores();   // 先算分再存，runs 里才带得上
   try{
     const key='cs2at.best', histKey='cs2at.runs';
     const b=JSON.parse(localStorage.getItem(key)||'{}');
@@ -552,12 +748,16 @@ function finish(){
     b[mode]=rec; localStorage.setItem(key, JSON.stringify(b));
 
     const hist=JSON.parse(localStorage.getItem(histKey)||'[]');
-    hist.push({d:TODAY, mode:mode, limit:limN, hit:hitN, mt:mtN, to:timeouts});
+    const e={d:TODAY, mode:mode, limit:limN, hit:hitN, mt:mtN, to:timeouts};
+    if(mode==='check') e.s6=window.__s6||null;
+    hist.push(e);
     while(hist.length>300) hist.shift();
     localStorage.setItem(histKey, JSON.stringify(hist));
   }catch(e){}
 
+  if(mode==='check') resBody.innerHTML=checkReportHtml();
   res.classList.add('show');
+  if(mode==='check') setTimeout(drawCheckScatter, 30);
 }
 
 go.addEventListener('click',e=>{ e.stopPropagation(); start(); });
@@ -657,6 +857,20 @@ function aimDelta(dx,dy){
   if(pitch>PITCH_LIM) pitch=PITCH_LIM;
   if(pitch<-PITCH_LIM) pitch=-PITCH_LIM;
   bumpDyn(Math.hypot(dx||0, dy||0));
+  // 六维检查：首动时间（反应）+ 首次停点误差（一次定位）
+  if(mode==='check' && running && !paused && alive && checkCur && !checkCur.firstStop){
+    const now=performance.now();
+    const sp=Math.abs(dx||0)+Math.abs(dy||0);
+    if(!checkCur.moved && sp>1){ checkCur.moved=true; checkCur.firstMove=now-tSpawn; }
+    if(checkCur.moved){
+      checkSpeed=checkSpeed*0.6+sp*0.4;
+      if(sp>=5) checkCur.lastFast=now;
+      if(checkSpeed<2 && now-checkCur.lastFast>130){
+        checkCur.firstStop=true;
+        checkCur.firstErr=Math.hypot(wrapPi(tYaw-yaw), wrapPi(tPitch-pitch))*R2D;
+      }
+    }
+  }
 }
 function penAim(e){
   // 笔：绝对坐标映射，悬停即可瞄准
@@ -738,6 +952,12 @@ function loop(){
   if(!running||paused) return;
 
   if(alive && limitChk.checked && mode!=='track' && now-tSpawn>allowed){ judge(); }
+  // 六维检查：停点兜底——鼠标不动 200ms 即视为第一段甩动结束
+  // （低速鼠标停下时不产生移动事件，纯靠事件流测不到停点）
+  if(mode==='check' && alive && checkCur && checkCur.moved && !checkCur.firstStop && now-checkCur.lastFast>200){
+    checkCur.firstStop=true;
+    checkCur.firstErr=Math.hypot(wrapPi(tYaw-yaw), wrapPi(tPitch-pitch))*R2D;
+  }
   if(!alive && now>=nextAt) spawn();
   if(alive && mode==='track'){
     const el=(now-tSpawn)/1000;
@@ -774,6 +994,18 @@ function drawFrame(now){
   lastDraw=now;
 
   ctx.fillStyle=SC.bg; ctx.fillRect(0,0,W,H);
+  // 氛围（轻量）：地面渐变 + 地平线微光
+  try{
+    const hz=H*0.52;
+    const g1=ctx.createLinearGradient(0,hz,0,H);
+    g1.addColorStop(0,'rgba(0,0,0,0)');
+    g1.addColorStop(1, shade(SC.bg, SC.dark? 12 : -5));
+    ctx.fillStyle=g1; ctx.fillRect(0,hz,W,H-hz);
+    const g2=ctx.createRadialGradient(W/2,hz*0.94,0, W/2,hz*0.94, Math.max(W,H)*0.55);
+    g2.addColorStop(0, hexA(SC.ui||'#58a6ff', SC.dark? 0.10 : 0.07));
+    g2.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=g2; ctx.fillRect(0,0,W,H);
+  }catch(e){}
   grid();
 
   if(alive){
@@ -782,6 +1014,14 @@ function drawFrame(now){
     const p=project(tw,th,td);
     if(p){
       const rad=Math.max(4, f*Math.tan(radius*D2R));
+      // 彩色光晕：让目标球"发光"
+      try{
+        const glow=ctx.createRadialGradient(p.sx,p.sy,rad*0.9,p.sx,p.sy,rad*2.6);
+        glow.addColorStop(0, SC.tgtFill);
+        glow.addColorStop(1,'rgba(0,0,0,0)');
+        ctx.fillStyle=glow;
+        ctx.beginPath(); ctx.arc(p.sx,p.sy,rad*2.6,0,Math.PI*2); ctx.fill();
+      }catch(e){}
       // 暗光晕：只在深色场景生效，给球一点纵深
       if(SC.halo>=0.05){
         const halo=ctx.createRadialGradient(p.sx,p.sy,rad*0.95,p.sx,p.sy,rad*2.3);
@@ -803,6 +1043,42 @@ function drawFrame(now){
         ctx.arc(p.sx,p.sy, rad+9*devicePixelRatio, -Math.PI/2, -Math.PI/2+Math.PI*2*left);
         ctx.strokeStyle= left>0.35? 'rgba(63,185,80,.9)' : 'rgba(248,81,73,.95)';
         ctx.lineWidth=3*devicePixelRatio; ctx.stroke();
+      }
+    }
+    // 画面外的球：屏幕边缘画指向箭头，180° 也能立刻知道往哪转
+    {
+      const m=52*devicePixelRatio;
+      const c2=toCam(tw,th,td);
+      let ex=null, ey=null;
+      if(c2.z>NEAR){
+        ex=p? p.sx : W/2+(c2.x/c2.z)*f;
+        ey=p? p.sy : H/2-(c2.y/c2.z)*f;
+        const inX=ex>m&&ex<W-m, inY=ey>m&&ey<H-m;
+        if(inX&&inY){ ex=null; }
+      } else {
+        // 在身后：按水平差决定左右
+        ex=(wrapPi(tYaw-yaw)>=0)? W-m : m;
+        ey=H/2-Math.max(-1,Math.min(1,wrapPi(tPitch-pitch)))*H*0.32;
+      }
+      if(ex!==null){
+        const dx=ex-W/2, dy=ey-H/2;
+        const len=Math.hypot(dx,dy)||1;
+        const ux=dx/len, uy=dy/len;
+        // 把指向位置压到屏幕边缘内
+        ex=W/2+ux*Math.min(W/2-m*0.6, Math.abs(dx));
+        ey=H/2+uy*Math.min(H/2-m*0.6, Math.abs(dy));
+        const ang=Math.atan2(uy,ux);
+        const s=13*devicePixelRatio;
+        ctx.save();
+        ctx.translate(ex,ey); ctx.rotate(ang);
+        ctx.beginPath();
+        ctx.moveTo(s,0); ctx.lineTo(-s*0.7, s*0.7); ctx.lineTo(-s*0.7, -s*0.7);
+        ctx.closePath();
+        // 高对比：目标色填充 + 明暗对应的描边（原 ring/edge 在浅色场景会隐形）
+        ctx.fillStyle=SC.tgt; ctx.fill();
+        ctx.strokeStyle=SC.dark? 'rgba(255,255,255,.92)' : 'rgba(17,24,39,.92)';
+        ctx.lineWidth=2*devicePixelRatio; ctx.stroke();
+        ctx.restore();
       }
     }
   }
@@ -849,6 +1125,14 @@ function drawFrame(now){
       : ((EN_UI?'OFF ':'偏 ')+(feedback.err-radius).toFixed(2)+'°'), W/2, H*0.28);
     ctx.textAlign='left';
   }
+
+  // 四角暗角：聚焦画面中心（深色重一点，浅色只是压一下边）
+  try{
+    const vg=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*0.42, W/2,H/2, Math.max(W,H)*0.72);
+    vg.addColorStop(0,'rgba(0,0,0,0)');
+    vg.addColorStop(1, SC.dark? 'rgba(0,0,0,0.22)' : 'rgba(0,0,0,0.07)');
+    ctx.fillStyle=vg; ctx.fillRect(0,0,W,H);
+  }catch(e){}
 
   updateHud(now);
 }
@@ -971,7 +1255,9 @@ requestAnimationFrame(loop);
     '← 返回':'← Back','自动':'auto','游戏灵敏度':'Game sensitivity','目标大小':'Dot size','球大小':'Dot size','再来一组':'Again','复制本组数据':'Copy this set','关闭':'Close','继续':'Continue',
     '准备好':'Get ready',
     '自适应随机':'Adaptive random','定角重复':'Fixed angle','小球精度':'Precision',
-    '大角度甩枪':'Wide flick','移动跟枪':'Moving target','目标大小°':'Target size °',
+    '大角度甩枪':'Wide flick','移动跟枪':'Moving target','六维检查（90秒）':'Check-up (90 s)','目标大小°':'Target size °',
+    '场景':'Scene','自动（跟随设置）':'Auto (follow settings)','自定义场景':'Custom scene','自定义':'Custom',
+    '经典':'Classic','墨玉':'Jade','墨鱼':'Ink','浅灰':'Light grey','暗蓝':'Night blue','纯黑':'Pure black','沙色':'Sandstone',
     '中位用时':'Median','分段数据':'Per-segment','阶段':'Set','用时':'Time','命中率':'Hit rate',
     '限时':'Limit','球半径':'Radius','超时':'Timeouts','次':'','近 10 球命中率':'Last 10',
     '连击':'Streak','球':'shots','建议使用':'Use','或':'or','当前':'Current'
@@ -1134,6 +1420,44 @@ requestAnimationFrame(loop);
     var sm=document.getElementById('endMode'), st=document.getElementById('endTime');
     if(m && sm) sm.value=m;
     if(t && st) st.value=t;
+  }catch(e){}
+})();
+
+/* 六维检查：结束方式/时长自动锁 90 秒，防止在参数面板改坏检查 */
+(function(){
+  try{
+    var ms=document.getElementById('mode'), em=document.getElementById('endMode'),
+        et=document.getElementById('endTime'), cnt=document.getElementById('cnt');
+    function syncCheck(){
+      var on=(ms.value==='check');
+      if(on){ if(em) em.value='time'; if(et) et.value='90'; }
+      if(em) em.disabled=on;
+      if(et) et.disabled=on;
+      if(cnt) cnt.disabled=on;
+      // 标题跟着模式走：选六维检查不再是「甩枪训练」
+      var tt=document.getElementById('titleTop');
+      if(tt) tt.textContent = on? (EN_UI? 'Check-up' : '六维检查') : (EN_UI? 'Flick trainer' : '甩枪训练');
+    }
+    ms.addEventListener('change', syncCheck);
+    syncCheck();
+
+    // 场景选择器：记住上次选择，自定义时展开取色器
+    var ss=document.getElementById('sceneSel'), cs=document.getElementById('customScene');
+    try{
+      var custom=localStorage.getItem('cs2at.sceneCustom');
+      if(custom){
+        var cc=JSON.parse(custom);
+        if(cc.bg){ var b=document.getElementById('scBg'); if(b) b.value=cc.bg; }
+        if(cc.tg){ var t=document.getElementById('scTgt'); if(t) t.value=cc.tg; }
+        if(ss) ss.value='custom';
+      } else if(localStorage.getItem('cs2at.sceneUser')==='1'){
+        var sc=localStorage.getItem('cs2at.scene');
+        if(sc && ss && ['classic','jade','ink','light','night','mono','cs'].indexOf(sc)>=0) ss.value=sc;
+      }
+    }catch(e){}
+    function syncScene(){ if(cs) cs.style.display=(ss.value==='custom')? '' : 'none'; }
+    ss.addEventListener('change', syncScene);
+    syncScene();
   }catch(e){}
 })();
 </script>

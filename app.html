@@ -523,7 +523,7 @@
       <div class="t" style="margin-bottom:10px">灵敏度</div>
       <div class="row" style="margin-bottom:12px;align-items:flex-end">
         <div><div class="k">游戏</div>
-          <select id="iGame" style="padding:10px 12px;background:var(--panel);border:1px solid var(--line);color:var(--txt);border-radius:7px;font-size:15px;min-width:220px">
+          <select id="iGame" style="padding:10px 12px;background:var(--panel);border:1px solid var(--line);color:var(--txt);border-radius:7px;font-size:15px;width:auto">
             <option value="cs2">CS2 / CS:GO</option>
             <option value="val">Valorant</option>
             <option value="apex">Apex Legends</option>
@@ -708,7 +708,7 @@ const K_CFG='cs2at.cfg', K_BEST='cs2at.best', K_RUNS='cs2at.runs', K_PERF='cs2at
 const $=id=>document.getElementById(id);
 const load=(k,d)=>{ try{ const v=localStorage.getItem(k); return v? JSON.parse(v): d; }catch(e){ return d; } };
 const save=(k,v)=>{ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} };
-const MODE_NAME={random:'自适应随机', block:'定角重复', precision:'小球精度', wide:'大角度甩枪', track:'移动跟枪'};
+const MODE_NAME={random:'自适应随机', block:'定角重复', precision:'小球精度', wide:'大角度甩枪', track:'移动跟枪', check:'六维检查'};
 
 const THEMES=[
   {id:'jade',  name:'墨玉', dot:'#7fbfa6', kind:'rec'},
@@ -741,6 +741,7 @@ const EN={
   '各模式最佳':'Best per mode','最近记录':'Recent runs','趋势（最近 60 组）':'Trend (last 60 runs)',
   '模式':'Mode','最低限时':'Best limit','最高命中率':'Best hit','最快中位用时':'Fastest median','组数':'Sets',
   '自适应随机':'Adaptive random','定角重复':'Fixed angle','小球精度':'Precision',
+  '六维检查':'Check-up','90 秒一局：反应 · 一次定位 · 二次定位 · 微调 · 拉枪 · 注意力，打完出处方。':'One 90-second run scores six skills — reaction, first placement, correction, micro-adjust, flick, attention — then prescribes what to train.',
   '状态快测':'State check','20 球定尺寸，30 秒测今天手感，结果进记录。':'20 dots at a fixed size — 30 seconds to check today\'s feel; results go to your log.',
   '大角度甩枪':'Wide flick','移动跟枪':'Moving target',
   '90-180° 回头枪，练转身定位，CS 最常用的场景。':'90–180° turn shots — the most common CS scenario.',
@@ -1089,6 +1090,9 @@ function cfgQ(){
 function renderDrills(){
   const q=cfgQ();
   const items=[
+    {t:'六维检查',d:'90 秒一局：反应 · 一次定位 · 二次定位 · 微调 · 拉枪 · 注意力，打完出处方。',
+     dEN:'One 90-second run scores six skills — reaction, first placement, correction, micro-adjust, flick, attention — then prescribes what to train.',
+     u:'tools/aim-trainer.html?mode=check&count=40&limit=0&delay=0'+q},
     {t:'状态快测',d:'20 球定尺寸，30 秒测今天手感，结果进记录。',
      dEN:'20 dots at a fixed size — 30 seconds to check today\'s feel; results go to your log.',
      u:'tools/aim-trainer.html?mode=random&count=20&limit=0'+q},
@@ -1153,7 +1157,7 @@ function renderData(){
 }
 
 /* 趋势曲线：按模式分线（混在一起会骗人）——命中率（左轴 0-100%）+ 中位用时/限时（右轴 ms） */
-const MODE_EN={random:'Adaptive random', block:'Fixed angle', precision:'Precision', wide:'Wide flick', track:'Moving target'};
+const MODE_EN={random:'Adaptive random', block:'Fixed angle', precision:'Precision', wide:'Wide flick', track:'Moving target', check:'Check-up'};
 let trendMode=null;
 function drawTrend(runs){
   const cv=$('trendCv'); if(!cv) return;

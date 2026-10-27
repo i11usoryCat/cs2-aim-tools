@@ -178,7 +178,7 @@
     // 浅色主题：颜色保持纯色、只降透明度——混色会变泥巴色，纯色低透明才是玻璃屑
     var th=null;
     try{ th=document.documentElement.getAttribute('data-theme'); }catch(e){}
-    if(LIGHT_BG[th]) return { c: COLORS[(Math.random()*COLORS.length)|0], a: 0.3 };
+    if(LIGHT_BG[th]) return { c: COLORS[(Math.random()*COLORS.length)|0], a: 0.42 };
     return { c: COLORS[(Math.random()*COLORS.length)|0], a: 0.55 };
   }
 
@@ -230,12 +230,15 @@
   function resize(){
     W=cv.width=innerWidth*devicePixelRatio; H=cv.height=innerHeight*devicePixelRatio;
     cv.style.width=innerWidth+'px'; cv.style.height=innerHeight+'px';
-    const n=Math.min(48, Math.round(innerWidth/30)); pts=[];
+    var light=false;
+    try{ var th=document.documentElement.getAttribute('data-theme'); light=(th==='ink'||th==='light'||th==='lake'||th==='sand'); }catch(e){}
+    // 浅色主题：少一点、大一点、实一点，但别成油点
+    const n=Math.min(48, Math.round(innerWidth/(light?42:30))); pts=[];
     for(let i=0;i<n;i++){
       const pc=pickColor();
       pts.push({x:Math.random()*W,y:Math.random()*H,
         vx:(Math.random()-.5)*.16*devicePixelRatio, vy:(Math.random()-.5)*.16*devicePixelRatio,
-        r:(Math.random()*2.2+1)*devicePixelRatio, c:pc.c, a:pc.a});
+        r:(Math.random()*2.2+1)*(light?1.4:1)*devicePixelRatio, c:pc.c, a:pc.a});
     }
     draw();   // 尺寸变了会清空画布，这里立刻补画
   }

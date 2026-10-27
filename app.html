@@ -617,11 +617,12 @@
         <div id="prevDot" style="position:absolute;right:26%;top:50%;width:16px;height:16px;margin-top:-8px;border-radius:50%;border:2px solid #fff"></div>
         <div id="prevCross" style="position:absolute;inset:0"></div>
       </div>
-      <div class="row" style="margin-top:10px">
-        <button id="sceneShare" class="main" style="padding:8px 16px">分享准星</button>
-        <button id="sceneImport" style="padding:8px 16px">导入</button>
+      <div class="row" style="margin-top:10px;align-items:center;gap:18px">
+        <label class="sw"><input type="checkbox" id="iBallTex" checked> 球的质感（高光 / 阴影）</label>
       </div>
-      <div class="hint" id="sceneShareHint" style="margin-top:8px"></div>
+      <div class="row" style="margin-top:10px">
+        <button id="sceneImport" style="padding:8px 16px">导入准星</button>
+      </div>
       <div class="hint" style="margin:12px 0 0">训练页 3D 场景的背景、网格与准星配色。</div>
     </div>
 
@@ -673,6 +674,11 @@
         <div style="min-width:150px"><div class="k">透明度 <span id="vCrossAlpha" style="color:var(--acc)">1.00</span></div><input id="iCrossAlpha" type="range" min="0.2" max="1" step="0.05" value="1"></div>
         <label><input id="iCrossDot" type="checkbox" checked> 中心点</label>
         <label><input id="iCrossOutline" type="checkbox" checked> 描边</label>
+      </div>
+
+      <div class="row" style="margin-top:16px;align-items:center;gap:14px">
+        <button id="sceneShare" class="main" style="padding:8px 16px">分享准星</button>
+        <div class="hint" id="sceneShareHint" style="margin:0"></div>
       </div>
 
       <div class="row" style="margin-top:14px;gap:26px;align-items:center;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:14px;font-size:13px;color:var(--dim)">
@@ -834,6 +840,7 @@ const EN={
   // 场景名
   '经典':'Classic','浅灰':'Pale grey','暗蓝':'Night blue','纯黑':'Pure black','沙色':'Sandstone',
   '训练场景配色':'Training scene palette','训练页 3D 场景的背景、网格与准星配色。':'Background, grid and crosshair colours in the trainer.',
+  '球的质感（高光 / 阴影）':'Ball texture (highlight / shadow)',
   '准星':'Crosshair',
   '样式、尺寸、颜色都可调；分享码只包含准星。':'Style, size and colour are all adjustable; the share code covers the crosshair only.',
   '样式':'Style','十字':'Cross','圆点':'Dot','静态':'Static','动态':'Dynamic',
@@ -843,7 +850,7 @@ const EN={
   '透明度':'Opacity',
   '准星击中反馈':'Crosshair hit flash','自动（背景对比色）':'Auto (contrast to background)','颜色':'Colour',
   '大小':'Size','小':'Small','大':'Large',
-  '分享准星':'Share crosshair','准星分享码：':'Crosshair share code: ','粘贴准星分享码':'Paste crosshair share code',
+  '分享准星':'Share crosshair','导入准星':'Import crosshair','准星分享码：':'Crosshair share code: ','粘贴准星分享码':'Paste crosshair share code',
   '格式不对':'Invalid code','已导入准星':'Crosshair imported',
   '渲染帧率上限':'Frame-rate cap','显示实时帧率':'Show live FPS',
   '性能模式（减少网格密度）':'Performance mode (lower grid density)',
@@ -1329,6 +1336,7 @@ function fillSettings(){
   $('iPerf').checked=localStorage.getItem(K_PERF)==='1';
   $('iFps').value=localStorage.getItem(K_FPS)||'0';
   $('iFpsShow').checked=localStorage.getItem(K_FPSSHOW)!=='0';
+  $('iBallTex').checked=localStorage.getItem('cs2at.ballTex')!=='0';
   try{
     const d=parseInt(localStorage.getItem('cs2at.delay'));
     $('iDelay').value = isNaN(d)? 3 : Math.max(0,Math.min(5,d));
@@ -1391,6 +1399,7 @@ $('saveBtn').addEventListener('click',()=>{
   localStorage.setItem(K_PERF, $('iPerf').checked? '1':'0');
   localStorage.setItem(K_FPS, $('iFps').value||'0');
   localStorage.setItem(K_FPSSHOW, $('iFpsShow').checked? '1':'0');
+  localStorage.setItem('cs2at.ballTex', $('iBallTex').checked? '1':'0');
   try{
     localStorage.setItem('cs2at.delay', String(Math.max(0,Math.min(5,parseInt($('iDelay').value)||3))));
     localStorage.setItem('cs2at.res', $('iRes').value);

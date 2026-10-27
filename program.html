@@ -240,7 +240,7 @@ function render(){
     const k=dt.getFullYear()+'-'+pd(dt.getMonth()+1)+'-'+pd(dt.getDate());
     months[dt.getMonth()+1]=dt.getFullYear();
     const done=set.has(k);
-    const rest=((dt.getDay()+6)%7)>=5;       // 六、日
+    const rest=(i%7===5||i%7===6);       // 休息日按程序日序号（5 练 2 休），不绑周几
     const cls='cell'+(done?' done':rest?' rest':'')+(i===d?' today':'');
     g+='<div class="'+cls+'" title="'+k+(done?' · 已完成':'')+'">'+dt.getDate()+'</div>';
   }

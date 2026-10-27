@@ -1114,7 +1114,19 @@ $('drillGrid').innerHTML=items.map(i=>
 }
 
 function renderData(){
-  const best=load(K_BEST,{}), runs=load(K_RUNS,[]);
+  let best=load(K_BEST,{}), runs=load(K_RUNS,[]);
+  // best 为空（如导入只含 runs 的 JSON）时，从 runs 回退算各模式最佳
+  if(!Object.keys(best).length && runs.length){
+    best={};
+    runs.forEach(r=>{
+      const b=best[r.mode]||{};
+      if(b.bestLimit===undefined||r.limit<b.bestLimit) b.bestLimit=r.limit;
+      if(b.bestHit===undefined||r.hit>b.bestHit) b.bestHit=r.hit;
+      if(b.bestMT===undefined||r.mt<b.bestMT) b.bestMT=r.mt;
+      b.runs=(b.runs||0)+1;
+      best[r.mode]=b;
+    });
+  }
   $('sRuns').textContent=runs.length;
   $('sDays').textContent=new Set(runs.map(r=>r.d)).size;
   const lims=runs.map(r=>r.limit).filter(v=>v>0);
@@ -1165,6 +1177,10 @@ function drawTrend(runs){
   const acc=css.getPropertyValue('--acc').trim()||'#7fbfa6';
   const dim=css.getPropertyValue('--dim').trim()||'#8b949e';
   const line=css.getPropertyValue('--line').trim()||'#2a3a36';
+  // 中位用时线颜色按主题挑，避免与命中率线（--acc）撞色：
+  // 暖砂/明亮（红/蓝 acc）→ 墨绿；湖泊/墨鱼（青 acc）→ 橙；深色主题 → 琥珀
+  const th2=document.documentElement.getAttribute('data-theme');
+  const mtC=({sand:'#0f766e',light:'#0f766e',lake:'#b45309',ink:'#b45309'})[th2]||'#d29922';
   const P={l:46,r:44,t:10,b:26};
   const cw=W-P.l-P.r, ch=H-P.t-P.b;
   // 网格：左轴 0-100%，右轴 0-900ms
@@ -1188,7 +1204,7 @@ function drawTrend(runs){
     ctx.stroke();
   };
   // 中位用时 + 限时（右轴 0-900ms）
-  ctx.strokeStyle='#d29922'; ctx.lineWidth=1.6;
+  ctx.strokeStyle=mtC; ctx.lineWidth=1.6;
   linePath(tail.map(r=>r.mt),0,900);
   ctx.strokeStyle=dim; ctx.lineWidth=1.2; ctx.setLineDash([5,4]);
   linePath(tail.map(r=>r.limit),0,900);
@@ -1202,7 +1218,7 @@ function drawTrend(runs){
   ctx.textAlign='right'; ctx.fillText(tail[tail.length-1].d, W-P.r, H-8);
   // 图例
   const lg=(c,zh,en)=>'<span style="white-space:nowrap;margin-right:16px"><span style="display:inline-block;width:10px;height:3px;background:'+c+';vertical-align:middle;margin-right:6px"></span>'+(EN_UI?en:zh)+'</span>';
-  $('trendLegend').innerHTML=lg(acc,'命中率','Hit rate')+lg('#d29922','中位用时','Median time')+lg(dim,'限时','Limit');
+  $('trendLegend').innerHTML=lg(acc,'命中率','Hit rate')+lg(mtC,'中位用时','Median time')+lg(dim,'限时','Limit');
 }
 $('trendMode').addEventListener('change',()=>{
   trendMode=$('trendMode').value;

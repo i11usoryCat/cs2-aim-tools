@@ -20,8 +20,8 @@
     background:rgba(0,0,0,.35);color:#fff;font-size:18px;letter-spacing:2px;cursor:pointer;
     backdrop-filter:blur(2px)}
   #grab.on{display:flex}
-  #msg.paused .pauseHide{display:none}
-  #msg.paused.showParams .pauseHide{display:block}
+  #msg .pauseHide{display:none}
+  #msg.showParams .pauseHide{display:block}
   #msg.paused .pauseHide + a{display:none}
   .btn{margin-top:22px;padding:13px 40px;font-size:16px;font-family:inherit;cursor:pointer;
     background:var(--acc);border:1px solid var(--acc);color:var(--on-acc);border-radius:8px;pointer-events:auto}
@@ -65,7 +65,7 @@
        title="点击修改参数">…</div>
   <div id="bw" style="margin-top:10px;font-size:13px;color:var(--acc)"></div>
 
-  <button id="pauseMore" style="display:none;margin-top:16px;padding:9px 18px;border-radius:9px;border:1px solid var(--line);background:transparent;color:var(--dim);font-size:13px;font-family:inherit;cursor:pointer">参数 ▾</button>
+  <button id="pauseMore" style="margin-top:16px;padding:9px 18px;border-radius:9px;border:1px solid var(--line);background:transparent;color:var(--dim);font-size:13px;font-family:inherit;cursor:pointer">参数 ▾</button>
   <div class="pauseHide" style="margin-top:26px;width:100%;max-width:560px">
     <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center">
       <label class="fld">模式
@@ -78,14 +78,14 @@
           <option value="check">六维检查（90秒）</option>
         </select>
       </label>
-      <label class="fld">结束方式
+      <label class="fld" id="fldEnd">结束方式
         <select id="endMode">
           <option value="count">按球数</option>
           <option value="time">按时间</option>
         </select>
       </label>
-      <label class="fld">球数<input id="cnt" type="number" step="10" value="40"></label>
-      <label class="fld">时长（秒）<input id="endTime" type="number" step="15" value="120"></label>
+      <label class="fld" id="fldCnt">球数<input id="cnt" type="number" step="10" value="40"></label>
+      <label class="fld" id="fldEndTime">时长（秒）<input id="endTime" type="number" step="15" value="120"></label>
       <label class="fld">目标大小°<input id="sizeOv" type="number" step="0.1" min="0.35" max="3" placeholder="自动" style="width:70px"></label>
       <label class="fld">场景
         <select id="sceneSel">
@@ -107,9 +107,12 @@
         </span>
       </label>
     </div>
-    <div style="margin-top:14px;display:flex;gap:18px;justify-content:center;font-size:13px;color:var(--dim)">
+    <div id="checkNote" style="display:none;margin-top:14px;font-size:13px;color:var(--dim)">
+      90 秒 · 题目一样 · 方向随机&nbsp;&nbsp;<a href="#" id="switchMode" style="color:var(--acc);text-decoration:none">换模式</a>
+    </div>
+    <div id="chkRow" style="margin-top:14px;display:flex;gap:18px;justify-content:center;font-size:13px;color:var(--dim)">
       <label><input id="limit" type="checkbox" checked> 时间限制</label>
-      <label><input id="shrink" type="checkbox"> 收缩模式</label>
+      <label><input id="shrink" type="checkbox"> 收缩模式（球越打越小）</label>
     </div>
     <!-- 输入设备（鼠标/手柄/绘画板）在设置页配置，这里只留训练参数 -->
     <div style="margin-top:18px;text-align:center">
@@ -622,11 +625,11 @@ function checkReportHtml(){
     : {c: isLightB? '#b91c1c' : '#e5484d', t:EN_UI?'Weak':'弱'};
   const ITEMS=[
     {k:'react', zh:'反应', en:'Reaction'},
-    {k:'first', zh:'首次落点', en:'First landing'},
-    {k:'second',zh:'修正', en:'Correction'},
+    {k:'first', zh:'第一枪', en:'First shot'},
+    {k:'second',zh:'补救', en:'Recovery'},
     {k:'micro', zh:'微调', en:'Micro-adjust'},
     {k:'wide',  zh:'拉枪', en:'Flick'},
-    {k:'attn',  zh:'稳定性', en:'Stability'}
+    {k:'attn',  zh:'稳定', en:'Steadiness'}
   ];
   // 对比上次检查（跳过刚存的本次记录）
   let lastS6=null;
@@ -649,11 +652,11 @@ function checkReportHtml(){
   }).join('');
   const RX={
     react:{zh:'反应偏慢：打「自适应随机」+ 时间限制，逼自己出手。',en:'Slow reaction: run Adaptive random with a time limit to force quick shots.',u:'tools/aim-trainer.html?mode=random&count=40&limit=1',lab:{zh:'自适应随机',en:'Adaptive random'}},
-    first:{zh:'首次落点差：打「定角重复」，把第一下的落点练稳。',en:'First landing off: run Fixed angle to steady your first land point.',u:'tools/aim-trainer.html?mode=block&count=40&limit=0',lab:{zh:'定角重复',en:'Fixed angle'}},
-    second:{zh:'修正慢：打「自适应随机」，练追补的速度。',en:'Slow correction: run Adaptive random to speed up the follow-up fix.',u:'tools/aim-trainer.html?mode=random&count=40&limit=1',lab:{zh:'自适应随机',en:'Adaptive random'}},
+    first:{zh:'第一枪不准：打「定角重复」，把第一下练稳。',en:'First shot is off: run Fixed angle to steady your first shot.',u:'tools/aim-trainer.html?mode=block&count=40&limit=0',lab:{zh:'定角重复',en:'Fixed angle'}},
+    second:{zh:'补救慢：打「自适应随机」，练追补的速度。',en:'Slow recovery: run Adaptive random to speed up the follow-up fix.',u:'tools/aim-trainer.html?mode=random&count=40&limit=1',lab:{zh:'自适应随机',en:'Adaptive random'}},
     micro:{zh:'微调差：打「小球精度」0.7°，稳住手腕。',en:'Micro-adjust weak: run Precision 0.7° — steady the wrist.',u:'tools/aim-trainer.html?mode=precision&count=40&limit=0',lab:{zh:'小球精度',en:'Precision'}},
     wide:{zh:'拉枪差：打「大角度甩枪」，练 90-180° 转身定位。',en:'Flicks weak: run Wide flick — 90–180° turn shots.',u:'tools/aim-trainer.html?mode=wide&count=20&limit=0',lab:{zh:'大角度甩枪',en:'Wide flick'}},
-    attn:{zh:'状态波动大：休息几分钟再查一次，别硬练。',en:'Big variance: rest a few minutes and re-check — don\'t grind.',u:null,lab:{zh:'休息',en:'Rest'}}
+    attn:{zh:'状态不稳：休息几分钟再查一次，别硬练。',en:'Unsteady today: rest a few minutes and re-check — don\'t grind.',u:null,lab:{zh:'休息',en:'Rest'}}
   };
   // 处方只推真问题：<45，或比上次掉 ≥15 分；同一 drill 不重复；最多 1 主 + 1 副
   const order=ITEMS.map(i=>i.k).filter(k=>{
@@ -679,9 +682,9 @@ function checkReportHtml(){
         ' — '+(EN_UI?r.en:r.zh)+'</div>';
     }).join('')+'</div>' : okHtml;
   window.__logLine='检查 '+(EN_UI?'check-up ':'')+ITEMS.map(i=>(EN_UI?i.en:i.zh)+' '+S[i.k]).join(' / ');
-  const vsHint=lastS6? '<div style="font-size:12px;color:var(--dim);margin-bottom:8px">'+(EN_UI?'▲/▼ vs your last check-up':'▲/▼ = 与上次检查相比')+'</div>' : '';
+  const vsHint=lastS6? '<div style="font-size:12px;color:var(--dim);margin-bottom:8px">'+(EN_UI?'▲/▼ vs last time':'▲/▼ = 比上次')+'</div>' : '';
   const noteLine='<div style="font-size:11.5px;color:var(--dim);margin-top:10px;line-height:1.7">'+
-    (EN_UI?'Coarse check-up: same-skill retests vary ~±15 pts; stability uses few samples — rough reference only.':'90 秒检查为粗分参考：同水平复测波动约 ±15 分；稳定性样本少，仅供粗分参考。')+'</div>';
+    (EN_UI?'90 seconds only gives a rough picture — the same player can vary about ±15 points between runs.':'90 秒只能看个大概，同一个人多测几次也会差 15 分左右。')+'</div>';
   return '<div style="font-size:20px;color:var(--acc);font-weight:700">'+(EN_UI?'90-second check-up':'90 秒六维检查')+'</div>'+
     '<div style="margin:6px 0 14px;color:var(--dim);font-size:14px">'+trial+' '+(EN_UI?'balls':'球')+'</div>'+
     vsHint+
@@ -1018,18 +1021,6 @@ function drawFrame(now){
   lastDraw=now;
 
   ctx.fillStyle=SC.bg; ctx.fillRect(0,0,W,H);
-  // 氛围（轻量）：地面渐变 + 地平线微光
-  try{
-    const hz=H*0.52;
-    const g1=ctx.createLinearGradient(0,hz,0,H);
-    g1.addColorStop(0,'rgba(0,0,0,0)');
-    g1.addColorStop(1, shade(SC.bg, SC.dark? 12 : -5));
-    ctx.fillStyle=g1; ctx.fillRect(0,hz,W,H-hz);
-    const g2=ctx.createRadialGradient(W/2,hz*0.94,0, W/2,hz*0.94, Math.max(W,H)*0.55);
-    g2.addColorStop(0, hexA(SC.ui||'#58a6ff', SC.dark? 0.10 : 0.07));
-    g2.addColorStop(1,'rgba(0,0,0,0)');
-    ctx.fillStyle=g2; ctx.fillRect(0,0,W,H);
-  }catch(e){}
   grid();
 
   if(alive){
@@ -1038,35 +1029,39 @@ function drawFrame(now){
     const p=project(tw,th,td);
     if(p){
       const rad=Math.max(4, f*Math.tan(radius*D2R));
-      // 彩色光晕：让目标球"发光"
-      try{
-        const glow=ctx.createRadialGradient(p.sx,p.sy,rad*0.9,p.sx,p.sy,rad*2.6);
-        glow.addColorStop(0, SC.tgtFill);
-        glow.addColorStop(1,'rgba(0,0,0,0)');
-        ctx.fillStyle=glow;
-        ctx.beginPath(); ctx.arc(p.sx,p.sy,rad*2.6,0,Math.PI*2); ctx.fill();
-      }catch(e){}
-      // 暗光晕：只在深色场景生效，给球一点纵深
-      if(SC.halo>=0.05){
-        const halo=ctx.createRadialGradient(p.sx,p.sy,rad*0.95,p.sx,p.sy,rad*2.3);
-        halo.addColorStop(0,'rgba(0,0,0,'+SC.halo+')');
-        halo.addColorStop(1,'rgba(0,0,0,0)');
-        ctx.fillStyle=halo;
-        ctx.beginPath(); ctx.arc(p.sx,p.sy,rad*2.3,0,Math.PI*2); ctx.fill();
+      // 彩色光晕只在深色场景画——浅色底上光晕=糊一圈，靠硬边
+      if(SC.dark){
+        try{
+          const glow=ctx.createRadialGradient(p.sx,p.sy,rad*0.9,p.sx,p.sy,rad*2.6);
+          glow.addColorStop(0, SC.tgtFill);
+          glow.addColorStop(1,'rgba(0,0,0,0)');
+          ctx.fillStyle=glow;
+          ctx.beginPath(); ctx.arc(p.sx,p.sy,rad*2.6,0,Math.PI*2); ctx.fill();
+        }catch(e){}
+        if(SC.halo>=0.05){
+          const halo=ctx.createRadialGradient(p.sx,p.sy,rad*0.95,p.sx,p.sy,rad*2.3);
+          halo.addColorStop(0,'rgba(0,0,0,'+SC.halo+')');
+          halo.addColorStop(1,'rgba(0,0,0,0)');
+          ctx.fillStyle=halo;
+          ctx.beginPath(); ctx.arc(p.sx,p.sy,rad*2.3,0,Math.PI*2); ctx.fill();
+        }
       }
-      // 实心目标 + 细环
+      // 实心目标 + 细环（浅色场景线更细、靠边不靠光）
       ctx.beginPath(); ctx.arc(p.sx,p.sy,rad,0,Math.PI*2);
       ctx.fillStyle=SC.tgtFill; ctx.fill();
-      ctx.strokeStyle=SC.ring; ctx.lineWidth=2.5; ctx.stroke();
+      ctx.strokeStyle=SC.ring; ctx.lineWidth=SC.dark? 2.5 : 1.5; ctx.stroke();
       // 中心点
       ctx.beginPath(); ctx.arc(p.sx,p.sy,rad*0.22,0,Math.PI*2);
       ctx.fillStyle=SC.tgt; ctx.fill();
+      // 倒计时只当警告：剩余 <35% 才出现，画在球内侧，不冒充靶子
       if(limitChk.checked){
         const left=Math.max(0, 1-(now-tSpawn)/allowed);
-        ctx.beginPath();
-        ctx.arc(p.sx,p.sy, rad+9*devicePixelRatio, -Math.PI/2, -Math.PI/2+Math.PI*2*left);
-        ctx.strokeStyle= left>0.35? 'rgba(63,185,80,.9)' : 'rgba(248,81,73,.95)';
-        ctx.lineWidth=3*devicePixelRatio; ctx.stroke();
+        if(left<0.35){
+          ctx.beginPath();
+          ctx.arc(p.sx,p.sy, rad*0.95, -Math.PI/2, -Math.PI/2+Math.PI*2*left);
+          ctx.strokeStyle='rgba(248,81,73,.55)';
+          ctx.lineWidth=1.5*devicePixelRatio; ctx.stroke();
+        }
       }
     }
     // 画面外的球：屏幕边缘画指向箭头，180° 也能立刻知道往哪转
@@ -1150,14 +1145,6 @@ function drawFrame(now){
     ctx.textAlign='left';
   }
 
-  // 四角暗角：聚焦画面中心（深色重一点，浅色只是压一下边）
-  try{
-    const vg=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*0.42, W/2,H/2, Math.max(W,H)*0.72);
-    vg.addColorStop(0,'rgba(0,0,0,0)');
-    vg.addColorStop(1, SC.dark? 'rgba(0,0,0,0.22)' : 'rgba(0,0,0,0.07)');
-    ctx.fillStyle=vg; ctx.fillRect(0,0,W,H);
-  }catch(e){}
-
   updateHud(now);
 }
 
@@ -1195,18 +1182,8 @@ requestAnimationFrame(loop);
     var d = num('dpi',800), y = num('yaw', document.getElementById('yaw')?0.022:0), c = num('cm',27);
     if(!(d>0 && c>0)) { hint.textContent=''; return; }
     var s = y>0 ? 360/((c/2.54)*d)/y : 0;
-    if(y<=0){
-      var sA = 360/((c/2.54)*d)/0.022, sB = 360/((c/2.54)*d)/0.0165;
-      hint.innerHTML = '→ 游戏灵敏度：m_yaw 0.022 → <b style="color:var(--acc)">'+sA.toFixed(2)+
-        '</b>　m_yaw 0.0165 → <b style="color:var(--acc)">'+sB.toFixed(2)+'</b>' +
-        '<br><span style="color:var(--dim);font-size:13px">'+c.toFixed(1)+' cm/360 · DPI '+d+
-        ' · 180° 转身 '+(c/2).toFixed(1)+' cm</span>';
-      return;
-    }
-    var txt = '→ 对应 <b style="color:var(--acc)">' + (y>0? '游戏灵敏度 '+s.toFixed(2) : 'cm/360 '+c.toFixed(1)) + '</b>';
-    txt += ' &nbsp;<span style="color:var(--dim)">(' + c.toFixed(1) + ' cm/360 · DPI ' + d + (y>0? ' · m_yaw '+y : '') + ')</span>';
-    if(y>0) txt += '<br><span style="color:var(--dim);font-size:13px">360° 转身需要 ' + c.toFixed(1) + ' cm，180° 需要 ' + (c/2).toFixed(1) + ' cm</span>';
-    hint.innerHTML = txt;
+    if(y<=0){ hint.innerHTML = c.toFixed(1)+' cm/360 · DPI '+d; return; }
+    hint.innerHTML = c.toFixed(1)+' cm/360 · 灵敏度 <b style="color:var(--acc)">'+s.toFixed(2)+'</b> · 360° 需 '+c.toFixed(1)+' cm · DPI '+d;
   }
   ['dpi','yaw','cm'].forEach(function(id){
     var el=document.getElementById(id);
@@ -1371,8 +1348,7 @@ requestAnimationFrame(loop);
   var more=document.getElementById('pauseMore'), msg=document.getElementById('msg');
   if(!more||!msg) return;
   function sync(){
-    var paused=msg.classList.contains('paused');
-    more.style.display = paused ? 'inline-block' : 'none';
+    more.style.display = 'inline-block';
     more.textContent = msg.classList.contains('showParams') ? '收起参数 ▴' : '参数 ▾';
   }
   more.addEventListener('click', function(e){
@@ -1461,9 +1437,22 @@ requestAnimationFrame(loop);
       // 标题跟着模式走：选六维检查不再是「甩枪训练」
       var tt=document.getElementById('titleTop');
       if(tt) tt.textContent = on? (EN_UI? 'Check-up' : '六维检查') : (EN_UI? 'Flick trainer' : '甩枪训练');
+      // 检查模式下死控件直接隐藏，换成一行只读说明
+      var fe=document.getElementById('fldEnd'), fc=document.getElementById('fldCnt'), ft=document.getElementById('fldEndTime'), cn=document.getElementById('checkNote'), cr=document.getElementById('chkRow');
+      if(fe) fe.style.display = on? 'none' : '';
+      if(fc) fc.style.display = on? 'none' : '';
+      if(ft) ft.style.display = on? 'none' : '';
+      if(cr) cr.style.display = on? 'none' : '';
+      if(cn) cn.style.display = on? '' : 'none';
     }
     ms.addEventListener('change', syncCheck);
     syncCheck();
+    var sw=document.getElementById('switchMode');
+    if(sw) sw.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); if(ms){ ms.value='random'; } syncCheck(); });
+    // 灵敏度一行移进参数面板
+    var sh=document.getElementById('sensHint');
+    var phRow=document.querySelector('.pauseHide > div');
+    if(sh && phRow) phRow.appendChild(sh);
 
     // 场景选择器：记住上次选择，自定义时展开取色器
     var ss=document.getElementById('sceneSel'), cs=document.getElementById('customScene');

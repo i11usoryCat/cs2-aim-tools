@@ -34,23 +34,24 @@
 <div id="ui"></div>
 
 <div id="msg" class="overlay show">
-  <div style="font-size:19px;color:var(--acc);margin-bottom:10px">灵敏度标定 · 过冲法（全样本）</div>
+  <div style="font-size:19px;color:var(--acc);margin-bottom:10px">灵敏度标定</div>
   <div>每次只出现一个球。看到球后<b>最快速度甩过去并点击</b>。<br>
-  程序记录你甩完的落点，算出你<b>冲过头还是没到</b>。<br><span style="color:var(--acc)">本版本：全部球都计入统计</span></div>
-  <div style="margin-top:22px;color:#8b949e;font-size:14px">
-    鼠标 DPI：<input id="dpi" type="number" step="100" value="1000" style="width:90px">
-    &nbsp;m_yaw：<input id="yaw" type="number" step="0.0001" value="0.022" style="width:100px"><br>
-    <span style="margin-top:10px;display:inline-block">当前 cm/360：<input id="cm" type="number" step="0.1" value="27"></span>
-      <span style="margin-top:10px;display:inline-block">&nbsp;游戏灵敏度：<input id="sens" type="number" step="0.01" value="" placeholder="自动" style="width:90px"></span>
-    &nbsp;&nbsp;球数：<input id="n" type="number" step="10" value="40" style="width:80px">
-    &nbsp;球大小：<select id="bs" style="padding:7px;background:var(--panel);border:1px solid #30363d;color:#e6edf3;border-radius:6px;font-size:14px;pointer-events:auto">
+  程序记录你甩完的落点，算出你<b>冲过头还是没到</b>。<br><span style="color:var(--acc)">每个球都算数</span></div>
+  <div style="margin-top:22px;display:grid;grid-template-columns:repeat(3,auto);gap:10px 22px;justify-content:center;font-size:14px;color:var(--dim)">
+    <label>鼠标 DPI <input id="dpi" type="number" step="100" value="1000" style="width:90px"></label>
+    <label>m_yaw <input id="yaw" type="number" step="0.0001" value="0.022" style="width:100px"></label>
+    <label>cm/360 <input id="cm" type="number" step="0.1" value="27" style="width:90px"></label>
+    <label>游戏灵敏度 <input id="sens" type="number" step="0.01" value="" placeholder="自动" style="width:90px"></label>
+    <label>球数 <input id="n" type="number" step="10" value="40" style="width:80px"></label>
+    <label>球大小 <select id="bs" style="padding:7px;background:var(--panel);border:1px solid var(--line);color:var(--txt);border-radius:6px;font-size:14px;pointer-events:auto">
       <option value="2.0">大（2.0°）</option>
       <option value="1.5" selected>标准（1.5°）</option>
       <option value="1.0">小（1.0°）</option>
       <option value="0.7">很小（0.7°）</option>
       <option value="0.45">极小（0.45°）</option>
-    </select></div>
-  <div id="sensHint" style="margin-top:10px;font-size:14px;color:#8b949e"></div>
+    </select></label>
+  </div>
+  <div id="sensHint" style="margin-top:12px;font-size:13.5px;color:var(--dim)"></div>
   <div id="bw" style="margin-top:12px;font-size:13px;line-height:1.8;color:#d29922"></div>
   <button id="go" class="btn">开始</button>
 </div>
@@ -75,19 +76,26 @@ function pickScene(){
   return 'classic';
 }
 const SC=SCENES[pickScene()]||SCENES.classic;
+// 页面主题跟随站点（不再是独立皮）
+const SITE_THEMES={
+  ink:{bg:'#f7f5f0',panel:'#fffefb',line:'#e2dccf',txt:'#202b2c',dim:'#6d7a7b',acc:'#0f766e'},
+  jade:{bg:'#101917',panel:'#16211f',line:'#2a3a36',txt:'#efeade',dim:'#93a8a1',acc:'#7fbfa6'},
+  lake:{bg:'#eef4f6',panel:'#ffffff',line:'#d2e2e7',txt:'#14313a',dim:'#587a85',acc:'#0e7490'},
+  light:{bg:'#f4f6f9',panel:'#ffffff',line:'#dde4ed',txt:'#1a2230',dim:'#5b6879',acc:'#2f6feb'},
+  sand:{bg:'#f7f2e8',panel:'#fffdf8',line:'#e3d9c6',txt:'#33291c',dim:'#7b6a54',acc:'#c2410c'},
+  forest:{bg:'#0f1a14',panel:'#16241b',line:'#2a4433',txt:'#e8f2ea',dim:'#8aa697',acc:'#4ade80'},
+  mono:{bg:'#15171b',panel:'#1c1f24',line:'#2e333b',txt:'#e8eaee',dim:'#98a0aa',acc:'#c9d1d9'},
+  cyber:{bg:'#120a1f',panel:'#1b1032',line:'#3a2166',txt:'#f1eaff',dim:'#a98fd6',acc:'#c084fc'},
+  night:{bg:'#0b0f14',panel:'#151b24',line:'#2a3442',txt:'#e6edf3',dim:'#8b949e',acc:'#58a6ff'}
+};
 (function(){
-  const dark=!!SC.dark, r=document.documentElement.style;
-  r.setProperty('--bg',SC.bg);
-  r.setProperty('--txt',dark?'#e6edf3':'#14313a');
-  r.setProperty('--dim',dark?'#8b949e':'#5b6b73');
-  r.setProperty('--panel',dark?'var(--panel)':'#ffffff');
-  r.setProperty('--line',dark?'#30363d':'#d7e0e4');
-  const ui=SC.ui||SC.cross;
-  const rgb=(function(h){h=(h||'').replace('#','');if(h.length===3)h=h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
-    const v=parseInt(h,16);return isNaN(v)?[255,255,255]:[(v>>16)&255,(v>>8)&255,v&255];})(ui);
-  const lum=(0.299*rgb[0]+0.587*rgb[1]+0.114*rgb[2])/255;
-  r.setProperty('--acc',ui);
-  r.setProperty('--on-acc', lum>0.62?'#111820':'#ffffff');
+  const th=(function(){ try{ var q=new URLSearchParams(location.search); return q.get('theme')||localStorage.getItem('cs2at.theme')||(function(){var d=new Date(),tm=d.getHours()*60+d.getMinutes();return (tm>=1410||tm<460)?'forest':'sand';})(); }catch(e){ return 'sand'; } })();
+  const t=SITE_THEMES[th]||SITE_THEMES.sand;
+  const dark=!(th==='ink'||th==='light'||th==='lake'||th==='sand');
+  const r=document.documentElement.style;
+  r.setProperty('--bg',t.bg); r.setProperty('--panel',t.panel); r.setProperty('--line',t.line);
+  r.setProperty('--txt',t.txt); r.setProperty('--dim',t.dim); r.setProperty('--acc',t.acc);
+  r.setProperty('--on-acc','#ffffff');
   r.setProperty('--overlay',dark?'rgba(11,15,20,.96)':'rgba(238,244,246,.97)');
 })();
 
@@ -260,13 +268,13 @@ function finish(){
     row('命中', hitN+' / '+totalN+'（'+Math.round(hitN/Math.max(1,totalN)*100)+'%）', 'big')+
     row('过头', posF.length+' 球 ('+pp+'%)，中位 +'+(med(posF)*100).toFixed(1)+'%')+
     row('不足', negF.length+' 球 ('+np+'%)，中位 '+(med(negF)*100).toFixed(1)+'%')+
-    row('合计偏差', (fm>=0?'+':'')+(fm*100).toFixed(1)+'%', 'big')+
-    row('建议（累计 '+nCum+' 球 · 均值）', meanCm.toFixed(1)+' cm → sens <b>'+sensOf(meanCm).toFixed(2)+'</b>', 'big')+
-    row('样本与置信', nCum+' 球 · SE '+(SE*100).toFixed(2)+'% · 95% CI ±'+(CI*100).toFixed(2)+'%')+
+    row('总体偏差', (fm>=0?'+':'')+(fm*100).toFixed(1)+'%', 'big')+
+    row('建议（'+nCum+' 球平均）', meanCm.toFixed(1)+' cm → sens <b>'+sensOf(meanCm).toFixed(2)+'</b>', 'big')+
+    row('数据与误差', '共 '+nCum+' 球 · 误差 ±'+(CI*100).toFixed(2)+'%')+
     '</table>'+
     '<div style="margin-top:12px;font-size:14px">'+verdict+'</div>'+
-    (conv? '<div style="margin-top:8px;color:var(--acc);font-weight:700">✓ 95% 置信区间半宽 &lt;1%，可以定稿</div>'
-         : '<div style="margin-top:8px;color:var(--dim);font-size:13px">继续测：当前 95% 置信区间 ±'+(CI*100).toFixed(2)+'%，到 ±1% 内再定稿（目前已 '+nCum+' 球）</div>');
+    (conv? '<div style="margin-top:8px;color:var(--acc);font-weight:700">✓ 数据够了，可以定稿</div>'
+         : '<div style="margin-top:8px;color:var(--dim);font-size:13px">继续测：现在误差 ±'+(CI*100).toFixed(2)+'%，到 ±1% 以内再定稿（已 '+nCum+' 球）</div>');
   res.classList.add('show');
   try{ addScatter(); }catch(e){}
 }
@@ -430,9 +438,9 @@ requestAnimationFrame(loop);
     var d = num('dpi',1000), y = num('yaw', document.getElementById('yaw')?0.022:0), c = num('cm',27);
     if(!(d>0 && c>0)) { hint.textContent=''; return; }
     var s = y>0 ? 360/((c/2.54)*d)/y : 0;
-    var txt = '→ 对应 <b style="color:var(--acc)">' + (y>0? '游戏灵敏度 '+s.toFixed(2) : 'cm/360 '+c.toFixed(1)) + '</b>';
-    txt += ' &nbsp;<span style="color:#6e7681">(' + c.toFixed(1) + ' cm/360 · DPI ' + d + (y>0? ' · m_yaw '+y : '') + ')</span>';
-    if(y>0) txt += '<br><span style="color:#6e7681;font-size:13px">360° 转身需要 ' + c.toFixed(1) + ' cm，180° 需要 ' + (c/2).toFixed(1) + ' cm</span>';
+    var txt = c.toFixed(1) + ' cm/360';
+    if(y>0) txt += ' · 灵敏度 <b style="color:var(--acc)">' + s.toFixed(2) + '</b>';
+    txt += ' · 360° 需 ' + c.toFixed(1) + ' cm · DPI ' + d;
     hint.innerHTML = txt;
   }
   ['dpi','yaw','cm'].forEach(function(id){
@@ -487,6 +495,9 @@ requestAnimationFrame(loop);
     '复制结果':'Copy result','关闭':'Close','继续':'Continue',
     '过冲':'Overshoot','欠冲':'Undershoot','命中':'Hit','超时':'Timeout',
     '样本与置信':'Samples & confidence',
+    '灵敏度标定':'Sensitivity calibration','每个球都算数':'Every shot counts',
+    '总体偏差':'Overall bias','数据与误差':'Data & error',
+    '✓ 数据够了，可以定稿':'✓ Enough data — finalize',
     '✓ 95% 置信区间半宽 <1%，可以定稿':'✓ 95% CI half-width <1% — finalize'
   };
   var RULES=[
@@ -498,6 +509,12 @@ requestAnimationFrame(loop);
     [/^第 (\d+) 球$/,'Shot $1'],
     [/^([\d.]+) cm\/360 · DPI (\d+) · m_yaw ([\d.]+)$/,'$1 cm/360 · DPI $2 · m_yaw $3'],
     [/^(\d+) 球 · SE ([\d.]+)% · 95% CI ±([\d.]+)%$/,'$1 shots · SE $2% · 95% CI ±$3%'],
+    [/^([\d.]+) cm\/360 · 灵敏度\s*$/,'$1 cm/360 · sens '],
+    [/^· 360° 需 ([\d.]+) cm · DPI (\d+)$/,'· 360° needs $1 cm · DPI $2'],
+    [/^([\d.]+) cm\/360 · 灵敏度 ([\d.]+) · 360° 需 ([\d.]+) cm · DPI (\d+)$/,'$1 cm/360 · sens $2 · 360° needs $3 cm · DPI $4'],
+    [/^建议（(\d+) 球平均）$/,'Suggestion ($1-shot average)'],
+    [/^共 (\d+) 球 · 误差 ±([\d.]+)%$/,'$1 shots · error ±$2%'],
+    [/^继续测：现在误差 ±([\d.]+)%，到 ±1% 以内再定稿（已 (\d+) 球）$/,'Keep going: error is ±$1% — finalize within ±1% ($2 shots so far)'],
     [/^建议（累计 (\d+) 球 · 均值）$/,'Suggestion (cumulative $1 shots · mean)'],
     [/^继续测：当前 95% 置信区间 ±([\d.]+)%，到 ±1% 内再定稿（目前已 (\d+) 球）$/,'Keep going: 95% CI ±$1% — finalize within ±1% (currently $2 shots)']
   ];

@@ -64,6 +64,10 @@
   th{color:var(--dim);font-weight:500}
   .hint{font-size:13px;color:var(--dim)}
   code{background:var(--panel2);padding:1px 6px;border-radius:4px;font-size:12px}
+  details{margin-bottom:18px}
+  details summary{cursor:pointer;font-size:15px;font-weight:600;color:var(--txt);padding:6px 2px;list-style:none;user-select:none}
+  details summary::before{content:'▸ ';color:var(--acc)}
+  details[open] summary::before{content:'▾ '}
 
   /* 隐藏滚动条（仍可滚动） */
   html{scrollbar-width:none}
@@ -78,15 +82,6 @@
   <div class="sub">每天 15 分钟 · 5 天训练 2 天休息 · 命中率保持 70-85%</div>
 
   <div class="panel">
-    <div class="row">
-      <div class="stat"><div class="k">第几天</div><div class="v" id="dayNo">—</div></div>
-      <div class="stat"><div class="k">当前阶段</div><div class="v" id="weekNo">—</div></div>
-      <div class="stat"><div class="k">已完成</div><div class="v" id="doneNo">0</div></div>
-      <div class="stat"><div class="k">连续</div><div class="v" id="streakNo">0</div></div>
-    </div>
-  </div>
-
-  <div class="panel">
     <h2 id="todayTitle">今日任务</h2>
     <div id="tasks"></div>
     <div style="margin-top:16px;display:flex;gap:10px">
@@ -96,26 +91,34 @@
     <div class="hint" id="todayHint" style="margin-top:10px"></div>
   </div>
 
-  <div class="panel">
-    <h2>进度</h2>
-    <div class="hint">绿色 = 已完成 · 描边 = 今天 · 淡色 = 休息日</div>
-    <div class="cal">
-      <div class="calTitle" id="calTitle"></div>
-      <div class="calWeek" id="calWeek"></div>
-      <div class="grid" id="grid"></div>
-    </div>
+  <div class="panel" style="padding:12px 22px">
+    <div style="font-size:13px;color:var(--dim)"><b id="dayNo" style="color:var(--txt)">—</b> · <b id="weekNo" style="color:var(--txt)">—</b> · 已完成 <b id="doneNo" style="color:var(--acc)">0</b> · 连续 <b id="streakNo" style="color:var(--acc)">0</b></div>
   </div>
 
-  <div class="panel">
-    <h2>训练记录</h2>
-    <div class="hint">训练器成绩会自动计入日历；把「复制本组数据」粘到这里可留档详情。</div>
-    <textarea id="logInput" placeholder="2026-10-24  限时450ms  命中率83%  中位436ms  超时5次"></textarea>
-    <div style="margin-top:10px;display:flex;gap:10px">
-      <button class="main" id="addLog">保存这条</button>
-      <button id="copyAll">复制全部</button>
+  <details>
+    <summary>进度</summary>
+    <div class="panel">
+      <div class="hint">绿色 = 已完成 · 描边 = 今天 · 淡色 = 休息日</div>
+      <div class="cal">
+        <div class="calTitle" id="calTitle"></div>
+        <div class="calWeek" id="calWeek"></div>
+        <div class="grid" id="grid"></div>
+      </div>
     </div>
-    <table id="logTable"></table>
-  </div>
+  </details>
+
+  <details>
+    <summary>训练记录</summary>
+    <div class="panel">
+      <div class="hint">训练器成绩会自动计入日历；把「复制本组数据」粘到这里可留档详情。</div>
+      <textarea id="logInput" placeholder="2026-10-24  限时450ms  命中率83%  中位436ms  超时5次"></textarea>
+      <div style="margin-top:10px;display:flex;gap:10px">
+        <button class="main" id="addLog">保存这条</button>
+        <button id="copyAll">复制全部</button>
+      </div>
+      <table id="logTable"></table>
+    </div>
+  </details>
 </div>
 
 <script>
@@ -317,6 +320,7 @@ render();
     '激活手感':'Wake the hand','一组就够':'One set is enough',
     '剩下的时间全部实战，不测数据':'Spend the rest on real matches — no data',
     '开始':'Start','一':'Mon','二':'Tue','三':'Wed','四':'Thu','五':'Fri','六':'Sat','日':'Sun',
+    '· 已完成':' · Done','· 连续':' · Streak',
     '日期':'Date','数据':'Data','今天已经标记过了':'Already marked today',
     '清空所有进度和记录？':'Clear all progress and logs?','已复制':'Copied',
     '2026-10-24  限时450ms  命中率83%  中位436ms  超时5次':'e.g. 2026-10-24  limit 450ms  hit 83%  median 436ms  overtime 5'

@@ -430,11 +430,13 @@
     <h2>个人数据</h2>
     <div class="hint">最佳成绩按模式分别记录，只存在本浏览器。</div>
     <div class="card">
-      <div class="row" style="gap:28px">
-        <div><div class="k">总训练组数</div><div class="v" id="sRuns">0</div></div>
-        <div><div class="k">训练天数</div><div class="v" id="sDays">0</div></div>
-        <div><div class="k">最低限时</div><div class="v" id="sLimit">—</div></div>
-        <div><div class="k">最高命中率</div><div class="v" id="sHit">—</div></div>
+      <div class="t" style="margin-bottom:10px">现在怎么样</div>
+      <div id="dataVerdict" style="font-size:17px;line-height:1.9;color:var(--txt)"></div>
+      <div class="row" style="gap:28px;margin-top:14px">
+        <div><div class="k">总训练组数</div><div class="v" id="sRuns" style="font-size:19px">0</div></div>
+        <div><div class="k">训练天数</div><div class="v" id="sDays" style="font-size:19px">0</div></div>
+        <div><div class="k">最低限时</div><div class="v" id="sLimit" style="font-size:19px">—</div></div>
+        <div><div class="k">最高命中率</div><div class="v" id="sHit" style="font-size:19px">—</div></div>
       </div>
     </div>
     <div class="card">
@@ -451,17 +453,15 @@
     <div class="card">
       <div class="t" style="margin-bottom:10px">最近记录</div>
       <table id="runTable"></table>
-      <div class="row" style="margin-top:14px">
-        <button id="expBtn">导出 JSON</button>
-        <label class="fileBtn">导入 JSON<input type="file" id="impFile" accept="application/json"></label>
-        <button id="clrBtn">清空全部数据</button>
+      <div style="margin-top:10px;text-align:right">
+        <button id="moreRuns" style="background:transparent;border:1px solid var(--line);color:var(--dim);font-size:13px">全部 ▾</button>
       </div>
     </div>
   </section>
 
   <section id="play">
     <h2 id="playTitle" style="cursor:default;user-select:none">训练</h2>
-    <div class="hint">先到设置页做一次灵敏度标定，之后每天按计划练。</div>
+    <div class="hint">不知道自己该用多少灵敏度？标定一次，几分钟出答案。</div>
 
     <div class="grid" id="drillGrid"></div>
 
@@ -542,12 +542,12 @@
       <div class="hint" id="gameConvHint" style="margin-top:10px">先选游戏，再改下面的灵敏度；改完自动换算，DPI 不动。只按腰射，开镜倍率不适用。</div>
       <div class="row" style="margin-top:14px">
         <a class="tile" style="flex:1;min-width:240px" href="tools/sensitivity-calibrator.html">
-          <div class="t">灵敏度标定 · 过冲法</div>
+          <div class="t">灵敏度标定</div>
           <div class="d">测出你每次都甩过头还是不够，直接反推该填的值。</div>
         </a>
         <a class="tile" style="flex:1;min-width:240px" href="tools/sensitivity-calibrator-strict.html">
-          <div class="t">灵敏度标定 · 严格口径</div>
-          <div class="d">同上，但只统计未命中的球，适合已经比较稳的人。</div>
+          <div class="t">灵敏度标定 · 进阶</div>
+          <div class="d">更细的统计与判定，适合想抠数据的人。</div>
         </a>
       </div>
       <div class="hint" style="margin-top:12px">换鼠标、改 DPI 或手感发飘，先回来重新标定一次。</div>
@@ -699,6 +699,16 @@
       <button class="main" id="saveBtn">保存设置</button>
       <button id="defBtn">恢复默认</button>
     </div>
+
+    <div class="card">
+      <div class="t">数据管理</div>
+      <div class="hint" style="margin:6px 0 16px">导出、导入或清空全部训练数据。</div>
+      <div class="row">
+        <button id="expBtn">导出 JSON</button>
+        <label class="fileBtn">导入 JSON<input type="file" id="impFile" accept="application/json"></label>
+        <button id="clrBtn">清空全部数据</button>
+      </div>
+    </div>
   </section>
 </main>
 
@@ -739,9 +749,12 @@ const EN={
   '最佳成绩按模式分别记录，只存在本浏览器。':'Best results per mode, stored locally in this browser.',
   '总训练组数':'Sets','训练天数':'Days','最低限时':'Best limit','最高命中率':'Best hit rate',
   '各模式最佳':'Best per mode','最近记录':'Recent runs','趋势（最近 60 组）':'Trend (last 60 runs)',
+  '现在怎么样':'How am I doing','最佳命中':'Best hit','最佳用时':'Best time','数据管理':'Data management',
+  '导出、导入或清空全部训练数据。':'Export, import or clear all training data.',
+  '全部 ▾':'All ▾','收起 ▴':'Collapse ▴',
   '模式':'Mode','最低限时':'Best limit','最高命中率':'Best hit','最快中位用时':'Fastest median','组数':'Sets',
   '自适应随机':'Adaptive random','定角重复':'Fixed angle','小球精度':'Precision',
-  '六维检查':'Check-up','90 秒一局：反应 · 首次落点 · 修正 · 微调 · 拉枪 · 稳定性，打完出处方。':'One 90-second run scores six skills — reaction, first landing, correction, micro-adjust, flick, stability — then prescribes what to train.',
+  '六维检查':'Check-up','90 秒一局测六样：反应、第一枪、补救、微调、拉枪、稳定。打完告诉你怎么练。':'One 90-second run scores six skills — reaction, first shot, recovery, micro-adjust, flick, steadiness — then tells you what to train.',
   '状态快测':'State check','20 球定尺寸，30 秒测今天手感，结果进记录。':'20 dots at a fixed size — 30 seconds to check today\'s feel; results go to your log.',
   '大角度甩枪':'Wide flick','移动跟枪':'Moving target',
   '90-180° 回头枪，练转身定位，CS 最常用的场景。':'90–180° turn shots — the most common CS scenario.',
@@ -752,7 +765,7 @@ const EN={
   '日期':'Date','限时':'Limit','命中率':'Hit rate','中位用时':'Median',
   '导出 JSON':'Export JSON','导入':'Import','清空全部数据':'Clear all data',
   '还没有数据，去练一组吧':'No data yet — run a set','暂无记录':'No runs yet',
-  '先到设置页做一次灵敏度标定，之后每天按计划练。':'Calibrate once in Settings, then follow the plan.',
+  '不知道自己该用多少灵敏度？标定一次，几分钟出答案。':'Not sure what sensitivity to use? Calibrate once — it takes minutes.',
   '四周计划，自动判断今天该练什么。':'Four-week plan; it knows what to do today.',
   '这里的参数会自动带进所有训练页面。':'These values are passed to every trainer page.',
   '灵敏度':'Sensitivity','鼠标 DPI':'Mouse DPI','CS 灵敏度':'CS sensitivity',
@@ -761,9 +774,9 @@ const EN={
   '灵敏度 · CS2 / CS:GO':'Sensitivity · CS2 / CS:GO',
   '先选游戏，再改下面的灵敏度；改完自动换算，DPI 不动。只按腰射，开镜倍率不适用。':'Pick the game first, then set its sensitivity below; it converts automatically, DPI untouched. Hipfire only — ADS multipliers are not covered.',
   '游戏灵敏度得是正数':'Enter a positive sensitivity',
-  '灵敏度标定 · 过冲法':'Calibrator · overshoot','灵敏度标定 · 严格口径':'Calibrator · strict',
+  '灵敏度标定':'Calibrator','灵敏度标定 · 进阶':'Calibrator · advanced',
   '测出你每次都甩过头还是不够，直接反推该填的值。':'Measures whether you overshoot or fall short, and derives the value.',
-  '同上，但只统计未命中的球，适合已经比较稳的人。':'Same, but only counts misses. For players who are already consistent.',
+  '更细的统计与判定，适合想抠数据的人。':'Finer stats and judgment — for players who like details.',
   '语言 / Language':'Language',
   '输入设备':'Input device',
   '选训练时的输入设备；手柄瞄准方式在这里调。':'Pick the training input device; gamepad aim style is tuned here.',
@@ -1090,8 +1103,8 @@ function cfgQ(){
 function renderDrills(){
   const q=cfgQ();
   const items=[
-    {t:'六维检查',d:'90 秒一局：反应 · 首次落点 · 修正 · 微调 · 拉枪 · 稳定性，打完出处方。',
-     dEN:'One 90-second run scores six skills — reaction, first landing, correction, micro-adjust, flick, stability — then prescribes what to train.',
+    {t:'六维检查',d:'90 秒一局测六样：反应、第一枪、补救、微调、拉枪、稳定。打完告诉你怎么练。',
+     dEN:'One 90-second run scores six skills — reaction, first shot, recovery, micro-adjust, flick, steadiness — then tells you what to train.',
      u:'tools/aim-trainer.html?mode=check&count=40&limit=0&delay=0'+q},
     {t:'状态快测',d:'20 球定尺寸，30 秒测今天手感，结果进记录。',
      dEN:'20 dots at a fixed size — 30 seconds to check today\'s feel; results go to your log.',
@@ -1138,20 +1151,44 @@ function renderData(){
   const hits=runs.map(r=>r.hit).filter(v=>v>0);
   $('sHit').textContent=hits.length? Math.max.apply(null,hits)+'%':'—';
 
-  let rows='<tr><th>模式</th><th>最低限时</th><th>最高命中率</th><th>最快中位用时</th><th>组数</th></tr>';
+  let rows='<tr><th>模式</th><th>最佳命中</th><th>最佳用时</th></tr>';
   const keys=Object.keys(best);
-  if(!keys.length) rows+='<tr><td colspan="5" style="color:var(--dim)">还没有数据，去练一组吧</td></tr>';
+  if(!keys.length) rows+='<tr><td colspan="3" style="color:var(--dim)">还没有数据，去练一组吧</td></tr>';
   keys.forEach(k=>{ const b=best[k];
-    rows+='<tr><td>'+(MODE_NAME[k]||k)+'</td><td class="big">'+(b.bestLimit||'—')+' ms</td><td>'+
-      (b.bestHit||'—')+'%</td><td>'+(b.bestMT||'—')+' ms</td><td>'+(b.runs||0)+'</td></tr>'; });
+    rows+='<tr><td>'+(MODE_NAME[k]||k)+'</td><td class="big">'+(b.bestHit||'—')+'%</td><td>'+(b.bestMT||'—')+' ms</td></tr>'; });
   $('bestTable').innerHTML=rows;
 
   let rr='<tr><th>日期</th><th>模式</th><th>限时</th><th>命中率</th><th>中位用时</th></tr>';
-  const tail=runs.slice(-15).reverse();
+  const tailAll=runs.slice(-15).reverse();
+  const tail = runShowAll? tailAll : tailAll.slice(0,5);
   if(!tail.length) rr+='<tr><td colspan="5" style="color:var(--dim)">暂无记录</td></tr>';
   tail.forEach(r=>{ rr+='<tr><td>'+r.d+'</td><td>'+(MODE_NAME[r.mode]||r.mode)+'</td><td>'+r.limit+
     ' ms</td><td>'+r.hit+'%</td><td>'+r.mt+' ms</td></tr>'; });
   $('runTable').innerHTML=rr;
+  const mr=$('moreRuns');
+  if(mr) mr.textContent = (tailAll.length>5)? (runShowAll? L('收起 ▴','Collapse ▴') : L('全部 ▾','All ▾')) : '';
+  if(mr) mr.style.display = tailAll.length>5? '' : 'none';
+
+  // 结论卡：本周 vs 上周
+  {
+    const wk0=[], wk1=[], nowD=new Date();
+    runs.forEach(r=>{ try{ const days=Math.floor((nowD.getTime()-new Date(r.d).getTime())/86400000);
+      if(days>=0&&days<7) wk0.push(r); else if(days>=7&&days<14) wk1.push(r); }catch(e){} });
+    const avgH=a=> a.length? Math.round(a.reduce((x,y)=>x+y.hit,0)/a.length) : null;
+    const avgM=a=> a.length? Math.round(a.reduce((x,y)=>x+y.mt,0)/a.length) : null;
+    let verdict;
+    if(wk0.length){
+      const h0=avgH(wk0), h1=avgH(wk1), m0=avgM(wk0), m1=avgM(wk1);
+      const parts=[L('本周 ','This week ')+wk0.length+L(' 组',' sets')];
+      if(h0!==null && h1!==null) parts.push(L('命中率 ','hit rate ')+(h0-h1>=0?'+':'')+(h0-h1)+'%');
+      if(m0!==null && m1!==null) parts.push(L('中位用时 ','median ')+(m0-m1>=0?'+':'')+(m0-m1)+' ms');
+      parts.push(h1===null? L('（上周没记录，从这周开始累计）','(no last week — baseline from here)') : L('（对比上周）',' (vs last week)'));
+      verdict=parts.join(' · ');
+    } else {
+      verdict=L('这周还没练——今天开始一组 15 分钟。','Nothing yet this week — start with one 15-minute set today.');
+    }
+    $('dataVerdict').textContent=verdict;
+  }
 
   drawTrend(runs);
 }
@@ -1159,6 +1196,7 @@ function renderData(){
 /* 趋势曲线：按模式分线（混在一起会骗人）——命中率（左轴 0-100%）+ 中位用时/限时（右轴 ms） */
 const MODE_EN={random:'Adaptive random', block:'Fixed angle', precision:'Precision', wide:'Wide flick', track:'Moving target', check:'Check-up'};
 let trendMode=null;
+let runShowAll=false;
 function drawTrend(runs){
   const cv=$('trendCv'); if(!cv) return;
   const sel=$('trendMode');
@@ -1228,6 +1266,7 @@ $('trendMode').addEventListener('change',()=>{
   trendMode=$('trendMode').value;
   drawTrend(load(K_RUNS,[]));
 });
+$('moreRuns').addEventListener('click',()=>{ runShowAll=!runShowAll; renderData(); });
 
 $('expBtn').addEventListener('click',()=>{
   const data={cfg:load(K_CFG,{}),best:load(K_BEST,{}),runs:load(K_RUNS,[]),exported:new Date().toISOString()};

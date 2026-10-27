@@ -448,7 +448,7 @@ requestAnimationFrame(loop);
     var s = y>0 ? 360/((c/2.54)*d)/y : 0;
     var txt = c.toFixed(1) + ' cm/360';
     if(y>0) txt += ' · 灵敏度 <b style="color:var(--acc)">' + s.toFixed(2) + '</b>';
-    txt += ' · 360° 需 ' + c.toFixed(1) + ' cm · DPI ' + d;
+    txt += ' · DPI ' + d;
     hint.innerHTML = txt;
   }
   ['dpi','yaw','cm'].forEach(function(id){
@@ -476,16 +476,19 @@ requestAnimationFrame(loop);
   sn.addEventListener('input', function(){ if(busy)return; busy=true; toCm(); busy=false; if(window.__updSensHint) window.__updSensHint(); });
   [dpi,yaw,cm].forEach(function(el){ if(!el) return; el.addEventListener('input', function(){ if(busy)return; busy=true; toSens(); busy=false; }); });
   // 读设置页保存的 DPI / m_yaw / cm/360（URL 参数优先）
+  // 程序赋值不触发 input 事件——统一 setVal 发事件，摘要行才会跟着刷新
+  function setVal(el,v){ if(!el) return; el.value=v; try{ el.dispatchEvent(new Event('input',{bubbles:true})); }catch(e){} }
   try{
     var q=new URLSearchParams(location.search);
     var cfg=JSON.parse(localStorage.getItem('cs2at.cfg')||'null');
     if(cfg){
-      if(!q.get('dpi') && cfg.dpi) dpi.value=cfg.dpi;
-      if(!q.get('yaw') && cfg.yaw) yaw.value=cfg.yaw;
-      if(!q.get('cm') && cfg.cm) cm.value=cfg.cm;
+      if(!q.get('dpi') && cfg.dpi) setVal(dpi,cfg.dpi);
+      if(!q.get('yaw') && cfg.yaw) setVal(yaw,cfg.yaw);
+      if(!q.get('cm') && cfg.cm) setVal(cm,cfg.cm);
     }
   }catch(e){}
   toSens();
+  if(window.__updSensHint) window.__updSensHint();
 })();
 
 /* ===== 英文界面 ===== */

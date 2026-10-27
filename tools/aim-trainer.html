@@ -171,6 +171,7 @@ let blockTimes=[], blockHits=0;
 let mode='random', blockLeft=0;
 // 六维检查：固定配方（球类型与顺序），方向随机、间隔抖动——锁题目结构，不锁题目内容
 const CHECK_RECIPE=(function(){ const p=[]; for(let i=0;i<18;i++){ p.push('micro'); p.push('wide'); p.push('mid'); } for(let i=0;i<6;i++) p.push('mid'); return p; })();
+const CHECK_WARMUP=6;   // 前 6 球热身，不计分
 let checkIdx=0, checkCur=null, checkData=[], checkSpeed=0;
 let trackSpeed=10, tsYaw=0, tsPitch=0, tvYaw=0, tvPitch=0, tDur=2;
 let blockAnchorYaw=0, blockAnchorPitch=0, blockAmp=0, blockSide=1, blockAxis=[1,0], blockAxisIdx=0;
@@ -529,10 +530,13 @@ function judge(){
 
   trial++; times.push(mt); errs.push(err); hitFlags.push(hit);
   if(mode==='check'){
-    const c=checkCur||{kind:'mid', firstStop:true, firstErr:err, firstMove:null};
-    checkData.push({ kind:c.kind, react:(c.firstMove===null?null:Math.round(c.firstMove)),
-      firstErr:c.firstStop? c.firstErr : err, finalErr:err,
-      dx:wrapPi(tYaw-yaw)*R2D, dy:wrapPi(tPitch-pitch)*R2D, hit:hit, mt:mt });
+    const c=checkCur||{kind:'mid', firstStop:true, firstErr:err, firstMove:null, firstStopAt:0};
+    if(checkIdx>=CHECK_WARMUP){   // 前 6 球热身，不计分
+      checkData.push({ kind:c.kind, react:(c.firstMove===null?null:Math.round(c.firstMove)),
+        firstErr:c.firstStop? c.firstErr : err, finalErr:err,
+        stopToFire:(c.firstStop&&c.firstStopAt)? Math.round(now-c.firstStopAt) : 0,
+        dx:wrapPi(tYaw-yaw)*R2D, dy:wrapPi(tPitch-pitch)*R2D, hit:hit, mt:mt });
+    }
     checkIdx++;
   }
   blockTimes.push(mt);
@@ -589,9 +593,10 @@ function checkScores(){
   const react=mid.filter(d=>d.react!==null).map(d=>d.react);
   const sReact=react.length? clamp(100-(med(react)-150)/3) : 50;         // 150ms=100，300ms=50，450ms=0
   const firstPool=mid.concat(wide).map(d=>d.firstErr);
-  const sFirst=firstPool.length? clamp(100-med(firstPool)/0.03) : 50;     // 0°=100，3°=0
-  const secondPool=mid.concat(wide).map(d=>d.firstErr-d.finalErr);
-  const sSecond=secondPool.length? clamp(50+med(secondPool)*33) : 50;     // +1.5°=100，-1.5°=0
+  const sFirst=firstPool.length? clamp(100-med(firstPool)/0.03) : 50;     // 首次落点：0°=100，3°=0
+  // 修正成本：首停到击发的耗时——一次到位 0ms=100，回拉 400ms=0（不奖励先打偏）
+  const secondPool=mid.concat(wide).map(d=>d.stopToFire||0);
+  const sSecond=secondPool.length? clamp(100-med(secondPool)/4) : 50;
   const sMicro=micro.length? clamp(micro.filter(d=>d.hit).length/micro.length*100) : 50;
   const sWide=wide.length? clamp(
       (wide.filter(d=>d.hit).length/wide.length*60) + (clamp(100-(med(wide.map(d=>d.mt))-300)/6)*0.4)) : 50;
@@ -599,8 +604,8 @@ function checkScores(){
   const fst=D.slice(0,n3), lst=D.slice(-n3);
   const hf=fst.filter(d=>d.hit).length/fst.length;
   const hl=lst.filter(d=>d.hit).length/lst.length;
-  // 对称打分：持平=50，后半段更好→涨分（热身），掉→扣分
-  const sAttn=clamp(50+(hl-hf)*300);
+  // 稳定性（样本少，仅粗分）：系数收窄到 100，噪声误判从 ±31 降到 ±10 分
+  const sAttn=clamp(50+(hl-hf)*100);
   return { react:sReact, first:sFirst, second:sSecond, micro:sMicro, wide:sWide, attn:sAttn };
 }
 function checkReportHtml(){
@@ -609,14 +614,19 @@ function checkReportHtml(){
     window.__logLine=(EN_UI?'Check-up (not enough data)':'检查（数据不足）');
     return '<div style="font-size:18px;color:var(--dim)">'+(EN_UI?'Not enough data — run it again.':'数据不足，再跑一次。')+'</div>';
   }
-  const band=v=> v>=75? {c:'var(--acc)', t:EN_UI?'Strong':'强'} : v>=45? {c:'#d29922', t:EN_UI?'Mid':'中'} : {c:'#e5484d', t:EN_UI?'Weak':'弱'};
+  // 三档配色：浅色主题下 --acc（橙）与红太近，改用品蓝/深红/墨绿拉开
+  const thB=document.documentElement.getAttribute('data-theme');
+  const isLightB=(thB==='ink'||thB==='light'||thB==='lake'||thB==='sand');
+  const band=v=> v>=75? {c:'var(--acc)', t:EN_UI?'Strong':'强'}
+    : v>=45? {c: isLightB? '#0f766e' : '#d29922', t:EN_UI?'Mid':'中'}
+    : {c: isLightB? '#b91c1c' : '#e5484d', t:EN_UI?'Weak':'弱'};
   const ITEMS=[
     {k:'react', zh:'反应', en:'Reaction'},
-    {k:'first', zh:'一次定位', en:'First placement'},
-    {k:'second',zh:'二次定位', en:'Correction'},
+    {k:'first', zh:'首次落点', en:'First landing'},
+    {k:'second',zh:'修正', en:'Correction'},
     {k:'micro', zh:'微调', en:'Micro-adjust'},
     {k:'wide',  zh:'拉枪', en:'Flick'},
-    {k:'attn',  zh:'注意力', en:'Attention'}
+    {k:'attn',  zh:'稳定性', en:'Stability'}
   ];
   // 对比上次检查（跳过刚存的本次记录）
   let lastS6=null;
@@ -639,19 +649,30 @@ function checkReportHtml(){
   }).join('');
   const RX={
     react:{zh:'反应偏慢：打「自适应随机」+ 时间限制，逼自己出手。',en:'Slow reaction: run Adaptive random with a time limit to force quick shots.',u:'tools/aim-trainer.html?mode=random&count=40&limit=1',lab:{zh:'自适应随机',en:'Adaptive random'}},
-    first:{zh:'一次定位差：打「定角重复」，把第一下的落点练稳。',en:'First placement off: run Fixed angle to steady your first land point.',u:'tools/aim-trainer.html?mode=block&count=40&limit=0',lab:{zh:'定角重复',en:'Fixed angle'}},
-    second:{zh:'二次定位差：打「自适应随机」，练追补那一下。',en:'Correction weak: run Adaptive random to train the follow-up fix.',u:'tools/aim-trainer.html?mode=random&count=40&limit=1',lab:{zh:'自适应随机',en:'Adaptive random'}},
+    first:{zh:'首次落点差：打「定角重复」，把第一下的落点练稳。',en:'First landing off: run Fixed angle to steady your first land point.',u:'tools/aim-trainer.html?mode=block&count=40&limit=0',lab:{zh:'定角重复',en:'Fixed angle'}},
+    second:{zh:'修正慢：打「自适应随机」，练追补的速度。',en:'Slow correction: run Adaptive random to speed up the follow-up fix.',u:'tools/aim-trainer.html?mode=random&count=40&limit=1',lab:{zh:'自适应随机',en:'Adaptive random'}},
     micro:{zh:'微调差：打「小球精度」0.7°，稳住手腕。',en:'Micro-adjust weak: run Precision 0.7° — steady the wrist.',u:'tools/aim-trainer.html?mode=precision&count=40&limit=0',lab:{zh:'小球精度',en:'Precision'}},
     wide:{zh:'拉枪差：打「大角度甩枪」，练 90-180° 转身定位。',en:'Flicks weak: run Wide flick — 90–180° turn shots.',u:'tools/aim-trainer.html?mode=wide&count=20&limit=0',lab:{zh:'大角度甩枪',en:'Wide flick'}},
-    attn:{zh:'注意力掉得快：组数砍半，中间休息 60 秒再练。',en:'Attention drops: halve set size, rest 60 s between sets.',u:null,lab:{zh:'休息',en:'Rest'}}
+    attn:{zh:'状态波动大：休息几分钟再查一次，别硬练。',en:'Big variance: rest a few minutes and re-check — don\'t grind.',u:null,lab:{zh:'休息',en:'Rest'}}
   };
-  const order=ITEMS.map(i=>i.k).filter(k=>S[k]<75);
-  const rx=order.slice(0,3).map(k=>RX[k]).filter(Boolean);
+  // 处方只推真问题：<45，或比上次掉 ≥15 分；同一 drill 不重复；最多 1 主 + 1 副
+  const order=ITEMS.map(i=>i.k).filter(k=>{
+    const weak=S[k]<45;
+    const drop=(lastS6 && typeof lastS6[k]==='number') && (lastS6[k]-S[k])>=15;
+    return weak||drop;
+  });
+  const seenU={}; const rx=[];
+  order.forEach(k=>{
+    const r=RX[k]; if(!r) return;
+    if(r.u && seenU[r.u]) return;
+    if(r.u) seenU[r.u]=1;
+    rx.push(r);
+  });
   const okHtml='<div style="margin-top:16px;text-align:left;border-top:1px solid var(--line);padding-top:12px;font-size:14px;color:var(--acc)">'+
     (EN_UI?'All six skills are mid or better — keep the routine, re-check next week.':'六项都在中上——按计划走，下周再查一次。')+'</div>';
   const rxHtml=rx.length? '<div style="margin-top:16px;text-align:left;border-top:1px solid var(--line);padding-top:12px">'+
     '<div style="font-size:13px;color:var(--dim);margin-bottom:6px">'+(EN_UI?'Next:':'接下来练')+'</div>'+
-    rx.map(function(r){
+    rx.slice(0,2).map(function(r){
       const nm=(EN_UI?r.lab.en:r.lab.zh);
       return '<div style="margin:7px 0;font-size:14px;line-height:1.7">'+
         (r.u? '<a href="'+r.u+'" target="_blank" style="color:var(--acc);text-decoration:none;font-weight:600">'+nm+'</a>' : '<b style="color:var(--acc)">'+nm+'</b>')+
@@ -659,12 +680,15 @@ function checkReportHtml(){
     }).join('')+'</div>' : okHtml;
   window.__logLine='检查 '+(EN_UI?'check-up ':'')+ITEMS.map(i=>(EN_UI?i.en:i.zh)+' '+S[i.k]).join(' / ');
   const vsHint=lastS6? '<div style="font-size:12px;color:var(--dim);margin-bottom:8px">'+(EN_UI?'▲/▼ vs your last check-up':'▲/▼ = 与上次检查相比')+'</div>' : '';
+  const noteLine='<div style="font-size:11.5px;color:var(--dim);margin-top:10px;line-height:1.7">'+
+    (EN_UI?'Coarse check-up: same-skill retests vary ~±15 pts; stability uses few samples — rough reference only.':'90 秒检查为粗分参考：同水平复测波动约 ±15 分；稳定性样本少，仅供粗分参考。')+'</div>';
   return '<div style="font-size:20px;color:var(--acc);font-weight:700">'+(EN_UI?'90-second check-up':'90 秒六维检查')+'</div>'+
     '<div style="margin:6px 0 14px;color:var(--dim);font-size:14px">'+trial+' '+(EN_UI?'balls':'球')+'</div>'+
     vsHint+
     '<div style="max-width:520px;margin:0 auto;text-align:left">'+bars+'</div>'+
     '<div style="margin-top:16px"><canvas id="checkScatter" style="width:100%;max-width:300px;aspect-ratio:1/1;display:block;margin:0 auto"></canvas>'+
     '<div style="font-size:12px;color:var(--dim);margin-top:6px">'+(EN_UI?'Landing points · green = hit, amber = miss':'落点 · 绿 = 命中，琥珀 = 未中')+'</div></div>'+
+    noteLine+
     rxHtml;
 }
 /* 落点图：每次击发的最终落点（相对目标），环 = 0.7° / 1.2° */
@@ -857,16 +881,16 @@ function aimDelta(dx,dy){
   if(pitch>PITCH_LIM) pitch=PITCH_LIM;
   if(pitch<-PITCH_LIM) pitch=-PITCH_LIM;
   bumpDyn(Math.hypot(dx||0, dy||0));
-  // 六维检查：首动时间（反应）+ 首次停点误差（一次定位）
+  // 六维检查：首动时间（反应）+ 首次停点（角度阈值，跨 DPI/灵敏度可比）
   if(mode==='check' && running && !paused && alive && checkCur && !checkCur.firstStop){
     const now=performance.now();
-    const sp=Math.abs(dx||0)+Math.abs(dy||0);
-    if(!checkCur.moved && sp>1){ checkCur.moved=true; checkCur.firstMove=now-tSpawn; }
+    const sp=(Math.abs(dx||0)+Math.abs(dy||0))*k;   // 换算成角度
+    if(!checkCur.moved && sp>0.15*D2R){ checkCur.moved=true; checkCur.firstMove=now-tSpawn; }
     if(checkCur.moved){
       checkSpeed=checkSpeed*0.6+sp*0.4;
-      if(sp>=5) checkCur.lastFast=now;
-      if(checkSpeed<2 && now-checkCur.lastFast>130){
-        checkCur.firstStop=true;
+      if(sp>=0.5*D2R) checkCur.lastFast=now;
+      if(checkSpeed<0.2*D2R && now-checkCur.lastFast>130){
+        checkCur.firstStop=true; checkCur.firstStopAt=now;
         checkCur.firstErr=Math.hypot(wrapPi(tYaw-yaw), wrapPi(tPitch-pitch))*R2D;
       }
     }
@@ -955,7 +979,7 @@ function loop(){
   // 六维检查：停点兜底——鼠标不动 200ms 即视为第一段甩动结束
   // （低速鼠标停下时不产生移动事件，纯靠事件流测不到停点）
   if(mode==='check' && alive && checkCur && checkCur.moved && !checkCur.firstStop && now-checkCur.lastFast>200){
-    checkCur.firstStop=true;
+    checkCur.firstStop=true; checkCur.firstStopAt=now;
     checkCur.firstErr=Math.hypot(wrapPi(tYaw-yaw), wrapPi(tPitch-pitch))*R2D;
   }
   if(!alive && now>=nextAt) spawn();

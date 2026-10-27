@@ -741,7 +741,7 @@ const EN={
   '各模式最佳':'Best per mode','最近记录':'Recent runs','趋势（最近 60 组）':'Trend (last 60 runs)',
   '模式':'Mode','最低限时':'Best limit','最高命中率':'Best hit','最快中位用时':'Fastest median','组数':'Sets',
   '自适应随机':'Adaptive random','定角重复':'Fixed angle','小球精度':'Precision',
-  '六维检查':'Check-up','90 秒一局：反应 · 一次定位 · 二次定位 · 微调 · 拉枪 · 注意力，打完出处方。':'One 90-second run scores six skills — reaction, first placement, correction, micro-adjust, flick, attention — then prescribes what to train.',
+  '六维检查':'Check-up','90 秒一局：反应 · 首次落点 · 修正 · 微调 · 拉枪 · 稳定性，打完出处方。':'One 90-second run scores six skills — reaction, first landing, correction, micro-adjust, flick, stability — then prescribes what to train.',
   '状态快测':'State check','20 球定尺寸，30 秒测今天手感，结果进记录。':'20 dots at a fixed size — 30 seconds to check today\'s feel; results go to your log.',
   '大角度甩枪':'Wide flick','移动跟枪':'Moving target',
   '90-180° 回头枪，练转身定位，CS 最常用的场景。':'90–180° turn shots — the most common CS scenario.',
@@ -1090,8 +1090,8 @@ function cfgQ(){
 function renderDrills(){
   const q=cfgQ();
   const items=[
-    {t:'六维检查',d:'90 秒一局：反应 · 一次定位 · 二次定位 · 微调 · 拉枪 · 注意力，打完出处方。',
-     dEN:'One 90-second run scores six skills — reaction, first placement, correction, micro-adjust, flick, attention — then prescribes what to train.',
+    {t:'六维检查',d:'90 秒一局：反应 · 首次落点 · 修正 · 微调 · 拉枪 · 稳定性，打完出处方。',
+     dEN:'One 90-second run scores six skills — reaction, first landing, correction, micro-adjust, flick, stability — then prescribes what to train.',
      u:'tools/aim-trainer.html?mode=check&count=40&limit=0&delay=0'+q},
     {t:'状态快测',d:'20 球定尺寸，30 秒测今天手感，结果进记录。',
      dEN:'20 dots at a fixed size — 30 seconds to check today\'s feel; results go to your log.',

@@ -660,6 +660,8 @@
         <div style="min-width:150px">
           <label style="display:block"><input id="iCrossDot" type="checkbox" checked> 中心点</label>
           <label style="display:block;margin-top:6px"><input id="iCrossOutline" type="checkbox" checked> 描边</label>
+          <label style="display:block;margin-top:6px"><input id="iHitFx" type="checkbox" checked> 命中特效（球闪光）</label>
+          <label style="display:block;margin-top:6px"><input id="iHitCross" type="checkbox" checked> 准星击中反馈</label>
         </div>
       </div>
 
@@ -814,6 +816,7 @@ const EN={
   '样式':'Style','十字':'Cross','圆点':'Dot','静态':'Static','动态':'Dynamic',
   '颜色来源':'Colour source','跟随场景':'Follow scene','主色':'Main','描边':'Outline',
   '长度':'Length','粗细':'Thickness','间隙':'Gap','中心点':'Center dot','边框':'Outline',
+  '命中特效（球闪光）':'Hit effect (ball flash)','准星击中反馈':'Crosshair hit flash',
   '大小':'Size','小':'Small','大':'Large',
   '分享准星':'Share crosshair','准星分享码：':'Crosshair share code: ','粘贴准星分享码':'Paste crosshair share code',
   '格式不对':'Invalid code','已导入准星':'Crosshair imported',
@@ -1451,6 +1454,8 @@ function syncCrossUI(){
     $('iCrossDot').checked=XG('cs2at.crossDot','1')==='1';
     $('iCrossOutline').checked=XG('cs2at.crossOutline','1')==='1';
     $('iDotOutline').checked=XG('cs2at.dotOutline','1')==='1';
+    $('iHitFx').checked=XG('cs2at.hitFx','1')==='1';
+    $('iHitCross').checked=XG('cs2at.hitCross','1')==='1';
   }catch(e){}
 }
 $('iCrossType').addEventListener('change',()=>{
@@ -1475,6 +1480,8 @@ function chk(id,key){ const el=document.getElementById(id); if(!el) return; el.a
 chk('iCrossDot','cs2at.crossDot');
 chk('iCrossOutline','cs2at.crossOutline');
 chk('iDotOutline','cs2at.dotOutline');
+chk('iHitFx','cs2at.hitFx');
+chk('iHitCross','cs2at.hitCross');
 $('iCrossMode').addEventListener('change',()=>{
   $('crossCustom').style.display = $('iCrossMode').value==='custom'? '' : 'none';
   try{ localStorage.setItem('cs2at.crossMode', $('iCrossMode').value); }catch(e){}

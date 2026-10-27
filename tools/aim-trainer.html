@@ -158,6 +158,9 @@ const PITCH_LIM=75*Math.PI/180, D2R=Math.PI/180, R2D=180/Math.PI;
 let W=0,H=0,f=1;
 let yaw=0, pitch=0, tYaw=0, tPitch=0, sYaw=0, sPitch=0;
 const EN_UI=(function(){ try{ var q=new URLSearchParams(location.search); if(q.get('lang')) return q.get('lang')==='en'; return localStorage.getItem('cs2at.lang')==='en'; }catch(e){ return false; } })();
+// 命中特效 / 准星击中反馈：设置页可关，默认开
+const hitFxOn=(function(){ try{ return localStorage.getItem('cs2at.hitFx')!=='0'; }catch(e){ return true; } })();
+const hitCrossOn=(function(){ try{ return localStorage.getItem('cs2at.hitCross')!=='0'; }catch(e){ return true; } })();
 let running=false, paused=false, pauseAt=0, endMode='count', endTime=120, endAt=0;
 let waiting=false, cdUntil=0, cdTimer=null, endStarted=false;
 let padMode='off';
@@ -397,6 +400,13 @@ function start(){
     dotOutl   = g('cs2at.dotOutline','1')==='1';
     crossDyn  = g('cs2at.crossDyn','static');
   }catch(e){}
+  try{
+    // 检查模式默认「只有中心点」的小准星：0.7° 小球会被十字线整个盖住。
+    // 用户自己设置过准星样式就尊重他。
+    if(mode==='check' && localStorage.getItem('cs2at.crossType')===null){
+      crossType='dot'; dotSize='small'; dotOutl=true; crossDyn='static';
+    }
+  }catch(e){}
   mode=(document.getElementById('mode')||{value:'random'}).value||'random';
   if(mode==='precision'){ radius=0.7; limitChk.checked=false; }
   else if(mode==='block'){ radius=R0; limitChk.checked=false; blockLeft=0; }
@@ -577,13 +587,14 @@ function judge(){
 
   alive=false;
   feedback={ err:err, hit:hit, mt:mt, over:overtime, until:now+600 };
+  if(hit){ hitFx={ty:tYaw, tp:tPitch, until:now+250}; hitCrossUntil=now+200; }   // 命中：球位置闪光渐隐 + 准星闪一下
 
   if((endMode==='count' && trial>=TOTAL)){ finish(); return; }
   if(endMode==='time' && performance.now()>=endAt){ finish(); return; }
   nextAt = (mode==='check')? now+1200+Math.random()*500 : now+150+Math.random()*250;
 }
 
-let feedback=null;
+let feedback=null, hitFx=null, hitCrossUntil=0;
 
 /* ===== 六维检查：评分与报告 ===== */
 function checkScores(){
@@ -1029,22 +1040,16 @@ function drawFrame(now){
     const p=project(tw,th,td);
     if(p){
       const rad=Math.max(4, f*Math.tan(radius*D2R));
-      // 彩色光晕只在深色场景画——浅色底上光晕=糊一圈，靠硬边
       if(SC.dark){
-        try{
-          const glow=ctx.createRadialGradient(p.sx,p.sy,rad*0.9,p.sx,p.sy,rad*2.6);
-          glow.addColorStop(0, SC.tgtFill);
-          glow.addColorStop(1,'rgba(0,0,0,0)');
-          ctx.fillStyle=glow;
-          ctx.beginPath(); ctx.arc(p.sx,p.sy,rad*2.6,0,Math.PI*2); ctx.fill();
-        }catch(e){}
-        if(SC.halo>=0.05){
-          const halo=ctx.createRadialGradient(p.sx,p.sy,rad*0.95,p.sx,p.sy,rad*2.3);
-          halo.addColorStop(0,'rgba(0,0,0,'+SC.halo+')');
-          halo.addColorStop(1,'rgba(0,0,0,0)');
-          ctx.fillStyle=halo;
-          ctx.beginPath(); ctx.arc(p.sx,p.sy,rad*2.3,0,Math.PI*2); ctx.fill();
-        }
+        // 深色用光：1px 内高光（左上 25% 白点），零色带零膨胀
+        ctx.beginPath();
+        ctx.arc(p.sx-rad*0.25, p.sy-rad*0.25, Math.max(1.2, rad*0.18), 0, Math.PI*2);
+        ctx.fillStyle='rgba(255,255,255,.35)'; ctx.fill();
+      } else {
+        // 浅色用影：右下 12% 偏移、8% 黑、1.2 倍接触阴影
+        ctx.beginPath();
+        ctx.arc(p.sx+rad*0.12, p.sy+rad*0.12, rad*1.2, 0, Math.PI*2);
+        ctx.fillStyle='rgba(0,0,0,.08)'; ctx.fill();
       }
       // 实心目标 + 细环（浅色场景线更细、靠边不靠光）
       ctx.beginPath(); ctx.arc(p.sx,p.sy,rad,0,Math.PI*2);
@@ -1104,11 +1109,13 @@ function drawFrame(now){
 
   const cx=W/2, cy=H/2;
   const dynF=dynamicFactor(now);
+  // 准星击中反馈：命中后准星白闪 0.2 秒
+  const crossC=(hitCrossOn && hitCrossUntil>now)? 'rgba(255,255,255,.92)' : SC.cross;
   if(crossType==='dot'){
     // 圆点准星：只有大小与边框
     const r=(dotSize==='large'?6:3)*(1+0.4*dynF)*devicePixelRatio;
     if(dotOutl){ ctx.beginPath(); ctx.arc(cx,cy,r+1.5*devicePixelRatio,0,Math.PI*2); ctx.fillStyle=SC.edge; ctx.fill(); }
-    ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fillStyle=SC.cross; ctx.fill();
+    ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fillStyle=crossC; ctx.fill();
   } else {
     // 十字准星：长/宽/间隙 + 中心点 + 描边；动态模式随移动速度张开
     const len=(crossLen*(1+0.5*dynF))*devicePixelRatio;
@@ -1124,14 +1131,29 @@ function drawFrame(now){
       ctx.stroke();
     }
     if(crossOutl) drawBars(SC.edge, wd+2.5*devicePixelRatio);
-    drawBars(SC.cross, wd);
+    drawBars(crossC, wd);
     if(crossDot){
       // 中心点：小方块，粗细与十字线一致，偶数像素，绝对居中
       let s=Math.max(2, Math.round(wd/devicePixelRatio));
       if(s%2) s++;
       const sPx=s*devicePixelRatio;
-      ctx.fillStyle=SC.cross;
+      ctx.fillStyle=crossC;
       ctx.fillRect(cx-sPx/2, cy-sPx/2, sPx, sPx);
+    }
+  }
+
+  // 命中特效：在球被点中的位置闪光，0.25 秒渐隐
+  if(hitFxOn && hitFx && now<hitFx.until){
+    const cp=Math.cos(hitFx.tp);
+    const tp=project(DIST*cp*Math.sin(hitFx.ty), DIST*Math.sin(hitFx.tp), DIST*cp*Math.cos(hitFx.ty));
+    if(tp){
+      const k=(hitFx.until-now)/250;
+      const fr=16*devicePixelRatio;
+      const fg=ctx.createRadialGradient(tp.sx,tp.sy,fr*0.5, tp.sx,tp.sy, fr*1.7);
+      fg.addColorStop(0, hexA(SC.tgt, (SC.dark? 0.28 : 0.18)*k));
+      fg.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.fillStyle=fg;
+      ctx.beginPath(); ctx.arc(tp.sx,tp.sy,fr*1.7,0,Math.PI*2); ctx.fill();
     }
   }
 

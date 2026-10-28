@@ -840,13 +840,14 @@ const EN={
   '模式':'Mode','最低限时':'Best limit','最高命中率':'Best hit','最快中位用时':'Fastest median','组数':'Sets',
   '自适应随机':'Adaptive random','定角重复':'Fixed angle','小球精度':'Precision',
   '六维检查':'Check-up','90 秒一局测六样：反应、第一枪、反应确定、微调、拉枪、稳定。打完告诉你怎么练。':'One 90-second run scores six skills — reaction, first shot, confirm, micro-adjust, flick, steadiness — then tells you what to train.',
-  '状态快测':'State check','20 球定尺寸，30 秒测今天手感，结果进记录。':'20 dots at a fixed size — 30 seconds to check today\'s feel; results go to your log.',
+  '状态快测':'State check','20 球无时限，球大小按命中率自适应，快速看今天手感。':'20 dots, no time limit — size adapts to your hit rate. A quick feel check for today.',
   '大角度甩枪':'Wide flick','微调训练':'Micro-adjust',
-  '90-180° 回头枪，练转身定位，CS 最常用的场景。':'90–180° turn shots — the most common CS scenario.',
+  '80-160° 回头枪，练转身定位，CS 最常用的场景。':'80–160° turn shots — the most common CS scenario.',
   '目标匀速漂移，跟着点。VAL / APEX / OW 的核心项目。':'Targets drift at a steady speed — click while tracking. Core skill for VAL / APEX / OW.',
-  '球与限时按 85% 成功率自动调节，主练用这个。':'Size and limit auto-adjust to hold ~85% success. For main practice.',
-  '同一角度连打 8 球，形成运动程序，热身用。':'Eight shots on one angle to build a motor program. For warm-up.',
+  '球固定 1.5°，只调限时，按 85% 成功率走。主练用这个。':'Fixed 1.5° dots — only the time limit adjusts toward 85% success. For main practice.',
+  '同一轴左右交替 8 球，形成运动程序，热身用。':'8 dots alternating left/right on one axis to build a motor program. For warm-up.',
   '0.7° 小球，无时限，练一次定位的精度。':'0.7° dots, no limit. For one-shot precision.',
+  '评估':'Assessment','练习':'Practice',
   '日期':'Date','限时':'Limit','命中率':'Hit rate','中位用时':'Median',
   '导出 JSON':'Export JSON','导入':'Import','清空全部数据':'Clear all data',
   '还没有数据，去练一组吧':'No data yet — run a set','暂无记录':'No runs yet',
@@ -1227,32 +1228,39 @@ function cfgQ(){
 }
 function renderDrills(){
   const q=cfgQ();
+  // 分组：评估 vs 练习，不再把预设和模式混成一排
   const items=[
-    {t:'六维检查',d:'90 秒一局测六样：反应、第一枪、反应确定、微调、拉枪、稳定。打完告诉你怎么练。',
+    {g:'评估', t:'六维检查',d:'90 秒一局测六样：反应、第一枪、反应确定、微调、拉枪、稳定。打完告诉你怎么练。',
      dEN:'One 90-second run scores six skills — reaction, first shot, confirm, micro-adjust, flick, steadiness — then tells you what to train.',
      u:'tools/aim-trainer.html?mode=check&count=40&limit=0'+q},
-    {t:'状态快测',d:'20 球定尺寸，30 秒测今天手感，结果进记录。',
-     dEN:'20 dots at a fixed size — 30 seconds to check today\'s feel; results go to your log.',
+    {g:'评估', t:'状态快测',d:'20 球无时限，球大小按命中率自适应，快速看今天手感。',
+     dEN:'20 dots, no time limit — size adapts to your hit rate. A quick feel check for today.',
      u:'tools/aim-trainer.html?mode=random&count=20&limit=0'+q},
-    {t:'自适应随机',d:'球与限时按 85% 成功率自动调节，主练用这个。',
-     dEN:'Size and limit auto-adjust to hold ~85% success. For main practice.',
+    {g:'练习', t:'自适应随机',d:'球固定 1.5°，只调限时，按 85% 成功率走。主练用这个。',
+     dEN:'Fixed 1.5° dots — only the time limit adjusts toward 85% success. For main practice.',
      u:'tools/aim-trainer.html?mode=random&count=40&limit=1'+q},
-    {t:'定角重复',d:'同一角度连打 8 球，形成运动程序，热身用。',
-     dEN:'Eight shots on one angle to build a motor program. For warm-up.',
+    {g:'练习', t:'定角重复',d:'同一轴左右交替 8 球，形成运动程序，热身用。',
+     dEN:'8 dots alternating left/right on one axis to build a motor program. For warm-up.',
      u:'tools/aim-trainer.html?mode=block&count=40&limit=0'+q},
-    {t:'小球精度',d:'0.7° 小球，无时限，练一次定位的精度。',
+    {g:'练习', t:'小球精度',d:'0.7° 小球，无时限，练一次定位的精度。',
      dEN:'0.7° dots, no limit. For one-shot precision.',
      u:'tools/aim-trainer.html?mode=precision&count=40&limit=0'+q},
-    {t:'大角度甩枪',d:'90-180° 回头枪，练转身定位，CS 最常用的场景。',
-     dEN:'90–180° turn shots — the most common CS scenario.',
+    {g:'练习', t:'大角度甩枪',d:'80-160° 回头枪，练转身定位，CS 最常用的场景。',
+     dEN:'80–160° turn shots — the most common CS scenario.',
      u:'tools/aim-trainer.html?mode=wide&count=30&limit=0'+q},
-    {t:'微调训练',d:'目标匀速漂移，跟着点。VAL / APEX / OW 的核心项目。',
+    {g:'练习', t:'微调训练',d:'目标匀速漂移，跟着点。VAL / APEX / OW 的核心项目。',
      dEN:'Targets drift at a steady speed — click while tracking. Core skill for VAL / APEX / OW.',
      u:'tools/aim-trainer.html?mode=track&count=30&limit=0'+q}
   ];
   const drillEN=false;   // 说明已进词典，渲染只出中文，翻译交给 translateRoot
-$('drillGrid').innerHTML=items.map(i=>
-    '<a class="tile" href="'+i.u+'"><div class="t">'+i.t+'</div><div class="d">'+(drillEN?i.dEN:i.d)+'</div></a>').join('');
+  const groups=[['评估','Assessment'],['练习','Practice']];
+  $('drillGrid').innerHTML=groups.map(function(g){
+    return '<div style="grid-column:1/-1;margin-top:14px;font-size:13px;color:var(--dim);letter-spacing:1px">'+
+      (document.documentElement.getAttribute('lang')==='en'? g[1] : g[0])+'</div>'+
+      items.filter(function(i){ return i.g===g[0]; }).map(function(i){
+        return '<a class="tile" href="'+i.u+'"><div class="t">'+i.t+'</div><div class="d">'+(drillEN?i.dEN:i.d)+'</div></a>';
+      }).join('');
+  }).join('');
 }
 
 function renderData(){

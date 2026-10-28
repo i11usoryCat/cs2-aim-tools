@@ -481,15 +481,19 @@ try{
       <div class="t" style="margin-bottom:10px">现在怎么样</div>
       <div id="dataVerdict" style="font-size:17px;line-height:1.9;color:var(--txt)"></div>
       <div class="row" style="gap:28px;margin-top:14px">
-        <div><div class="k">总训练组数</div><div class="v" id="sRuns" style="font-size:19px">0</div></div>
+        <div><div class="k">本地组数</div><div class="v" id="sRuns" style="font-size:19px">0</div></div>
         <div><div class="k">训练天数</div><div class="v" id="sDays" style="font-size:19px">0</div></div>
-        <div><div class="k">最低限时</div><div class="v" id="sLimit" style="font-size:19px">—</div></div>
-        <div><div class="k">最高命中率</div><div class="v" id="sHit" style="font-size:19px">—</div></div>
+        <div><div class="k">历史最低限时</div><div class="v" id="sLimit" style="font-size:19px">—</div></div>
+        <div><div class="k">历史最高命中率</div><div class="v" id="sHit" style="font-size:19px">—</div></div>
       </div>
     </div>
     <div class="card">
-      <div class="t" style="margin-bottom:10px">各模式最佳</div>
+      <div class="t" style="margin-bottom:10px">各模式最佳（历史）</div>
       <table id="bestTable"></table>
+      <div style="margin-top:10px;text-align:right">
+        <button id="rebuildBest" style="background:transparent;border:1px solid var(--line);color:var(--dim);font-size:12.5px">重算最佳</button>
+        <button id="clearBest" style="background:transparent;border:1px solid var(--line);color:var(--dim);font-size:12.5px;margin-left:8px">清除最佳</button>
+      </div>
     </div>
     <div class="card">
       <div class="t" style="margin-bottom:10px">趋势（最近 60 组）
@@ -832,7 +836,9 @@ const K_LANG='cs2at.lang';
 const EN={
   '个人数据':'Stats','训练':'Drills','计划训练':'Plan','设置':'Settings','← 首页':'← Home','瞄准 · 度量':'aim, measured',
   '最佳成绩按模式分别记录，只存在本浏览器。':'Best results per mode, stored locally in this browser.',
-  '总训练组数':'Sets','训练天数':'Days','最低限时':'Best limit','最高命中率':'Best hit rate',
+  '总训练组数':'Sets','训练天数':'Days','本地组数':'Local sets','最低限时':'Best limit','最高命中率':'Best hit rate',
+  '历史最低限时':'Historical best limit','历史最高命中率':'Historical best hit rate',
+  '各模式最佳（历史）':'Best per mode (historical)','重算最佳':'Rebuild best','清除最佳':'Clear best',
   '各模式最佳':'Best per mode','最近记录':'Recent runs','趋势（最近 60 组）':'Trend (last 60 runs)','六维走势':'Six-dim trend',
   '重新开始（清空计划进度）':'Start over (clear plan progress)',
   '现在怎么样':'How am I doing','最佳命中':'Best hit','最佳用时':'Best time','数据管理':'Data management',
@@ -1277,7 +1283,7 @@ function mergeBest(runs){
     if(!(m.bestLimit>0)||(r.limit>0&&r.limit<m.bestLimit)) m.bestLimit=r.limit;
     if(!(m.bestHit>0)||((r.hit||0)>m.bestHit)) m.bestHit=r.hit;
     if(!(m.bestMT>0)||((r.mt||0)<m.bestMT)) m.bestMT=r.mt;
-    m.runs=(m.runs||0)+1;
+    m.runsFresh=(m.runsFresh||0)+1;   // 只记本次合并的有效样本数，不污染 stored best 的 runs
   });
   return merged;
 }
@@ -1461,6 +1467,24 @@ function drawS6Trend(runs){
   lg.innerHTML=DIMS.map((dim,i)=>'<span style="white-space:nowrap;margin-right:14px"><span style="display:inline-block;width:10px;height:3px;background:'+COL[i]+';vertical-align:middle;margin-right:5px"></span>'+(EN_UI? EN2[dim[0]] : dim[1])+'</span>').join('');
 }
 $('moreRuns').addEventListener('click',()=>{ runShowAll=!runShowAll; renderData(); });
+// 重算最佳：只从本地有效记录重建，清掉历史 best 里可能的旧 raw 污染
+$('rebuildBest').addEventListener('click',()=>{
+  if(!confirm(L('从本地记录重算最佳？历史最佳将被覆盖。','Rebuild best from local runs? Historical best will be overwritten.'))) return;
+  const runs=load(K_RUNS,[]);
+  const best={};
+  runs.filter(r=>r.raw!==false).forEach(r=>{
+    const m=best[r.mode]||(best[r.mode]={bestLimit:0,bestHit:0,bestMT:0,runs:0});
+    if(!(m.bestLimit>0)||(r.limit>0&&r.limit<m.bestLimit)) m.bestLimit=r.limit;
+    if(!(m.bestHit>0)||((r.hit||0)>m.bestHit)) m.bestHit=r.hit;
+    if(!(m.bestMT>0)||((r.mt||0)<m.bestMT)) m.bestMT=r.mt;
+    m.runs=(m.runs||0)+1;
+  });
+  save(K_BEST,best); renderData();
+});
+$('clearBest').addEventListener('click',()=>{
+  if(!confirm(L('清除全部最佳记录？训练记录保留。','Clear all best records? Runs are kept.'))) return;
+  try{ localStorage.removeItem(K_BEST); }catch(e){} renderData();
+});
 $('runTable').addEventListener('click',e=>{
   const b=e.target.closest('.delRun'); if(!b) return;
   if(!confirm(L('删除这条记录？','Delete this run?'))) return;

@@ -320,12 +320,12 @@ try{
 #plan .calWeek div{font-size:11px;color:var(--dim);text-align:center;letter-spacing:1px}
 #plan .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
 #plan .grid .cell{height:44px;display:flex;align-items:center;justify-content:center;
-    border-radius:8px;background:var(--panel2);color:var(--dim);font-size:13px;
+    border-radius:8px;background:var(--panel2);color:var(--txt);font-size:13px;
     border:1px solid transparent;font-variant-numeric:tabular-nums}
 #plan .grid .cell.blank{background:transparent;border:0}
-#plan .grid .cell.rest{background:transparent;color:var(--dim);opacity:.45;border:1px dashed var(--line)}
+#plan .grid .cell.rest{background:transparent;color:var(--txt);opacity:.7;border:1px dashed var(--line)}
 #plan .grid .cell.done{background:var(--acc);color:var(--on-acc,#fff);border-color:var(--acc);font-weight:600}
-#plan .grid .cell.today{border:2px solid var(--acc);color:var(--acc);font-weight:700;
+#plan .grid .cell.today{border:2px solid var(--acc);color:var(--txt);font-weight:700;
     box-shadow:0 0 0 3px color-mix(in srgb,var(--acc) 22%,transparent)}
 #plan .grid .cell.rest.today{background:var(--panel2)}
 #plan .grid .cell.done.today{background:var(--acc);color:var(--on-acc,#fff);border-color:var(--txt)}
@@ -2362,6 +2362,10 @@ render();
     };
   }
   window.__planRender = render;   // 切换语言后重画计划选择器/操作行/行项目
+  // 后台标签页切回时重画（训练成绩可能已经变了）
+  document.addEventListener('visibilitychange', function(){
+    if(!document.hidden){ try{ render(); }catch(e){} }
+  });
 
   // 第三个彩蛋：连点「今日训练」四次 → 八个字
   (function(){

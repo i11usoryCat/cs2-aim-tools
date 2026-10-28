@@ -73,6 +73,14 @@
   html{scrollbar-width:none}
   html::-webkit-scrollbar{display:none}
   ::-webkit-scrollbar{width:0;height:0}
+
+  /* 手机单列：任务行折行，不再横向溢出 */
+  @media (max-width:560px){
+    .wrap{width:auto;max-width:100%;padding:16px 12px}
+    .task{flex-wrap:wrap;gap:8px}
+    .task .go{margin-left:0}
+    h1{font-size:22px}
+  }
 </style>
 </head>
 <body>
@@ -98,7 +106,7 @@
   <details>
     <summary>进度</summary>
     <div class="panel">
-      <div class="hint">绿色 = 已完成 · 描边 = 今天 · 淡色 = 休息日</div>
+      <div class="hint">高亮 = 已完成 · 描边 = 今天 · 淡色 = 周末休息</div>
       <div class="cal">
         <div class="calTitle" id="calTitle"></div>
         <div class="calWeek" id="calWeek"></div>
@@ -214,7 +222,7 @@ function render(){
     if(set.has(k)) streak++; else if(i>0) break; }
   $('streakNo').textContent=streak;
 
-  const isRest=(d%7===5||d%7===6);
+  const isRest=((new Date().getDay()===0)||(new Date().getDay()===6));   // 周末休息，跟日历一致
   $('todayTitle').textContent='今日任务 · 第 '+(d+1)+' 天（第 '+w+' 周）';
   $('todayHint').textContent = isRest
     ? '今天是休息日。睡够 7-8 小时，技能靠睡眠巩固。'
@@ -243,7 +251,7 @@ function render(){
     const k=dt.getFullYear()+'-'+pd(dt.getMonth()+1)+'-'+pd(dt.getDate());
     months[dt.getMonth()+1]=dt.getFullYear();
     const done=set.has(k);
-    const rest=(i%7===5||i%7===6);       // 休息日按程序日序号（5 练 2 休），不绑周几
+    const rest=(dt.getDay()===0||dt.getDay()===6);   // 周末休息，与顶部提示同一规则
     const cls='cell'+(done?' done':rest?' rest':'')+(i===d?' today':'');
     g+='<div class="'+cls+'" title="'+k+(done?' · 已完成':'')+'">'+dt.getDate()+'</div>';
   }
@@ -301,7 +309,7 @@ render();
     '每天 15 分钟 · 5 天训练 2 天休息 · 命中率保持 70-85%':'15 min a day · 5 on / 2 off · keep hit rate 70–85%',
     '第几天':'Day','当前阶段':'Week','已完成':'Done','连续':'Streak','今日任务':'Today',
     '标记今天完成':'Mark today done','重新开始（清空记录）':'Start over (clear log)',
-    '进度':'Progress','绿色 = 已完成 · 描边 = 今天 · 淡色 = 休息日':'Green = done · outlined = today · faded = rest day',
+    '进度':'Progress','高亮 = 已完成 · 描边 = 今天 · 淡色 = 周末休息':'Highlighted = done · outlined = today · faded = weekend rest',
     '训练记录':'Training log',
     '训练器成绩会自动计入日历；把「复制本组数据」粘到这里可留档详情。':'Trainer results now count automatically; paste "Copy this set" here to archive details.',
     '保存这条':'Save entry','复制全部':'Copy all',

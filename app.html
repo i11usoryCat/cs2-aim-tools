@@ -4,6 +4,18 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Vernier · 分毫</title>
+<link rel="icon" href="assets/favicon.svg">
+<script>
+/* 首屏预置：主题与语言先于 CSS 生效，防闪烁 */
+try{
+  var t=localStorage.getItem('cs2at.theme');
+  var d=new Date(),tm=d.getHours()*60+d.getMinutes();
+  if(!t) t=(tm>=1410||tm<460)?'forest':'sand';
+  document.documentElement.setAttribute('data-theme',t);
+  var l=localStorage.getItem('cs2at.lang');
+  if(l) document.documentElement.setAttribute('lang',l==='en'?'en':'zh-CN');
+}catch(e){}
+</script>
 <style>
   /* ——— 墨鱼：暖纸 + 深青 + 杏橙 ——— */
   html[data-theme="ink"]{
@@ -86,7 +98,7 @@
   .brand .mark{width:46px;height:46px;color:var(--acc);flex-shrink:0}
   .brand-text{display:flex;flex-direction:column;line-height:1.15}
   .brand-name{font-size:17px;font-weight:700;letter-spacing:1.2px;color:var(--txt)}
-  .brand-sub{font-size:10px;letter-spacing:2px;color:var(--dim2);margin-top:2px}
+  .brand-sub{font-size:10px;letter-spacing:2px;color:color-mix(in srgb,var(--txt) 68%,var(--bg));margin-top:2px}
   .brand:hover .mark{color:var(--acc2)}
   .brand:hover .brand-name{color:var(--acc)}
   .logo{
@@ -241,11 +253,19 @@
     nav a{padding:8px 8px;font-size:12.5px}
     nav a.on::after{left:8px;right:8px}
     .lang{margin-right:4px}
+  }
     .lang span{padding:5px 8px;font-size:12px}
     .gear{width:30px;height:30px;margin-right:4px}
     .gear svg{width:14px;height:14px}
     #mobileTip{bottom:12px;padding:9px 12px 9px 16px;font-size:12.5px;gap:10px}
     #mobileTip button{padding:6px 12px;font-size:12px}
+  }
+  @media (max-width:560px){
+    header{padding:8px 12px;flex-wrap:wrap;row-gap:6px}
+    header .brand{margin-right:0}
+    nav{order:3;width:100%;justify-content:space-between;gap:2px}
+    nav a{flex:1;text-align:center;padding:8px 2px;font-size:12px}
+    main{padding:22px 14px 80px}
   }
 
 /* ===== 计划页样式 ===== */
@@ -302,7 +322,7 @@
     border-radius:7px;padding:10px;font-family:Consolas,monospace;font-size:13px;resize:vertical}
 #plan button{padding:9px 20px;background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:7px;
     font-size:14px;cursor:pointer;font-family:inherit}
-#plan button:hover{background:#2d333b}
+#plan button:hover{border-color:var(--acc);color:var(--acc);background:var(--panel2)}
 #plan button.main{background:var(--acc);border-color:var(--acc);color:#fff}
 #plan table{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}
 #plan td,#plan th{padding:6px 8px;border-bottom:1px solid var(--panel2);text-align:left}
@@ -388,10 +408,17 @@
     transition:transform .15s ease}
   input[type=range]:active::-moz-range-thumb{transform:scale(1.4)}
 
-  /* 隐藏滚动条（仍可滚动） */
-  html{scrollbar-width:none}
-  html::-webkit-scrollbar{display:none}
-  ::-webkit-scrollbar{width:0;height:0}
+  /* 细滚动条（保留位置感） */
+  html{scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+  html::-webkit-scrollbar{width:8px;height:8px}
+  html::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px}
+  html::-webkit-scrollbar-track{background:transparent}
+
+  :focus-visible{outline:2px solid var(--acc);outline-offset:2px;border-radius:4px}
+  @media (prefers-reduced-motion:reduce){
+    *{animation:none!important;transition:none!important}
+    .langLayer{animation:none!important}
+  }
 </style>
 </head>
 <body>
@@ -449,6 +476,8 @@
       </div>
       <canvas id="trendCv" style="width:100%;height:220px;display:block"></canvas>
       <div class="hint" id="trendLegend" style="margin:8px 0 0"></div>
+      <canvas id="s6Cv" style="display:none;width:100%;height:170px;margin-top:14px"></canvas>
+      <div class="hint" id="s6Legend" style="margin:8px 0 0;display:none"></div>
     </div>
     <div class="card">
       <div class="t" style="margin-bottom:10px">最近记录</div>
@@ -461,7 +490,7 @@
 
   <section id="play">
     <h2 id="playTitle" style="cursor:default;user-select:none">训练</h2>
-    <div class="hint">不知道自己该用多少灵敏度？标定一次，几分钟出答案。</div>
+    <div class="hint">不知道自己该用多少灵敏度？<a href="#set" style="color:var(--acc);text-decoration:none;font-weight:600">去标定一次</a>，几分钟出答案。</div>
 
     <div class="grid" id="drillGrid"></div>
 
@@ -534,12 +563,12 @@
       </div>
       <div class="row">
         <div><div class="k">鼠标 DPI</div><input id="iDpi" type="number" step="100" value="800"></div>
-        <div id="yawBox"><div class="k">m_yaw</div><input id="iYaw" type="number" step="0.0001" value="0.013052"></div>
+        <div id="yawBox"><div class="k">m_yaw</div><input id="iYaw" type="number" step="0.0001" value="0.022"></div>
         <div><div class="k" id="sensLabel">灵敏度 · CS2 / CS:GO</div><input id="iSens" type="number" step="0.01" value="1.92"></div>
-        <div><div class="k">cm/360</div><input id="iCm" type="number" step="0.1" value="36.5"></div>
+        <div><div class="k">cm/360</div><input id="iCm" type="number" step="0.1" value="27.1"></div>
       </div>
       <div class="hint" id="calcHint" style="margin:12px 0 0"></div>
-      <div class="hint" id="gameConvHint" style="margin-top:10px">先选游戏，再改下面的灵敏度；改完自动换算，DPI 不动。只按腰射，开镜倍率不适用。</div>
+      <div class="hint" id="gameConvHint" style="margin-top:10px">先选游戏，再改下面的灵敏度；改完自动换算，DPI 不动。只按腰射，开镜倍率不适用。m_yaw 没改过就别动（默认 0.022 就是对的）。</div>
 
       <div class="row" style="margin-top:14px">
         <a class="tile" style="flex:1;min-width:240px;max-width:440px" href="tools/sensitivity-calibrator.html">
@@ -729,12 +758,13 @@
 
     <div class="card">
       <div class="t">数据管理</div>
-      <div class="hint" style="margin:6px 0 16px">导出、导入或清空全部训练数据。</div>
+      <div class="hint" style="margin:6px 0 16px">备份或恢复全部本地数据（成绩、计划、设置、准星）。</div>
       <div class="row">
         <button id="expBtn">导出 JSON</button>
         <label class="fileBtn">导入 JSON<input type="file" id="impFile" accept="application/json"></label>
-        <button id="clrBtn">清空全部数据</button>
+        <button id="clrBtn">清空训练数据</button>
       </div>
+      <div class="hint" id="impHint" style="margin-top:10px;color:var(--acc)"></div>
     </div>
 
     <div class="row">
@@ -782,6 +812,9 @@ const EN={
   '各模式最佳':'Best per mode','最近记录':'Recent runs','趋势（最近 60 组）':'Trend (last 60 runs)',
   '现在怎么样':'How am I doing','最佳命中':'Best hit','最佳用时':'Best time','数据管理':'Data management',
   '导出、导入或清空全部训练数据。':'Export, import or clear all training data.',
+  '备份或恢复全部本地数据（成绩、计划、设置、准星）。':'Back up or restore all local data (scores, plan, settings, crosshair).',
+  '清空训练数据':'Clear training data','删除':'Delete',
+  '文件格式不对，没有改动任何数据。':'Invalid file — nothing was changed.',
   '全部 ▾':'All ▾','收起 ▴':'Collapse ▴',
   '模式':'Mode','最低限时':'Best limit','最高命中率':'Best hit','最快中位用时':'Fastest median','组数':'Sets',
   '自适应随机':'Adaptive random','定角重复':'Fixed angle','小球精度':'Precision',
@@ -796,14 +829,15 @@ const EN={
   '日期':'Date','限时':'Limit','命中率':'Hit rate','中位用时':'Median',
   '导出 JSON':'Export JSON','导入':'Import','清空全部数据':'Clear all data',
   '还没有数据，去练一组吧':'No data yet — run a set','暂无记录':'No runs yet',
-  '不知道自己该用多少灵敏度？标定一次，几分钟出答案。':'Not sure what sensitivity to use? Calibrate once — it takes minutes.',
+  '不知道自己该用多少灵敏度？':'Not sure what sensitivity to use?','去标定一次':'Calibrate','，几分钟出答案。':', it takes minutes.',
+  '这周还没练。':'Nothing this week yet.','去练一组 →':'Start a set →','先去标定':'Calibrate first',
   '四周计划，自动判断今天该练什么。':'Four-week plan; it knows what to do today.',
   '这里的参数会自动带进所有训练页面。':'These values are passed to every trainer page.',
   '灵敏度':'Sensitivity','鼠标 DPI':'Mouse DPI','CS 灵敏度':'CS sensitivity',
   '换鼠标、改 DPI 或手感发飘，先回来重新标定一次。':'New mouse, DPI change, or drifting feel — come back and recalibrate first.',
   '游戏':'Game',
   '灵敏度 · CS2 / CS:GO':'Sensitivity · CS2 / CS:GO',
-  '先选游戏，再改下面的灵敏度；改完自动换算，DPI 不动。只按腰射，开镜倍率不适用。':'Pick the game first, then set its sensitivity below; it converts automatically, DPI untouched. Hipfire only — ADS multipliers are not covered.',
+  '先选游戏，再改下面的灵敏度；改完自动换算，DPI 不动。只按腰射，开镜倍率不适用。m_yaw 没改过就别动（默认 0.022 就是对的）。':'Pick the game first, then set its sensitivity below; it converts automatically, DPI untouched. Hipfire only — ADS multipliers are not covered. Leave m_yaw alone unless you changed it in-game (0.022 is the default).',
   '游戏灵敏度得是正数':'Enter a positive sensitivity',
   '灵敏度标定':'Calibrator','灵敏度标定 · 进阶':'Calibrator · advanced',
   '测出你每次都甩过头还是不够，直接反推该填的值。':'Measures whether you overshoot or fall short, and derives the value.',
@@ -911,10 +945,14 @@ function applyLang(l){
       });
     });
   }catch(e){}
+  // 计算出来的文案也要跟着语言走
+  try{ if(window.__updateCalc) window.__updateCalc(); }catch(e){}
+  try{ if(window.__vRender) window.__vRender(); }catch(e){}
 }
 function setLang(l){ LANG=l; try{ localStorage.setItem(K_LANG,l); }catch(e){} }
 
-let cfg=load(K_CFG,{dpi:800,yaw:0.013052,sens:1.92,cm:36.5});
+// 默认参数必须自洽：1.92 × 0.022 × 800 DPI = 27.1 cm/360
+let cfg=load(K_CFG,{dpi:800,yaw:0.022,sens:1.92,cm:27.1});
 
 function applyTheme(id){
   document.documentElement.setAttribute('data-theme', id);
@@ -937,12 +975,20 @@ function defaultTheme(){
 applyTheme(localStorage.getItem(K_THEME)||defaultTheme());
 
 function show(t){
+  // 无效 hash 回落到数据页，不要白屏
+  if(!document.getElementById(t)) t='data';
   document.querySelectorAll('section').forEach(s=>s.classList.toggle('on', s.id===t));
   document.querySelectorAll('nav a').forEach(a=>a.classList.toggle('on', a.dataset.t===t));
   if(t==='data') renderData();
   if(t==='play') renderDrills();
   if(t==='set')  fillSettings();
   applyLang();
+  // 标题随路由与语言
+  try{
+    const names={data:['个人数据','My data'],play:['训练','Train'],plan:['计划','Plan'],set:['设置','Settings']};
+    const n=names[t]||['分毫','Vernier'];
+    document.title=(document.documentElement.getAttribute('lang')==='en'? n[1] : n[0])+' · Vernier';
+  }catch(e){}
 }
 
 
@@ -1193,12 +1239,14 @@ function renderData(){
     rows+='<tr><td>'+(MODE_NAME[k]||k)+'</td><td class="big">'+(b.bestHit||'—')+'%</td><td>'+(b.bestMT||'—')+' ms</td></tr>'; });
   $('bestTable').innerHTML=rows;
 
-  let rr='<tr><th>日期</th><th>模式</th><th>限时</th><th>命中率</th><th>中位用时</th></tr>';
-  const tailAll=runs.slice(-15).reverse();
+  let rr='<tr><th>日期</th><th>模式</th><th>限时</th><th>命中率</th><th>中位用时</th><th></th></tr>';
+  const tailAll=runs.map((r,idx)=>({r:r,idx:idx})).reverse();
   const tail = runShowAll? tailAll : tailAll.slice(0,5);
-  if(!tail.length) rr+='<tr><td colspan="5" style="color:var(--dim)">暂无记录</td></tr>';
-  tail.forEach(r=>{ rr+='<tr><td>'+r.d+'</td><td>'+(MODE_NAME[r.mode]||r.mode)+'</td><td>'+r.limit+
-    ' ms</td><td>'+r.hit+'%</td><td>'+r.mt+' ms</td></tr>'; });
+  if(!tail.length) rr+='<tr><td colspan="6" style="color:var(--dim)">暂无记录</td></tr>';
+  tail.forEach(o=>{ const r=o.r;
+    rr+='<tr><td>'+r.d+'</td><td>'+(MODE_NAME[r.mode]||r.mode)+'</td><td>'+r.limit+
+      ' ms</td><td>'+r.hit+'%</td><td>'+r.mt+' ms</td>'+
+      '<td style="text-align:right"><button class="delRun" data-i="'+o.idx+'" style="background:transparent;border:none;color:var(--dim);cursor:pointer;font-size:12px;padding:0 4px">✕</button></td></tr>'; });
   $('runTable').innerHTML=rr;
   const mr=$('moreRuns');
   if(mr) mr.textContent = (tailAll.length>5)? (runShowAll? L('收起 ▴','Collapse ▴') : L('全部 ▾','All ▾')) : '';
@@ -1220,12 +1268,16 @@ function renderData(){
       parts.push(h1===null? L('（上周没记录，从这周开始累计）','(no last week — baseline from here)') : L('（对比上周）',' (vs last week)'));
       verdict=parts.join(' · ');
     } else {
-      verdict=L('这周还没练——今天开始一组 15 分钟。','Nothing yet this week — start with one 15-minute set today.');
+      $('dataVerdict').innerHTML=L('这周还没练。','Nothing this week yet.')+' '+
+        '<a href="#play" style="color:var(--acc);text-decoration:none;font-weight:600">'+L('去练一组 →','Start a set →')+'</a>　'+
+        '<a href="#set" style="color:var(--dim);text-decoration:none">'+L('先去标定','Calibrate first')+'</a>';
+      return;
     }
     $('dataVerdict').textContent=verdict;
   }
 
   drawTrend(runs);
+  drawS6Trend(runs);
 }
 
 /* 趋势曲线：按模式分线（混在一起会骗人）——命中率（左轴 0-100%）+ 中位用时/限时（右轴 ms） */
@@ -1299,38 +1351,109 @@ function drawTrend(runs){
 }
 $('trendMode').addEventListener('change',()=>{
   trendMode=$('trendMode').value;
-  drawTrend(load(K_RUNS,[]));
+  const runs=load(K_RUNS,[]);
+  drawTrend(runs); drawS6Trend(runs);
 });
+// 六维走势：有 ≥2 次检查时显示六维分数折线
+function drawS6Trend(runs){
+  const cv=$('s6Cv'), lg=$('s6Legend');
+  if(!cv) return;
+  const arr=runs.filter(r=>r.mode==='check' && r.s6 && typeof r.s6==='object').slice(-20);
+  if(arr.length<2){ cv.style.display='none'; if(lg) lg.style.display='none'; return; }
+  cv.style.display='block'; if(lg) lg.style.display='';
+  const dpr=window.devicePixelRatio||1;
+  const W=cv.clientWidth||600, H=170;
+  cv.width=W*dpr; cv.height=H*dpr;
+  const ctx=cv.getContext('2d'); ctx.scale(dpr,dpr);
+  const DIMS=[['react','反应'],['first','第一枪'],['second','反应确定'],['micro','微调'],['wide','拉枪'],['attn','稳定']];
+  const COL=['#58a6ff','#3fb950','#f85149','#d29922','#c084fc','#8b949e'];
+  ctx.strokeStyle='rgba(128,128,128,.25)'; ctx.lineWidth=1;
+  ctx.font='10px sans-serif'; ctx.textAlign='right';
+  for(let g=0;g<=100;g+=25){ const y=H-10-(g/100)*(H-28);
+    ctx.beginPath(); ctx.moveTo(40,y); ctx.lineTo(W-8,y); ctx.stroke();
+    ctx.fillStyle='rgba(150,150,150,.9)'; ctx.fillText(String(g),34,y+3);
+  }
+  const n=arr.length;
+  const X=i=>40+(n===1? (W-48)/2 : i*(W-48)/(n-1));
+  const Y=v=>H-10-(Math.max(0,Math.min(100,v===null||v===undefined?0:v))/100)*(H-28);
+  DIMS.forEach((dim,di)=>{
+    const vals=arr.map(r=>(typeof r.s6[dim[0]]==='number')? r.s6[dim[0]] : null);
+    ctx.strokeStyle=COL[di]; ctx.lineWidth=1.6;
+    ctx.beginPath();
+    let started=false;
+    vals.forEach((v,i)=>{ if(v===null){ started=false; return; }
+      if(!started){ ctx.moveTo(X(i),Y(v)); started=true; } else ctx.lineTo(X(i),Y(v)); });
+    ctx.stroke();
+  });
+  const EN_UI=document.documentElement.getAttribute('lang')==='en';
+  const EN2={react:'Reaction',first:'First shot',second:'Confirm',micro:'Micro',wide:'Flick',attn:'Steady'};
+  lg.innerHTML=DIMS.map((dim,i)=>'<span style="white-space:nowrap;margin-right:14px"><span style="display:inline-block;width:10px;height:3px;background:'+COL[i]+';vertical-align:middle;margin-right:5px"></span>'+(EN_UI? EN2[dim[0]] : dim[1])+'</span>').join('');
+}
 $('moreRuns').addEventListener('click',()=>{ runShowAll=!runShowAll; renderData(); });
+$('runTable').addEventListener('click',e=>{
+  const b=e.target.closest('.delRun'); if(!b) return;
+  const runs=load(K_RUNS,[]);
+  runs.splice(parseInt(b.dataset.i),1);
+  save(K_RUNS,runs); renderData();
+});
 
+// 完整备份的键位清单：成绩、计划、主题、场景、准星、特效、设备全含
+const ALL_KEYS=[K_CFG,K_BEST,K_RUNS,K_THEME,K_SCENE,'cs2at.log','cs2at.start','cs2at.scene','cs2at.sceneUser','cs2at.game',
+  'cs2at.device','cs2at.padMode','cs2at.delay','cs2at.res','cs2at.resW','cs2at.resH',K_PERF,K_FPS,K_FPSSHOW,'cs2at.ballTex',
+  'cs2at.crossType','cs2at.crossDyn','cs2at.crossMode','cs2at.crossColor','cs2at.crossEdge','cs2at.crossLen','cs2at.crossWid',
+  'cs2at.crossGap','cs2at.crossAlpha','cs2at.crossDot','cs2at.crossOutline','cs2at.dotSize','cs2at.dotOutline',
+  'cs2at.hitFx','cs2at.hitFxMix','cs2at.hitCross','cs2at.hitCrossColor'];
 $('expBtn').addEventListener('click',()=>{
-  const data={cfg:load(K_CFG,{}),best:load(K_BEST,{}),runs:load(K_RUNS,[]),exported:new Date().toISOString()};
-  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
-  a.download='cs2-aim-tools-'+new Date().toISOString().slice(0,10)+'.json'; a.click();
+  try{
+    const o={v:1,exported:new Date().toISOString()};
+    ALL_KEYS.forEach(k=>{ const v=localStorage.getItem(k); if(v!==null) o[k]=v; });
+    const blob=new Blob([JSON.stringify(o,null,2)],{type:'application/json'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+    a.download='cs2-aim-tools-'+new Date().toISOString().slice(0,10)+'.json'; a.click();
+    $('impHint').textContent=L('已导出完整备份 ✓','Full backup exported ✓');
+    setTimeout(()=>{ $('impHint').textContent=''; },2500);
+  }catch(e){}
 });
 $('impFile').addEventListener('change',e=>{
   const f=e.target.files[0]; if(!f) return; const rd=new FileReader();
-  rd.onload=()=>{ try{ const d=JSON.parse(rd.result);
-    if(d.cfg) save(K_CFG,d.cfg); if(d.best) save(K_BEST,d.best); if(d.runs) save(K_RUNS,d.runs);
-    cfg=load(K_CFG,cfg); renderData(); alert('导入成功');
-  }catch(err){ alert('文件格式不对'); } };
+  rd.onload=()=>{
+    try{
+      const d=JSON.parse(rd.result);
+      if(!d || typeof d!=='object') throw 0;
+      let cnt=0;
+      if(d.v===1){
+        ALL_KEYS.forEach(k=>{ if(typeof d[k]==='string'){ localStorage.setItem(k,d[k]); cnt++; } });
+      } else {
+        // 旧格式：顶层直接放 cfg/best/runs
+        [['cfg',K_CFG],['best',K_BEST],['runs',K_RUNS]].forEach(p=>{
+          if(d[p[0]] && typeof d[p[0]]==='object'){ save(p[1],d[p[0]]); cnt++; }
+        });
+      }
+      cfg=load(K_CFG,cfg); renderData(); fillSettings();
+      $('impHint').textContent=L('已恢复 '+cnt+' 项 ✓','Restored '+cnt+' items ✓');
+      setTimeout(()=>{ $('impHint').textContent=''; },2500);
+    }catch(err){
+      $('impHint').textContent=L('文件格式不对，没有改动任何数据。','Invalid file — nothing was changed.');
+      setTimeout(()=>{ $('impHint').textContent=''; },2500);
+    }
+  };
   rd.readAsText(f);
 });
 $('clrBtn').addEventListener('click',()=>{
-  if(!confirm('清空所有训练数据？设置会保留。')) return;
-  [K_BEST,K_RUNS].forEach(k=>{ try{ localStorage.removeItem(k); }catch(e){} }); renderData();
+  if(!confirm(L('清空所有训练数据（成绩、记录、计划进度）？设置会保留。','Clear all training data (scores, log, plan progress)? Settings are kept.'))) return;
+  [K_BEST,K_RUNS,'cs2at.log','cs2at.start'].forEach(k=>{ try{ localStorage.removeItem(k); }catch(e){} }); renderData();
 });
 
 function num(el,def){ const v=parseFloat(el.value); return isFinite(v)? v: def; }
 function updateCalc(){
-  const d=num($('iDpi'),800), y=num($('iYaw'),0.013052), c=num($('iCm'),36.5), s=num($('iSens'),1.92)/gameScale();
-  const EN_UI=(document.documentElement.getAttribute('lang')==='en');
+  const d=num($('iDpi'),800), y=num($('iYaw'),0.022), c=num($('iCm'),27.1), s=num($('iSens'),1.92)/gameScale();
   if(!isFinite(s)||s<=0){ $('calcHint').textContent=''; return; }
-  $('calcHint').textContent = EN_UI
-    ? '360° turn needs '+c.toFixed(1)+' cm · 180° needs '+(c/2).toFixed(1)+' cm · sensitivity '+s.toFixed(2)+' (m_yaw '+y+' · DPI '+d+')'
-    : '360° 转身需要 '+c.toFixed(1)+' cm · 180° 需要 '+(c/2).toFixed(1)+' cm · sensitivity '+s.toFixed(2)+'（m_yaw '+y+' · DPI '+d+'）';
+  $('calcHint').textContent = L(
+    '360° 转身需要 '+c.toFixed(1)+' cm · 180° 需要 '+(c/2).toFixed(1)+' cm · 灵敏度 '+s.toFixed(2)+'（m_yaw '+y+' · DPI '+d+'）',
+    '360° turn needs '+c.toFixed(1)+' cm · 180° needs '+(c/2).toFixed(1)+' cm · sensitivity '+s.toFixed(2)+' (m_yaw '+y+' · DPI '+d+')'
+  );
 }
+window.__updateCalc=updateCalc;
 function fillSettings(){
   $('iDpi').value=cfg.dpi; $('iYaw').value=cfg.yaw; $('iSens').value=cfg.sens; $('iCm').value=cfg.cm;
   $('iPerf').checked=localStorage.getItem(K_PERF)==='1';
@@ -1363,7 +1486,7 @@ function fillSettings(){
   updateScenePrev();
 
   const theme=localStorage.getItem(K_THEME)||defaultTheme();
-  function swHTML(list){ return list.map(t=>'<div class="sw'+(t.id===theme?' on':'')+'" data-th="'+t.id+'">'+
+  function swHTML(list){ return list.map(t=>'<div class="sw'+(t.id===theme?' on':'')+'" data-th="'+t.id+'" tabindex="0" role="button">'+
     '<span class="dot" style="background:'+t.dot+'"></span>'+t.name+'</div>').join(''); }
   $('thRec').innerHTML   = swHTML(THEMES.filter(t=>t.kind==='rec'));
   $('thLight').innerHTML = swHTML(THEMES.filter(t=>t.kind==='light'));
@@ -1373,7 +1496,7 @@ function fillSettings(){
   }));
 
   const scene=localStorage.getItem(K_SCENE)||'classic';
-  $('scenes').innerHTML=SCENES.map(t=>'<div class="sw'+(t.id===scene?' on':'')+'" data-sc="'+t.id+'">'+
+  $('scenes').innerHTML=SCENES.map(t=>'<div class="sw'+(t.id===scene?' on':'')+'" data-sc="'+t.id+'" tabindex="0" role="button">'+
     '<span class="dot" style="background:'+t.dot+'"></span>'+t.name+'</div>').join('');
   document.querySelectorAll('.sw[data-sc]').forEach(el=>el.addEventListener('click',()=>{
     localStorage.setItem(K_SCENE, el.dataset.sc);
@@ -1385,13 +1508,13 @@ function fillSettings(){
   updateCalc();
 }
 function persistCfg(){
-  cfg={dpi:num($('iDpi'),1000), yaw:num($('iYaw'),0.013052), sens:num($('iSens'),1.92), cm:num($('iCm'),36.5)};
+  cfg={dpi:num($('iDpi'),1000), yaw:num($('iYaw'),0.022), sens:num($('iSens'),1.92), cm:num($('iCm'),27.1)};
   save(K_CFG,cfg);
 }
 
 ['iDpi','iYaw','iSens','iCm'].forEach(id=>{
   $(id).addEventListener('input',()=>{
-    const d=num($('iDpi'),1000), y=num($('iYaw'),0.013052);
+    const d=num($('iDpi'),1000), y=num($('iYaw'),0.022);
     if(id==='iSens'){ const s=num($('iSens'),0); if(s>0&&d>0&&y>0) $('iCm').value=(360/(s*y)/d*2.54).toFixed(1); }
     if(id==='iCm'){ const c=num($('iCm'),0); if(c>0&&d>0&&y>0) $('iSens').value=(360/((c/2.54)*d)/y).toFixed(2); }
     if(id==='iDpi'||id==='iYaw'){ const c=num($('iCm'),0); if(c>0&&d>0&&y>0) $('iSens').value=(360/((c/2.54)*d)/y).toFixed(2); }
@@ -1411,11 +1534,16 @@ $('iDelay').addEventListener('input',()=>{ try{ localStorage.setItem('cs2at.dela
 $('iResW').addEventListener('change',()=>{ try{ localStorage.setItem('cs2at.resW', $('iResW').value); }catch(e){} });
 $('iResH').addEventListener('change',()=>{ try{ localStorage.setItem('cs2at.resH', $('iResH').value); }catch(e){} });
 $('defBtn').addEventListener('click',()=>{
-  cfg={dpi:800,yaw:0.013052,sens:1.92,cm:36.5}; save(K_CFG,cfg);
+  if(!confirm(L('恢复全部默认设置？训练数据保留。','Reset all settings to default? Training data is kept.'))) return;
+  cfg={dpi:800,yaw:0.022,sens:1.92,cm:27.1}; save(K_CFG,cfg);
   localStorage.removeItem(K_THEME); applyTheme(defaultTheme());
   localStorage.setItem(K_SCENE,'classic');
-  localStorage.removeItem(K_PERF); localStorage.removeItem(K_FPS); localStorage.removeItem(K_FPSSHOW);
-  localStorage.removeItem('cs2at.ballTex'); localStorage.removeItem('cs2at.delay');
+  ['cs2at.scene','cs2at.sceneUser','cs2at.game',K_PERF,K_FPS,K_FPSSHOW,'cs2at.ballTex','cs2at.delay',
+   'cs2at.res','cs2at.resW','cs2at.resH','cs2at.device','cs2at.padMode',
+   'cs2at.crossType','cs2at.crossDyn','cs2at.crossMode','cs2at.crossColor','cs2at.crossEdge',
+   'cs2at.crossLen','cs2at.crossWid','cs2at.crossGap','cs2at.crossAlpha','cs2at.crossDot','cs2at.crossOutline',
+   'cs2at.dotSize','cs2at.dotOutline','cs2at.hitFx','cs2at.hitFxMix','cs2at.hitCross','cs2at.hitCrossColor']
+    .forEach(k=>{ try{ localStorage.removeItem(k); }catch(e){} });
   fillSettings();
 });
 $('iRes').addEventListener('change',()=>{ $('resCustom').style.display = $('iRes').value==='custom' ? '' : 'none'; });
@@ -1443,7 +1571,7 @@ function updateScenePrev(){
     $('prevDot').style.borderColor=c.gs.ring||'#fff';
     const type=XG('cs2at.crossType','cross');
     const len=Math.max(1,Math.min(40,parseInt(XG('cs2at.crossLen','1'))||1));
-    const wid=Math.max(1,Math.min(10,parseInt(XG('cs2at.crossWid','1'))||1));
+    const wid=Math.max(1,Math.min(16,parseInt(XG('cs2at.crossWid','1'))||1));
     const gap=Math.max(0,Math.min(20,parseInt(XG('cs2at.crossGap','4'))||0));
     const hasDot=XG('cs2at.crossDot','1')==='1';
     const outl=XG('cs2at.crossOutline','1')==='1';
@@ -1594,11 +1722,11 @@ $('sceneImport').addEventListener('click',()=>{
    yaw 表经 KovaaK / Ubisoft 官方 / keymap.io 交叉核对。cs2 即本站刻度（1:1） */
 const GAME_YAW={'cs2':0,'val':0.07,'apex':0.022,'ow2':0.0066,'r6':0.00572957795};
 function gameYaw(){ const v=GAME_YAW[$('iGame').value]; return v===undefined? 0 : v; }
-function gameScale(){ const gy=gameYaw(); if(gy===0) return 1; const sy=num($('iYaw'),0.013052)||0.013052; return sy/gy; }
+function gameScale(){ const gy=gameYaw(); if(gy===0) return 1; const sy=num($('iYaw'),0.022)||0.022; return sy/gy; }
 function applyGameSens(quiet){
   // 按当前所选游戏换算并落盘，DPI 不动；quiet 时不刷提示行
   try{
-    const gy=gameYaw(), sy=num($('iYaw'),0.013052)||0.013052;
+    const gy=gameYaw(), sy=num($('iYaw'),0.022)||0.022;
     const scale = gy===0 ? 1 : sy/gy;
     const disp=parseFloat($('iSens').value);
     if(!isFinite(disp)||disp<=0) return;   // 无效输入不动
@@ -1607,7 +1735,7 @@ function applyGameSens(quiet){
     const cm = 914.4/(disp*(gy===0? sy : gy)*dpi);     // 真实 cm/360，DPI 不动
     cfg.sens=Math.round(internal*10000)/10000; cfg.cm=Math.round(cm*100)/100;
     cfg.dpi=dpi; cfg.yaw=sy;
-    save(K_CFG,cfg);
+    if(!quiet) save(K_CFG,cfg);   // 只在用户操作时落盘；打开设置页的对齐只改显示
     $('iSens').value=String(disp); $('iCm').value=String(cfg.cm);
     if(!quiet){
       $('gameConvHint').textContent=L('已切换：cm/360 ','Switched: cm/360 ')+cfg.cm+L(' · 本站灵敏度 ',' · site sensitivity ')+cfg.sens.toFixed(4)+L('，DPI '," (DPI ")+dpi+L(' 不变',' unchanged)');
@@ -2185,6 +2313,23 @@ render();
 applyLang();
 bindLang();
 initPlan();
+
+/* a11y：隐藏 h1、表单可读名、色块键盘可达 */
+(function(){
+  var h=document.createElement('h1');
+  h.style.cssText='position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap';
+  h.textContent='Vernier · 分毫';
+  document.body.insertBefore(h, document.body.firstChild);
+  document.querySelectorAll('.k').forEach(function(k){
+    var c=k.parentElement.querySelector('input,select');
+    if(c && !c.getAttribute('aria-label')){ try{ c.setAttribute('aria-label', k.textContent.trim()); }catch(e){} }
+  });
+  document.addEventListener('keydown', function(e){
+    if(e.key==='Enter' && e.target && e.target.classList && e.target.classList.contains('sw')){
+      e.preventDefault(); e.target.click();
+    }
+  });
+})();
 </script>
 
 <script>

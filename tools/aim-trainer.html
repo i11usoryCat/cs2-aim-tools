@@ -122,8 +122,8 @@
     <!-- 鼠标参数：由设置页带入，可在参数面板直接改 -->
     <div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:12px;justify-content:center;font-size:13px;color:var(--dim)">
       <label class="fld">鼠标 DPI<input id="dpi" type="number" step="50" value="800"></label>
-      <label class="fld">m_yaw<input id="yaw" type="number" step="0.0001" value="0.013052"></label>
-      <label class="fld">cm/360<input id="cm" type="number" step="0.1" value="36.5"></label>
+      <label class="fld">m_yaw<input id="yaw" type="number" step="0.0001" value="0.022"></label>
+      <label class="fld">cm/360<input id="cm" type="number" step="0.1" value="27.1"></label>
       <input id="sens" type="hidden" value="">
     </div>
   </div>
@@ -1248,7 +1248,7 @@ requestAnimationFrame(loop);
   if(!el) return;
   var ok = (typeof window !== 'undefined') && ('onpointerrawupdate' in window);
   if(!ok){
-    el.innerHTML = '⚠️ 当前浏览器不支持 pointerrawupdate，采样精度会降低<br>' +
+    el.innerHTML = '⚠️ 当前浏览器不支持原始输入（pointerrawupdate）：反应时间会偏大，跨浏览器不可比<br>' +
       '建议使用 <b style="color:var(--acc)">Chrome</b> 或 <b style="color:var(--acc)">Edge</b>';
   }
 })();
@@ -1361,7 +1361,8 @@ requestAnimationFrame(loop);
     '经典':'Classic','墨玉':'Jade','墨鱼':'Ink','浅灰':'Light grey','暗蓝':'Night blue','纯黑':'Pure black','沙色':'Sandstone',
     '中位用时':'Median','分段数据':'Per-segment','阶段':'Set','用时':'Time','命中率':'Hit rate',
     '限时':'Limit','球半径':'Radius','超时':'Timeouts','次':'','近 10 球命中率':'Last 10',
-    '连击':'Streak','球':'shots','建议使用':'Use','或':'or','当前':'Current'
+    '连击':'Streak','球':'shots','建议使用':'Use','或':'or','当前':'Current',
+    '⚠️ 当前浏览器不支持原始输入（pointerrawupdate）：反应时间会偏大，跨浏览器不可比':'⚠️ This browser lacks raw input (pointerrawupdate): reaction times read high and are not comparable across browsers'
   };
   var RULES=[
     [/^→ 对应\s*$/,'→ '],

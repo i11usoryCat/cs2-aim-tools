@@ -4,6 +4,17 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Vernier · 分毫</title>
+<script>
+/* 首屏预置：主题与语言先于 CSS 生效，防闪烁 */
+try{
+  var t=localStorage.getItem('cs2at.theme');
+  var d=new Date(),tm=d.getHours()*60+d.getMinutes();
+  if(!t) t=(tm>=1410||tm<460)?'forest':'sand';
+  document.documentElement.setAttribute('data-theme',t);
+  var l=localStorage.getItem('cs2at.lang');
+  if(l) document.documentElement.setAttribute('lang',l==='en'?'en':'zh-CN');
+}catch(e){}
+</script>
 <meta name="description" content="分毫 Vernier —— 浏览器里打开的 CS2/Valorant 瞄准标定与训练工具。过冲法测灵敏度，85% 难度自适应，本地存储，零安装。">
 <meta property="og:title" content="分毫 · 瞄准，被度量">
 <meta property="og:description" content="分毫 Vernier —— 浏览器里打开的 CS2/Valorant 瞄准标定与训练工具。过冲法测灵敏度，85% 难度自适应，本地存储，零安装。">
@@ -138,7 +149,7 @@
 </style>
 </head>
 <body>
-<div id="mobileTip" style="display:none"><span class="mtText">请用电脑打开（建议 Chrome / Edge）·</span><button type="button" id="mtCopy">复制链接</button></div>
+<div id="mobileTip" style="display:none"><span class="mtText">请用电脑打开（建议 Chrome / Edge）·</span><button type="button" id="mtCopy">复制链接</button><button type="button" id="mtClose" style="background:transparent;border:none;color:var(--dim);cursor:pointer;font-size:15px;padding:0 2px" aria-label="关闭">✕</button></div>
 <div class="langTop" id="langTop">
   <span data-l="zh">中</span><span data-l="en">EN</span>
 </div>
@@ -152,7 +163,7 @@
   <h1>分毫</h1>
   <div class="sub">瞄准，被度量。<br>灵敏度标定 · 甩枪训练 · 四周计划</div>
   <div class="by"><a href="https://github.com/i11usoryCat" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">i11usoryCat</a> <span style="opacity:.5">×</span> <a href="dialogue.html" style="color:var(--gold);text-decoration:none">大肥鱼</a></div>
-  <button class="start" onclick="location.href='app.html'">开始</button>
+  <button class="start" onclick="location.href='app.html#play'">开始</button>
   <div class="tip">建议使用 Chrome 或 Edge</div>
 </div>
 
@@ -161,7 +172,7 @@
   <a href="https://github.com/i11usoryCat/cs2-aim-tools">GitHub</a> ·
   <a href="https://github.com/i11usoryCat/cs2-aim-tools/blob/main/docs/methodology.md">方法论</a> ·
   <a href="https://github.com/i11usoryCat/cs2-aim-tools/blob/main/docs/training-plan.md">训练方案</a> ·
-  <a href="#" id="fbLink">反馈</a>
+  <a href="https://github.com/i11usoryCat/cs2-aim-tools/issues" target="_blank" rel="noopener" id="fbLink">反馈</a>
   <div id="buildTag" style="margin-top:8px;font-size:12px;color:var(--dim);letter-spacing:1px"><span>版本 build</span> 2026-10-27 · 5</div>
 </div>
 </div>
@@ -516,13 +527,16 @@ function rippleSwitch(lang, cx, cy){
   var tip=document.getElementById('mobileTip'); if(!tip) return;
   if(!(('ontouchstart' in window) || navigator.maxTouchPoints>0) || Math.min(screen.width,screen.height)>=900) return;
   tip.style.display='flex';
-  var btn=document.getElementById('mtCopy'); if(!btn) return;
+  var btn=document.getElementById('mtCopy');
   var isEn=function(){ return document.documentElement.getAttribute('lang')==='en'; };
-  btn.addEventListener('click', function(){
+  if(btn) btn.addEventListener('click', function(){
     try{ navigator.clipboard.writeText(location.href).catch(function(){}); }catch(e){}
     btn.textContent = isEn() ? 'Copied' : '已复制';
     setTimeout(function(){ btn.textContent = isEn() ? 'Copy link' : '复制链接'; }, 2000);
   });
+  var close=document.getElementById('mtClose');
+  if(close) close.addEventListener('click', function(){ try{ localStorage.setItem('cs2at.mtClosed','1'); }catch(e){} tip.style.display='none'; });
+  try{ if(localStorage.getItem('cs2at.mtClosed')==='1') tip.style.display='none'; }catch(e){}
 })();
 </script>
 

@@ -8,7 +8,9 @@
 <meta property="og:title" content="分毫 · 训练中心">
 <meta property="og:description" content="标定灵敏度，六维检查，按计划练枪。全部数据只存在本机。">
 <meta property="og:type" content="website">
-<meta property="og:image" content="assets/og.png">
+<meta property="og:image" content="https://i11usorycat.github.io/cs2-aim-tools/assets/og.png">
+<meta property="og:url" content="https://i11usorycat.github.io/cs2-aim-tools/">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="assets/favicon.svg">
 <script>
 /* 首屏预置：主题与语言先于 CSS 生效，防闪烁 */
@@ -148,6 +150,7 @@ try{
   #mobileTip button{font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;
     background:var(--acc);color:#fff;border:none;border-radius:9px;padding:7px 14px;
     white-space:nowrap;flex-shrink:0}
+  #mobileTip #mtClose{min-width:0;padding:0 8px;background:transparent;color:var(--dim);font-size:15px;font-weight:400}
   #mobileTip button:hover{filter:brightness(1.08)}
 
   /* ——— 布局 ——— */
@@ -383,6 +386,15 @@ try{
   #plan .stepper span{min-width:26px;text-align:center;font-size:14px;color:var(--txt);
     font-variant-numeric:tabular-nums}
   #plan .prow .time{font-size:12px;color:var(--dim);min-width:52px;text-align:right}
+  #plan .prowAct{display:flex;align-items:center;gap:10px}
+  #plan .pGo{padding:5px 12px;background:var(--acc);color:var(--on-acc,#fff);border-radius:8px;
+    font-size:12.5px;text-decoration:none;white-space:nowrap;font-weight:600}
+  #plan .pGo:hover{background:var(--acc2)}
+  #plan{--dim2:color-mix(in srgb,var(--txt) 62%,var(--bg))}
+  @media (max-width:560px){
+    #plan .prow{grid-template-columns:1fr 1fr;gap:8px}
+    #plan .prowAct{grid-column:1/-1;justify-content:space-between}
+  }
     font-size:13.5px;line-height:1.9;color:var(--dim)}
   #plan .emptyRows{padding:22px 0;text-align:center;font-size:13px;color:var(--dim2)}
   #plan .addRow{width:100%;height:40px;margin-top:12px;border:1px dashed var(--line);
@@ -525,7 +537,7 @@ try{
 
   <div class="panel">
     <h2>进度</h2>
-    <div class="hint">绿色 = 已完成 · 描边 = 今天 · 淡色 = 休息日</div>
+    <div class="hint">高亮 = 已完成 · 描边 = 今天 · 淡色 = 周末休息</div>
     <div class="cal">
       <div class="calTitle" id="calTitle"></div>
       <div class="calWeek" id="calWeek"></div>
@@ -872,6 +884,8 @@ const EN={
   '热身':'Warm-up','主练':'Main','精度':'Accuracy','新项目':'New item',
   '标准':'Standard','精简':'Lite','加量':'Heavy','双击改名':'Double-click to rename',
   '进度':'Progress','绿色 = 已完成 · 描边 = 今天 · 淡色 = 休息日':'Green = done · outlined = today · faded = rest day',
+  '高亮 = 已完成 · 描边 = 今天 · 淡色 = 周末休息':'Highlighted = done · outlined = today · faded = weekend rest',
+  '开始':'Start','模式':'Mode',
   '标记今天完成':'Mark today done','重新开始（清空记录）':'Start over (clear log)',
   '训练记录':'Training log','保存这条':'Save entry','复制全部':'Copy all',
   '第 1 天':'Day 1',
@@ -970,7 +984,7 @@ function computeOnAcc(){
     const v=parseInt(hex,16);
     const rgb=isNaN(v)?[127,191,166]:[(v>>16)&255,(v>>8)&255,v&255];
     const lum=(0.299*rgb[0]+0.587*rgb[1]+0.114*rgb[2])/255;
-    h.style.setProperty('--on-acc', lum>0.6? '#111820' : '#ffffff');
+    h.style.setProperty('--on-acc', lum>0.55? '#111820' : '#ffffff');
   }catch(e){}
 }
 function applyTheme(id){
@@ -1267,7 +1281,7 @@ function renderData(){
     rows+='<tr><td>'+(MODE_NAME[k]||k)+'</td><td class="big">'+(b.bestHit||'—')+'%</td><td>'+(b.bestMT||'—')+' ms</td></tr>'; });
   $('bestTable').innerHTML=rows;
 
-  let rr='<tr><th>日期</th><th>模式</th><th>限时</th><th>命中率</th><th>中位用时</th><th></th></tr>';
+  let rr='<tr><th>日期</th><th>模式</th><th>限时</th><th>命中率</th><th>中位用时</th><th><span style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">删除</span></th></tr>';
   const tailAll=runs.map((r,idx)=>({r:r,idx:idx})).reverse();
   const tail = runShowAll? tailAll : tailAll.slice(0,5);
   if(!tail.length) rr+='<tr><td colspan="6" style="color:var(--dim)">暂无记录</td></tr>';
@@ -1965,22 +1979,35 @@ function render(root, lang){
   const w=weekOf(d);
   const log=JSON.parse(localStorage.getItem(K_LOG)||'[]');
 
+  // 训练日集合：粘贴的记录 + 训练器成绩（cs2at.runs）自动并入——练完自动计入日历
+  const set=new Set(log.map(x=>String(x||'').slice(0,10)));
+  try{
+    const hist=JSON.parse(localStorage.getItem(K_RUNS)||'[]');
+    if(Array.isArray(hist)) hist.forEach(x=>{
+      const s=String(x.d||'').slice(0,10);
+      if(/^\d{4}-\d{2}-\d{2}$/.test(s)) set.add(s);
+    });
+  }catch(e){}
+  const startT=new Date(localStorage.getItem(K_START)||todayStr()).getTime();
+  let doneIn=0;
+  set.forEach(k=>{ const t=new Date(k).getTime(); if(t>=startT && t<startT+28*86400000) doneIn++; });
+
   // 连续天数
-  let streak=0; const set=new Set(log.map(x=>x.slice(0,10)));
+  let streak=0;
   for(let i=0;i<60;i++){ const dt=new Date(Date.now()-i*86400000);
     const p=n=>String(n).padStart(2,'0');
     const k=dt.getFullYear()+'-'+p(dt.getMonth()+1)+'-'+p(dt.getDate());
     if(set.has(k)) streak++; else if(i>0) break; }
 
-  // 一行说清：第几天 · 完成几次 · 连续几天
+  // 一行说清：第几天 · 完成几天 · 连续几天
   const metaEl=$('planMeta');
   if(metaEl){
     metaEl.innerHTML = (LG==='en')
-      ? 'Day <b>'+(d+1)+'</b> · <b>'+log.length+'</b> done · <b>'+streak+'</b> day streak'
-      : '第 <b>'+(d+1)+'</b> 天 · 已完成 <b>'+log.length+'</b> 次 · 连续 <b>'+streak+'</b> 天';
+      ? 'Day <b>'+(d+1)+'</b> · <b>'+doneIn+'</b> days done · <b>'+streak+'</b> day streak'
+      : '第 <b>'+(d+1)+'</b> 天 · 已完成 <b>'+doneIn+'</b> 天 · 连续 <b>'+streak+'</b> 天';
   }
 
-  const isRest=(d%7===5||d%7===6);
+  const isRest=((new Date().getDay()===0)||(new Date().getDay()===6));   // 周末休息，跟日历同一套
   $('todayHint').textContent = isRest
     ? (LG==='en' ? 'Rest day. Sleep 7–8 hours — skill consolidates overnight.' : '今天是休息日。睡够 7-8 小时，技能靠睡眠巩固。')
     : (LG==='en' ? 'Trainer results now count automatically; paste "Copy this set" into the log to archive details.' : '训练器成绩会自动计入日历；把「复制本组数据」粘到记录里可留档详情。');
@@ -2247,13 +2274,16 @@ render();
     box.innerHTML = plan.rows.length ? plan.rows.map(function(r,i){
       return '<div class="prow">'+
         '<input class="nmIn" data-i="'+i+'" value="'+dispRow(r.t||'')+'" placeholder="'+L('项目名','Name')+'" maxlength="8">'+
-        '<select data-i="'+i+'">'+MODES.map(function(m){
+        '<select data-i="'+i+'" aria-label="'+L('模式','Mode')+'">'+MODES.map(function(m){
           return '<option value="'+m.id+'"'+(m.id===r.m?' selected':'')+'>'+dispRow(m.name)+'</option>';
         }).join('')+'</select>'+
-        '<div class="stepper">'+
-          '<button data-step="-1" data-i="'+i+'">−</button>'+
-          '<span>'+(r.s*40)+L(' 球',' balls')+'</span>'+
-          '<button data-step="1" data-i="'+i+'">+</button>'+
+        '<div class="prowAct">'+
+          '<div class="stepper">'+
+            '<button data-step="-1" data-i="'+i+'">−</button>'+
+            '<span>'+(r.s*40)+L(' 球',' balls')+'</span>'+
+            '<button data-step="1" data-i="'+i+'">+</button>'+
+          '</div>'+
+          '<a class="pGo" target="_blank" href="tools/aim-trainer.html?mode='+r.m+'&count='+Math.min(120,Math.max(20,r.s*40))+cfgQ()+'">'+L('开始','Start')+'</a>'+
         '</div>'+
         '<button class="del" data-del="'+i+'" title="'+L('删掉这项','Delete this row')+'">×</button>'+
       '</div>';

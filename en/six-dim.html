@@ -1,8 +1,8 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"><base href="https://i11usorycat.github.io/cs2-aim-tools/">
-<title>Six-dim check-up · Vernier</title>
+<meta charset="utf-8">
+<title>甩枪训练 · 自适应难度</title>
 <link rel="icon" href="../assets/favicon.svg">
 <style>
   html,body{margin:0;height:100%;background:var(--bg);overflow:hidden;color:var(--txt);font-family:"Microsoft YaHei",sans-serif}
@@ -169,8 +169,8 @@ const EN_UI=(function(){ try{
     if(q.get('lang')) return q.get('lang')==='en';
     var s=localStorage.getItem('cs2at.lang');
     if(s) return s==='en';
-    var n='en';
-    return true;
+    var n=(navigator.language||'en').toLowerCase();
+    return n.indexOf('zh')!==0;
   }catch(e){ return true; } })();   // 按浏览器语言自动选：中文浏览器看中文，其余默认英文
 // 命中特效（flash/shatter/both/off）与准星击中反馈（auto/custom/off）
 const hitFxMode=(function(){ try{ var m=localStorage.getItem('cs2at.hitFx'); if(m==='0') m='off'; if(!m||m==='1') m='flash'; return m; }catch(e){ return 'flash'; } })();
@@ -1383,7 +1383,7 @@ requestAnimationFrame(loop);
       var sv=localStorage.getItem('cs2at.lang');
       if(sv) return sv==='en';
       var nv=(navigator.language||'en').toLowerCase();
-      return true;
+      return nv.indexOf('zh')!==0;
     }catch(e){ return true; }
   })();
   if(!EN) return;

@@ -4,16 +4,44 @@
   <url><loc>https://i11usorycat.github.io/cs2-aim-tools/</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://i11usorycat.github.io/cs2-aim-tools/en/"/>
     <xhtml:link rel="alternate" hreflang="zh" href="https://i11usorycat.github.io/cs2-aim-tools/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://i11usorycat.github.io/cs2-aim-tools/"/>
   </url>
   <url><loc>https://i11usorycat.github.io/cs2-aim-tools/en/</loc>
     <xhtml:link rel="alternate" hreflang="en" href="https://i11usorycat.github.io/cs2-aim-tools/en/"/>
     <xhtml:link rel="alternate" hreflang="zh" href="https://i11usorycat.github.io/cs2-aim-tools/"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://i11usorycat.github.io/cs2-aim-tools/"/>
   </url>
-  <url><loc>https://i11usorycat.github.io/cs2-aim-tools/app.html</loc></url>
-  <url><loc>https://i11usorycat.github.io/cs2-aim-tools/tools/aim-trainer.html</loc></url>
-  <url><loc>https://i11usorycat.github.io/cs2-aim-tools/tools/sensitivity-calibrator.html</loc></url>
-  <url><loc>https://i11usorycat.github.io/cs2-aim-tools/en/six-dim.html</loc></url>
-  <url><loc>https://i11usorycat.github.io/cs2-aim-tools/en/plan.html</loc></url>
-  <url><loc>https://i11usorycat.github.io/cs2-aim-tools/en/sensitivity-calibrator.html</loc></url>
-  <url><loc>https://i11usorycat.github.io/cs2-aim-tools/en/methodology.html</loc></url>
+  <url><loc>https://i11usorycat.github.io/cs2-aim-tools/app.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://i11usorycat.github.io/cs2-aim-tools/en/plan.html"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://i11usorycat.github.io/cs2-aim-tools/app.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://i11usorycat.github.io/cs2-aim-tools/"/>
+  </url>
+  <url><loc>https://i11usorycat.github.io/cs2-aim-tools/tools/aim-trainer.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://i11usorycat.github.io/cs2-aim-tools/en/six-dim.html"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://i11usorycat.github.io/cs2-aim-tools/tools/aim-trainer.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://i11usorycat.github.io/cs2-aim-tools/"/>
+  </url>
+  <url><loc>https://i11usorycat.github.io/cs2-aim-tools/tools/sensitivity-calibrator.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://i11usorycat.github.io/cs2-aim-tools/en/sensitivity-calibrator.html"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://i11usorycat.github.io/cs2-aim-tools/tools/sensitivity-calibrator.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://i11usorycat.github.io/cs2-aim-tools/"/>
+  </url>
+  <url><loc>https://i11usorycat.github.io/cs2-aim-tools/en/plan.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://i11usorycat.github.io/cs2-aim-tools/en/plan.html"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://i11usorycat.github.io/cs2-aim-tools/app.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://i11usorycat.github.io/cs2-aim-tools/"/>
+  </url>
+  <url><loc>https://i11usorycat.github.io/cs2-aim-tools/en/six-dim.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://i11usorycat.github.io/cs2-aim-tools/en/six-dim.html"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://i11usorycat.github.io/cs2-aim-tools/tools/aim-trainer.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://i11usorycat.github.io/cs2-aim-tools/"/>
+  </url>
+  <url><loc>https://i11usorycat.github.io/cs2-aim-tools/en/sensitivity-calibrator.html</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://i11usorycat.github.io/cs2-aim-tools/en/sensitivity-calibrator.html"/>
+    <xhtml:link rel="alternate" hreflang="zh" href="https://i11usorycat.github.io/cs2-aim-tools/tools/sensitivity-calibrator.html"/>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://i11usorycat.github.io/cs2-aim-tools/"/>
+  </url>
+  <url><loc>https://i11usorycat.github.io/cs2-aim-tools/en/methodology.html</loc>
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://i11usorycat.github.io/cs2-aim-tools/"/>
+  </url>
 </urlset>

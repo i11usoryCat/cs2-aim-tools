@@ -54,6 +54,7 @@
   <div id="sensHint" style="margin-top:12px;font-size:13.5px;color:var(--dim)"></div>
   <div id="bw" style="margin-top:12px;font-size:13px;line-height:1.8;color:#d29922"></div>
   <button id="go" class="btn">开始</button>
+  <div id="rawWarn" style="display:none;position:fixed;left:50%;top:70px;transform:translateX(-50%);z-index:9999;background:rgba(20,16,8,.92);border:1px solid #d29922;color:#f5d78a;padding:9px 16px;border-radius:10px;font-size:13px;line-height:1.6;max-width:min(560px,calc(100vw - 32px));pointer-events:none">⚠️ 原始输入锁定失败：本次测量经过系统加速，建议值不可比，不允许「应用到设置」。</div>
 </div>
 
 <div id="res" class="overlay"><div id="resBody"></div>
@@ -83,7 +84,10 @@ function pickScene(){
 const SC=SCENES[pickScene()]||SCENES.classic;
 // 快速标定：固定 3 轮出建议（新手快速找灵敏度），不做收敛判据
 const FAST=(function(){ try{ return new URLSearchParams(location.search).get('fast')==='1'; }catch(e){ return false; } })();
-try{ if(FAST){ var ct=document.getElementById('calTitle'); if(ct) ct.textContent='灵敏度标定 · 快速'; } }catch(e){}
+try{ if(FAST){
+  var ct=document.getElementById('calTitle'); if(ct) ct.textContent='灵敏度标定 · 快速';
+  var nEl=document.getElementById('n'); if(nEl) nEl.value='20';
+} }catch(e){}
 // 页面主题跟随站点（不再是独立皮）
 const SITE_THEMES={
   ink:{bg:'#f7f5f0',panel:'#fffefb',line:'#e2dccf',txt:'#202b2c',dim:'#6d7a7b',acc:'#0f766e'},
@@ -166,10 +170,17 @@ function newTarget(){
   stopPos=null; fastSeen=false; lastT=0;
 }
 
+let rawLockFailed=false;
 function doLock(){
+  function fallback(){
+    rawLockFailed=true;   // 原始输入锁失败：测量经过系统加速，不可比
+    try{ cv.requestPointerLock(); }catch(e){}
+    var el=document.getElementById('rawWarn');
+    if(el) el.style.display='';
+  }
   try{ const r=cv.requestPointerLock({unadjustedMovement:true});
-    if(r&&r.catch) r.catch(()=>{ try{cv.requestPointerLock()}catch(e){} }); }
-  catch(e){ try{cv.requestPointerLock()}catch(e2){} }
+    if(r&&r.catch) r.catch(fallback); }
+  catch(e){ fallback(); }
 }
 
 function start(){
@@ -180,7 +191,7 @@ function start(){
   if(!isFinite(cm360) || cm360<12) cm360=12;
   if(cm360>60) cm360=60;
   cmInput.value=cm360.toFixed(1);
-  nTrial=parseInt(document.getElementById('n').value)||40;
+  nTrial=FAST? 20 : (parseInt(document.getElementById('n').value)||40);   // 快速标定 3×20=60，不拖到 120
   if(nTrial<10) nTrial=10; if(nTrial>300) nTrial=300;
   running=true; paused=false; trial=0; result={f:[],t:[],lat:[],dist:[],hit:[],err:[],pts:[]};
   msg.classList.remove('show'); res.classList.remove('show');
@@ -259,8 +270,9 @@ function finish(){
   const fVarC=nCum>1? fCum.reduce((x,y)=>x+(y-fMeanC)*(y-fMeanC),0)/(nCum-1) : 0;
   const SE=Math.sqrt(Math.max(0,fVarC)/Math.max(1,nCum));
   const CI=1.96*SE;
-  const fastDone = FAST && allRuns.length>=3;
-  const conv = fastDone || (nCum>=8 && CI < 0.01);        // 至少 8 个 miss 才有资格定稿
+  const MISS_MIN = FAST? 5 : 8;                            // 快速 5 个 miss、完整 8 个 miss 才谈得上定稿
+  const fastDone = FAST && allRuns.length>=3 && nCum>=MISS_MIN;
+  const conv = fastDone || (nCum>=MISS_MIN && CI < 0.01);
   const meanCm = nCum? impliedAll.reduce((x,y)=>x+y,0)/nCum : cm360;
   result.summary={conv:conv, fm:fm, cmNew:meanCm, sensNew:sensOf(meanCm), sensNow:sensOf(cm360), tm:tm, lm:lm, dm:dm};
 
@@ -287,7 +299,7 @@ function finish(){
     row('不足', negF.length+' 球 ('+np+'%)，中位 '+(med(negF)*100).toFixed(1)+'%')+
     row('总体偏差', (fm>=0?'+':'')+(fm*100).toFixed(1)+'%', 'big')+
     row('建议（'+nCum+' 球平均）', meanCm.toFixed(1)+' cm → sens <b>'+sensOf(meanCm).toFixed(2)+'</b>', 'big')+
-    row('数据与误差', '共 '+nCum+' 球 · 误差 ±'+(CI*100).toFixed(2)+'%')+
+    row('数据与误差', nCum>=3? '共 '+nCum+' 球 · 误差 ±'+(CI*100).toFixed(2)+'%' : '样本太少（'+nCum+' miss），暂无误差估计')+
     '</table>'+
     '<div style="margin-top:12px;font-size:14px">'+verdict+'</div>'+
     (conv
@@ -295,9 +307,11 @@ function finish(){
           ? '<div style="margin-top:8px;color:var(--acc);font-weight:700">✓ 快速标定完成（3 轮）——修明显偏差够用，想更准就继续测</div>'
           : '<div style="margin-top:8px;color:var(--acc);font-weight:700">✓ 数据够了，可以定稿</div>')
       : (FAST
-          ? '<div style="margin-top:8px;color:var(--dim);font-size:13px">快速标定：再打 '+(3-allRuns.length)+' 轮出建议（当前建议 '+(meanCm? meanCm.toFixed(1):'—')+' cm）</div>'
-          : (nCum<8
-              ? '<div style="margin-top:8px;color:var(--dim);font-size:13px">未命中球太少（'+nCum+'/8）——把球调小一点，多打出没打中的球，偏差才算得准</div>'
+          ? (nCum<MISS_MIN
+              ? '<div style="margin-top:8px;color:var(--dim);font-size:13px">未命中球太少（'+nCum+'/'+MISS_MIN+'）——把球调小一点，多打出没打中的球</div>'
+              : '<div style="margin-top:8px;color:var(--dim);font-size:13px">快速标定：再打 '+(3-allRuns.length)+' 轮出建议（当前建议 '+(meanCm? meanCm.toFixed(1):'—')+' cm）</div>')
+          : (nCum<MISS_MIN
+              ? '<div style="margin-top:8px;color:var(--dim);font-size:13px">未命中球太少（'+nCum+'/'+MISS_MIN+'）——把球调小一点，多打出没打中的球，偏差才算得准</div>'
               : '<div style="margin-top:8px;color:var(--dim);font-size:13px">继续测：现在误差 ±'+(CI*100).toFixed(2)+'%，到 ±1% 以内再定稿（已 '+nCum+' 球）</div>')));
   res.classList.add('show');
   try{ addScatter(); }catch(e){}
@@ -359,9 +373,13 @@ document.getElementById('copyRes').addEventListener('click',e=>{
 document.getElementById('applyRes').addEventListener('click',e=>{
   e.stopPropagation();
   const s=result&&result.summary; if(!s) return;
+  const hint=document.getElementById('applyHint');
+  if(rawLockFailed){   // 原始输入不可比：不许应用
+    if(hint) hint.textContent=window.__IS_EN? '⚠️ Raw input unavailable — not applied.' : '⚠️ 原始输入不可用——没有应用。';
+    return;
+  }
   const cfg={dpi:DPI, yaw:YAW, sens:Math.round(s.sensNew*100)/100, cm:Math.round(s.cmNew*100)/100};
   try{ localStorage.setItem('cs2at.cfg', JSON.stringify(cfg)); }catch(err){}
-  const hint=document.getElementById('applyHint');
   if(hint) hint.textContent=(window.__IS_EN?'Applied to settings ✓ cm/360 ':'已应用到设置 ✓ cm/360 ')+cfg.cm+(window.__IS_EN?' · sensitivity ':' · 灵敏度 ')+cfg.sens;
 });
 
@@ -581,6 +599,10 @@ requestAnimationFrame(loop);
     return n.indexOf('zh')!==0;
   }catch(e){ return true; } })();   // 按浏览器语言自动选：中文浏览器看中文，其余默认英文
   window.__IS_EN=EN;
+  try{
+    var rw=document.getElementById('rawWarn');
+    if(rw) rw.textContent='⚠️ Raw input lock failed: this measurement is system-accelerated — the suggestion is not comparable and cannot be applied to settings.';
+  }catch(e){}
   if(!EN) return;
   var D={
     '灵敏度标定 · 过冲法':'Sensitivity calibration · overshoot',
@@ -627,7 +649,9 @@ requestAnimationFrame(loop);
     [/^共 (\d+) 球 · 误差 ±([\d.]+)%$/,'$1 shots · error ±$2%'],
     [/^继续测：现在误差 ±([\d.]+)%，到 ±1% 以内再定稿（已 (\d+) 球）$/,'Keep going: error is ±$1% — finalize within ±1% ($2 shots so far)'],
     [/^快速标定：再打 (\d+) 轮出建议（当前建议 ([\d.]+) cm）$/,'Quick calibration: $1 more round(s) for the suggestion (current: $2 cm)'],
-    [/^未命中球太少（(\d+)\/8）——把球调小一点，多打出没打中的球，偏差才算得准$/,'Too few misses ($1/8) — shrink the dot so you miss more; bias needs misses to be accurate'],
+    [/^未命中球太少（(\d+)\/(\d+)）——把球调小一点，多打出没打中的球，偏差才算得准$/,'Too few misses ($1/$2) — shrink the dot so you miss more; bias needs misses to be accurate'],
+    [/^未命中球太少（(\d+)\/(\d+)）——把球调小一点，多打出没打中的球$/,'Too few misses ($1/$2) — shrink the dot so you miss more'],
+    [/^样本太少（(\d+) miss），暂无误差估计$/,'Too few samples ($1 miss) — no error estimate yet'],
     [/^建议（累计 (\d+) 球 · 均值）$/,'Suggestion (cumulative $1 shots · mean)'],
     [/^继续测：当前 95% 置信区间 ±([\d.]+)%，到 ±1% 内再定稿（目前已 (\d+) 球）$/,'Keep going: 95% CI ±$1% — finalize within ±1% (currently $2 shots)']
   ];

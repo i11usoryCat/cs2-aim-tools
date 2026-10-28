@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Vernier · 分毫</title>
+<title>Four-week plan · Vernier</title><link rel="canonical" href="https://i11usorycat.github.io/cs2-aim-tools/en/plan.html"><link rel="alternate" hreflang="en" href="https://i11usorycat.github.io/cs2-aim-tools/en/plan.html"><link rel="alternate" hreflang="zh" href="https://i11usorycat.github.io/cs2-aim-tools/app.html"><link rel="alternate" hreflang="x-default" href="https://i11usorycat.github.io/cs2-aim-tools/">
 <meta name="description" content="分毫 Vernier —— 灵敏度标定、六维检查与每日训练计划。本地存储，无账号无广告。">
 <meta property="og:title" content="Vernier — four-week plan">
 <meta property="og:description" content="Vernier's four-week aim training plan. No install, no account, all local.">
@@ -1080,7 +1080,7 @@ function rippleSwitch(lang, cx, cy){
   watchdog=setTimeout(function(){
     if(switching){
       try{ LANG=lang; setLang(lang); applyLang(); }catch(e){}
-      try{ show((location.hash||'#data').slice(1)); }catch(e){}
+      try{ try{ if(!location.hash) history.replaceState(null,'','#plan'); }catch(e){} show((location.hash||'#data').slice(1)); }catch(e){}
       try{ if(window.__vRender) window.__vRender(); }catch(e){}
       try{ if(window.__planRender) window.__planRender(); }catch(e){}
       document.querySelectorAll('.langBlocker,.langLayer,.langCanvas').forEach(function(el){ el.remove(); });
@@ -1931,7 +1931,7 @@ LANG=(function(){ try{ var s=localStorage.getItem(K_LANG); if(s) return s;
     var n=(navigator.language||'en').toLowerCase(); return n.indexOf('zh')===0? 'zh':'en';
   }catch(e){ return 'en'; } })();   // 按浏览器语言自动选：中文浏览器看中文，其余默认英文
 if('scrollRestoration' in history) history.scrollRestoration='manual';
-show((location.hash||'#data').slice(1));
+try{ if(!location.hash) history.replaceState(null,'','#plan'); }catch(e){} show((location.hash||'#data').slice(1));
 window.scrollTo(0,0);
 function fitPlanFrame(){
   const f=document.querySelector('#plan iframe');

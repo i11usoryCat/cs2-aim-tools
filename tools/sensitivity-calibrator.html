@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <title>灵敏度标定 · 过冲法（全样本）</title>
@@ -572,7 +572,7 @@ requestAnimationFrame(loop);
 
 /* ===== 英文界面 ===== */
 (function(){
-  var EN=(function(){ try{ var q=new URLSearchParams(location.search); if(q.get('lang')) return q.get('lang')==='en'; return localStorage.getItem('cs2at.lang')==='en'; }catch(e){ return false; } })();
+  var EN=(function(){ try{ var q=new URLSearchParams(location.search); if(q.get('lang')) return q.get('lang')==='en'; return localStorage.getItem('cs2at.lang')!=='zh'; }catch(e){ return true; } })();   // 默认英文
   window.__IS_EN=EN;
   if(!EN) return;
   var D={

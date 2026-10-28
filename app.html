@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-theme="sand">
+<html lang="en" data-theme="sand">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -1932,7 +1932,7 @@ $('iGame').addEventListener('change',()=>{
 $('iSens').addEventListener('change',()=>{ applyGameSens(); });
 
 cfg=load(K_CFG,cfg);
-LANG=(function(){ try{ return localStorage.getItem(K_LANG)||'zh'; }catch(e){ return 'zh'; } })();
+LANG=(function(){ try{ return localStorage.getItem(K_LANG)||'en'; }catch(e){ return 'en'; } })();
 if('scrollRestoration' in history) history.scrollRestoration='manual';
 show((location.hash||'#data').slice(1));
 window.scrollTo(0,0);

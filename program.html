@@ -304,7 +304,7 @@ render();
 
 /* ===== 英文界面 ===== */
 (function(){
-  var EN=(function(){ try{ var q=new URLSearchParams(location.search); if(q.get('lang')) return q.get('lang')==='en'; return localStorage.getItem('cs2at.lang')==='en'; }catch(e){ return false; } })();
+  var EN=(function(){ try{ var q=new URLSearchParams(location.search); if(q.get('lang')) return q.get('lang')==='en'; return localStorage.getItem('cs2at.lang')!=='zh'; }catch(e){ return true; } })();   // 默认英文
   if(!EN) return;
   var D={
     '← 返回首页':'← Home','四周训练计划':'Four-week plan',

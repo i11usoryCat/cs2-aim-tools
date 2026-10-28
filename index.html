@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="zh-CN" data-theme="sand">
+<html lang="en" data-theme="sand">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -292,8 +292,8 @@ var EN={
     '已复制':'Copied'
   };
   var ZH={}; Object.keys(EN).forEach(function(k){ ZH[EN[k]]=k; });
-  var LANG='zh';
-  try{ LANG=localStorage.getItem('cs2at.lang')||'zh'; }catch(e){}
+  var LANG='en';
+  try{ LANG=localStorage.getItem('cs2at.lang')||'en'; }catch(e){}
 
   function translateRoot(root, lang){
     if(!root || !document.createTreeWalker) return;

@@ -126,7 +126,7 @@ try{
   .foot code{background:color-mix(in srgb,var(--txt) 8%,transparent);padding:2px 7px;border-radius:6px;font-size:12px;color:var(--acc)}
   .langTop{position:fixed;top:18px;right:22px;z-index:9600;display:flex;
     border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--bg)}
-  .langTop span{padding:7px 13px;font-size:12.5px;color:var(--dim);cursor:pointer;
+  .langTop span{padding:7px 13px;min-width:38px;text-align:center;font-size:12.5px;color:var(--dim);cursor:pointer;
     transition:.15s;user-select:none}
   .langTop span:hover{background:var(--panel);color:var(--txt)}
   .langTop span.on{background:var(--acc);color:#fff;font-weight:600}
@@ -366,6 +366,11 @@ function rippleSwitch(lang, cx, cy){
   // ① 按钮先切（这是用户看到的第一个反馈）
   var lsReal=document.getElementById('langTop');
   if(lsReal) lsReal.querySelectorAll('span[data-l]').forEach(function(el){ el.classList.toggle('on', el.dataset.l===lang); });
+  // 切完再按目标按钮的当前中心取波纹起点（加粗不再造成偏移）
+  try{
+    var lt=lsReal && lsReal.querySelector('span[data-l="'+lang+'"]');
+    if(lt){ var lr=lt.getBoundingClientRect(); cx=lr.left+lr.width/2; cy=lr.top+lr.height/2; }
+  }catch(e){}
 
   // ② 复制当前页面（旧语言），塞进滚动容器
   var scroller=null, layer=null;

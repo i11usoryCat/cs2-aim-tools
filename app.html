@@ -108,6 +108,7 @@ try{
   .brand-sub{font-size:10px;letter-spacing:2px;color:color-mix(in srgb,var(--txt) 68%,var(--bg));margin-top:2px}
   .brand:hover .mark{color:var(--acc2)}
   .brand:hover .brand-name{color:var(--acc)}
+
   .logo{
     font-size:12px; font-weight:800; letter-spacing:2.4px;
     color:var(--acc); margin-right:18px; white-space:nowrap;
@@ -131,7 +132,7 @@ try{
   .gear svg{width:16px;height:16px}
   .gear:hover{color:var(--acc);border-color:var(--acc)}
   .lang{display:flex; gap:0; border:1px solid var(--line); border-radius:8px; overflow:hidden; margin-right:8px}
-  .lang span{padding:6px 12px; font-size:12.5px; color:var(--dim); cursor:pointer; transition:.15s; user-select:none}
+  .lang span{padding:6px 12px; min-width:36px; text-align:center; font-size:12.5px; color:var(--dim); cursor:pointer; transition:.15s; user-select:none}
   .lang span:hover{background:var(--panel2); color:var(--txt)}
   .lang span.on{background:var(--acc); color:var(--on-acc,#fff); font-weight:600}
   .home{
@@ -1072,14 +1073,6 @@ let switching=false, watchdog=null;
 
 function rippleSwitch(lang, cx, cy){
   if(switching) return;
-  // 减少动态偏好：跳过波纹，直接切
-  try{
-    if(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches){
-      LANG=lang; setLang(lang); applyLang();
-      try{ show((location.hash||'#data').slice(1)); }catch(e){}
-      return;
-    }
-  }catch(e){}
   switching=true;
 
   clearTimeout(watchdog);
@@ -1091,6 +1084,7 @@ function rippleSwitch(lang, cx, cy){
       try{ if(window.__planRender) window.__planRender(); }catch(e){}
       document.querySelectorAll('.langBlocker,.langLayer,.langCanvas').forEach(function(el){ el.remove(); });
       try{ document.documentElement.style.overflow=''; }catch(e){}
+
       switching=false;
     }
   }, 3000);
@@ -1112,6 +1106,25 @@ function rippleSwitch(lang, cx, cy){
   // ① 按钮先切（这是用户看到的第一个反馈）
   var lsReal=document.getElementById('langSw');
   if(lsReal) lsReal.querySelectorAll('span[data-lang]').forEach(function(el){ el.classList.toggle('on', el.dataset.lang===lang); });
+  // 波纹从被点按钮的中心散开
+  try{
+    var lt=lsReal && lsReal.querySelector('span[data-lang="'+lang+'"]');
+    if(lt){ var lr=lt.getBoundingClientRect(); cx=lr.left+lr.width/2; cy=lr.top+lr.height/2; }
+  }catch(e){}
+  // 按钮原地浮到动画之上：header 的层叠上下文会困住 z-index，
+  // 所以克隆一份挂到 body 下（位置不变），原按钮临时隐身
+  try{
+    var lb=document.getElementById('langSw');
+    if(lb){
+      var lr2=lb.getBoundingClientRect();
+      var cl=lb.cloneNode(true);
+      cl.id='langSwFloat';
+      cl.style.cssText='position:fixed;left:'+lr2.left+'px;top:'+lr2.top+'px;z-index:9700;margin:0;background:var(--bg);';
+      document.body.appendChild(cl);
+      lb.style.visibility='hidden';
+    }
+  }catch(e){}
+
 
   // ② 复制当前页面（旧语言），塞进滚动容器
   var scroller=null, layer=null;
@@ -1141,6 +1154,7 @@ function rippleSwitch(lang, cx, cy){
 
   if(!layer){
     try{ LANG=lang; setLang(lang); applyLang(); try{ if(window.__vRender) window.__vRender(); }catch(e){} try{ if(window.__planRender) window.__planRender(); }catch(e){} }catch(e){}
+    try{ var f1=document.getElementById('langSwFloat'); if(f1) f1.remove(); var b1=document.getElementById('langSw'); if(b1) b1.style.visibility=''; }catch(e){}
     blocker.remove(); htmlEl.style.overflow=prevOverflow;
     switching=false; return;
   }
@@ -1178,6 +1192,8 @@ function rippleSwitch(lang, cx, cy){
 
     // ④ 遮罩盖满之后，真实页面才切语言
     try{ LANG=lang; setLang(lang); applyLang(); try{ if(window.__vRender) window.__vRender(); }catch(e){} try{ if(window.__planRender) window.__planRender(); }catch(e){} }catch(e){}
+    try{ var f1=document.getElementById('langSwFloat'); if(f1) f1.remove(); var b1=document.getElementById('langSw'); if(b1) b1.style.visibility=''; }catch(e){}
+
     try{
       var lsF=document.getElementById('langSw');
       if(lsF) lsF.querySelectorAll('span[data-lang]').forEach(function(el){ el.classList.toggle('on', el.dataset.lang===lang); });

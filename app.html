@@ -602,9 +602,13 @@ try{
       <div class="hint" id="gameConvHint" style="margin-top:10px">先选游戏，再改下面的灵敏度；改完自动换算，DPI 不动。只按腰射，开镜倍率不适用。m_yaw 没改过就别动（默认 0.022 就是对的）。</div>
 
       <div class="row" style="margin-top:14px">
-        <a class="tile" style="flex:1;min-width:240px;max-width:440px" href="tools/sensitivity-calibrator.html">
+        <a class="tile" data-cal style="flex:1;min-width:240px;max-width:440px" href="tools/sensitivity-calibrator.html?fast=1">
+          <div class="t">快速标定</div>
+          <div class="d">固定 3 轮出建议，新手快速找到自己的灵敏度。</div>
+        </a>
+        <a class="tile" data-cal style="flex:1;min-width:240px;max-width:440px" href="tools/sensitivity-calibrator.html">
           <div class="t">灵敏度标定</div>
-          <div class="d">测出你每次都甩过头还是不够，把明显的偏差修掉。</div>
+          <div class="d">遇到瓶颈的用户：找出属于这个阶段最好的灵敏度。</div>
         </a>
         <a class="tile" style="flex:1;min-width:240px;display:none" href="tools/sensitivity-calibrator-strict.html">
           <div class="t">灵敏度标定 · 进阶</div>
@@ -877,6 +881,8 @@ const EN={
   '游戏灵敏度得是正数':'Enter a positive sensitivity',
   '灵敏度标定':'Calibrator','灵敏度标定 · 进阶':'Calibrator · advanced',
   '测出你每次都甩过头还是不够，把明显的偏差修掉。':'Measures whether you overshoot or fall short, and fixes the obvious bias.',
+  '快速标定':'Quick calibration','固定 3 轮出建议，新手快速找到自己的灵敏度。':'3 fixed rounds then a suggestion — the fast way for beginners to find their sensitivity.',
+  '遇到瓶颈的用户：找出属于这个阶段最好的灵敏度。':'Hit a plateau? Find the best sensitivity for your current stage.',
   '更细的统计与判定，适合想抠数据的人。':'Finer stats and judgment — for players who like details.',
   '语言 / Language':'Language',
   '输入设备':'Input device',
@@ -1654,6 +1660,16 @@ function persistCfg(){
   cfg={dpi:num($('iDpi'),1000), yaw:num($('iYaw'),0.022), sens:num($('iSens'),1.92), cm:num($('iCm'),27.1)};
   save(K_CFG,cfg);
 }
+// 标定卡带当前设置参数（DPI/yaw/cm/sens），标定器按真值换算
+(function(){
+  try{
+    const q=cfgQ();
+    document.querySelectorAll('a[data-cal]').forEach(function(a){
+      const base=a.getAttribute('href');
+      a.setAttribute('href', base+(base.indexOf('?')>=0? q : '?'+q.slice(1)));
+    });
+  }catch(e){}
+})();
 
 ['iDpi','iYaw','iSens','iCm'].forEach(id=>{
   $(id).addEventListener('input',()=>{

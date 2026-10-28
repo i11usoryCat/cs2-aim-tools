@@ -34,13 +34,13 @@
 <div id="ui"></div>
 
 <div id="msg" class="overlay show">
-  <div style="font-size:19px;color:var(--acc);margin-bottom:10px">灵敏度标定</div>
+  <div style="font-size:19px;color:var(--acc);margin-bottom:10px" id="calTitle">灵敏度标定</div>
   <div>每次只出现一个球。看到球后<b>最快速度甩过去并点击</b>。<br>
-  程序记录你甩完的落点，算出你<b>冲过头还是没到</b>。<br><span style="color:var(--acc)">每个球都算数</span></div>
+  程序记录你甩完的落点，算出你<b>冲过头还是没到</b>。<br><span style="color:var(--acc)">偏差只看没打中的球，命中不参与</span></div>
   <div style="margin-top:22px;display:grid;grid-template-columns:repeat(3,auto);gap:10px 22px;justify-content:center;font-size:14px;color:var(--dim)">
-    <label>鼠标 DPI <input id="dpi" type="number" step="100" value="1000" style="width:90px"></label>
+    <label>鼠标 DPI <input id="dpi" type="number" step="100" value="800" style="width:90px"></label>
     <label>m_yaw <input id="yaw" type="number" step="0.0001" value="0.022" style="width:100px"></label>
-    <label>cm/360 <input id="cm" type="number" step="0.1" value="27" style="width:90px"></label>
+    <label>cm/360 <input id="cm" type="number" step="0.1" value="27.1" style="width:90px"></label>
     <label>游戏灵敏度 <input id="sens" type="number" step="0.01" value="" placeholder="自动" style="width:90px"></label>
     <label>球数 <input id="n" type="number" step="10" value="40" style="width:80px"></label>
     <label>球大小 <select id="bs" style="padding:7px;background:var(--panel);border:1px solid var(--line);color:var(--txt);border-radius:6px;font-size:14px;pointer-events:auto">
@@ -58,6 +58,11 @@
 
 <div id="res" class="overlay"><div id="resBody"></div>
   <button id="again" class="btn">再测一轮</button>
+  <div style="margin-top:12px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+    <button id="copyRes" class="btn" style="background:transparent;border-color:var(--line);color:var(--dim);font-size:13px;padding:8px 16px">复制结果</button>
+    <button id="applyRes" class="btn" style="background:transparent;border-color:var(--line);color:var(--dim);font-size:13px;padding:8px 16px">应用到设置</button>
+  </div>
+  <div id="applyHint" style="margin-top:8px;font-size:13px;color:var(--acc)"></div>
   <button id="clr" class="btn" style="margin-top:10px;background:#21262d;border-color:#30363d;font-size:14px;padding:9px 26px">清空累计（输入值保留）</button></div>
 
 <script src="../assets/scenes.js"></script>
@@ -76,6 +81,9 @@ function pickScene(){
   return 'classic';
 }
 const SC=SCENES[pickScene()]||SCENES.classic;
+// 快速标定：固定 3 轮出建议（新手快速找灵敏度），不做收敛判据
+const FAST=(function(){ try{ return new URLSearchParams(location.search).get('fast')==='1'; }catch(e){ return false; } })();
+try{ if(FAST){ var ct=document.getElementById('calTitle'); if(ct) ct.textContent='灵敏度标定 · 快速'; } }catch(e){}
 // 页面主题跟随站点（不再是独立皮）
 const SITE_THEMES={
   ink:{bg:'#f7f5f0',panel:'#fffefb',line:'#e2dccf',txt:'#202b2c',dim:'#6d7a7b',acc:'#0f766e'},
@@ -230,28 +238,29 @@ function med(a){ if(!a.length) return 0; const s=[...a].sort((x,y)=>x-y); return
 function finish(){
   running=false;
   if(document.pointerLockElement) document.exitPointerLock();
-  allRuns.push({cm:cm360, f:result.f.slice()});
-
-  // 汇总估计：每个样本换算成"它建议的 cm/360"，最终数取累计均值（CI 就是为均值算的）
-  const impliedAll=[];
-  allRuns.forEach(r=>{ r.f.forEach(v=>{ impliedAll.push(r.cm*(1+v)); }); });
   const posF=[], negF=[];
   result.f.forEach((v,i)=>{ if(result.hit[i]) return; (v>0?posF:negF).push(v); });
   const missF = posF.concat(negF);
-  const usedF = result.f;                                 // 全样本版本：全部计入
+  // 偏差只从未命中的球估计（命中不算偏差，与方法论文档一致）
+  allRuns.push({cm:cm360, f:missF.slice()});
+
+  // 汇总估计：每个 miss 换算成"它建议的 cm/360"，最终数取累计均值（CI 就是为均值算的）
+  const impliedAll=[];
+  allRuns.forEach(r=>{ (r.f||[]).forEach(v=>{ impliedAll.push(r.cm*(1+v)); }); });
   const meanOf = a => a.length ? a.reduce((x,y)=>x+y,0)/a.length : 0;
-  const fm = meanOf(usedF);                              // 带符号均值 = 系统偏差
+  const fm = meanOf(missF);                              // 带符号均值 = 系统偏差（只看 miss）
   const lm=med(result.lat), tm=med(result.t), dm=med(result.dist);
   let cmNew=cm360*(1+fm);
   if(cmNew<8) cmNew=8; if(cmNew>80) cmNew=80;
-  // 收敛判据：累计样本的 95% 置信区间半宽 <1%（不用两轮差——那是运气判据）
-  const fCum=[]; allRuns.forEach(r=>{ r.f.forEach(v=>fCum.push(v)); });
+  // 收敛判据：累计 miss 的 95% 置信区间半宽 <1%（不用两轮差——那是运气判据）
+  const fCum=[]; allRuns.forEach(r=>{ (r.f||[]).forEach(v=>fCum.push(v)); });
   const nCum=fCum.length;
   const fMeanC=nCum? fCum.reduce((x,y)=>x+y,0)/nCum : 0;
   const fVarC=nCum>1? fCum.reduce((x,y)=>x+(y-fMeanC)*(y-fMeanC),0)/(nCum-1) : 0;
   const SE=Math.sqrt(Math.max(0,fVarC)/Math.max(1,nCum));
   const CI=1.96*SE;
-  const conv = nCum>=40 && CI < 0.01;
+  const fastDone = FAST && allRuns.length>=3;
+  const conv = fastDone || (nCum>=8 && CI < 0.01);        // 至少 8 个 miss 才有资格定稿
   const meanCm = nCum? impliedAll.reduce((x,y)=>x+y,0)/nCum : cm360;
   result.summary={conv:conv, fm:fm, cmNew:meanCm, sensNew:sensOf(meanCm), sensNow:sensOf(cm360), tm:tm, lm:lm, dm:dm};
 
@@ -281,8 +290,15 @@ function finish(){
     row('数据与误差', '共 '+nCum+' 球 · 误差 ±'+(CI*100).toFixed(2)+'%')+
     '</table>'+
     '<div style="margin-top:12px;font-size:14px">'+verdict+'</div>'+
-    (conv? '<div style="margin-top:8px;color:var(--acc);font-weight:700">✓ 数据够了，可以定稿</div>'
-         : '<div style="margin-top:8px;color:var(--dim);font-size:13px">继续测：现在误差 ±'+(CI*100).toFixed(2)+'%，到 ±1% 以内再定稿（已 '+nCum+' 球）</div>');
+    (conv
+      ? (FAST
+          ? '<div style="margin-top:8px;color:var(--acc);font-weight:700">✓ 快速标定完成（3 轮）——修明显偏差够用，想更准就继续测</div>'
+          : '<div style="margin-top:8px;color:var(--acc);font-weight:700">✓ 数据够了，可以定稿</div>')
+      : (FAST
+          ? '<div style="margin-top:8px;color:var(--dim);font-size:13px">快速标定：再打 '+(3-allRuns.length)+' 轮出建议（当前建议 '+(meanCm? meanCm.toFixed(1):'—')+' cm）</div>'
+          : (nCum<8
+              ? '<div style="margin-top:8px;color:var(--dim);font-size:13px">未命中球太少（'+nCum+'/8）——把球调小一点，多打出没打中的球，偏差才算得准</div>'
+              : '<div style="margin-top:8px;color:var(--dim);font-size:13px">继续测：现在误差 ±'+(CI*100).toFixed(2)+'%，到 ±1% 以内再定稿（已 '+nCum+' 球）</div>')));
   res.classList.add('show');
   try{ addScatter(); }catch(e){}
 }
@@ -330,6 +346,24 @@ document.getElementById('clr').addEventListener('click',e=>{
   allRuns.length=0;
   resBody.innerHTML+='<div style="margin-top:10px;color:var(--acc);font-size:13px">累计已清空</div>';
 });
+// 复制结果 / 应用到设置
+document.getElementById('copyRes').addEventListener('click',e=>{
+  e.stopPropagation();
+  const s=result&&result.summary; if(!s) return;
+  const t='cm/360 '+s.cmNew.toFixed(1)+' · 灵敏度 '+s.sensNew.toFixed(2);
+  const hint=document.getElementById('applyHint');
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(t).then(()=>{ if(hint) hint.textContent=(window.__IS_EN?'Copied ✓ ':'已复制 ✓ ')+t; });
+  } else { try{ prompt('复制：',t); }catch(err){} }
+});
+document.getElementById('applyRes').addEventListener('click',e=>{
+  e.stopPropagation();
+  const s=result&&result.summary; if(!s) return;
+  const cfg={dpi:DPI, yaw:YAW, sens:Math.round(s.sensNew*100)/100, cm:Math.round(s.cmNew*100)/100};
+  try{ localStorage.setItem('cs2at.cfg', JSON.stringify(cfg)); }catch(err){}
+  const hint=document.getElementById('applyHint');
+  if(hint) hint.textContent=(window.__IS_EN?'Applied to settings ✓ cm/360 ':'已应用到设置 ✓ cm/360 ')+cfg.cm+(window.__IS_EN?' · sensitivity ':' · 灵敏度 ')+cfg.sens;
+});
 
 again.addEventListener('click',e=>{
   e.stopPropagation();
@@ -353,14 +387,16 @@ document.addEventListener('mousedown',e=>{
 document.addEventListener('pointerlockchange',()=>{ if(!document.pointerLockElement && running && !paused) pause(); });
 document.addEventListener('pointerlockerror',()=>{ if(running) pause(); });
 
-addEventListener('pointerrawupdate',e=>{
+function moveEv(e){
   if(!running||paused) return;
   const k=kOf(cm360);
   yaw += (e.movementX||0)*k;
   pitch -= (e.movementY||0)*k;
   if(pitch> PITCH_LIM) pitch= PITCH_LIM;
   if(pitch<-PITCH_LIM) pitch=-PITCH_LIM;
-},true);
+}
+// 有原始输入用 rawupdate，没有（Firefox/Safari）退回 pointermove——能测，精度低一点
+addEventListener(('onpointerrawupdate' in window)?'pointerrawupdate':'pointermove', moveEv, true);
 
 function grid(){
   const R=44, step=3;
@@ -521,14 +557,14 @@ requestAnimationFrame(loop);
   // 读设置页保存的 DPI / m_yaw / cm/360（URL 参数优先）
   // 程序赋值不触发 input 事件——统一 setVal 发事件，摘要行才会跟着刷新
   function setVal(el,v){ if(!el) return; el.value=v; try{ el.dispatchEvent(new Event('input',{bubbles:true})); }catch(e){} }
+  // URL 参数优先，其次读设置页保存的 cs2at.cfg
   try{
     var q=new URLSearchParams(location.search);
     var cfg=JSON.parse(localStorage.getItem('cs2at.cfg')||'null');
-    if(cfg){
-      if(!q.get('dpi') && cfg.dpi) setVal(dpi,cfg.dpi);
-      if(!q.get('yaw') && cfg.yaw) setVal(yaw,cfg.yaw);
-      if(!q.get('cm') && cfg.cm) setVal(cm,cfg.cm);
-    }
+    if(q.get('dpi')) setVal(dpi,q.get('dpi')); else if(cfg && cfg.dpi) setVal(dpi,cfg.dpi);
+    if(q.get('yaw')) setVal(yaw,q.get('yaw')); else if(cfg && cfg.yaw) setVal(yaw,cfg.yaw);
+    if(q.get('cm')) setVal(cm,q.get('cm')); else if(cfg && cfg.cm) setVal(cm,cfg.cm);
+    if(q.get('sens')) setVal(sn,q.get('sens'));
   }catch(e){}
   toSens();
   if(window.__updSensHint) window.__updSensHint();
@@ -537,6 +573,7 @@ requestAnimationFrame(loop);
 /* ===== 英文界面 ===== */
 (function(){
   var EN=(function(){ try{ var q=new URLSearchParams(location.search); if(q.get('lang')) return q.get('lang')==='en'; return localStorage.getItem('cs2at.lang')==='en'; }catch(e){ return false; } })();
+  window.__IS_EN=EN;
   if(!EN) return;
   var D={
     '灵敏度标定 · 过冲法':'Sensitivity calibration · overshoot',
@@ -559,7 +596,10 @@ requestAnimationFrame(loop);
     '复制结果':'Copy result','关闭':'Close','继续':'Continue',
     '过冲':'Overshoot','欠冲':'Undershoot','命中':'Hit','超时':'Timeout',
     '样本与置信':'Samples & confidence',
-    '灵敏度标定':'Sensitivity calibration','每个球都算数':'Every shot counts',
+    '灵敏度标定':'Sensitivity calibration','偏差只看没打中的球，命中不参与':'Bias comes from misses only — hits don\'t count.',
+    '应用到设置':'Apply to settings',
+    '灵敏度标定 · 快速':'Quick calibration',
+    '✓ 快速标定完成（3 轮）——修明显偏差够用，想更准就继续测':'✓ Quick calibration done (3 rounds) — good for fixing obvious bias; keep going for precision',
     '总体偏差':'Overall bias','数据与误差':'Data & error',
     '✓ 数据够了，可以定稿':'✓ Enough data — finalize',
     '✓ 95% 置信区间半宽 <1%，可以定稿':'✓ 95% CI half-width <1% — finalize'
@@ -579,6 +619,8 @@ requestAnimationFrame(loop);
     [/^建议（(\d+) 球平均）$/,'Suggestion ($1-shot average)'],
     [/^共 (\d+) 球 · 误差 ±([\d.]+)%$/,'$1 shots · error ±$2%'],
     [/^继续测：现在误差 ±([\d.]+)%，到 ±1% 以内再定稿（已 (\d+) 球）$/,'Keep going: error is ±$1% — finalize within ±1% ($2 shots so far)'],
+    [/^快速标定：再打 (\d+) 轮出建议（当前建议 ([\d.]+) cm）$/,'Quick calibration: $1 more round(s) for the suggestion (current: $2 cm)'],
+    [/^未命中球太少（(\d+)\/8）——把球调小一点，多打出没打中的球，偏差才算得准$/,'Too few misses ($1/8) — shrink the dot so you miss more; bias needs misses to be accurate'],
     [/^建议（累计 (\d+) 球 · 均值）$/,'Suggestion (cumulative $1 shots · mean)'],
     [/^继续测：当前 95% 置信区间 ±([\d.]+)%，到 ±1% 内再定稿（目前已 (\d+) 球）$/,'Keep going: 95% CI ±$1% — finalize within ±1% (currently $2 shots)']
   ];
@@ -622,7 +664,7 @@ requestAnimationFrame(loop);
     if(el) new MutationObserver(sync).observe(el,{attributes:true,attributeFilter:['class']});
   });
   sync();
-  addEventListener('keydown', function(e){ if(e.key==='Escape') location.href='../app.html#play'; });
+  addEventListener('keydown', function(e){ if(e.key==='Escape') location.href='../app.html#set'; });
 })();
 </script>
 </body>

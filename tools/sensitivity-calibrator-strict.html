@@ -38,9 +38,9 @@
   <div>每次只出现一个球。看到球后<b>最快速度甩过去并点击</b>。<br>
   程序记录你点击时准星的位置，算出你<b>冲过头还是没到</b>。</div>
   <div style="margin-top:22px;display:grid;grid-template-columns:repeat(3,auto);gap:10px 22px;justify-content:center;font-size:14px;color:var(--dim)">
-    <label>鼠标 DPI <input id="dpi" type="number" step="100" value="1000" style="width:90px"></label>
+    <label>鼠标 DPI <input id="dpi" type="number" step="100" value="800" style="width:90px"></label>
     <label>m_yaw <input id="yaw" type="number" step="0.0001" value="0.022" style="width:100px"></label>
-    <label>cm/360 <input id="cm" type="number" step="0.1" value="27" style="width:90px"></label>
+    <label>cm/360 <input id="cm" type="number" step="0.1" value="27.1" style="width:90px"></label>
     <label>游戏灵敏度 <input id="sens" type="number" step="0.01" value="" placeholder="自动" style="width:90px"></label>
     <label>球数 <input id="n" type="number" step="10" value="40" style="width:80px"></label>
     <label>球大小 <select id="bs" style="padding:7px;background:var(--panel);border:1px solid var(--line);color:var(--txt);border-radius:6px;font-size:14px;pointer-events:auto">
@@ -353,14 +353,16 @@ document.addEventListener('mousedown',e=>{
 document.addEventListener('pointerlockchange',()=>{ if(!document.pointerLockElement && running && !paused) pause(); });
 document.addEventListener('pointerlockerror',()=>{ if(running) pause(); });
 
-addEventListener('pointerrawupdate',e=>{
+function moveEv(e){
   if(!running||paused) return;
   const k=kOf(cm360);
   yaw += (e.movementX||0)*k;
   pitch -= (e.movementY||0)*k;
   if(pitch> PITCH_LIM) pitch= PITCH_LIM;
   if(pitch<-PITCH_LIM) pitch=-PITCH_LIM;
-},true);
+}
+// 有原始输入用 rawupdate，没有（Firefox/Safari）退回 pointermove——能测，精度低一点
+addEventListener(('onpointerrawupdate' in window)?'pointerrawupdate':'pointermove', moveEv, true);
 
 function grid(){
   const R=44, step=3;
@@ -521,14 +523,14 @@ requestAnimationFrame(loop);
   // 读设置页保存的 DPI / m_yaw / cm/360（URL 参数优先）
   // 程序赋值不触发 input 事件——统一 setVal 发事件，摘要行才会跟着刷新
   function setVal(el,v){ if(!el) return; el.value=v; try{ el.dispatchEvent(new Event('input',{bubbles:true})); }catch(e){} }
+  // URL 参数优先，其次读设置页保存的 cs2at.cfg
   try{
     var q=new URLSearchParams(location.search);
     var cfg=JSON.parse(localStorage.getItem('cs2at.cfg')||'null');
-    if(cfg){
-      if(!q.get('dpi') && cfg.dpi) setVal(dpi,cfg.dpi);
-      if(!q.get('yaw') && cfg.yaw) setVal(yaw,cfg.yaw);
-      if(!q.get('cm') && cfg.cm) setVal(cm,cfg.cm);
-    }
+    if(q.get('dpi')) setVal(dpi,q.get('dpi')); else if(cfg && cfg.dpi) setVal(dpi,cfg.dpi);
+    if(q.get('yaw')) setVal(yaw,q.get('yaw')); else if(cfg && cfg.yaw) setVal(yaw,cfg.yaw);
+    if(q.get('cm')) setVal(cm,q.get('cm')); else if(cfg && cfg.cm) setVal(cm,cfg.cm);
+    if(q.get('sens')) setVal(sn,q.get('sens'));
   }catch(e){}
   toSens();
   if(window.__updSensHint) window.__updSensHint();

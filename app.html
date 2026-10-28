@@ -151,6 +151,8 @@ try{
     background:var(--acc);color:#fff;border:none;border-radius:9px;padding:7px 14px;
     white-space:nowrap;flex-shrink:0}
   #mobileTip #mtClose{min-width:0;padding:0 8px;background:transparent;color:var(--dim);font-size:15px;font-weight:400}
+  #mobileTip #mtCopy{min-width:0}
+  #mobileTip .mtText{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   #mobileTip button:hover{filter:brightness(1.08)}
 
   /* ——— 布局 ——— */
@@ -322,11 +324,11 @@ try{
     border:1px solid transparent;font-variant-numeric:tabular-nums}
 #plan .grid .cell.blank{background:transparent;border:0}
 #plan .grid .cell.rest{background:transparent;color:var(--dim);opacity:.45;border:1px dashed var(--line)}
-#plan .grid .cell.done{background:var(--acc);color:#fff;border-color:var(--acc);font-weight:600}
+#plan .grid .cell.done{background:var(--acc);color:var(--on-acc,#fff);border-color:var(--acc);font-weight:600}
 #plan .grid .cell.today{border:2px solid var(--acc);color:var(--acc);font-weight:700;
     box-shadow:0 0 0 3px color-mix(in srgb,var(--acc) 22%,transparent)}
 #plan .grid .cell.rest.today{background:var(--panel2)}
-#plan .grid .cell.done.today{background:var(--acc);color:#fff;border-color:var(--txt)}
+#plan .grid .cell.done.today{background:var(--acc);color:var(--on-acc,#fff);border-color:var(--txt)}
   
 #plan textarea{width:100%;height:70px;background:var(--bg);border:1px solid var(--line);color:var(--txt);
     border-radius:7px;padding:10px;font-family:Consolas,monospace;font-size:13px;resize:vertical}
@@ -346,7 +348,7 @@ try{
   #plan .chips{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 6px}
   #plan .chip{padding:8px 14px;height:auto;min-width:0;font-size:13px;border-radius:20px;
     background:transparent;border:1px solid var(--line);color:var(--dim);cursor:pointer}
-  #plan .chip.on{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600}
+  #plan .chip.on{background:var(--acc);border-color:var(--acc);color:var(--on-acc,#fff);font-weight:600}
   #plan .chip.new{border-style:dashed;color:var(--dim2)}
   #plan .chip.new:hover{border-color:var(--acc);color:var(--acc)}
   #plan .chipIn{width:86px;height:auto;padding:8px 10px;font-size:13px;border-radius:20px}
@@ -390,7 +392,7 @@ try{
   #plan .pGo{padding:5px 12px;background:var(--acc);color:var(--on-acc,#fff);border-radius:8px;
     font-size:12.5px;text-decoration:none;white-space:nowrap;font-weight:600}
   #plan .pGo:hover{background:var(--acc2)}
-  #plan{--dim2:color-mix(in srgb,var(--txt) 62%,var(--bg))}
+  #plan{--dim2:color-mix(in srgb,var(--txt) 72%,var(--bg))}
   @media (max-width:560px){
     #plan .prow{grid-template-columns:1fr 1fr;gap:8px}
     #plan .prowAct{grid-column:1/-1;justify-content:space-between}
@@ -2283,7 +2285,7 @@ render();
             '<span>'+(r.s*40)+L(' 球',' balls')+'</span>'+
             '<button data-step="1" data-i="'+i+'">+</button>'+
           '</div>'+
-          '<a class="pGo" target="_blank" href="tools/aim-trainer.html?mode='+r.m+'&count='+Math.min(120,Math.max(20,r.s*40))+cfgQ()+'">'+L('开始','Start')+'</a>'+
+          '<a class="pGo" target="_blank" rel="noopener" href="tools/aim-trainer.html?mode='+r.m+'&count='+Math.min(800,Math.max(20,r.s*40))+cfgQ()+'">'+L('开始','Start')+'</a>'+
         '</div>'+
         '<button class="del" data-del="'+i+'" title="'+L('删掉这项','Delete this row')+'">×</button>'+
       '</div>';

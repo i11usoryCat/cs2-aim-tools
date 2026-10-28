@@ -354,7 +354,7 @@ function start(){
   endTime=Math.max(15, parseInt(document.getElementById('endTime').value)||120);
   // 结束方式持久化挪到模式判定之后：检查模式强制的 90 秒不写进存储
   TOTAL=parseInt(document.getElementById('cnt').value)||40;
-  if(TOTAL<20) TOTAL=20; if(TOTAL>120) TOTAL=120;
+  if(TOTAL<20) TOTAL=20; if(TOTAL>800) TOTAL=800;   // 与计划页步进器一致，不截断计划球数
   DPI=parseFloat(document.getElementById('dpi').value)||800;
   cm360=parseFloat(document.getElementById('cm').value)||27.2;
   if(cm360<12) cm360=12; if(cm360>60) cm360=60;

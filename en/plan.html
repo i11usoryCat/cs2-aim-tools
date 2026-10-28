@@ -2207,7 +2207,7 @@ try{
       if(dp) dp.onclick=function(){
         const v=load();
         if(v.plans.length<=1) return;
-        if(!window.confirm(L('删除「'+cur(v).name+'」？','Delete "'+cur(v).name+'"?'))) return;
+        if(!window.confirm(L('删除「'+dispName(cur(v).name)+'」？','Delete "'+dispName(cur(v).name)+'"?'))) return;
         v.plans=v.plans.filter(x=>x.id!==v.active);
         v.active=v.plans[0].id; save(v); render();
       };

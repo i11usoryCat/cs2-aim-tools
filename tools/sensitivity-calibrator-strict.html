@@ -402,14 +402,53 @@ function loop(){
     ctx.fillStyle=SC.tgt; ctx.fill();
   }
 
-  ctx.strokeStyle=SC.cross; ctx.lineWidth=3;
-  const g2=15*devicePixelRatio, cx=W/2, cy=H/2;
-  ctx.beginPath();
-  ctx.moveTo(cx-g2,cy); ctx.lineTo(cx-5,cy);
-  ctx.moveTo(cx+5,cy); ctx.lineTo(cx+g2,cy);
-  ctx.moveTo(cx,cy-g2); ctx.lineTo(cx,cy-5);
-  ctx.moveTo(cx,cy+5); ctx.lineTo(cx,cy+g2);
-  ctx.stroke();
+  // 准星：跟随设置页——默认训练器同款十字，用户自定义过就用自定义的
+  (function(){
+    try{
+      const g=function(k,d){ const v=localStorage.getItem(k); return v===null? d : v; };
+      const type=g('cs2at.crossType','cross');
+      const len=Math.max(1,Math.min(40,parseFloat(g('cs2at.crossLen','16'))||16))*devicePixelRatio;
+      const wid=Math.max(1,Math.min(16,parseFloat(g('cs2at.crossWid','2'))||2))*devicePixelRatio;
+      const gap=Math.max(0,Math.min(20,parseFloat(g('cs2at.crossGap','4'))||4))*devicePixelRatio;
+      const dot=g('cs2at.crossDot','1')==='1';
+      const outl=g('cs2at.crossOutline','1')==='1';
+      const alpha=Math.max(0.2,Math.min(1,parseFloat(g('cs2at.crossAlpha','1'))||1));
+      let cc=SC.cross, ce=SC.edge;
+      if(g('cs2at.crossMode','scene')==='custom'){
+        const c0=g('cs2at.crossColor',''); if(c0) cc='#'+String(c0).replace('#','');
+        const e0=g('cs2at.crossEdge',''); if(e0) ce='#'+String(e0).replace('#','');
+      }
+      const cx=W/2, cy=H/2;
+      ctx.save();
+      ctx.globalAlpha=alpha;
+      function bars(col,lw){
+        ctx.strokeStyle=col; ctx.lineWidth=lw;
+        ctx.beginPath();
+        ctx.moveTo(cx-gap-len,cy); ctx.lineTo(cx-gap,cy);
+        ctx.moveTo(cx+gap,cy); ctx.lineTo(cx+gap+len,cy);
+        ctx.moveTo(cx,cy-gap-len); ctx.lineTo(cx,cy-gap);
+        ctx.moveTo(cx,cy+gap); ctx.lineTo(cx,cy+gap+len);
+        ctx.stroke();
+      }
+      if(type==='dot'){
+        const r=(g('cs2at.dotSize','small')==='large'?6:3)*devicePixelRatio;
+        if(g('cs2at.dotOutline','1')==='1'){ ctx.beginPath(); ctx.arc(cx,cy,r+1.5*devicePixelRatio,0,Math.PI*2); ctx.fillStyle=ce; ctx.fill(); }
+        ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2); ctx.fillStyle=cc; ctx.fill();
+      } else {
+        if(outl) bars(ce, wid+2.5*devicePixelRatio);
+        bars(cc, wid);
+        if(dot){
+          let s=Math.max(2, Math.round(wid/devicePixelRatio));
+          if(s%2) s++;
+          const sPx=s*devicePixelRatio;
+          if(outl){ ctx.fillStyle=ce; ctx.fillRect(cx-sPx/2-devicePixelRatio, cy-sPx/2-devicePixelRatio, sPx+2*devicePixelRatio, sPx+2*devicePixelRatio); }
+          ctx.fillStyle=cc;
+          ctx.fillRect(cx-sPx/2, cy-sPx/2, sPx, sPx);
+        }
+      }
+      ctx.restore();
+    }catch(e){}
+  })();
 
   if(fb && performance.now()<fb.until){
     const over=fb.pct>0;

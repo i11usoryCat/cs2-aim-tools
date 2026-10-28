@@ -4,6 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Vernier · 分毫</title>
+<meta name="description" content="分毫 Vernier —— 灵敏度标定、六维检查与每日训练计划。本地存储，无账号无广告。">
+<meta property="og:title" content="分毫 · 训练中心">
+<meta property="og:description" content="标定灵敏度，六维检查，按计划练枪。全部数据只存在本机。">
+<meta property="og:type" content="website">
+<meta property="og:image" content="assets/og.png">
 <link rel="icon" href="assets/favicon.svg">
 <script>
 /* 首屏预置：主题与语言先于 CSS 生效，防闪烁 */
@@ -126,7 +131,7 @@ try{
   .lang{display:flex; gap:0; border:1px solid var(--line); border-radius:8px; overflow:hidden; margin-right:8px}
   .lang span{padding:6px 12px; font-size:12.5px; color:var(--dim); cursor:pointer; transition:.15s; user-select:none}
   .lang span:hover{background:var(--panel2); color:var(--txt)}
-  .lang span.on{background:var(--acc); color:#fff; font-weight:600}
+  .lang span.on{background:var(--acc); color:var(--on-acc,#fff); font-weight:600}
   .home{
     color:var(--dim); text-decoration:none; font-size:13px;
     padding:7px 13px; border:1px solid var(--line); border-radius:9px;
@@ -199,6 +204,8 @@ try{
 
   /* ——— 表单 ——— */
   input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+  /* 下拉框自适应宽度，长选项不截断 */
+  #set select,#data select,#play select{width:auto;max-width:100%}
   button:hover,label.fileBtn:hover{border-color:var(--acc);color:var(--acc)}
   button.main:hover,button.main:hover{color:#fff}
   input,select{
@@ -219,7 +226,7 @@ try{
   }
 
   button:active{transform:translateY(1px)}
-  button.main{background:var(--acc); border-color:var(--acc); color:#fff; font-weight:600}
+  button.main{background:var(--acc); border-color:var(--acc); color:var(--on-acc,#fff); font-weight:600}
   button.main:hover{background:var(--acc2)}
   button.main:hover{background:var(--acc2); border-color:var(--acc2)}
   label.sw{display:flex; align-items:center; gap:9px; font-size:14px; cursor:pointer}
@@ -253,13 +260,13 @@ try{
     nav a{padding:8px 8px;font-size:12.5px}
     nav a.on::after{left:8px;right:8px}
     .lang{margin-right:4px}
-  }
     .lang span{padding:5px 8px;font-size:12px}
     .gear{width:30px;height:30px;margin-right:4px}
     .gear svg{width:14px;height:14px}
     #mobileTip{bottom:12px;padding:9px 12px 9px 16px;font-size:12.5px;gap:10px}
     #mobileTip button{padding:6px 12px;font-size:12px}
   }
+  /* 手机（约 560px 内）：顶栏换行 + nav 单行均分，不再 96px 两行 */
   @media (max-width:560px){
     header{padding:8px 12px;flex-wrap:wrap;row-gap:6px}
     header .brand{margin-right:0}
@@ -273,10 +280,10 @@ try{
 #plan :root{color-scheme:light dark}
 
 #plan[data-theme="jade"]{--bg:#101917;--panel:#16211f;--panel2:#1d2b28;--line:#2a3a36;--txt:#efeade;--dim:#93a8a1;--acc:#7fbfa6}
-#plan[data-theme="ink"]{--bg:#f6f4ef;--panel:#fffdf9;--panel2:#efebe2;--line:#ddd6c8;--txt:#1f2b2c;--dim:#69787a;--acc:#0f766e}
-#plan[data-theme="lake"]{--bg:#eef4f6;--panel:#fff;--panel2:#e8f1f4;--line:#d2e2e7;--txt:#14313a;--dim:#587a85;--acc:#0e7490}
-#plan[data-theme="light"]{--bg:#f4f6f9;--panel:#fff;--panel2:#eef2f7;--line:#d9e0e9;--txt:#1a2230;--dim:#5b6879;--acc:#2f6feb}
-#plan[data-theme="sand"]{--bg:#f7f2e8;--panel:#fffdf8;--panel2:#f3ece0;--line:#e0d5c2;--txt:#33291c;--dim:#7b6a54;--acc:#c2410c}
+#plan[data-theme="ink"]{--bg:#f6f4ef;--panel:#fffdf9;--panel2:#efebe2;--line:#ddd6c8;--txt:#1f2b2c;--dim:#5d6c6e;--acc:#0f766e}
+#plan[data-theme="lake"]{--bg:#eef4f6;--panel:#fff;--panel2:#e8f1f4;--line:#d2e2e7;--txt:#14313a;--dim:#4e6e79;--acc:#0e7490}
+#plan[data-theme="light"]{--bg:#f4f6f9;--panel:#fff;--panel2:#eef2f7;--line:#d9e0e9;--txt:#1a2230;--dim:#4e5b6d;--acc:#2f6feb}
+#plan[data-theme="sand"]{--bg:#f7f2e8;--panel:#fffdf8;--panel2:#f3ece0;--line:#e0d5c2;--txt:#33291c;--dim:#66563f;--acc:#c2410c}
 #plan[data-theme="forest"]{--bg:#0f1a14;--panel:#16241b;--panel2:#1d2f22;--line:#2a4433;--txt:#e8f2ea;--dim:#8aa697;--acc:#4ade80}
 #plan[data-theme="mono"]{--bg:#15171b;--panel:#1c1f24;--panel2:#23272e;--line:#2e333b;--txt:#e8eaee;--dim:#98a0aa;--acc:#c9d1d9}
 #plan[data-theme="cyber"]{--bg:#120a1f;--panel:#1b1032;--panel2:#241542;--line:#3a2166;--txt:#f1eaff;--dim:#a98fd6;--acc:#c084fc}
@@ -323,7 +330,7 @@ try{
 #plan button{padding:9px 20px;background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:7px;
     font-size:14px;cursor:pointer;font-family:inherit}
 #plan button:hover{border-color:var(--acc);color:var(--acc);background:var(--panel2)}
-#plan button.main{background:var(--acc);border-color:var(--acc);color:#fff}
+#plan button.main{background:var(--acc);border-color:var(--acc);color:var(--on-acc,#fff)}
 #plan table{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}
 #plan td,#plan th{padding:6px 8px;border-bottom:1px solid var(--panel2);text-align:left}
 #plan th{color:var(--dim);font-weight:500}
@@ -422,7 +429,7 @@ try{
 </style>
 </head>
 <body>
-<div id="mobileTip" style="display:none"><span class="mtText">请用电脑打开（建议 Chrome / Edge）·</span><button type="button" id="mtCopy">复制链接</button></div>
+<div id="mobileTip" style="display:none"><span class="mtText">请用电脑打开（建议 Chrome / Edge）·</span><button type="button" id="mtCopy">复制链接</button><button type="button" id="mtClose" style="background:transparent;border:none;color:var(--dim);cursor:pointer;font-size:15px;padding:0 2px" aria-label="关闭">✕</button></div>
 <script src="assets/scenes.js"></script>
 
 <header>
@@ -741,7 +748,7 @@ try{
       <div class="row" style="align-items:flex-end">
         <div>
           <div class="k">渲染帧率上限</div>
-          <select id="iFps" style="width:180px">
+          <select id="iFps" style="width:auto;max-width:100%">
             <option value="0">无限制（跟随刷新率）</option>
             <option value="60">60 帧</option>
             <option value="120">120 帧</option>
@@ -954,9 +961,22 @@ function setLang(l){ LANG=l; try{ localStorage.setItem(K_LANG,l); }catch(e){} }
 // 默认参数必须自洽：1.92 × 0.022 × 800 DPI = 27.1 cm/360
 let cfg=load(K_CFG,{dpi:800,yaw:0.022,sens:1.92,cm:27.1});
 
+function computeOnAcc(){
+  try{
+    const h=document.documentElement;
+    const acc=getComputedStyle(h).getPropertyValue('--acc').trim()||'#7fbfa6';
+    const x=acc.replace('#','');
+    const hex=x.length===3? x[0]+x[0]+x[1]+x[1]+x[2]+x[2] : x;
+    const v=parseInt(hex,16);
+    const rgb=isNaN(v)?[127,191,166]:[(v>>16)&255,(v>>8)&255,v&255];
+    const lum=(0.299*rgb[0]+0.587*rgb[1]+0.114*rgb[2])/255;
+    h.style.setProperty('--on-acc', lum>0.6? '#111820' : '#ffffff');
+  }catch(e){}
+}
 function applyTheme(id){
   document.documentElement.setAttribute('data-theme', id);
   localStorage.setItem(K_THEME, id);
+  computeOnAcc();
   // 同步给计划页 iframe（它是独立文档，不会自己更新）
   try{
     const f=document.querySelector('iframe');
@@ -1020,6 +1040,14 @@ let switching=false, watchdog=null;
 
 function rippleSwitch(lang, cx, cy){
   if(switching) return;
+  // 减少动态偏好：跳过波纹，直接切
+  try{
+    if(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches){
+      LANG=lang; setLang(lang); applyLang();
+      try{ show((location.hash||'#data').slice(1)); }catch(e){}
+      return;
+    }
+  }catch(e){}
   switching=true;
 
   clearTimeout(watchdog);
@@ -1267,13 +1295,12 @@ function renderData(){
       if(m0!==null && m1!==null) parts.push(L('中位用时 ','median ')+(m0-m1>=0?'+':'')+(m0-m1)+' ms');
       parts.push(h1===null? L('（上周没记录，从这周开始累计）','(no last week — baseline from here)') : L('（对比上周）',' (vs last week)'));
       verdict=parts.join(' · ');
+      $('dataVerdict').textContent=verdict;
     } else {
       $('dataVerdict').innerHTML=L('这周还没练。','Nothing this week yet.')+' '+
         '<a href="#play" style="color:var(--acc);text-decoration:none;font-weight:600">'+L('去练一组 →','Start a set →')+'</a>　'+
         '<a href="#set" style="color:var(--dim);text-decoration:none">'+L('先去标定','Calibrate first')+'</a>';
-      return;
     }
-    $('dataVerdict').textContent=verdict;
   }
 
   drawTrend(runs);
@@ -1392,9 +1419,20 @@ function drawS6Trend(runs){
 $('moreRuns').addEventListener('click',()=>{ runShowAll=!runShowAll; renderData(); });
 $('runTable').addEventListener('click',e=>{
   const b=e.target.closest('.delRun'); if(!b) return;
+  if(!confirm(L('删除这条记录？','Delete this run?'))) return;
   const runs=load(K_RUNS,[]);
   runs.splice(parseInt(b.dataset.i),1);
-  save(K_RUNS,runs); renderData();
+  save(K_RUNS,runs);
+  // 重算各模式最佳，别让已删记录留在最佳表里
+  const best={};
+  runs.forEach(r=>{
+    const m=best[r.mode]||(best[r.mode]={bestLimit:r.limit||9999,bestHit:r.hit||0,bestMT:r.mt||99999,runs:0});
+    m.runs++;
+    if((r.hit||0)>m.bestHit) m.bestHit=r.hit;
+    if((r.mt||0)<m.bestMT) m.bestMT=r.mt;
+    if(r.limit>0 && r.limit<m.bestLimit) m.bestLimit=r.limit;
+  });
+  save(K_BEST,best); renderData();
 });
 
 // 完整备份的键位清单：成绩、计划、主题、场景、准星、特效、设备全含
@@ -1402,7 +1440,8 @@ const ALL_KEYS=[K_CFG,K_BEST,K_RUNS,K_THEME,K_SCENE,'cs2at.log','cs2at.start','c
   'cs2at.device','cs2at.padMode','cs2at.delay','cs2at.res','cs2at.resW','cs2at.resH',K_PERF,K_FPS,K_FPSSHOW,'cs2at.ballTex',
   'cs2at.crossType','cs2at.crossDyn','cs2at.crossMode','cs2at.crossColor','cs2at.crossEdge','cs2at.crossLen','cs2at.crossWid',
   'cs2at.crossGap','cs2at.crossAlpha','cs2at.crossDot','cs2at.crossOutline','cs2at.dotSize','cs2at.dotOutline',
-  'cs2at.hitFx','cs2at.hitFxMix','cs2at.hitCross','cs2at.hitCrossColor'];
+  'cs2at.hitFx','cs2at.hitFxMix','cs2at.hitCross','cs2at.hitCrossColor',
+  'cs2at.plans','cs2at.lang','cs2at.sceneCustom','cs2at.mtClosed'];
 $('expBtn').addEventListener('click',()=>{
   try{
     const o={v:1,exported:new Date().toISOString()};
@@ -1921,8 +1960,8 @@ function render(root, lang){
   const D = root || document;
   const $ = function(id){ return D.querySelector('#'+id); };
   const LG = lang || document.documentElement.getAttribute('lang');
-  const d=dayIdx();
-  if(d<0){ if(!root){ localStorage.setItem(K_START, todayStr()); return location.reload(); } return; }
+  let d=dayIdx();
+  if(d<0){ if(!root){ try{ localStorage.setItem(K_START, todayStr()); }catch(e){} d=0; } else return; }   // 首次访问直接按第 1 天渲染，不再刷新页面
   const w=weekOf(d);
   const log=JSON.parse(localStorage.getItem(K_LOG)||'[]');
 
@@ -2318,11 +2357,24 @@ initPlan();
 (function(){
   var h=document.createElement('h1');
   h.style.cssText='position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap';
-  h.textContent='Vernier · 分毫';
-  document.body.insertBefore(h, document.body.firstChild);
+  h.textContent='Vernier';
+  var hd=document.querySelector('header')||document.body;
+  hd.insertBefore(h, hd.firstChild);
+  // 可读名：.k 标签和「文字+控件」行都覆盖
   document.querySelectorAll('.k').forEach(function(k){
     var c=k.parentElement.querySelector('input,select');
     if(c && !c.getAttribute('aria-label')){ try{ c.setAttribute('aria-label', k.textContent.trim()); }catch(e){} }
+  });
+  document.querySelectorAll('select,input[type=range],input[type=color],input[type=number],input[type=text]').forEach(function(el){
+    if(el.getAttribute('aria-label')||el.getAttribute('aria-labelledby')) return;
+    var p=el.parentElement;
+    if(!p) return;
+    var t=(p.childNodes[0]&&p.childNodes[0].nodeType===3? p.childNodes[0].textContent : '');
+    t=t.trim();
+    if(!t) return;
+    var k=p.querySelector('.k');
+    if(k) t=k.textContent.trim();
+    if(t){ try{ el.setAttribute('aria-label', t); }catch(e){} }
   });
   document.addEventListener('keydown', function(e){
     if(e.key==='Enter' && e.target && e.target.classList && e.target.classList.contains('sw')){
@@ -2337,8 +2389,11 @@ initPlan();
 (function(){
   var tip=document.getElementById('mobileTip'); if(!tip) return;
   if(!(('ontouchstart' in window) || navigator.maxTouchPoints>0) || Math.min(screen.width,screen.height)>=900) return;
+  try{ if(localStorage.getItem('cs2at.mtClosed')==='1') return; }catch(e){}
   tip.style.display='flex';
-  var btn=document.getElementById('mtCopy'); if(!btn) return;
+  var btn=document.getElementById('mtCopy');
+  var close=document.getElementById('mtClose');
+  if(close) close.addEventListener('click', function(){ try{ localStorage.setItem('cs2at.mtClosed','1'); }catch(e){} tip.style.display='none'; });
   var isEn=function(){ return document.documentElement.getAttribute('lang')==='en'; };
   btn.addEventListener('click', function(){
     try{ navigator.clipboard.writeText(location.href).catch(function(){}); }catch(e){}

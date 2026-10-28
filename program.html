@@ -8,10 +8,10 @@
   :root{color-scheme:light dark}
 
   html[data-theme="jade"]{--bg:#101917;--panel:#16211f;--panel2:#1d2b28;--line:#2a3a36;--txt:#efeade;--dim:#93a8a1;--acc:#7fbfa6}
-  html[data-theme="ink"]{--bg:#f6f4ef;--panel:#fffdf9;--panel2:#efebe2;--line:#ddd6c8;--txt:#1f2b2c;--dim:#69787a;--acc:#0f766e}
-  html[data-theme="lake"]{--bg:#eef4f6;--panel:#fff;--panel2:#e8f1f4;--line:#d2e2e7;--txt:#14313a;--dim:#587a85;--acc:#0e7490}
-  html[data-theme="light"]{--bg:#f4f6f9;--panel:#fff;--panel2:#eef2f7;--line:#d9e0e9;--txt:#1a2230;--dim:#5b6879;--acc:#2f6feb}
-  html[data-theme="sand"]{--bg:#f7f2e8;--panel:#fffdf8;--panel2:#f3ece0;--line:#e0d5c2;--txt:#33291c;--dim:#7b6a54;--acc:#c2410c}
+  html[data-theme="ink"]{--bg:#f6f4ef;--panel:#fffdf9;--panel2:#efebe2;--line:#ddd6c8;--txt:#1f2b2c;--dim:#5d6c6e;--acc:#0f766e}
+  html[data-theme="lake"]{--bg:#eef4f6;--panel:#fff;--panel2:#e8f1f4;--line:#d2e2e7;--txt:#14313a;--dim:#4e6e79;--acc:#0e7490}
+  html[data-theme="light"]{--bg:#f4f6f9;--panel:#fff;--panel2:#eef2f7;--line:#d9e0e9;--txt:#1a2230;--dim:#4e5b6d;--acc:#2f6feb}
+  html[data-theme="sand"]{--bg:#f7f2e8;--panel:#fffdf8;--panel2:#f3ece0;--line:#e0d5c2;--txt:#33291c;--dim:#66563f;--acc:#c2410c}
   html[data-theme="forest"]{--bg:#0f1a14;--panel:#16241b;--panel2:#1d2f22;--line:#2a4433;--txt:#e8f2ea;--dim:#8aa697;--acc:#4ade80}
   html[data-theme="mono"]{--bg:#15171b;--panel:#1c1f24;--panel2:#23272e;--line:#2e333b;--txt:#e8eaee;--dim:#98a0aa;--acc:#c9d1d9}
   html[data-theme="cyber"]{--bg:#120a1f;--panel:#1b1032;--panel2:#241542;--line:#3a2166;--txt:#f1eaff;--dim:#a98fd6;--acc:#c084fc}
@@ -76,10 +76,12 @@
 
   /* 手机单列：任务行折行，不再横向溢出 */
   @media (max-width:560px){
-    .wrap{width:auto;max-width:100%;padding:16px 12px}
+    .wrap{width:auto;max-width:100%;padding:16px 12px;overflow-x:hidden}
     .task{flex-wrap:wrap;gap:8px}
+    .task .n{flex:1 1 100%;min-width:0;word-break:break-word}
     .task .go{margin-left:0}
     h1{font-size:22px}
+    table{display:block;overflow-x:auto}
   }
 </style>
 </head>
@@ -193,8 +195,8 @@ function planFor(w){
 }
 
 function render(){
-  const d=dayIdx();
-  if(d<0){ localStorage.setItem(K_START, todayStr()); return location.reload(); }
+  let d=dayIdx();
+  if(d<0){ try{ localStorage.setItem(K_START, todayStr()); }catch(e){} d=0; }   // 首次访问直接按第 1 天渲染，不刷新
   const w=weekOf(d);
   $('dayNo').textContent='第 '+(d+1)+' 天';
   $('weekNo').textContent='第 '+w+' 周';

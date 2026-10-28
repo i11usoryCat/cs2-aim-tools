@@ -1267,26 +1267,34 @@ function renderDrills(){
   }).join('');
 }
 
+// 最佳 = 持久 best 与有效 runs 合并：历史最佳不丢，raw 不可比记录不参与
+function mergeBest(runs){
+  const stored=load(K_BEST,{});
+  const merged={};
+  Object.keys(stored).forEach(k=>{ merged[k]=Object.assign({}, stored[k]); });
+  (runs||[]).filter(r=>r.raw!==false).forEach(r=>{
+    const m=merged[r.mode]||(merged[r.mode]={bestLimit:0,bestHit:0,bestMT:0,runs:0});
+    if(!(m.bestLimit>0)||(r.limit>0&&r.limit<m.bestLimit)) m.bestLimit=r.limit;
+    if(!(m.bestHit>0)||((r.hit||0)>m.bestHit)) m.bestHit=r.hit;
+    if(!(m.bestMT>0)||((r.mt||0)<m.bestMT)) m.bestMT=r.mt;
+    m.runs=(m.runs||0)+1;
+  });
+  return merged;
+}
 function renderData(){
-  let best=load(K_BEST,{}), runs=load(K_RUNS,[]);
+  const runs=load(K_RUNS,[]);
+  const best=mergeBest(runs);
   // 原始输入不可比（raw=false）的记录只显示在列表，不参与任何统计
   const valid=runs.filter(r=>r.raw!==false);
-  // 各模式最佳：一律从有效记录现算（历史被 raw 污染过的 best 也不信）
-  best={};
-  valid.forEach(r=>{
-    const b=best[r.mode]||{};
-    if(b.bestLimit===undefined||r.limit<b.bestLimit) b.bestLimit=r.limit;
-    if(b.bestHit===undefined||r.hit>b.bestHit) b.bestHit=r.hit;
-    if(b.bestMT===undefined||r.mt<b.bestMT) b.bestMT=r.mt;
-    b.runs=(b.runs||0)+1;
-    best[r.mode]=b;
-  });
   $('sRuns').textContent=runs.length;
   $('sDays').textContent=new Set(runs.map(r=>r.d)).size;
-  const lims=valid.map(r=>r.limit).filter(v=>v>0);
-  $('sLimit').textContent=lims.length? Math.min.apply(null,lims)+' ms':'—';
-  const hits=valid.map(r=>r.hit).filter(v=>v>0);
-  $('sHit').textContent=hits.length? Math.max.apply(null,hits)+'%':'—';
+  let minL=null, maxH=null;
+  Object.keys(best).forEach(k=>{ const b=best[k];
+    if(b.bestLimit>0 && (minL===null||b.bestLimit<minL)) minL=b.bestLimit;
+    if(b.bestHit>0 && (maxH===null||b.bestHit>maxH)) maxH=b.bestHit;
+  });
+  $('sLimit').textContent=minL===null?'—':minL+' ms';
+  $('sHit').textContent=maxH===null?'—':maxH+'%';
 
   let rows='<tr><th>模式</th><th>最佳命中</th><th>最佳用时</th></tr>';
   const keys=Object.keys(best);
@@ -1459,16 +1467,8 @@ $('runTable').addEventListener('click',e=>{
   const runs=load(K_RUNS,[]);
   runs.splice(parseInt(b.dataset.i),1);
   save(K_RUNS,runs);
-  // 重算各模式最佳，别让已删记录留在最佳表里（raw 不可比记录同样不参与）
-  const best={};
-  runs.filter(r=>r.raw!==false).forEach(r=>{
-    const m=best[r.mode]||(best[r.mode]={bestLimit:r.limit||9999,bestHit:r.hit||0,bestMT:r.mt||99999,runs:0});
-    m.runs++;
-    if((r.hit||0)>m.bestHit) m.bestHit=r.hit;
-    if((r.mt||0)<m.bestMT) m.bestMT=r.mt;
-    if(r.limit>0 && r.limit<m.bestLimit) m.bestLimit=r.limit;
-  });
-  save(K_BEST,best); renderData();
+  // 重算最佳：持久 best 与剩余有效记录合并（删掉的是最佳也不丢历史，raw 不参与）
+  save(K_BEST, mergeBest(runs)); renderData();
 });
 
 // 完整备份的键位清单：成绩、计划、主题、场景、准星、特效、设备全含

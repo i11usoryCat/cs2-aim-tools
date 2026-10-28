@@ -335,7 +335,11 @@ again.addEventListener('click',e=>{
   e.stopPropagation();
   if(result && result.summary){
     const cur=parseFloat(cmInput.value)||27, sug=result.summary.cmNew;
-    if(Math.abs(sug/cur-1) <= 0.35) cmInput.value=sug.toFixed(1);
+    if(Math.abs(sug/cur-1) <= 0.35){
+      cmInput.value=sug.toFixed(1);
+      // 发事件让「游戏灵敏度」框与摘要行跟着刷新
+      try{ cmInput.dispatchEvent(new Event('input',{bubbles:true})); }catch(err){}
+    }
   }
   start();
 });

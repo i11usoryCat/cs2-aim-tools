@@ -540,12 +540,13 @@
       </div>
       <div class="hint" id="calcHint" style="margin:12px 0 0"></div>
       <div class="hint" id="gameConvHint" style="margin-top:10px">先选游戏，再改下面的灵敏度；改完自动换算，DPI 不动。只按腰射，开镜倍率不适用。</div>
+
       <div class="row" style="margin-top:14px">
-        <a class="tile" style="flex:1;min-width:240px" href="tools/sensitivity-calibrator.html">
+        <a class="tile" style="flex:1;min-width:240px;max-width:440px" href="tools/sensitivity-calibrator.html">
           <div class="t">灵敏度标定</div>
           <div class="d">测出你每次都甩过头还是不够，直接反推该填的值。</div>
         </a>
-        <a class="tile" style="flex:1;min-width:240px" href="tools/sensitivity-calibrator-strict.html">
+        <a class="tile" style="flex:1;min-width:240px;display:none" href="tools/sensitivity-calibrator-strict.html">
           <div class="t">灵敏度标定 · 进阶</div>
           <div class="d">更细的统计与判定，适合想抠数据的人。</div>
         </a>
@@ -737,7 +738,6 @@
     </div>
 
     <div class="row">
-      <button class="main" id="saveBtn">保存设置</button>
       <button id="defBtn">恢复默认</button>
     </div>
   </section>
@@ -854,7 +854,7 @@ const EN={
   '格式不对':'Invalid code','已导入准星':'Crosshair imported',
   '渲染帧率上限':'Frame-rate cap','显示实时帧率':'Show live FPS',
   '性能模式（减少网格密度）':'Performance mode (lower grid density)',
-  '保存设置':'Save settings','已保存':'Saved','恢复默认':'Reset defaults',
+  '恢复默认':'Reset defaults',
   '无限制（跟随刷新率）':'Unlimited (follow refresh)',
   '60 帧':'60 fps','120 帧':'120 fps','144 帧':'144 fps','240 帧':'240 fps',
   '2026-10-24  限时450ms  命中率83%  中位436ms  超时5次':'e.g. 2026-10-24  limit 450ms  hit 83%  median 436ms  overtime 5',
@@ -1384,6 +1384,11 @@ function fillSettings(){
 
   updateCalc();
 }
+function persistCfg(){
+  cfg={dpi:num($('iDpi'),1000), yaw:num($('iYaw'),0.013052), sens:num($('iSens'),1.92), cm:num($('iCm'),36.5)};
+  save(K_CFG,cfg);
+}
+
 ['iDpi','iYaw','iSens','iCm'].forEach(id=>{
   $(id).addEventListener('input',()=>{
     const d=num($('iDpi'),1000), y=num($('iYaw'),0.013052);
@@ -1391,29 +1396,26 @@ function fillSettings(){
     if(id==='iCm'){ const c=num($('iCm'),0); if(c>0&&d>0&&y>0) $('iSens').value=(360/((c/2.54)*d)/y).toFixed(2); }
     if(id==='iDpi'||id==='iYaw'){ const c=num($('iCm'),0); if(c>0&&d>0&&y>0) $('iSens').value=(360/((c/2.54)*d)/y).toFixed(2); }
     updateCalc();
+    persistCfg();   // 灵敏度卡：改动即存，不用翻到底
   });
 });
-$('saveBtn').addEventListener('click',()=>{
-  cfg={dpi:num($('iDpi'),1000), yaw:num($('iYaw'),0.013052), sens:num($('iSens'),1.92), cm:num($('iCm'),36.5)};
-  save(K_CFG,cfg);
-  localStorage.setItem(K_PERF, $('iPerf').checked? '1':'0');
-  localStorage.setItem(K_FPS, $('iFps').value||'0');
-  localStorage.setItem(K_FPSSHOW, $('iFpsShow').checked? '1':'0');
-  localStorage.setItem('cs2at.ballTex', $('iBallTex').checked? '1':'0');
-  try{
-    localStorage.setItem('cs2at.delay', String(Math.max(0,Math.min(5,parseInt($('iDelay').value)||3))));
-    localStorage.setItem('cs2at.res', $('iRes').value);
-    localStorage.setItem('cs2at.resW', $('iResW').value);
-    localStorage.setItem('cs2at.resH', $('iResH').value);
-    localStorage.setItem('cs2at.device', $('iDev').value);
-    localStorage.setItem('cs2at.padMode', $('iPadMode').value);
-  }catch(e){}
-  const b=$('saveBtn'); b.textContent=L('已保存','Saved'); setTimeout(()=>b.textContent=L('保存设置','Save settings'),1200);
-});
+// 全部设置改动即存，不再有保存按钮
+function chkSave(id,key){ const el=document.getElementById(id); if(!el) return;
+  el.addEventListener('change',()=>{ try{ localStorage.setItem(key, el.checked? '1':'0'); }catch(e){} }); }
+function valSave(id,key){ const el=document.getElementById(id); if(!el) return;
+  el.addEventListener('change',()=>{ try{ localStorage.setItem(key, el.value); }catch(e){} }); }
+chkSave('iPerf',K_PERF); chkSave('iFpsShow',K_FPSSHOW); chkSave('iBallTex','cs2at.ballTex');
+valSave('iFps',K_FPS); valSave('iDelay','cs2at.delay'); valSave('iRes','cs2at.res');
+valSave('iDev','cs2at.device'); valSave('iPadMode','cs2at.padMode');
+$('iDelay').addEventListener('input',()=>{ try{ localStorage.setItem('cs2at.delay', String(Math.max(0,Math.min(5,parseInt($('iDelay').value)||3)))); }catch(e){} });
+$('iResW').addEventListener('change',()=>{ try{ localStorage.setItem('cs2at.resW', $('iResW').value); }catch(e){} });
+$('iResH').addEventListener('change',()=>{ try{ localStorage.setItem('cs2at.resH', $('iResH').value); }catch(e){} });
 $('defBtn').addEventListener('click',()=>{
   cfg={dpi:800,yaw:0.013052,sens:1.92,cm:36.5}; save(K_CFG,cfg);
   localStorage.removeItem(K_THEME); applyTheme(defaultTheme());
   localStorage.setItem(K_SCENE,'classic');
+  localStorage.removeItem(K_PERF); localStorage.removeItem(K_FPS); localStorage.removeItem(K_FPSSHOW);
+  localStorage.removeItem('cs2at.ballTex'); localStorage.removeItem('cs2at.delay');
   fillSettings();
 });
 $('iRes').addEventListener('change',()=>{ $('resCustom').style.display = $('iRes').value==='custom' ? '' : 'none'; });

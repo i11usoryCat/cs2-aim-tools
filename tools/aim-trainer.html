@@ -173,6 +173,7 @@ const hitFxMix=(function(){ try{ return localStorage.getItem('cs2at.hitFxMix')||
 // 球的质感（高光/阴影）：设置页开关，默认开
 const ballTex=(function(){ try{ return localStorage.getItem('cs2at.ballTex')!=='0'; }catch(e){ return true; } })();
 let running=false, paused=false, pauseAt=0, endMode='count', endTime=120, endAt=0;
+let statePreset=false;   // 状态快测入口：数据层与自适应随机分开
 let waiting=false, cdUntil=0, cdTimer=null, endStarted=false;
 let padMode='off';
 let device='mouse';   // 输入设备：设置页配置，mouse / pad / pen
@@ -820,23 +821,25 @@ function finish(){
     const rec=b[mode]||{runs:0};
     const limN=Math.round(minLim), hitN=Math.round(overallHit*100), mtN=Math.round(overallMT);
     if(!rawLockFailed){   // 原始输入不可比：只记录、不更新最佳
-      if(limN>0){ if(rec.bestLimit===undefined || limN<rec.bestLimit) rec.bestLimit=limN; }
+      if(limitChk.checked && limN>0){ if(rec.bestLimit===undefined || limN<rec.bestLimit) rec.bestLimit=limN; }
       if(rec.bestHit===undefined || hitN>rec.bestHit) rec.bestHit=hitN;
       if(rec.bestMT===undefined || mtN<rec.bestMT) rec.bestMT=mtN;
-      // 不限时的随机（状态快测）：难度是球半径——越小越难
+      // 不限时（状态快测/自由练）：难度是球半径——越小越难
       if(!limitChk.checked && radius>0){
         const rN=Math.round(radius*100)/100;
         if(rec.bestRadius===undefined || rN<rec.bestRadius) rec.bestRadius=rN;
       }
       rec.runs=(rec.runs||0)+1; rec.date=TODAY;
-      b[mode]=rec; localStorage.setItem(key, JSON.stringify(b));
+      const bKey=(statePreset && mode==='random')? 'random|state' : mode;
+      b[bKey]=rec; localStorage.setItem(key, JSON.stringify(b));
     }
 
     const hist=JSON.parse(localStorage.getItem(histKey)||'[]');
-    const e={d:TODAY, mode:mode, limit:limN, hit:hitN, mt:mtN, to:timeouts};
+    const e={d:TODAY, mode:mode, limit:(limitChk.checked? limN : 0), hit:hitN, mt:mtN, to:timeouts};
     if(mode==='check') e.s6=window.__s6||null;
     if(rawLockFailed) e.raw=false;   // 原始输入锁定失败：成绩打标记，数据页可见
     e.radius=Math.round(radius*100)/100;   // 最终球半径入库：状态快测可比的是它
+    if(mode==='random' && !limitChk.checked && statePreset) e.preset='state';   // 状态快测与自适应随机在数据层分开
     hist.push(e);
     while(hist.length>300) hist.shift();
     localStorage.setItem(histKey, JSON.stringify(hist));
@@ -1350,6 +1353,7 @@ requestAnimationFrame(loop);
       }
     }catch(e){}
     if(q.get('limit')==='0'){ var l=document.getElementById('limit'); if(l) l.checked=false; }
+    if(q.get('preset')==='state'){ statePreset=true; }
     if(q.get('shrink')==='1'){ var sh=document.getElementById('shrink'); if(sh) sh.checked=true; }
     set('sizeOv', q.get('size'));
     // 输入设备与手柄参数：全部来自设置页（URL 参数优先，本地存储兜底）

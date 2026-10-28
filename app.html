@@ -206,6 +206,8 @@ try{
   th{color:var(--dim); font-weight:500; font-size:12.5px; letter-spacing:.3px}
   tr:last-child td{border-bottom:none}
   tbody tr:hover td, table tr:hover td{background:var(--panel2)}
+  /* 数据页表格：小屏内部横向滚动，不撑破页面 */
+  #runTable, #bestTable{display:block;overflow-x:auto;max-width:100%}
 
   /* ——— 表单 ——— */
   input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
@@ -1248,7 +1250,7 @@ function renderDrills(){
      u:'tools/aim-trainer.html?mode=check&count=40&limit=0'+q},
     {g:'评估', t:'状态快测',d:'20 球无时限，球大小按命中率自适应，快速看今天手感。',
      dEN:'20 dots, no time limit — size adapts to your hit rate. A quick feel check for today.',
-     u:'tools/aim-trainer.html?mode=random&count=20&limit=0'+q},
+     u:'tools/aim-trainer.html?mode=random&count=20&limit=0&preset=state'+q},
     {g:'练习', t:'自适应随机',d:'球固定 1.5°，只调限时，按 85% 成功率走。主练用这个。',
      dEN:'Fixed 1.5° dots — only the time limit adjusts toward 85% success. For main practice.',
      u:'tools/aim-trainer.html?mode=random&count=40&limit=1'+q},
@@ -1277,12 +1279,20 @@ function renderDrills(){
 }
 
 // 最佳 = 持久 best 与有效 runs 合并：历史最佳不丢，raw 不可比记录不参与
+// 状态快测与自适应随机在数据层分开：preset=state 的 run 归入 random|state
+const runKey=r=> (r.preset==='state')? 'random|state' : r.mode;
+const MODE_NAME2={};
+function modeName(k){
+  if(k==='random|state') return document.documentElement.getAttribute('lang')==='en'? 'State check' : '状态快测';
+  return MODE_NAME[k]||k;
+}
 function mergeBest(runs){
   const stored=load(K_BEST,{});
   const merged={};
   Object.keys(stored).forEach(k=>{ merged[k]=Object.assign({}, stored[k]); });
   (runs||[]).filter(r=>r.raw!==false).forEach(r=>{
-    const m=merged[r.mode]||(merged[r.mode]={bestLimit:0,bestHit:0,bestMT:0,bestRadius:0,runs:0});
+    const k2=runKey(r);
+    const m=merged[k2]||(merged[k2]={bestLimit:0,bestHit:0,bestMT:0,bestRadius:0,runs:0});
     if(!(m.bestLimit>0)||(r.limit>0&&r.limit<m.bestLimit)) m.bestLimit=r.limit;
     if(!(m.bestHit>0)||((r.hit||0)>m.bestHit)) m.bestHit=r.hit;
     if(!(m.bestMT>0)||((r.mt||0)<m.bestMT)) m.bestMT=r.mt;
@@ -1309,11 +1319,13 @@ function renderData(){
   let rows='<tr><th>模式</th><th>最佳命中</th><th>最佳用时</th><th>最佳难度</th></tr>';
   const keys=Object.keys(best);
   if(!keys.length) rows+='<tr><td colspan="4" style="color:var(--dim)">还没有数据，去练一组吧</td></tr>';
-  const diff=(k,b)=> k==='random'
-    ? (b.bestRadius>0? b.bestRadius+'°' : (b.bestLimit>0? b.bestLimit+' ms' : '—'))
-    : '—';
+  const diff=(k,b)=>{
+    if(k==='random|state') return b.bestRadius>0? b.bestRadius+'°' : '—';   // 状态快测：可比的是球半径
+    if(k==='random') return b.bestLimit>0? b.bestLimit+' ms' : '—';          // 自适应随机：可比的是最低限时
+    return b.bestRadius>0? b.bestRadius+'°' : '—';                            // 固定难度模式：球大小
+  };
   keys.forEach(k=>{ const b=best[k];
-    rows+='<tr><td>'+(MODE_NAME[k]||k)+'</td><td class="big">'+(b.bestHit||'—')+'%</td><td>'+(b.bestMT||'—')+' ms</td><td>'+diff(k,b)+'</td></tr>'; });
+    rows+='<tr><td>'+modeName(k)+'</td><td class="big">'+(b.bestHit||'—')+'%</td><td>'+(b.bestMT||'—')+' ms</td><td>'+diff(k,b)+'</td></tr>'; });
   $('bestTable').innerHTML=rows;
   const bHint=$('bestHint');
   if(bHint) bHint.textContent=L('自适应模式命中率被控制在 85% 左右，可比的是「最佳难度」；固定难度模式看命中率。','Adaptive modes hold ~85% hit rate — compare "Best difficulty" instead; fixed modes compare hit rate.');
@@ -1324,7 +1336,7 @@ function renderData(){
   if(!tail.length) rr+='<tr><td colspan="6" style="color:var(--dim)">暂无记录</td></tr>';
   tail.forEach(o=>{ const r=o.r;
     const diffTxt=r.limit>0? r.limit+' ms' : (r.radius>0? r.radius+'°' : '—');
-    rr+='<tr><td>'+r.d+(r.raw===false? ' <span title="'+(document.documentElement.getAttribute('lang')==='en'?'Raw input unavailable':'原始输入不可用')+'">⚠</span>':'')+'</td><td>'+(MODE_NAME[r.mode]||r.mode)+'</td><td>'+diffTxt+
+    rr+='<tr><td>'+r.d+(r.raw===false? ' <span title="'+(document.documentElement.getAttribute('lang')==='en'?'Raw input unavailable':'原始输入不可用')+'">⚠</span>':'')+'</td><td>'+modeName(runKey(r))+'</td><td>'+diffTxt+
       '</td><td>'+r.hit+'%</td><td>'+r.mt+' ms</td>'+
       '<td style="text-align:right"><button class="delRun" data-i="'+o.idx+'" style="background:transparent;border:none;color:var(--dim);cursor:pointer;font-size:12px;padding:0 4px">✕</button></td></tr>'; });
   $('runTable').innerHTML=rr;
@@ -1483,7 +1495,8 @@ $('rebuildBest').addEventListener('click',()=>{
   const runs=load(K_RUNS,[]);
   const best={};
   runs.filter(r=>r.raw!==false).forEach(r=>{
-    const m=best[r.mode]||(best[r.mode]={bestLimit:0,bestHit:0,bestMT:0,bestRadius:0,runs:0});
+    const k2=runKey(r);
+    const m=best[k2]||(best[k2]={bestLimit:0,bestHit:0,bestMT:0,bestRadius:0,runs:0});
     if(!(m.bestLimit>0)||(r.limit>0&&r.limit<m.bestLimit)) m.bestLimit=r.limit;
     if(!(m.bestHit>0)||((r.hit||0)>m.bestHit)) m.bestHit=r.hit;
     if(!(m.bestMT>0)||((r.mt||0)<m.bestMT)) m.bestMT=r.mt;
@@ -1990,12 +2003,16 @@ function render(root, lang){
     const k=dt.getFullYear()+'-'+p(dt.getMonth()+1)+'-'+p(dt.getDate());
     if(set.has(k)) streak++; else if(i>0) break; }
 
-  // 一行说清：第几天 · 完成几天 · 连续几天
+  // 一行说清：进行中 = 第几天；结束后 = 本轮完成 N/28
   const metaEl=$('planMeta');
   if(metaEl){
-    metaEl.innerHTML = (LG==='en')
-      ? 'Day <b>'+(d+1)+'</b> · <b>'+doneIn+'</b> days done · <b>'+streak+'</b> day streak'
-      : '第 <b>'+(d+1)+'</b> 天 · 已完成 <b>'+doneIn+'</b> 天 · 连续 <b>'+streak+'</b> 天';
+    metaEl.innerHTML = d>=28
+      ? (LG==='en'
+          ? 'Round complete: <b>'+doneIn+'</b> / 28 days · streak <b>'+streak+'</b>'
+          : '本轮完成 <b>'+doneIn+'</b> / 28 天 · 连续 <b>'+streak+'</b> 天')
+      : (LG==='en'
+          ? 'Day <b>'+(d+1)+'</b> · <b>'+doneIn+'</b> days done · <b>'+streak+'</b> day streak'
+          : '第 <b>'+(d+1)+'</b> 天 · 已完成 <b>'+doneIn+'</b> 天 · 连续 <b>'+streak+'</b> 天');
   }
 
   const isRest=((new Date().getDay()===0)||(new Date().getDay()===6));   // 周末休息，跟日历同一套
@@ -2014,9 +2031,9 @@ function render(root, lang){
 
   // 进度格
   // 日历渲染
-  // 滚动 28 天窗口：始终包含今天（第 28 天以后今天也在日历里）
-  const startDt=new Date(Date.now()-27*86400000);
-  const todayIdx=27;
+  // 本轮窗口：开始日 .. 开始日+27；进行中高亮今天，结束后窗口保留本轮、不再有今天格
+  const startDt=new Date(localStorage.getItem(K_START)||todayStr());
+  const todayIdx=d;
   const pd=n=>String(n).padStart(2,'0');
   const wd=(startDt.getDay()+6)%7;          // 周一=0
   const WEEK=(LG==='en')
@@ -2031,7 +2048,7 @@ function render(root, lang){
     months[dt.getMonth()+1]=dt.getFullYear();
     const done=set.has(k);
     const rest=((dt.getDay()+6)%7)>=5;       // 六、日
-    const cls='cell'+(done?' done':rest?' rest':'')+(i===todayIdx?' today':'');
+    const cls='cell'+(done?' done':rest?' rest':'')+(i===todayIdx && d<28?' today':'');
     g+='<div class="'+cls+'" title="'+k+(done? (LG==='en'?' · done':' · 已完成'):'')+'">'+dt.getDate()+'</div>';
   }
   const total=wd+28, tail=(7-total%7)%7;
@@ -2084,6 +2101,11 @@ $('copyAll').addEventListener('click',()=>{
 
 // 日历改为懒渲染：首次打开计划页才写 K_START、才画日历
 window.__planCalRender=function(){ render(); };
+// 直接打开 #plan 时 show() 先于 initPlan 执行——这里补一次渲染
+try{
+  const ps=document.getElementById('plan');
+  if(ps && ps.classList.contains('on')) window.__planCalRender();
+}catch(e){}
 }
 
 

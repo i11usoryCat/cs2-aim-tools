@@ -1,0 +1,571 @@
+<!doctype html>
+<html lang="en" data-theme="sand">
+<head>
+<meta charset="utf-8"><base href="https://i11usorycat.github.io/cs2-aim-tools/">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vernier — aim, measured</title>
+<script>
+/* 首屏预置：主题与语言先于 CSS 生效，防闪烁 */
+try{
+  var t=localStorage.getItem('cs2at.theme');
+  var d=new Date(),tm=d.getHours()*60+d.getMinutes();
+  if(!t) t=(tm>=1410||tm<460)?'forest':'sand';
+  document.documentElement.setAttribute('data-theme',t);
+  var l=localStorage.getItem('cs2at.lang');
+  if(l) document.documentElement.setAttribute('lang',l==='en'?'en':'zh-CN');
+}catch(e){}
+</script>
+<meta name="description" content="Vernier — aim, measured. Browser-based aim lab: sensitivity calibration, 90-second six-skill check, four-week plan. No install, no account, all local.">
+<meta property="og:title" content="Vernier — aim, measured">
+<meta property="og:description" content="Browser-based aim lab: sensitivity calibration, 90-second six-skill check, four-week plan. No install, no account, all local.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://i11usorycat.github.io/cs2-aim-tools/en/">
+<meta property="og:image" content="https://i11usorycat.github.io/cs2-aim-tools/assets/og-en.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Vernier — aim, measured">
+<meta name="twitter:description" content="Browser-based aim lab: sensitivity calibration, 90-second six-skill check, four-week plan. No install, no account, all local.">
+<meta name="twitter:image" content="https://i11usorycat.github.io/cs2-aim-tools/assets/og-en.png">
+<link rel="canonical" href="https://i11usorycat.github.io/cs2-aim-tools/en/">
+<link rel="alternate" hreflang="en" href="https://i11usorycat.github.io/cs2-aim-tools/en/">
+<link rel="alternate" hreflang="zh" href="https://i11usorycat.github.io/cs2-aim-tools/">
+<link rel="alternate" hreflang="x-default" href="https://i11usorycat.github.io/cs2-aim-tools/">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20class%3D%22%22%20viewBox%3D%220%200%2032%2032%22%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-linecap%3D%22butt%22%20aria-hidden%3D%22true%22%3E%3Cdefs%3E%3Cmask%20id%3D%22vmF%22%20maskUnits%3D%22userSpaceOnUse%22%20x%3D%220%22%20y%3D%220%22%20width%3D%2232%22%20height%3D%2232%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20fill%3D%22%23fff%22%20stroke%3D%22none%22%2F%3E%3Crect%20x%3D%22-8.12%22%20y%3D%2212.58%22%20width%3D%2244%22%20height%3D%222.6%22%20transform%3D%22rotate(-45%2013.88%2013.88)%22%20fill%3D%22%23000%22%20stroke%3D%22none%22%2F%3E%3Crect%20x%3D%22-10.81%22%20y%3D%229.89%22%20width%3D%2244%22%20height%3D%222.6%22%20transform%3D%22rotate(-45%2011.19%2011.19)%22%20fill%3D%22%23000%22%20stroke%3D%22none%22%2F%3E%3Crect%20x%3D%22-13.50%22%20y%3D%227.20%22%20width%3D%2244%22%20height%3D%222.6%22%20transform%3D%22rotate(-45%208.50%208.50)%22%20fill%3D%22%23000%22%20stroke%3D%22none%22%2F%3E%3C%2Fmask%3E%3C%2Fdefs%3E%3Cg%20mask%3D%22url(%23vmF)%22%3E%3Ccircle%20cx%3D%2216%22%20cy%3D%2216%22%20r%3D%228.80%22%20stroke-width%3D%221.90%22%2F%3E%3Cpath%20d%3D%22M20.40%2016H30M16%2020.40V30M11.60%2016H2M16%2011.60V2%22%20stroke-width%3D%222.20%22%2F%3E%3Ccircle%20cx%3D%2216%22%20cy%3D%2216%22%20r%3D%221.50%22%20fill%3D%22currentColor%22%20stroke%3D%22none%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<style>
+    html[data-theme="ink"]{
+    --bg:#f7f5f0; --bg2:#efece4; --panel:#fffefb; --line:#e2dccf;
+    --txt:#202b2c; --dim:#6d7a7b; --acc:#0f766e; --acc2:#115e59; --gold:#b45309;
+  }
+  html[data-theme="jade"]{
+    --bg:#101917; --bg2:#152220; --panel:#16211f; --line:#2a3a36;
+    --txt:#efeade; --dim:#93a8a1; --acc:#7fbfa6; --acc2:#5aa78c; --gold:#e0a458;
+  }
+  html[data-theme="lake"]{
+    --bg:#eef4f6; --bg2:#e4eef1; --panel:#ffffff; --line:#d2e2e7;
+    --txt:#14313a; --dim:#587a85; --acc:#0e7490; --acc2:#0b5f78; --gold:#b7791f;
+  }
+  html[data-theme="light"]{
+    --bg:#f4f6f9; --bg2:#e9eef4; --panel:#fff; --line:#dde4ed;
+    --txt:#1a2230; --dim:#5b6879; --acc:#2f6feb; --acc2:#1d4ed8; --gold:#b26b00;
+  }
+  html[data-theme="sand"]{
+    --bg:#f7f2e8; --bg2:#efe7d7; --panel:#fffdf8; --line:#e3d9c6;
+    --txt:#33291c; --dim:#7b6a54; --acc:#c2410c; --acc2:#9a3412; --gold:#a16207;
+  }
+  html[data-theme="forest"]{
+    --bg:#0f1a14; --bg2:#132019; --panel:#16241b; --line:#2a4433;
+    --txt:#e8f2ea; --dim:#8aa697; --acc:#4ade80; --acc2:#22c55e; --gold:#eab308;
+  }
+  html[data-theme="mono"]{
+    --bg:#15171b; --bg2:#1a1d22; --panel:#1c1f24; --line:#2e333b;
+    --txt:#e8eaee; --dim:#98a0aa; --acc:#c9d1d9; --acc2:#e5e7eb; --gold:#fbbf24;
+  }
+  html[data-theme="cyber"]{
+    --bg:#120a1f; --bg2:#170d28; --panel:#1b1032; --line:#3a2166;
+    --txt:#f1eaff; --dim:#a98fd6; --acc:#c084fc; --acc2:#a855f7; --gold:#fbbf24;
+  }
+  html[data-theme="night"]{
+    --bg:#0b0f14; --bg2:#0f151c; --panel:#151b24; --line:#2a3442;
+    --txt:#e6edf3; --dim:#8b949e; --acc:#58a6ff; --acc2:#3b82f6; --gold:#d29922;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{display:flex;align-items:center;justify-content:center;overflow:hidden}
+  #stage{width:900px;height:660px;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;transform-origin:center center;
+    will-change:transform}
+  html{scrollbar-width:none}          /* Firefox */
+  html::-webkit-scrollbar{display:none} /* Chrome / Edge */
+  html,body{margin:0;background:var(--bg);color:var(--txt);overflow-x:hidden;
+    font-family:"Microsoft YaHei UI","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased}
+  #fx{position:fixed;inset:0;z-index:0;opacity:.9}
+  .grain{position:fixed;inset:0;z-index:1;pointer-events:none;opacity:.35;
+    background-image:radial-gradient(color-mix(in srgb,var(--txt) 9%,transparent) 1px,transparent 1px);background-size:3px 3px}
+
+  #stage .hero{position:relative;z-index:2;min-height:0;flex:1;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;text-align:center;padding:40px 22px}
+  .logo-mark{width:104px;height:104px;color:var(--acc);margin-bottom:18px;display:block}
+  .brandline{font-size:11px;letter-spacing:7px;color:var(--dim);margin-bottom:14px;
+    text-transform:uppercase;padding-left:4px;line-height:16px;height:16px}
+  .mark{width:54px;height:54px;border-radius:16px;margin-bottom:26px;
+    background:linear-gradient(150deg,var(--acc),var(--acc2) 70%);
+    box-shadow:0 12px 30px -10px color-mix(in srgb,var(--acc) 40%,transparent);position:relative}
+  
+  h1{font-size:clamp(30px,5.5vw,52px);margin:0;font-weight:800;letter-spacing:4px;
+    color:var(--txt);line-height:1.15}
+  h1 em{font-style:normal;color:var(--acc)}
+  .sub{margin:16px 0 0;color:var(--dim);font-size:15px;line-height:30px;
+    min-height:60px;max-width:560px}
+  .by{margin-top:10px;font-size:13px;color:var(--dim);line-height:20px;
+    letter-spacing:3px;text-transform:uppercase;white-space:nowrap}
+  .by b{color:var(--gold);letter-spacing:1px}
+
+  .start{
+    margin-top:44px;min-width:172px;padding:17px 30px;font-size:17px;font-weight:700;letter-spacing:4px;text-align:center;
+    font-family:inherit;color:#fff;cursor:pointer;border:none;border-radius:14px;
+    background:linear-gradient(150deg,var(--acc),var(--acc2));
+    box-shadow:0 16px 34px -14px color-mix(in srgb,var(--acc) 55%,transparent);
+    transition:transform .18s cubic-bezier(.2,.8,.2,1), box-shadow .18s;
+  }
+  .start:hover{transform:translateY(-2px);box-shadow:0 22px 44px -16px color-mix(in srgb,var(--acc) 60%,transparent)}
+  .start:active{transform:translateY(0)}
+  .tip{margin-top:18px;font-size:12.5px;color:var(--dim)}
+
+  .list{position:relative;z-index:2;max-width:980px;margin:0 auto;padding:10px 22px 100px}
+  .list h2{font-size:13px;color:var(--dim);font-weight:600;letter-spacing:3px;
+    margin:0 0 22px;display:flex;align-items:center;gap:14px;text-transform:uppercase}
+  .list h2::after{content:"";flex:1;height:1px;background:var(--line)}
+  .items{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+  a.item{display:block;text-decoration:none;color:inherit;padding:20px 22px;
+    background:var(--panel);border:1px solid var(--line);border-radius:16px;
+    transition:transform .18s cubic-bezier(.2,.8,.2,1), border-color .18s, box-shadow .18s}
+  a.item:hover{transform:translateY(-3px);border-color:var(--acc);
+    box-shadow:0 14px 30px -12px color-mix(in srgb,var(--txt) 18%,transparent)}
+  .it{font-size:15px;font-weight:600;margin-bottom:6px}
+  .id{font-size:13px;color:var(--dim);line-height:1.65}
+  .foot{position:relative;z-index:2;text-align:center;color:var(--dim);
+    font-size:12.5px;padding:0 22px 26px;line-height:1.9}
+  .foot a{color:var(--acc);text-decoration:none}
+  .foot code{background:color-mix(in srgb,var(--txt) 8%,transparent);padding:2px 7px;border-radius:6px;font-size:12px;color:var(--acc)}
+  .langTop{position:fixed;top:18px;right:22px;z-index:9600;display:flex;
+    border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--bg)}
+  .langTop span{padding:7px 13px;min-width:38px;text-align:center;font-size:12.5px;color:var(--dim);cursor:pointer;
+    transition:.15s;user-select:none}
+  .langTop span:hover{background:var(--panel);color:var(--txt)}
+  .langTop span.on{background:var(--acc);color:#fff;font-weight:600}
+  /* ——— 手机提示条 ——— */
+  #mobileTip{display:none;position:fixed;left:50%;bottom:18px;transform:translateX(-50%);
+    z-index:9300;align-items:center;gap:12px;padding:10px 14px 10px 20px;
+    background:var(--panel);border:1px solid var(--line);color:var(--txt);
+    border-radius:999px;font-size:13px;white-space:nowrap;max-width:calc(100vw - 20px);
+    box-shadow:0 12px 32px -14px color-mix(in srgb,var(--txt) 30%,transparent)}
+  #mobileTip button{font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;
+    background:var(--acc);color:#fff;border:none;border-radius:9px;padding:7px 14px;
+    white-space:nowrap;flex-shrink:0}
+  #mobileTip button:hover{filter:brightness(1.08)}
+  @media (max-width:520px){
+    .langTop{top:10px;right:10px}
+    .langTop span{padding:6px 10px;font-size:12px}
+    #mobileTip{bottom:12px;padding:9px 12px 9px 16px;font-size:12.5px;gap:10px}
+    #mobileTip button{padding:6px 12px;font-size:12px}
+  }
+</style>
+</head>
+<body>
+<div id="mobileTip" style="display:none"><span class="mtText">请用电脑打开（建议 Chrome / Edge）·</span><button type="button" id="mtCopy">复制链接</button><button type="button" id="mtClose" style="background:transparent;border:none;color:var(--dim);cursor:pointer;font-size:15px;padding:0 2px" aria-label="关闭">✕</button></div>
+<nav class="langTop" id="langTop">
+  <span data-l="zh" tabindex="0" role="button">中</span><span data-l="en" tabindex="0" role="button">EN</span>
+</nav>
+<main>
+<canvas id="fx"></canvas>
+<div class="grain"></div>
+
+<div id="stage">
+<div class="hero">
+  <svg class="logo-mark" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-linecap="butt" aria-hidden="true"><defs><mask id="vmHero" maskUnits="userSpaceOnUse" x="0" y="0" width="32" height="32"><rect width="32" height="32" fill="#fff" stroke="none"/><rect x="-8.12" y="12.58" width="44" height="2.6" transform="rotate(-45 13.88 13.88)" fill="#000" stroke="none"/><rect x="-10.81" y="9.89" width="44" height="2.6" transform="rotate(-45 11.19 11.19)" fill="#000" stroke="none"/><rect x="-13.50" y="7.20" width="44" height="2.6" transform="rotate(-45 8.50 8.50)" fill="#000" stroke="none"/></mask></defs><g mask="url(#vmHero)"><circle cx="16" cy="16" r="8.80" stroke-width="1.90"/><path d="M20.40 16H30M16 20.40V30M11.60 16H2M16 11.60V2" stroke-width="2.20"/><circle cx="16" cy="16" r="1.50" fill="currentColor" stroke="none"/></g></svg>
+  <div class="brandline">VERNIER</div>
+  <h1>Vernier</h1>
+  <div class="sub">aim, measured<br><span style="opacity:.8">分毫 · 灵敏度标定 · 甩枪训练 · 四周计划</span></div>
+  <div class="by"><a href="https://github.com/i11usoryCat" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">i11usoryCat</a> <span style="opacity:.5">×</span> <a href="dialogue.html" style="color:var(--gold);text-decoration:none">大肥鱼</a></div>
+  <button class="start" onclick="location.href='app.html#play'">开始</button>
+  <div class="tip">建议使用 Chrome 或 Edge</div>
+</div>
+
+<div class="foot">
+  <code id="eggFormula" title="">cm/360 = 360 / (sensitivity × m_yaw) / DPI × 2.54</code><br>
+  <a href="https://github.com/i11usoryCat/cs2-aim-tools">GitHub</a> ·
+  <a href="https://github.com/i11usoryCat/cs2-aim-tools/blob/main/docs/methodology.md">方法论</a> ·
+  <a href="https://github.com/i11usoryCat/cs2-aim-tools/blob/main/docs/training-plan.md">训练方案</a> ·
+  <a href="app.html#plan">训练计划</a> ·
+  <a href="https://github.com/i11usoryCat/cs2-aim-tools/issues" target="_blank" rel="noopener" id="fbLink">反馈</a>
+  <div id="buildTag" style="margin-top:8px;font-size:12px;color:var(--dim);letter-spacing:1px"><span>版本 build</span> 2026-10-28 · 8</div>
+</div>
+</div>
+</main>
+
+<script>
+(function(){
+  const cv=document.getElementById('fx'), ctx=cv.getContext('2d');
+  const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let W=0,H=0,pts=[],ACC=[15,118,110],DIM=[109,122,123],started=false;
+
+  const COLORS=[[15,118,110],[180,83,9],[32,43,44]];   // 原来的三色，照旧
+  const LIGHT_BG={ink:[247,245,240], light:[244,246,249], lake:[238,244,246], sand:[247,242,232]};
+  function pickColor(){
+    // 浅色主题：颜色保持纯色、只降透明度——混色会变泥巴色，纯色低透明才是玻璃屑
+    var th=null;
+    try{ th=document.documentElement.getAttribute('data-theme'); }catch(e){}
+    if(LIGHT_BG[th]) return { c: COLORS[(Math.random()*COLORS.length)|0], a: 0.42 };
+    return { c: COLORS[(Math.random()*COLORS.length)|0], a: 0.55 };
+  }
+
+  // 只画，不管循环
+  let burst=null;
+  function dotFactor(p){
+    if(!burst) return 1;
+    const el=performance.now()-burst.t0;
+    const k=(el-(p.d||0)*burst.span)/burst.dur;
+    return Math.max(0,Math.min(1,k));
+  }
+  window.__fxResurface=function(cx,cy){
+    const cxd=cx*devicePixelRatio, cyd=cy*devicePixelRatio;
+    let maxD=1;
+    pts.forEach(function(p){ p.d=Math.hypot(p.x-cxd,p.y-cyd); if(p.d>maxD) maxD=p.d; });
+    pts.forEach(function(p){ p.d=p.d/maxD; });
+    burst={t0:performance.now(), dur:900, span:1100};
+  };
+
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    const lim=(150*devicePixelRatio)**2;
+    if(burst && performance.now()-burst.t0 > burst.span+burst.dur+80) burst=null;
+    const lineBase='rgba(15,118,110,';
+    for(let i=0;i<pts.length;i++) for(let j=i+1;j<pts.length;j++){
+      const dx=pts[i].x-pts[j].x, dy=pts[i].y-pts[j].y, d=dx*dx+dy*dy;
+      if(d<lim){ ctx.strokeStyle=lineBase+(0.10*(1-d/lim))+')';
+        ctx.lineWidth=devicePixelRatio*.6;
+        ctx.beginPath(); ctx.moveTo(pts[i].x,pts[i].y); ctx.lineTo(pts[j].x,pts[j].y); ctx.stroke(); }
+    }
+    for(const p of pts){
+      const f=dotFactor(p);
+      if(f<=0.001) continue;
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+      ctx.fillStyle='rgba('+p.c[0]+','+p.c[1]+','+p.c[2]+','+(p.a*f)+')'; ctx.fill();
+    }
+  }
+
+  function step(){
+    for(const p of pts){
+      p.x+=p.vx*speed; p.y+=p.vy*speed;
+      if(p.x<0||p.x>W) p.vx*=-1;
+      if(p.y<0||p.y>H) p.vy*=-1;
+    }
+    draw();
+    if(!noMotion) requestAnimationFrame(step);   // 只有 ?motion=0 才停
+  }
+
+  function resize(){
+    W=cv.width=innerWidth*devicePixelRatio; H=cv.height=innerHeight*devicePixelRatio;
+    cv.style.width=innerWidth+'px'; cv.style.height=innerHeight+'px';
+    var light=false;
+    try{ var th=document.documentElement.getAttribute('data-theme'); light=(th==='ink'||th==='light'||th==='lake'||th==='sand'); }catch(e){}
+    // 浅色主题：少一点、大一点、实一点，但别成油点
+    const n=Math.min(48, Math.round(innerWidth/(light?42:30))); pts=[];
+    for(let i=0;i<n;i++){
+      const pc=pickColor();
+      pts.push({x:Math.random()*W,y:Math.random()*H,
+        vx:(Math.random()-.5)*.16*devicePixelRatio, vy:(Math.random()-.5)*.16*devicePixelRatio,
+        r:(Math.random()*2.2+1)*(light?1.4:1)*devicePixelRatio, c:pc.c, a:pc.a});
+    }
+    draw();   // 尺寸变了会清空画布，这里立刻补画
+  }
+
+  addEventListener('resize',resize);
+  resize();
+
+  const qs=new URLSearchParams(location.search);
+  const noMotion=qs.get('motion')==='0';      // 想彻底停：加 ?motion=0
+  const speed=(reduce && !qs.has('motion')) ? 0.5 : 1;   // 系统关了动效 → 跑慢一半，但仍然会动
+  if(!noMotion){ if(!started){ started=true; requestAnimationFrame(step); } }
+})();
+
+var EN={
+    '甩枪训练中心':'AIM TRAINING HUB',
+    '瞄准，被度量。':'Aim, measured.','aim, measured':'aim, measured',
+    '分毫 · 灵敏度标定 · 甩枪训练 · 四周计划':'Vernier · calibration · drills · four-week plan',
+    '灵敏度标定 · 甩枪训练 · 四周计划':'Calibration · drills · four-week plan','浏览器里的灵敏度标定与甩枪训练。':'Sensitivity calibration and flick training in the browser.','浏览器端 · 无需安装 · 不读取游戏数据':'Browser based · no install · reads no game data',
+    '标定 → 计划 → 每天十五分钟':'Calibrate → plan → fifteen minutes a day',
+    'by':'by','开始':'START','建议使用 Chrome 或 Edge':'Chrome or Edge recommended',
+    '软件清单':'TOOLS',
+    '灵敏度标定 · 过冲法':'Calibrator · overshoot',
+    '测出你每次甩动偏多少，反推应该填的 sensitivity。':'Measures how far each flick lands from the target and derives the sensitivity to use.',
+    '甩枪训练 · 自适应随机':'Flick trainer · adaptive',
+    '球与限时按 85% 成功率自动调节，主练模式。':'Ball size and time limit adapt to an 85% success rate. Main practice mode.',
+    '甩枪训练 · 定角重复':'Flick trainer · blocked',
+    '同一角度连打 8 球，形成运动程序，热身用。':'Same angle eight times, alternating on four axes. Warm-up.',
+    '甩枪训练 · 小球精度':'Flick trainer · precision',
+    '0.7° 小球，无时限，练一次定位的精度。':'0.7° ball, no time limit. Landing precision.',
+    '四周训练计划':'Four-week programme',
+    '按天推进，自动记录进度与数据。':'Day by day, with progress tracking.',
+    '原始输入记录器':'Raw input recorder',
+    'C# 单文件，验证真实回报率与报告间隔抖动。':'Single-file C# tool to verify polling rate and report jitter.',
+    '方法论':'Methodology','训练方案':'Training plan','训练计划':'Plan','反馈':'Feedback',
+    '版本 build':'build',
+    '请用电脑打开（建议 Chrome / Edge）·':'Open on desktop (Chrome / Edge) ·',
+    '复制链接':'Copy link',
+    '已复制':'Copied'
+  };
+  var ZH={}; Object.keys(EN).forEach(function(k){ ZH[EN[k]]=k; });
+  ZH['aim, measured']='瞄准，被度量';
+  var LANG='en';
+  try{
+    var L0='en';
+    if(L0){ LANG=L0; }
+    else{ var nn=(navigator.language||'en').toLowerCase(); LANG= nn.indexOf('zh')===0? 'zh':'en'; }
+  }catch(e){}
+
+  function translateRoot(root, lang){
+    if(!root || !document.createTreeWalker) return;
+    var w=document.createTreeWalker(root, NodeFilter.SHOW_TEXT), n;
+    while((n=w.nextNode())){
+      var t=n.nodeValue.trim();
+      if(!t) continue;
+      if(lang==='en'){ if(EN[t]) n.nodeValue=n.nodeValue.replace(t, EN[t]); }
+      else { if(ZH[t]) n.nodeValue=n.nodeValue.replace(t, ZH[t]); }
+    }
+  }
+  function applyLang(lang){
+    lang = lang || LANG;
+    document.documentElement.setAttribute('lang', lang==='en'?'en':'zh-CN');
+    translateRoot(document.body, lang);
+  }
+  function markSwitch(lang){
+    var box=document.getElementById('langTop');
+    if(box) box.querySelectorAll('span[data-l]').forEach(function(el){ el.classList.toggle('on', el.dataset.l===lang); });
+    try{ document.title = lang==='en'? 'Vernier — aim, measured' : '分毫 · 瞄准，被度量'; }catch(e){}
+  }
+
+
+  function storeLang(l){ try{ localStorage.setItem('cs2at.lang', l); }catch(e){} }
+
+/* 主题色解析：兼容 hex 与 @property 注册后的 rgb() 计算值 */
+function parseColor(v){
+  try{
+    var s=String(v||'').trim();
+    var m=s.match(/rgba?\(([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/);
+    if(m) return Math.round(+m[1])+','+Math.round(+m[2])+','+Math.round(+m[3]);
+    var h=s.replace('#','');
+    if(h.length===3) h=h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+    if(/^[0-9a-fA-F]{6}$/.test(h)){ var n=parseInt(h,16); return ((n>>16)&255)+','+((n>>8)&255)+','+(n&255); }
+    return null;
+  }catch(e){ return null; }
+}
+
+let switching=false, watchdog=null;
+
+function rippleSwitch(lang, cx, cy){
+  if(switching) return;
+  switching=true;
+
+  var fx=document.getElementById('fx');
+
+  clearTimeout(watchdog);
+  watchdog=setTimeout(function(){
+    if(switching){
+      try{ LANG=lang; localStorage.setItem('cs2at.lang',lang); applyLang(lang); markSwitch(lang); }catch(e){}
+      document.querySelectorAll('.langBlocker,.langLayer,.langCanvas').forEach(function(el){ el.remove(); });
+      try{ document.documentElement.style.overflow=''; }catch(e){}
+      switching=false;
+    }
+  }, 3000);
+
+  var blocker=document.createElement('div');
+  blocker.className='langBlocker';
+  blocker.style.cssText='position:fixed;inset:0;z-index:9500;cursor:default;background:transparent;touch-action:none';
+  document.body.appendChild(blocker);
+
+  var htmlEl=document.documentElement;
+  var prevOverflow=htmlEl.style.overflow;
+  var scrollTop=window.scrollY||0;
+  htmlEl.style.overflow='hidden';
+
+  var stopScroll=function(ev){ ev.preventDefault(); };
+  blocker.addEventListener('wheel', stopScroll, {passive:false});
+  blocker.addEventListener('touchmove', stopScroll, {passive:false});
+
+  // ① 按钮先切（这是用户看到的第一个反馈）
+  var lsReal=document.getElementById('langTop');
+  if(lsReal) lsReal.querySelectorAll('span[data-l]').forEach(function(el){ el.classList.toggle('on', el.dataset.l===lang); });
+  // 切完再按目标按钮的当前中心取波纹起点（加粗不再造成偏移）
+  try{
+    var lt=lsReal && lsReal.querySelector('span[data-l="'+lang+'"]');
+    if(lt){ var lr=lt.getBoundingClientRect(); cx=lr.left+lr.width/2; cy=lr.top+lr.height/2; }
+  }catch(e){}
+
+  // ② 复制当前页面（旧语言），塞进滚动容器
+  var scroller=null, layer=null;
+  try{
+    var src=document.body.cloneNode(true);
+    src.querySelectorAll('script,iframe,canvas').forEach(function(el){ el.remove(); });
+    var hSrc=src.querySelector('#langTop');
+    if(hSrc){ hSrc.style.background='var(--bg)'; }
+    scroller=document.createElement('div');
+    scroller.style.cssText='position:absolute;inset:0;overflow:auto;scrollbar-width:none;-ms-overflow-style:none';
+    scroller.appendChild(src);
+
+    layer=document.createElement('div');
+    layer.className='langLayer';
+    layer.style.cssText='position:fixed;inset:0;z-index:9000;pointer-events:none;overflow:hidden;'
+      +'background:var(--bg);contain:layout paint;transform:translateZ(0);'
+      +'backface-visibility:hidden;isolation:isolate;'
+      +'clip-path:circle(0px at '+cx+'px '+cy+'px)';
+    layer.appendChild(scroller);
+
+
+
+    translateRoot(layer, lang);   // 复制层翻成新语言
+    layer.querySelectorAll('#langTop span[data-l]').forEach(function(el){ el.classList.toggle('on', el.dataset.l===lang); });
+    document.body.appendChild(layer);
+    scroller.scrollTop=scrollTop;
+    requestAnimationFrame(function(){ scroller.scrollTop=scrollTop; });
+  }catch(e){ layer=null; }
+
+  if(!layer){
+    try{ LANG=lang; localStorage.setItem('cs2at.lang',lang); applyLang(lang); markSwitch(lang); }catch(e){}
+    blocker.remove(); htmlEl.style.overflow=prevOverflow;
+    switching=false; return;
+  }
+
+  // ③ 波纹
+  var cv=document.createElement('canvas');
+  var ctx2=cv.getContext('2d'), dpr=devicePixelRatio||1;
+  cv.className='langCanvas';
+  cv.style.cssText='position:fixed;inset:0;z-index:9001;pointer-events:none';
+  cv.width=innerWidth*dpr; cv.height=innerHeight*dpr;
+  cv.style.width=innerWidth+'px'; cv.style.height=innerHeight+'px';
+  document.body.appendChild(cv);
+
+  var ACC=parseColor(getComputedStyle(htmlEl).getPropertyValue('--acc'))||'15,118,110';
+
+  var maxD=Math.hypot(Math.max(cx,innerWidth-cx),Math.max(cy,innerHeight-cy))+70;
+  var DUR=2600, t0=null;
+
+  function ring(R,w,a){
+    if(R<=0) return;
+    ctx2.beginPath(); ctx2.arc(cx*dpr,cy*dpr,R*dpr,0,Math.PI*2);
+    ctx2.strokeStyle='rgba('+ACC+','+a+')'; ctx2.lineWidth=w*dpr; ctx2.stroke();
+  }
+
+  function step(now){
+    if(t0===null) t0=now;
+    var t=Math.min(1,(now-t0)/DUR);
+    var e=t<0.5? 4*t*t*t : 1-Math.pow(-2*t+2,3)/2;
+    var R=maxD*e;
+    layer.style.clipPath='circle('+R+'px at '+cx+'px '+cy+'px)';
+    ctx2.clearRect(0,0,cv.width,cv.height);
+    var fade=Math.max(0,1-Math.pow(t,1.6));
+    ring(R,2.2,0.75*fade); ring(R*0.93,1.4,0.40*fade); ring(R*1.05,1.0,0.22*fade);
+    if(t<1){ requestAnimationFrame(step); return; }
+
+    // ④ 遮罩盖满之后，真实页面才切语言
+    try{ LANG=lang; localStorage.setItem('cs2at.lang',lang); applyLang(lang); markSwitch(lang); }catch(e){}
+    try{ markSwitch(lang); }catch(e){}
+
+    layer.style.clipPath='circle(300vmax at '+cx+'px '+cy+'px)';
+    cv.width=0; cv.height=0; cv.remove();
+    requestAnimationFrame(function(){
+      layer.remove(); blocker.remove();
+
+      try{ if(window.__fxResurface) window.__fxResurface(cx,cy); }catch(e){}   // 和波浪同方向，依次浮现
+      htmlEl.style.overflow=prevOverflow;
+      clearTimeout(watchdog);
+      switching=false;
+      try{ window.scrollTo(0,scrollTop); }catch(e){}
+    });
+  }
+  requestAnimationFrame(step);
+}
+
+  applyLang(LANG);
+  markSwitch(LANG);
+
+  var box=document.getElementById('langTop');
+  if(box) box.querySelectorAll('span[data-l]').forEach(function(el){
+    el.addEventListener('click', function(){
+      if(el.dataset.l===LANG || switching) return;
+      var r=el.getBoundingClientRect();
+      var cx=r.left+r.width/2, cy=r.top+r.height/2;
+      var target=el.dataset.l;
+
+      rippleSwitch(target, cx, cy);
+    });
+    el.addEventListener('keydown', function(e){
+      if(e.key!=='Enter' && e.key!==' ') return;
+      e.preventDefault();
+      if(el.dataset.l===LANG || switching) return;
+      var r=el.getBoundingClientRect();
+      rippleSwitch(el.dataset.l, r.left+r.width/2, r.top+r.height/2);
+    });
+  });
+
+
+(function(){
+  try{
+    var q=new URLSearchParams(location.search).get('theme');
+    var t=q || localStorage.getItem('cs2at.theme') || (function(){var d=new Date(),tm=d.getHours()*60+d.getMinutes();return (tm>=1410||tm<460)?'forest':'sand';})();
+    document.documentElement.setAttribute('data-theme', t);
+  }catch(e){}
+})();
+
+
+(function(){
+  var W=900, H=660, MIN=0.62;
+  var st=document.getElementById('stage');
+  var html=document.documentElement, body=document.body;
+  function fit(){
+    var k=Math.min(1, (innerWidth-24)/W, (innerHeight-24)/H);
+    var use=Math.max(k, MIN);
+    st.style.transform='scale('+use.toFixed(4)+')';
+    if(k>=MIN){
+      html.style.overflow='hidden'; body.style.overflow='hidden';
+      body.style.alignItems='center'; body.style.height='100%';
+    }else{
+      html.style.overflow='auto'; body.style.overflow='auto';
+      body.style.alignItems='flex-start'; body.style.height='auto';
+      body.style.minHeight='100%';
+      body.style.padding='12px 0';
+    }
+  }
+  addEventListener('resize', fit);
+  fit();
+
+  // 第四个彩蛋：页脚公式连点 3 次
+  (function(){
+    var f=document.getElementById('eggFormula');
+    if(!f) return;
+    var n=0, timer=null;
+    f.style.cursor='pointer';
+    f.addEventListener('click',function(){
+      n++; clearTimeout(timer);
+      timer=setTimeout(function(){ n=0; }, 900);
+      if(n>=3){ n=0; location.href='对话记录.html'; }
+    });
+  })();
+})();
+</script>
+<script>
+/* 版本号连点 7 次 → 小肥鱼 */
+(function(){
+  var t=document.getElementById('buildTag'); if(!t) return;
+  var n=0, timer=null;
+  t.addEventListener('click', function(e){
+    e.preventDefault(); n++; clearTimeout(timer);
+    timer=setTimeout(function(){ n=0; }, 2500);
+    if(n>=7){ n=0; location.href='小肥鱼.html'; }
+  });
+})();
+</script>
+
+<script>
+/* 手机提示条：触屏且小屏时显示，复制链接 */
+(function(){
+  var tip=document.getElementById('mobileTip'); if(!tip) return;
+  if(!(('ontouchstart' in window) || navigator.maxTouchPoints>0) || Math.min(screen.width,screen.height)>=900) return;
+  tip.style.display='flex';
+  var btn=document.getElementById('mtCopy');
+  var isEn=function(){ return document.documentElement.getAttribute('lang')==='en'; };
+  if(btn) btn.addEventListener('click', function(){
+    try{ navigator.clipboard.writeText(location.href).catch(function(){}); }catch(e){}
+    btn.textContent = isEn() ? 'Copied' : '已复制';
+    setTimeout(function(){ btn.textContent = isEn() ? 'Copy link' : '复制链接'; }, 2000);
+  });
+  var close=document.getElementById('mtClose');
+  if(close) close.addEventListener('click', function(){ try{ localStorage.setItem('cs2at.mtClosed','1'); }catch(e){} tip.style.display='none'; });
+  try{ if(localStorage.getItem('cs2at.mtClosed')==='1') tip.style.display='none'; }catch(e){}
+})();
+</script>
+
+
+</body>
+</html>

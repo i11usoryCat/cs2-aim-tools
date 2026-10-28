@@ -344,7 +344,7 @@ go.addEventListener('click',e=>{ e.stopPropagation(); if(paused) resume(); else 
 document.getElementById('clr').addEventListener('click',e=>{
   e.stopPropagation();
   allRuns.length=0;
-  resBody.innerHTML+='<div style="margin-top:10px;color:var(--acc);font-size:13px">累计已清空</div>';
+  resBody.innerHTML+='<div style="margin-top:10px;color:var(--acc);font-size:13px">'+(window.__IS_EN?'Cumulative data cleared':'累计已清空')+'</div>';
 });
 // 复制结果 / 应用到设置
 document.getElementById('copyRes').addEventListener('click',e=>{
@@ -572,7 +572,14 @@ requestAnimationFrame(loop);
 
 /* ===== 英文界面 ===== */
 (function(){
-  var EN=(function(){ try{ var q=new URLSearchParams(location.search); if(q.get('lang')) return q.get('lang')==='en'; return localStorage.getItem('cs2at.lang')!=='zh'; }catch(e){ return true; } })();   // 默认英文
+  var EN=(function(){ try{
+    var q=new URLSearchParams(location.search);
+    if(q.get('lang')) return q.get('lang')==='en';
+    var s=localStorage.getItem('cs2at.lang');
+    if(s) return s==='en';
+    var n=(navigator.language||'en').toLowerCase();
+    return n.indexOf('zh')!==0;
+  }catch(e){ return true; } })();   // 按浏览器语言自动选：中文浏览器看中文，其余默认英文
   window.__IS_EN=EN;
   if(!EN) return;
   var D={

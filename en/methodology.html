@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Methodology · Vernier</title>
+<meta name="description" content="How Vernier's sensitivity calibration was designed and tested — controlled experiments, four iterations of the overshoot method, and honest conclusions.">
+<link rel="canonical" href="https://i11usorycat.github.io/cs2-aim-tools/en/methodology.html">
+<link rel="alternate" hreflang="en" href="https://i11usorycat.github.io/cs2-aim-tools/en/methodology.html">
+<style>
+  body{max-width:760px;margin:0 auto;padding:48px 22px 80px;background:#f7f2e8;color:#33291c;
+    font-family:Georgia,"Times New Roman",serif;line-height:1.8;font-size:16.5px}
+  h1{font-size:30px;border-bottom:3px solid #c2410c;padding-bottom:12px}
+  h2{font-size:22px;margin-top:34px;color:#c2410c}
+  h3{font-size:18px;margin-top:24px}
+  pre{background:#efe7d7;padding:14px;border-radius:8px;overflow-x:auto;font-size:13.5px}
+  blockquote{border-left:3px solid #c2410c;margin:14px 0;padding:2px 16px;color:#7b6a54}
+  li{margin:6px 0}
+  a{color:#c2410c}
+</style>
+</head>
+<body>
+<a href="../">← Vernier</a>
+<h1>Methodology and Pitfalls</h1>
+
+<p>This document records how the calibration method was designed, which approaches failed, and why the current one was kept.</p>
+
+<h2>Does sensitivity actually matter?</h2>
+
+<h3>Controlled experiment</h3>
+
+<p>Five sensitivities, thirty trials each, with block order counterbalanced (reversed in the second half to cancel learning and fatigue drift):</p>
+
+<pre><code>
+cm/360   median ball-to-ball interval   median re-entries
+16       538 ms                         1.0
+20       551 ms                         0.0
+23.2     538 ms                         0.0
+27       521 ms                         0.0
+32       531 ms                         0.0
+</code></pre>
+
+<p>The spread is 5.8%, which is inside statistical noise. **Within this range sensitivity has no measurable effect on hit speed.** This also explains why players can tweak sensitivity for hours without feeling a difference: the effect is smaller than the noise.</p>
+
+<h2>Four iterations of the overshoot method</h2>
+
+<h3>v1 — record the click position</h3>
+
+<pre><code>
+f       = (landing - target) / target
+cm_new  = cm * (1 + f)
+</code></pre>
+
+<p>Problem: players visually correct before clicking, so the recorded position is already the corrected one. Each round suggested only a 3-8% change and never converged.</p>
+
+<h3>v2 — record the settled position (speed &lt; 25°/s for 70 ms)</h3>
+
+<p>Best convergence observed:</p>
+
+<pre><code>
+cm/360   overshoot
+23.2     +7.4%
+24.9     +4.8%
+26.1     +2.9%
+26.9     +2.9%
+27.7     +2.3%
+</code></pre>
+
+<p>Monotonic decrease; the last two rounds differed by 0.7%.</p>
+
+<h3>v3 — record the ballistic endpoint (speed dropping below 40°/s)</h3>
+
+<p>**Failed.** This captures a point mid-deceleration. Scatter was about ±15% while the bias being measured was about 5%, so the signal-to-noise ratio was too low:</p>
+
+<pre><code>
+cm/360   overshoot   overshoots : undershoots
+23.2     +8.7%       20 : 13
+25.2     +16.0%      20 : 14
+29.2     +3.3%       22 : 7
+51.5     -0.7%       15 : 16
+</code></pre>
+
+<p>The sign flipped between rounds.</p>
+
+<h3>v4 — click position, hits excluded, pooled samples</h3>
+
+<li>Use the click position (zero latency, matches what the player feels)</li>
+<li>**Exclude hits** (angular error within ball radius) from the bias estimate: a hit means "control was sufficient", not "there was a bias"</li>
+<li>Pool every trial across runs, convert each to the cm/360 it implies, take the global median</li>
+
+<p>Result: 480 samples converged to 27.2 cm/360 with a final bias of -0.1%.</p>
+
+<h2>Pitfalls encountered</h2>
+
+<h3>1. Auto-fill drift</h3>
+
+<p>"Run again" filled the suggested value automatically. With noisy data each round suggested a small change, and the sequence drifted to an absurd value (23.2 to 8.0, i.e. 8 cm per full turn).</p>
+
+<p>Fix: refuse to auto-fill when the change exceeds 35%; add a "clear pool" button.</p>
+
+<h3>2. Death spiral in the time limit</h3>
+
+<pre><code>
+allowed time = 0.9 * median of HIT times
+-&gt; only fast attempts count as hits
+-&gt; the median falls
+-&gt; the allowed time falls
+-&gt; more timeouts, the surviving hits are faster still
+</code></pre>
+
+<p>Measured hit rate fell 60% -&gt; 30% -&gt; 25% while the ball radius grew, because two controllers were fighting.</p>
+
+<p>Fix:</p>
+
+<pre><code>
+time-limit mode on  -&gt; ball fixed, only the time limit adapts
+                       hit rate &gt;= 85%: tighten 6%
+                       hit rate &lt;  70%: relax 7%
+time-limit mode off -&gt; time fixed, only the ball adapts
+</code></pre>
+
+<h3>3. Visual size did not match the hit test</h3>
+
+<p>The ball was drawn at a 1.5° radius while the hit test used 3% of flick distance (about 0.6°). Players saw the crosshair inside the ball and still registered a miss.</p>
+
+<p>Fix: the hit test compares angular error directly against the drawn radius.</p>
+
+<h3>4. Angles were not wrapped</h3>
+
+<pre><code>
+// wrong
+Math.abs(tYaw - yaw);      // target 179°, current -179° -&gt; 358°
+
+// correct
+wrapPi(tYaw - yaw);        // -&gt; 2°
+</code></pre>
+
+<p>Symptom: "after I turn one direction I can no longer hit anything". Once accumulated rotation passed ±180° the test could never pass.</p>
+
+<h3>5. `tan()` flips at 90°</h3>
+
+<p>Target world position was computed as `x = D * tan(yaw)`, which flips sign past ±90°, drawing the ball at a mirrored position.</p>
+
+<p>Correct spherical placement:</p>
+
+<pre><code>
+const x = D * Math.cos(pitch) * Math.sin(yaw);
+const y = D * Math.sin(pitch);
+const z = D * Math.cos(pitch) * Math.cos(yaw);
+</code></pre>
+
+<h3>6. Synchronous disk writes merge input reports</h3>
+
+<p>A raw-input logger that calls `WriteLine` + `AutoFlush` per HID report blocks the message loop, and Windows begins coalescing `WM_INPUT`:</p>
+
+<pre><code>
+synchronous writes   -&gt; measured 124 Hz
+memory buffering     -&gt; measured 4207 Hz
+</code></pre>
+
+<p>A 34x difference on the same 8K mouse. Always rule this out before measuring polling rate.</p>
+
+<h2>Conclusions</h2>
+
+<li>**Sensitivity between 16 and 32 cm/360 has no significant effect** on measured performance; do not over-invest in tuning it.</li>
+<li>If you calibrate, use the overshoot method, but **pool samples, exclude hits, and guard against drift**.</li>
+<li>Use a **single difficulty controller** and an **85% success target**, otherwise the feedback loop diverges.</li>
+<li>Most of the felt difference after a hardware or engine change comes from rebuilding motor memory, which only repetition can fix.</li>
+
+
+</body>
+</html>

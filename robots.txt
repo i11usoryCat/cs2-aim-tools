@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+
+Disallow: /回声.html
+Disallow: /dialogue.html
+Disallow: /对话记录.html
+
+Sitemap: https://i11usorycat.github.io/cs2-aim-tools/sitemap.xml

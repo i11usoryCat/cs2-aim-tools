@@ -538,7 +538,14 @@ requestAnimationFrame(loop);
 
 /* ===== 英文界面 ===== */
 (function(){
-  var EN=(function(){ try{ var q=new URLSearchParams(location.search); if(q.get('lang')) return q.get('lang')==='en'; return localStorage.getItem('cs2at.lang')!=='zh'; }catch(e){ return true; } })();   // 默认英文
+  var EN=(function(){ try{
+    var q=new URLSearchParams(location.search);
+    if(q.get('lang')) return q.get('lang')==='en';
+    var s=localStorage.getItem('cs2at.lang');
+    if(s) return s==='en';
+    var n=(navigator.language||'en').toLowerCase();
+    return n.indexOf('zh')!==0;
+  }catch(e){ return true; } })();   // 按浏览器语言自动选：中文浏览器看中文，其余默认英文
   if(!EN) return;
   var D={
     '灵敏度标定 · 过冲法':'Sensitivity calibration · overshoot',

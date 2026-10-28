@@ -164,7 +164,14 @@ const PITCH_LIM=75*Math.PI/180, D2R=Math.PI/180, R2D=180/Math.PI;
 
 let W=0,H=0,f=1;
 let yaw=0, pitch=0, tYaw=0, tPitch=0, sYaw=0, sPitch=0;
-const EN_UI=(function(){ try{ var q=new URLSearchParams(location.search); if(q.get('lang')) return q.get('lang')==='en'; return localStorage.getItem('cs2at.lang')!=='zh'; }catch(e){ return true; } })();   // 默认英文
+const EN_UI=(function(){ try{
+    var q=new URLSearchParams(location.search);
+    if(q.get('lang')) return q.get('lang')==='en';
+    var s=localStorage.getItem('cs2at.lang');
+    if(s) return s==='en';
+    var n=(navigator.language||'en').toLowerCase();
+    return n.indexOf('zh')!==0;
+  }catch(e){ return true; } })();   // 按浏览器语言自动选：中文浏览器看中文，其余默认英文
 // 命中特效（flash/shatter/both/off）与准星击中反馈（auto/custom/off）
 const hitFxMode=(function(){ try{ var m=localStorage.getItem('cs2at.hitFx'); if(m==='0') m='off'; if(!m||m==='1') m='flash'; return m; }catch(e){ return 'flash'; } })();
 const hitCrossMode=(function(){ try{ var m=localStorage.getItem('cs2at.hitCross'); if(m==='0') m='off'; if(!m||m==='1') m='auto'; return m; }catch(e){ return 'auto'; } })();
@@ -857,8 +864,8 @@ document.getElementById('copy').addEventListener('click', function(e){
   var t = window.__logLine || '';
   if(navigator.clipboard && navigator.clipboard.writeText){
     navigator.clipboard.writeText(t).then(function(){
-      e.target.textContent='已复制 ✓';
-      setTimeout(function(){ e.target.textContent='复制本组数据'; }, 1500);
+      e.target.textContent=EN_UI? 'Copied ✓' : '已复制 ✓';
+      setTimeout(function(){ e.target.textContent=EN_UI? 'Copy this set' : '复制本组数据'; }, 1500);
     }).catch(function(){ alert(t); });
   } else { alert(t); }
 });
@@ -1373,7 +1380,10 @@ requestAnimationFrame(loop);
     try{
       var q=new URLSearchParams(location.search);
       if(q.get('lang')) return q.get('lang')==='en';
-      return localStorage.getItem('cs2at.lang')!=='zh';
+      var sv=localStorage.getItem('cs2at.lang');
+      if(sv) return sv==='en';
+      var nv=(navigator.language||'en').toLowerCase();
+      return nv.indexOf('zh')!==0;
     }catch(e){ return true; }
   })();
   if(!EN) return;

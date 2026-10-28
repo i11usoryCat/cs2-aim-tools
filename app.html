@@ -490,9 +490,9 @@ try{
     <div class="card">
       <div class="t" style="margin-bottom:10px">各模式最佳（历史）</div>
       <table id="bestTable"></table>
+      <div class="hint" id="bestHint" style="margin-top:8px"></div>
       <div style="margin-top:10px;text-align:right">
         <button id="rebuildBest" style="background:transparent;border:1px solid var(--line);color:var(--dim);font-size:12.5px">重算最佳</button>
-        <button id="clearBest" style="background:transparent;border:1px solid var(--line);color:var(--dim);font-size:12.5px;margin-left:8px">清除最佳</button>
       </div>
     </div>
     <div class="card">
@@ -838,7 +838,8 @@ const EN={
   '最佳成绩按模式分别记录，只存在本浏览器。':'Best results per mode, stored locally in this browser.',
   '总训练组数':'Sets','训练天数':'Days','本地组数':'Local sets','最低限时':'Best limit','最高命中率':'Best hit rate',
   '历史最低限时':'Historical best limit','历史最高命中率':'Historical best hit rate',
-  '各模式最佳（历史）':'Best per mode (historical)','重算最佳':'Rebuild best','清除最佳':'Clear best',
+  '各模式最佳（历史）':'Best per mode (historical)','重算最佳':'Rebuild best',
+  '难度':'Difficulty','最佳难度':'Best difficulty',
   '各模式最佳':'Best per mode','最近记录':'Recent runs','趋势（最近 60 组）':'Trend (last 60 runs)','六维走势':'Six-dim trend',
   '重新开始（清空计划进度）':'Start over (clear plan progress)',
   '现在怎么样':'How am I doing','最佳命中':'Best hit','最佳用时':'Best time','数据管理':'Data management',
@@ -982,6 +983,7 @@ function applyLang(l){
   // 计算出来的文案也要跟着语言走
   try{ if(window.__updateCalc) window.__updateCalc(); }catch(e){}
   try{ if(window.__vRender) window.__vRender(); }catch(e){}
+  try{ if(window.__planCalRender) window.__planCalRender(); }catch(e){}
 }
 function setLang(l){ LANG=l; try{ localStorage.setItem(K_LANG,l); }catch(e){} }
 
@@ -1029,6 +1031,7 @@ function show(t){
   if(t==='data') renderData();
   if(t==='play') renderDrills();
   if(t==='set')  fillSettings();
+  if(t==='plan'){ try{ if(window.__planCalRender) window.__planCalRender(); }catch(e){} }
   applyLang();
   // 标题随路由与语言
   try{
@@ -1279,10 +1282,11 @@ function mergeBest(runs){
   const merged={};
   Object.keys(stored).forEach(k=>{ merged[k]=Object.assign({}, stored[k]); });
   (runs||[]).filter(r=>r.raw!==false).forEach(r=>{
-    const m=merged[r.mode]||(merged[r.mode]={bestLimit:0,bestHit:0,bestMT:0,runs:0});
+    const m=merged[r.mode]||(merged[r.mode]={bestLimit:0,bestHit:0,bestMT:0,bestRadius:0,runs:0});
     if(!(m.bestLimit>0)||(r.limit>0&&r.limit<m.bestLimit)) m.bestLimit=r.limit;
     if(!(m.bestHit>0)||((r.hit||0)>m.bestHit)) m.bestHit=r.hit;
     if(!(m.bestMT>0)||((r.mt||0)<m.bestMT)) m.bestMT=r.mt;
+    if(!(m.bestRadius>0)||((r.radius>0)&&r.radius<m.bestRadius)) m.bestRadius=r.radius;
     m.runsFresh=(m.runsFresh||0)+1;   // 只记本次合并的有效样本数，不污染 stored best 的 runs
   });
   return merged;
@@ -1302,20 +1306,26 @@ function renderData(){
   $('sLimit').textContent=minL===null?'—':minL+' ms';
   $('sHit').textContent=maxH===null?'—':maxH+'%';
 
-  let rows='<tr><th>模式</th><th>最佳命中</th><th>最佳用时</th></tr>';
+  let rows='<tr><th>模式</th><th>最佳命中</th><th>最佳用时</th><th>最佳难度</th></tr>';
   const keys=Object.keys(best);
-  if(!keys.length) rows+='<tr><td colspan="3" style="color:var(--dim)">还没有数据，去练一组吧</td></tr>';
+  if(!keys.length) rows+='<tr><td colspan="4" style="color:var(--dim)">还没有数据，去练一组吧</td></tr>';
+  const diff=(k,b)=> k==='random'
+    ? (b.bestRadius>0? b.bestRadius+'°' : (b.bestLimit>0? b.bestLimit+' ms' : '—'))
+    : '—';
   keys.forEach(k=>{ const b=best[k];
-    rows+='<tr><td>'+(MODE_NAME[k]||k)+'</td><td class="big">'+(b.bestHit||'—')+'%</td><td>'+(b.bestMT||'—')+' ms</td></tr>'; });
+    rows+='<tr><td>'+(MODE_NAME[k]||k)+'</td><td class="big">'+(b.bestHit||'—')+'%</td><td>'+(b.bestMT||'—')+' ms</td><td>'+diff(k,b)+'</td></tr>'; });
   $('bestTable').innerHTML=rows;
+  const bHint=$('bestHint');
+  if(bHint) bHint.textContent=L('自适应模式命中率被控制在 85% 左右，可比的是「最佳难度」；固定难度模式看命中率。','Adaptive modes hold ~85% hit rate — compare "Best difficulty" instead; fixed modes compare hit rate.');
 
-  let rr='<tr><th>日期</th><th>模式</th><th>限时</th><th>命中率</th><th>中位用时</th><th><span style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">删除</span></th></tr>';
+  let rr='<tr><th>日期</th><th>模式</th><th>难度</th><th>命中率</th><th>中位用时</th><th><span style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">删除</span></th></tr>';
   const tailAll=runs.map((r,idx)=>({r:r,idx:idx})).reverse();
   const tail = runShowAll? tailAll : tailAll.slice(0,5);
   if(!tail.length) rr+='<tr><td colspan="6" style="color:var(--dim)">暂无记录</td></tr>';
   tail.forEach(o=>{ const r=o.r;
-    rr+='<tr><td>'+r.d+(r.raw===false? ' <span title="'+(document.documentElement.getAttribute('lang')==='en'?'Raw input unavailable':'原始输入不可用')+'">⚠</span>':'')+'</td><td>'+(MODE_NAME[r.mode]||r.mode)+'</td><td>'+r.limit+
-      ' ms</td><td>'+r.hit+'%</td><td>'+r.mt+' ms</td>'+
+    const diffTxt=r.limit>0? r.limit+' ms' : (r.radius>0? r.radius+'°' : '—');
+    rr+='<tr><td>'+r.d+(r.raw===false? ' <span title="'+(document.documentElement.getAttribute('lang')==='en'?'Raw input unavailable':'原始输入不可用')+'">⚠</span>':'')+'</td><td>'+(MODE_NAME[r.mode]||r.mode)+'</td><td>'+diffTxt+
+      '</td><td>'+r.hit+'%</td><td>'+r.mt+' ms</td>'+
       '<td style="text-align:right"><button class="delRun" data-i="'+o.idx+'" style="background:transparent;border:none;color:var(--dim);cursor:pointer;font-size:12px;padding:0 4px">✕</button></td></tr>'; });
   $('runTable').innerHTML=rr;
   const mr=$('moreRuns');
@@ -1473,18 +1483,16 @@ $('rebuildBest').addEventListener('click',()=>{
   const runs=load(K_RUNS,[]);
   const best={};
   runs.filter(r=>r.raw!==false).forEach(r=>{
-    const m=best[r.mode]||(best[r.mode]={bestLimit:0,bestHit:0,bestMT:0,runs:0});
+    const m=best[r.mode]||(best[r.mode]={bestLimit:0,bestHit:0,bestMT:0,bestRadius:0,runs:0});
     if(!(m.bestLimit>0)||(r.limit>0&&r.limit<m.bestLimit)) m.bestLimit=r.limit;
     if(!(m.bestHit>0)||((r.hit||0)>m.bestHit)) m.bestHit=r.hit;
     if(!(m.bestMT>0)||((r.mt||0)<m.bestMT)) m.bestMT=r.mt;
+    if(!(m.bestRadius>0)||((r.radius>0)&&r.radius<m.bestRadius)) m.bestRadius=r.radius;
     m.runs=(m.runs||0)+1;
   });
   save(K_BEST,best); renderData();
 });
-$('clearBest').addEventListener('click',()=>{
-  if(!confirm(L('清除全部最佳记录？训练记录保留。','Clear all best records? Runs are kept.'))) return;
-  try{ localStorage.removeItem(K_BEST); }catch(e){} renderData();
-});
+
 $('runTable').addEventListener('click',e=>{
   const b=e.target.closest('.delRun'); if(!b) return;
   if(!confirm(L('删除这条记录？','Delete this run?'))) return;
@@ -1947,88 +1955,18 @@ const todayStr=()=>{ const d=new Date(),p=n=>String(n).padStart(2,'0'); return d
 const dayIdx=()=>{ const s=localStorage.getItem(K_START); if(!s) return -1; return Math.floor((new Date(todayStr())-new Date(s))/86400000); };
 const weekOf=d=>Math.min(4, Math.floor(Math.max(0,d)/7)+1);
 
-function cfgQuery(){
-  try{ const c=JSON.parse(localStorage.getItem(K_CFG)||'{}');
-    const p=[]; if(c.dpi) p.push('dpi='+c.dpi); if(c.cm) p.push('cm='+c.cm);
-    if(c.yaw) p.push('yaw='+c.yaw); if(c.sens) p.push('sens='+c.sens);
-    try{
-      const th=document.documentElement.getAttribute('data-theme'); if(th) p.push('theme='+th);
-      if(LANG==='en') p.push('lang=en');
-      const d=parseInt(localStorage.getItem('cs2at.delay'));
-      if(!isNaN(d)) p.push('delay='+Math.max(0,Math.min(5,d)));
-      const r=localStorage.getItem('cs2at.res');
-      if(r){ p.push('res='+r);
-        if(r==='custom'){ p.push('w='+(localStorage.getItem('cs2at.resW')||'1440')); p.push('h='+(localStorage.getItem('cs2at.resH')||'1080')); } }
-      const dev=localStorage.getItem('cs2at.device');
-      if(dev) p.push('device='+dev);
-      if(dev==='pad'){ p.push('padMode='+(localStorage.getItem('cs2at.padMode')||'vel')); }
-      if(localStorage.getItem('cs2at.crossMode')==='custom'){
-        p.push('crossMode=custom');
-        const cc=localStorage.getItem('cs2at.crossColor'); if(cc) p.push('crossColor='+encodeURIComponent(cc));
-        const ce=localStorage.getItem('cs2at.crossEdge'); if(ce) p.push('crossEdge='+encodeURIComponent(ce));
-      }
-    }catch(e){}
-    return p.length? '&'+p.join('&') : '';
-  }catch(e){ return ''; }
-}
-
-function planFor(w){
-  const base='tools/aim-trainer.html';
-  if(w===1) return [
-    {t:'热身 · 定角重复', u:base+'?mode=block&count=40&limit=0', n:'两个角度各 8 球，让手热起来，不记录'},
-    {t:'主练 · 自适应随机 ×2', u:base+'?mode=random&count=40&limit=1', n:'只追命中率 80%，不要主动抢时间'},
-    {t:'精度 · 小球 0.7°', u:base+'?mode=precision&count=40&limit=0', n:'记录命中率，目标 35%+'}
-  ];
-  if(w===2) return [
-    {t:'热身 · 定角重复', u:base+'?mode=block&count=40&limit=0', n:'同上'},
-    {t:'主练 · 自适应随机 ×2', u:base+'?mode=random&count=40&limit=1', n:'开始前把限时设为昨天的最低值'},
-    {t:'精度 · 小球 0.7°', u:base+'?mode=precision&count=40&limit=0', n:'记录命中率'}
-  ];
-  if(w===3) return [
-    {t:'热身 · 定角重复 ×2', u:base+'?mode=block&count=40&limit=0', n:'两个角度各一轮'},
-    {t:'主练 · 自适应随机 ×2', u:base+'?mode=random&count=40&limit=1', n:'限时继续压'},
-    {t:'精度 · 小球 0.7°', u:base+'?mode=precision&count=40&limit=0', n:'目标 40%+'},
-    {t:'死斗 · 只打头', u:'', n:'实战 10 分钟，单发爆头，打完回中'}
-  ];
-  return [
-    {t:'热身 · 定角重复', u:base+'?mode=block&count=40&limit=0', n:'激活手感'},
-    {t:'主练 · 自适应随机', u:base+'?mode=random&count=40&limit=1', n:'一组就够'},
-    {t:'实战', u:'', n:'剩下的时间全部实战，不测数据'}
-  ];
-}
-
-  // 任务标题/说明的英文对照（render 时按语言取）
-  const TSK_EN={
-    '热身 · 定角重复':'Warm-up · blocked',
-    '热身 · 定角重复 ×2':'Warm-up · blocked ×2',
-    '主练 · 自适应随机 ×2':'Main · adaptive random ×2',
-    '主练 · 自适应随机':'Main · adaptive random',
-    '精度 · 小球 0.7°':'Precision · 0.7° dots',
-    '死斗 · 只打头':'Deathmatch · headshots only',
-    '实战':'Live matches'
-  };
-  const NOTE_EN={
-    '两个角度各 8 球，让手热起来，不记录':'8 shots per angle on two angles, to warm up; not recorded',
-    '只追命中率 80%，不要主动抢时间':'Chase 80% hit rate only — don\'t race the clock',
-    '记录命中率，目标 35%+':'Record hit rate, target 35%+',
-    '同上':'Same as above',
-    '开始前把限时设为昨天的最低值':'Set the limit to yesterday\'s lowest before starting',
-    '记录命中率':'Record hit rate',
-    '两个角度各一轮':'One round on each of two angles',
-    '限时继续压':'Keep pressing the limit down',
-    '目标 40%+':'Target 40%+',
-    '实战 10 分钟，单发爆头，打完回中':'10 min live, one-tap headshots, recenter after each kill',
-    '激活手感':'Wake the hands up',
-    '一组就够':'One set is enough',
-    '剩下的时间全部实战，不测数据':'The rest of the time: live matches, no measuring'
-  };
-
 function render(root, lang){
   const D = root || document;
   const $ = function(id){ return D.querySelector('#'+id); };
   const LG = lang || document.documentElement.getAttribute('lang');
   let d=dayIdx();
-  if(d<0){ if(!root){ try{ localStorage.setItem(K_START, todayStr()); }catch(e){} d=0; } else return; }   // 首次访问直接按第 1 天渲染，不再刷新页面
+  if(d<0){
+    if(root) return;
+    // 只有真正打开计划页才写开始日期（不再随任意页面加载自动起跑）
+    const planSec=document.getElementById('plan');
+    if(planSec && planSec.classList.contains('on')){ try{ localStorage.setItem(K_START, todayStr()); }catch(e){} }
+    d=0;
+  }
   const w=weekOf(d);
   const log=JSON.parse(localStorage.getItem(K_LOG)||'[]');
 
@@ -2061,25 +1999,24 @@ function render(root, lang){
   }
 
   const isRest=((new Date().getDay()===0)||(new Date().getDay()===6));   // 周末休息，跟日历同一套
-  $('todayHint').textContent = isRest
-    ? (LG==='en' ? 'Rest day. Sleep 7–8 hours — skill consolidates overnight.' : '今天是休息日。睡够 7-8 小时，技能靠睡眠巩固。')
-    : (LG==='en' ? 'Trainer results now count automatically; paste "Copy this set" into the log to archive details.' : '训练器成绩会自动计入日历；把「复制本组数据」粘到记录里可留档详情。');
-
-  const q=cfgQuery();
-  const tasks=planFor(w);
-  ($('tasks')||{}).innerHTML = tasks.map(t=>{
-    const href=t.u? (t.u+q):'';
-    const tt=LG==='en' ? (TSK_EN[t.t]||t.t) : t.t;
-    const nn=LG==='en' ? (NOTE_EN[t.n]||t.n) : t.n;
-    const btn = href
-      ? '<a class="go" target="_blank" href="'+href+'">'+(LG==='en'?'Start':'开始')+'</a>'
-      : '<span class="go" style="background:var(--panel2);border-color:var(--line);color:var(--dim)">'+(LG==='en'?'Live':'实战')+'</span>';
-    return '<div class="task"><div><div class="t">'+tt+'</div><div class="n">'+nn+'</div></div>'+btn+'</div>';
-  }).join('');
+  if(d>=28){
+    // 四周走完：明确收尾，不再装成进行中
+    const tt=document.getElementById('planEggTitle');
+    if(tt) tt.textContent=LG==='en'?'Four weeks done':'四周计划已结束';
+    $('todayHint').textContent = LG==='en'
+      ? 'Four weeks complete — hit "Start over (clear plan progress)" to run another round.'
+      : '四周计划已走完——点「重新开始（清空计划进度）」再跑一轮。';
+  } else {
+    $('todayHint').textContent = isRest
+      ? (LG==='en' ? 'Rest day. Sleep 7–8 hours — skill consolidates overnight.' : '今天是休息日。睡够 7-8 小时，技能靠睡眠巩固。')
+      : (LG==='en' ? 'Trainer results now count automatically; paste "Copy this set" into the log to archive details.' : '训练器成绩会自动计入日历；把「复制本组数据」粘到记录里可留档详情。');
+  }
 
   // 进度格
   // 日历渲染
-  const startDt=new Date(localStorage.getItem(K_START));
+  // 滚动 28 天窗口：始终包含今天（第 28 天以后今天也在日历里）
+  const startDt=new Date(Date.now()-27*86400000);
+  const todayIdx=27;
   const pd=n=>String(n).padStart(2,'0');
   const wd=(startDt.getDay()+6)%7;          // 周一=0
   const WEEK=(LG==='en')
@@ -2094,7 +2031,7 @@ function render(root, lang){
     months[dt.getMonth()+1]=dt.getFullYear();
     const done=set.has(k);
     const rest=((dt.getDay()+6)%7)>=5;       // 六、日
-    const cls='cell'+(done?' done':rest?' rest':'')+(i===d?' today':'');
+    const cls='cell'+(done?' done':rest?' rest':'')+(i===todayIdx?' today':'');
     g+='<div class="'+cls+'" title="'+k+(done? (LG==='en'?' · done':' · 已完成'):'')+'">'+dt.getDate()+'</div>';
   }
   const total=wd+28, tail=(7-total%7)%7;
@@ -2145,7 +2082,8 @@ $('copyAll').addEventListener('click',()=>{
   else alert(txt);
 });
 
-render();
+// 日历改为懒渲染：首次打开计划页才写 K_START、才画日历
+window.__planCalRender=function(){ render(); };
 }
 
 

@@ -820,9 +820,14 @@ function finish(){
     const rec=b[mode]||{runs:0};
     const limN=Math.round(minLim), hitN=Math.round(overallHit*100), mtN=Math.round(overallMT);
     if(!rawLockFailed){   // 原始输入不可比：只记录、不更新最佳
-      if(rec.bestLimit===undefined || limN<rec.bestLimit) rec.bestLimit=limN;
+      if(limN>0){ if(rec.bestLimit===undefined || limN<rec.bestLimit) rec.bestLimit=limN; }
       if(rec.bestHit===undefined || hitN>rec.bestHit) rec.bestHit=hitN;
       if(rec.bestMT===undefined || mtN<rec.bestMT) rec.bestMT=mtN;
+      // 不限时的随机（状态快测）：难度是球半径——越小越难
+      if(!limitChk.checked && radius>0){
+        const rN=Math.round(radius*100)/100;
+        if(rec.bestRadius===undefined || rN<rec.bestRadius) rec.bestRadius=rN;
+      }
       rec.runs=(rec.runs||0)+1; rec.date=TODAY;
       b[mode]=rec; localStorage.setItem(key, JSON.stringify(b));
     }
@@ -831,6 +836,7 @@ function finish(){
     const e={d:TODAY, mode:mode, limit:limN, hit:hitN, mt:mtN, to:timeouts};
     if(mode==='check') e.s6=window.__s6||null;
     if(rawLockFailed) e.raw=false;   // 原始输入锁定失败：成绩打标记，数据页可见
+    e.radius=Math.round(radius*100)/100;   // 最终球半径入库：状态快测可比的是它
     hist.push(e);
     while(hist.length>300) hist.shift();
     localStorage.setItem(histKey, JSON.stringify(hist));

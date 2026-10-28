@@ -514,7 +514,7 @@ try{
 
   <section id="play">
     <h2 id="playTitle" style="cursor:default;user-select:none">训练</h2>
-    <div class="hint">不知道自己该用多少灵敏度？<a href="#set" style="color:var(--acc);text-decoration:none;font-weight:600">去标定一次</a>，几分钟出答案。</div>
+    <div class="hint">不知道自己该用多少灵敏度？<a href="#set" style="color:var(--acc);text-decoration:none;font-weight:600">去标定一次</a>，把明显的过头/不足修掉。</div>
 
     <div class="grid" id="drillGrid"></div>
 
@@ -597,7 +597,7 @@ try{
       <div class="row" style="margin-top:14px">
         <a class="tile" style="flex:1;min-width:240px;max-width:440px" href="tools/sensitivity-calibrator.html">
           <div class="t">灵敏度标定</div>
-          <div class="d">测出你每次都甩过头还是不够，直接反推该填的值。</div>
+          <div class="d">测出你每次都甩过头还是不够，把明显的偏差修掉。</div>
         </a>
         <a class="tile" style="flex:1;min-width:240px;display:none" href="tools/sensitivity-calibrator-strict.html">
           <div class="t">灵敏度标定 · 进阶</div>
@@ -855,7 +855,7 @@ const EN={
   '日期':'Date','限时':'Limit','命中率':'Hit rate','中位用时':'Median',
   '导出 JSON':'Export JSON','导入':'Import','清空全部数据':'Clear all data',
   '还没有数据，去练一组吧':'No data yet — run a set','暂无记录':'No runs yet',
-  '不知道自己该用多少灵敏度？':'Not sure what sensitivity to use?','去标定一次':'Calibrate','，几分钟出答案。':', it takes minutes.',
+  '不知道自己该用多少灵敏度？':'Not sure what sensitivity to use?','去标定一次':'Calibrate','，把明显的过头/不足修掉。':', it fixes obvious over/undershoot.',
   '这周还没练。':'Nothing this week yet.','去练一组 →':'Start a set →','先去标定':'Calibrate first',
   '四周计划，自动判断今天该练什么。':'Four-week plan; it knows what to do today.',
   '这里的参数会自动带进所有训练页面。':'These values are passed to every trainer page.',
@@ -866,7 +866,7 @@ const EN={
   '先选游戏，再改下面的灵敏度；改完自动换算，DPI 不动。只按腰射，开镜倍率不适用。m_yaw 没改过就别动（默认 0.022 就是对的）。':'Pick the game first, then set its sensitivity below; it converts automatically, DPI untouched. Hipfire only — ADS multipliers are not covered. Leave m_yaw alone unless you changed it in-game (0.022 is the default).',
   '游戏灵敏度得是正数':'Enter a positive sensitivity',
   '灵敏度标定':'Calibrator','灵敏度标定 · 进阶':'Calibrator · advanced',
-  '测出你每次都甩过头还是不够，直接反推该填的值。':'Measures whether you overshoot or fall short, and derives the value.',
+  '测出你每次都甩过头还是不够，把明显的偏差修掉。':'Measures whether you overshoot or fall short, and fixes the obvious bias.',
   '更细的统计与判定，适合想抠数据的人。':'Finer stats and judgment — for players who like details.',
   '语言 / Language':'Language',
   '输入设备':'Input device',
@@ -1300,7 +1300,7 @@ function renderData(){
   const tail = runShowAll? tailAll : tailAll.slice(0,5);
   if(!tail.length) rr+='<tr><td colspan="6" style="color:var(--dim)">暂无记录</td></tr>';
   tail.forEach(o=>{ const r=o.r;
-    rr+='<tr><td>'+r.d+'</td><td>'+(MODE_NAME[r.mode]||r.mode)+'</td><td>'+r.limit+
+    rr+='<tr><td>'+r.d+(r.raw===false? ' <span title="'+(document.documentElement.getAttribute('lang')==='en'?'Raw input unavailable':'原始输入不可用')+'">⚠</span>':'')+'</td><td>'+(MODE_NAME[r.mode]||r.mode)+'</td><td>'+r.limit+
       ' ms</td><td>'+r.hit+'%</td><td>'+r.mt+' ms</td>'+
       '<td style="text-align:right"><button class="delRun" data-i="'+o.idx+'" style="background:transparent;border:none;color:var(--dim);cursor:pointer;font-size:12px;padding:0 4px">✕</button></td></tr>'; });
   $('runTable').innerHTML=rr;
@@ -2441,12 +2441,12 @@ initPlan();
     var t=e.target;
     if(!t || !t.dataset) return;
     var hit=(e.key==='Enter'||e.key===' ')
-      && (t.classList.contains('sw') || t.dataset.lang || t.dataset.l || t.dataset.rename || t.dataset.share || t.dataset.import || t.dataset.del || t.dataset.newPlan);
+      && (t.classList.contains('sw') || t.dataset.lang || t.dataset.l || t.dataset.rename || t.dataset.share || t.dataset.import || t.dataset.del || t.dataset.newPlan || t.dataset.delplan);
     if(hit){ e.preventDefault(); t.click(); }
   });
   // 语言切换与计划操作改为键盘可达
   try{
-    document.querySelectorAll('#langSw span[data-lang], span[data-rename], span[data-share], span[data-import], span[data-del], span[data-newPlan]').forEach(function(el){
+    document.querySelectorAll('#langSw span[data-lang], span[data-rename], span[data-share], span[data-import], span[data-del], span[data-newPlan], span[data-delplan]').forEach(function(el){
       el.setAttribute('tabindex','0'); el.setAttribute('role','button');
     });
   }catch(e){}

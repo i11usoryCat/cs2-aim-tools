@@ -151,7 +151,7 @@ try{
 <body>
 <div id="mobileTip" style="display:none"><span class="mtText">请用电脑打开（建议 Chrome / Edge）·</span><button type="button" id="mtCopy">复制链接</button><button type="button" id="mtClose" style="background:transparent;border:none;color:var(--dim);cursor:pointer;font-size:15px;padding:0 2px" aria-label="关闭">✕</button></div>
 <nav class="langTop" id="langTop">
-  <span data-l="zh">中</span><span data-l="en">EN</span>
+  <span data-l="zh" tabindex="0" role="button">中</span><span data-l="en" tabindex="0" role="button">EN</span>
 </nav>
 <main>
 <canvas id="fx"></canvas>
@@ -463,6 +463,13 @@ function rippleSwitch(lang, cx, cy){
       var target=el.dataset.l;
 
       rippleSwitch(target, cx, cy);
+    });
+    el.addEventListener('keydown', function(e){
+      if(e.key!=='Enter' && e.key!==' ') return;
+      e.preventDefault();
+      if(el.dataset.l===LANG || switching) return;
+      var r=el.getBoundingClientRect();
+      rippleSwitch(el.dataset.l, r.left+r.width/2, r.top+r.height/2);
     });
   });
 

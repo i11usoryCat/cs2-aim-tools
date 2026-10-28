@@ -1269,23 +1269,23 @@ function renderDrills(){
 
 function renderData(){
   let best=load(K_BEST,{}), runs=load(K_RUNS,[]);
-  // best 为空（如导入只含 runs 的 JSON）时，从 runs 回退算各模式最佳
-  if(!Object.keys(best).length && runs.length){
-    best={};
-    runs.forEach(r=>{
-      const b=best[r.mode]||{};
-      if(b.bestLimit===undefined||r.limit<b.bestLimit) b.bestLimit=r.limit;
-      if(b.bestHit===undefined||r.hit>b.bestHit) b.bestHit=r.hit;
-      if(b.bestMT===undefined||r.mt<b.bestMT) b.bestMT=r.mt;
-      b.runs=(b.runs||0)+1;
-      best[r.mode]=b;
-    });
-  }
+  // 原始输入不可比（raw=false）的记录只显示在列表，不参与任何统计
+  const valid=runs.filter(r=>r.raw!==false);
+  // 各模式最佳：一律从有效记录现算（历史被 raw 污染过的 best 也不信）
+  best={};
+  valid.forEach(r=>{
+    const b=best[r.mode]||{};
+    if(b.bestLimit===undefined||r.limit<b.bestLimit) b.bestLimit=r.limit;
+    if(b.bestHit===undefined||r.hit>b.bestHit) b.bestHit=r.hit;
+    if(b.bestMT===undefined||r.mt<b.bestMT) b.bestMT=r.mt;
+    b.runs=(b.runs||0)+1;
+    best[r.mode]=b;
+  });
   $('sRuns').textContent=runs.length;
   $('sDays').textContent=new Set(runs.map(r=>r.d)).size;
-  const lims=runs.map(r=>r.limit).filter(v=>v>0);
+  const lims=valid.map(r=>r.limit).filter(v=>v>0);
   $('sLimit').textContent=lims.length? Math.min.apply(null,lims)+' ms':'—';
-  const hits=runs.map(r=>r.hit).filter(v=>v>0);
+  const hits=valid.map(r=>r.hit).filter(v=>v>0);
   $('sHit').textContent=hits.length? Math.max.apply(null,hits)+'%':'—';
 
   let rows='<tr><th>模式</th><th>最佳命中</th><th>最佳用时</th></tr>';
@@ -1315,9 +1315,11 @@ function renderData(){
       if(days>=0&&days<7) wk0.push(r); else if(days>=7&&days<14) wk1.push(r); }catch(e){} });
     const avgH=a=> a.length? Math.round(a.reduce((x,y)=>x+y.hit,0)/a.length) : null;
     const avgM=a=> a.length? Math.round(a.reduce((x,y)=>x+y.mt,0)/a.length) : null;
+    const h0a=avgH(wk0.filter(r=>r.raw!==false)), h1a=avgH(wk1.filter(r=>r.raw!==false)),
+          m0a=avgM(wk0.filter(r=>r.raw!==false)), m1a=avgM(wk1.filter(r=>r.raw!==false));
     let verdict;
     if(wk0.length){
-      const h0=avgH(wk0), h1=avgH(wk1), m0=avgM(wk0), m1=avgM(wk1);
+      const h0=h0a, h1=h1a, m0=m0a, m1=m1a;
       const parts=[L('本周 ','This week ')+wk0.length+L(' 组',' sets')];
       if(h0!==null && h1!==null) parts.push(L('命中率 ','hit rate ')+(h0-h1>=0?'+':'')+(h0-h1)+'%');
       if(m0!==null && m1!==null) parts.push(L('中位用时 ','median ')+(m0-m1>=0?'+':'')+(m0-m1)+' ms');
@@ -1331,8 +1333,8 @@ function renderData(){
     }
   }
 
-  drawTrend(runs);
-  drawS6Trend(runs);
+  drawTrend(valid);
+  drawS6Trend(valid);
 }
 
 /* 趋势曲线：按模式分线（混在一起会骗人）——命中率（左轴 0-100%）+ 中位用时/限时（右轴 ms） */
@@ -1457,9 +1459,9 @@ $('runTable').addEventListener('click',e=>{
   const runs=load(K_RUNS,[]);
   runs.splice(parseInt(b.dataset.i),1);
   save(K_RUNS,runs);
-  // 重算各模式最佳，别让已删记录留在最佳表里
+  // 重算各模式最佳，别让已删记录留在最佳表里（raw 不可比记录同样不参与）
   const best={};
-  runs.forEach(r=>{
+  runs.filter(r=>r.raw!==false).forEach(r=>{
     const m=best[r.mode]||(best[r.mode]={bestLimit:r.limit||9999,bestHit:r.hit||0,bestMT:r.mt||99999,runs:0});
     m.runs++;
     if((r.hit||0)>m.bestHit) m.bestHit=r.hit;

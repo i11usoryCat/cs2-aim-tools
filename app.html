@@ -497,8 +497,11 @@ try{
       </div>
       <canvas id="trendCv" style="width:100%;height:220px;display:block"></canvas>
       <div class="hint" id="trendLegend" style="margin:8px 0 0"></div>
-      <canvas id="s6Cv" style="display:none;width:100%;height:170px;margin-top:14px"></canvas>
-      <div class="hint" id="s6Legend" style="margin:8px 0 0;display:none"></div>
+    </div>
+    <div class="card" id="s6Card" style="display:none">
+      <div class="t" style="margin-bottom:10px">六维走势</div>
+      <canvas id="s6Cv" style="width:100%;height:170px"></canvas>
+      <div class="hint" id="s6Legend" style="margin:8px 0 0"></div>
     </div>
     <div class="card">
       <div class="t" style="margin-bottom:10px">最近记录</div>
@@ -548,7 +551,7 @@ try{
 
     <div style="margin-top:18px;display:flex;gap:10px">
       <button class="main" id="markDone">标记今天完成</button>
-      <button id="resetAll">重新开始（清空记录）</button>
+      <button id="resetAll">重新开始（清空计划进度）</button>
     </div>
     <div class="hint" id="todayHint" style="margin-top:10px"></div>
   </div>
@@ -830,7 +833,8 @@ const EN={
   '个人数据':'Stats','训练':'Drills','计划训练':'Plan','设置':'Settings','← 首页':'← Home','瞄准 · 度量':'aim, measured',
   '最佳成绩按模式分别记录，只存在本浏览器。':'Best results per mode, stored locally in this browser.',
   '总训练组数':'Sets','训练天数':'Days','最低限时':'Best limit','最高命中率':'Best hit rate',
-  '各模式最佳':'Best per mode','最近记录':'Recent runs','趋势（最近 60 组）':'Trend (last 60 runs)',
+  '各模式最佳':'Best per mode','最近记录':'Recent runs','趋势（最近 60 组）':'Trend (last 60 runs)','六维走势':'Six-dim trend',
+  '重新开始（清空计划进度）':'Start over (clear plan progress)',
   '现在怎么样':'How am I doing','最佳命中':'Best hit','最佳用时':'Best time','数据管理':'Data management',
   '导出、导入或清空全部训练数据。':'Export, import or clear all training data.',
   '备份或恢复全部本地数据（成绩、计划、设置、准星）。':'Back up or restore all local data (scores, plan, settings, crosshair).',
@@ -1371,6 +1375,11 @@ function drawTrend(runs){
     ctx.textAlign='right'; ctx.fillStyle=dim; ctx.fillText(String(i*25), P.l-8, y+4);
     ctx.textAlign='left';  ctx.fillText(String(i*225), W-P.r+6, y+4);
   }
+  // 轴标题
+  ctx.textAlign='left'; ctx.fillStyle=dim;
+  ctx.fillText(EN_UI? 'hit rate %' : '命中率 %', P.l, P.t+10);
+  ctx.textAlign='right';
+  ctx.fillText(EN_UI? 'time ms' : '用时 ms', W-P.r, P.t+10);
   if(!tail.length){
     ctx.fillStyle=dim; ctx.textAlign='center'; ctx.font='13px "Microsoft YaHei UI"';
     ctx.fillText(EN_UI? 'No data for this mode yet' : '这个模式还没有数据', W/2, P.t+ch/2);
@@ -1410,8 +1419,9 @@ function drawS6Trend(runs){
   const cv=$('s6Cv'), lg=$('s6Legend');
   if(!cv) return;
   const arr=runs.filter(r=>r.mode==='check' && r.s6 && typeof r.s6==='object').slice(-20);
-  if(arr.length<2){ cv.style.display='none'; if(lg) lg.style.display='none'; return; }
-  cv.style.display='block'; if(lg) lg.style.display='';
+  const card=$('s6Card');
+  if(arr.length<2){ cv.style.display='none'; if(lg) lg.style.display='none'; if(card) card.style.display='none'; return; }
+  cv.style.display='block'; if(lg) lg.style.display=''; if(card) card.style.display='';
   const dpr=window.devicePixelRatio||1;
   const W=cv.clientWidth||600, H=170;
   cv.width=W*dpr; cv.height=H*dpr;
@@ -1485,11 +1495,18 @@ $('impFile').addEventListener('change',e=>{
       if(!d || typeof d!=='object') throw 0;
       let cnt=0;
       if(d.v===1){
-        ALL_KEYS.forEach(k=>{ if(typeof d[k]==='string'){ localStorage.setItem(k,d[k]); cnt++; } });
+        ALL_KEYS.forEach(k=>{
+          if(typeof d[k]!=='string') return;
+          if(k===K_RUNS){ try{ if(!Array.isArray(JSON.parse(d[k]))) return; }catch(e){ return; } }
+          localStorage.setItem(k,d[k]); cnt++;
+        });
       } else {
-        // 旧格式：顶层直接放 cfg/best/runs
+        // 旧格式：顶层直接放 cfg/best/runs（runs 必须是真的数组）
         [['cfg',K_CFG],['best',K_BEST],['runs',K_RUNS]].forEach(p=>{
-          if(d[p[0]] && typeof d[p[0]]==='object'){ save(p[1],d[p[0]]); cnt++; }
+          if(d[p[0]] && typeof d[p[0]]==='object'){
+            if(p[0]==='runs' && !Array.isArray(d.runs)) return;
+            save(p[1],d[p[0]]); cnt++;
+          }
         });
       }
       cfg=load(K_CFG,cfg); renderData(); fillSettings();
@@ -2083,7 +2100,7 @@ $('markDone').addEventListener('click',()=>{
 });
 
 $('resetAll').addEventListener('click',()=>{
-  if(!confirm(L('清空所有进度和记录？','Clear all progress and records?'))) return;
+  if(!confirm(L('清空计划进度？训练成绩保留。','Clear plan progress? Training data is kept.'))) return;
   localStorage.removeItem(K_START); localStorage.removeItem(K_LOG);
   location.reload();
 });
@@ -2421,10 +2438,18 @@ initPlan();
     if(t){ try{ el.setAttribute('aria-label', t); }catch(e){} }
   });
   document.addEventListener('keydown', function(e){
-    if(e.key==='Enter' && e.target && e.target.classList && e.target.classList.contains('sw')){
-      e.preventDefault(); e.target.click();
-    }
+    var t=e.target;
+    if(!t || !t.dataset) return;
+    var hit=(e.key==='Enter'||e.key===' ')
+      && (t.classList.contains('sw') || t.dataset.lang || t.dataset.l || t.dataset.rename || t.dataset.share || t.dataset.import || t.dataset.del || t.dataset.newPlan);
+    if(hit){ e.preventDefault(); t.click(); }
   });
+  // 语言切换与计划操作改为键盘可达
+  try{
+    document.querySelectorAll('#langSw span[data-lang], span[data-rename], span[data-share], span[data-import], span[data-del], span[data-newPlan]').forEach(function(el){
+      el.setAttribute('tabindex','0'); el.setAttribute('role','button');
+    });
+  }catch(e){}
 })();
 </script>
 

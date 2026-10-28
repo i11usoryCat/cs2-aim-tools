@@ -313,8 +313,14 @@ function grid(){
   }
 }
 
+let rawLockFailed=false;
 function doLock(){
-  function safeLock(){ try{ const p=cv.requestPointerLock(); if(p&&p.catch) p.catch(()=>{}); }catch(e){} }
+  function safeLock(){
+    rawLockFailed=true;   // 原始输入锁失败：像素被系统加速，测量不可比
+    try{ const p=cv.requestPointerLock(); if(p&&p.catch) p.catch(()=>{}); }catch(e){}
+    var el=document.getElementById('rawWarn');
+    if(el) el.style.display='';
+  }
   try{ const r=cv.requestPointerLock({unadjustedMovement:true});
     if(r&&r.catch) r.catch(safeLock); else safeLock(); }
   catch(e){ safeLock(); }
@@ -1255,6 +1261,15 @@ requestAnimationFrame(loop);
   if(!ok){
     el.innerHTML = '⚠️ 当前浏览器不支持原始输入（pointerrawupdate）：反应时间会偏大，跨浏览器不可比<br>' +
       '建议使用 <b style="color:var(--acc)">Chrome</b> 或 <b style="color:var(--acc)">Edge</b>';
+  } else {
+    // 有 rawupdate 但原始锁可能失败（部分 Linux/Wayland、远程桌面）：先警告，失败时再显示
+    var raw=document.createElement('div');
+    raw.id='rawWarn';
+    raw.style.cssText='display:none;margin-top:10px;font-size:13px;color:#d29922;line-height:1.7';
+    raw.textContent=EN_UI
+      ? '⚠️ Raw input lock failed: movement is system-accelerated — cm/360 and reaction times are not comparable. Don\'t record this run.'
+      : '⚠️ 原始输入锁定失败：本次测量经过系统加速，cm/360 与反应时间不可比，不建议记录成绩。';
+    el.parentNode.appendChild(raw);
   }
 })();
 

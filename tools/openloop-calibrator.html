@@ -394,7 +394,11 @@ function loop(now){
 requestAnimationFrame(loop);
 
 /* ————— 拟合与统计 ————— */
-const TAUS=[0.02,0.025,0.03,0.035,0.04,0.045,0.05,0.055,0.06,0.065,0.07,0.075,0.08,0.09,0.10,0.11,0.12,0.13,0.14,0.15];
+// 真人甩枪是 S 形（先加速后减速），不是指数。指数模型没有加速段，
+// 会把"动作形状"吸收进 A —— 实测同一个灵敏度能被读成 1.09~1.28。
+// 改用最小急动度：θ(u) = A·(10u³ − 15u⁴ + 6u⁵)，u = (t−onset)/D
+const DS=[0.10,0.12,0.14,0.16,0.18,0.20,0.24,0.28,0.32,0.38,0.45,0.55];
+function mj(u){ if(u<0) u=0; else if(u>1) u=1; return 10*u*u*u-15*u*u*u*u+6*u*u*u*u*u; }
 function fitA(b, tau, winFixed){
   // 起点：累计位移首次超过 0.2°
   let onset=null, acc=0, px=b.sY, py=b.sP;
@@ -404,12 +408,12 @@ function fitA(b, tau, winFixed){
     if(acc>0.2*D2R){ onset=s.t; break; }
   }
   if(onset===null) return null;
-  const winEnd=onset+(winFixed? 0.25 : Math.max(0.25, 4*tau));
+  const winEnd=onset+(winFixed? 0.35 : Math.max(0.35, 1.6*tau));
   let sw=0, s1=0, swy=0, sy=0, sw2=0, wc=0;
   for(const s of b.traj){
     if(s.t<onset || s.t>winEnd) continue;
     const dt=s.t-onset;
-    const w=1-Math.exp(-dt/tau);
+    const w=mj(dt/tau);
     const proj=(s.yaw-b.sY)*b.ux+(s.pitch-b.sP)*b.uy;
     sw+=w; s1+=1; swy+=w*proj; sy+=proj; sw2+=w*w; wc++;
   }
@@ -428,8 +432,8 @@ function finish(){
   if(valid.length<10){ showShort(valid.length); return; }
   // τ：前 10 球网格搜索（固定 250ms 窗对比残差，避免窗长不等造成偏置）
   const calib=valid.slice(0,10);
-  let tau=0.05, bestErr=Infinity;
-  for(const t of TAUS){
+  let tau=0.20, bestErr=Infinity;
+  for(const t of DS){
     let err=0, c2=0;
     for(const b of calib){
       const ft=fitA(b,t,true);
@@ -437,7 +441,7 @@ function finish(){
       let e2=0;
       for(const s of b.traj){
         if(s.t<ft.onset||s.t>ft.winEnd) continue;
-        const w=1-Math.exp(-(s.t-ft.onset)/t);
+        const w=mj((s.t-ft.onset)/t);
         const proj=(s.yaw-b.sY)*b.ux+(s.pitch-b.sP)*b.uy;
         const r=proj-(ft.A*w+ft.C); e2+=r*r;
       }
@@ -474,11 +478,11 @@ function finish(){
     (rawLockFailed? '<div style="margin-top:6px;font-size:13.5px;color:#f85149">'+L2('⚠️ 本次输入未校准（原始输入锁定失败），增益不可比。','⚠️ Raw input lock failed — gain is not comparable.')+'</div>' : '')+
     '<table class="rt">'+
     (rawLockFailed? '' : row(L2('开环增益','Open-loop gain'), gain.toFixed(3)+'（'+gTxt+'）· '+L2('误差 ±','error ±')+(ci*100).toFixed(2)+'%', 'big'))+
-    (rawLockFailed? '' : row(L2('拟合时间常数 τ','Fitted time constant τ'), (tau*1000).toFixed(0)+' ms'))+
+    (rawLockFailed? '' : row(L2('拟合动作时长 D','Fitted movement duration D'), (tau*1000).toFixed(0)+' ms'))+
     (rawLockFailed? '' : row(L2('建议 cm/360','Suggested cm/360'), cmC.toFixed(1)+' cm → '+L2('灵敏度','sensitivity')+' <b>'+sensOf(cmC).toFixed(2)+'</b>'))+
-    row(L2('样本','Samples'), gains.length+L2(' 球',' balls'))+
+    row(L2('样本','Samples'), gains.length+L2(' 球（前 3 球已跳过）',' balls (first 3 skipped)'))+
     '</table>'+
-    '<div style="margin-top:10px;font-size:13.5px;color:var(--dim)">'+L2('开环弹道 = 还没开始修正的那 250ms；gain = 拟合落点 ÷ 目标角度。测的是灵敏度本身。','The open-loop ballistic = the 250 ms before correction starts; gain = fitted endpoint ÷ target angle. This measures sensitivity itself.')+'</div>';
+    '<div style="margin-top:10px;font-size:13.5px;color:var(--dim)">'+L2('开环弹道 = 还没开始修正的那一段；gain = 拟合落点 ÷ 目标角度。用 S 形（最小急动度）拟合，不把动作快慢算成灵敏度。','The open-loop ballistic = the stretch before correction starts; gain = fitted endpoint ÷ target angle. Fitted with an S-curve (minimum jerk) so movement speed is not read as sensitivity.')+'</div>';
   res.classList.add('show');
 }
 function showShort(n){

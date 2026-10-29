@@ -364,6 +364,7 @@ go.addEventListener('click',function(){ if(paused){ resume(); } else { start(); 
 
 function loop(now){
   requestAnimationFrame(loop);
+  if(window.__SELFTEST) return;          // 自检自己驱动球，别让真实循环插进来
   if(!running||paused) return;
   ctx.fillStyle=SC.bg; ctx.fillRect(0,0,W,H);
   grid();
@@ -544,6 +545,7 @@ addEventListener('keydown',function(e){
   async function run(){
     const cm0=CM, t0=TARGET_DEG, n0=nBalls;
     const rows=[]; let allOk=true;
+    window.__SELFTEST=true;
     running=true; paused=false;
     for(const G of CASES){
       running=true; paused=false;          // finish() 会把 running 置 false，每档要重开
@@ -555,7 +557,7 @@ addEventListener('keydown',function(e){
       if(!ok) allOk=false;
       rows.push({G:G, got:got, ok:ok});
     }
-    running=false; TARGET_DEG=t0; nBalls=n0;
+    running=false; TARGET_DEG=t0; nBalls=n0; window.__SELFTEST=false;
     const el=document.getElementById('resBody');
     el.innerHTML='<div style="font-size:17px;color:var(--acc);margin-bottom:10px">测量链自检</div>'+
       '<table class="rt">'+rows.map(r=>'<tr><th>注入 '+Math.round(r.G*100)+'%</th><td'+(r.ok?' class="big"':'')+'>'+

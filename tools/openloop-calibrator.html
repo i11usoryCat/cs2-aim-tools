@@ -327,8 +327,7 @@ function start(){
   running=true; paused=false; result=null;
   msg.classList.remove('show'); res.classList.remove('show');
   doLock();                       // 先锁（同一个手势内），再要全屏
-  if(!document.fullscreenElement && document.documentElement.requestFullscreen)
-    document.documentElement.requestFullscreen().catch(()=>{});
+  /* 不再自动全屏：部分环境进全屏会拿不到原始输入（unadjustedMovement），开跑只锁指针 */
   newTarget();
 }
 function pause(){
@@ -336,18 +335,24 @@ function pause(){
   paused=true; pauseAt=performance.now();
   go.textContent=L2('继续','Resume'); msg.classList.add('show');
   if(document.pointerLockElement) document.exitPointerLock();
-  if(!document.fullscreenElement && document.documentElement.requestFullscreen){
-    try{ document.documentElement.requestFullscreen().catch(function(){}); }catch(e){}
-  }
+  /* 全屏不再是开跑流程的一部分 */
 }
 function resume(){
   if(!paused) return;
   paused=false; msg.classList.remove('show'); if(!plainMode) doLock();
-  if(!document.fullscreenElement && document.documentElement.requestFullscreen){
-    try{ document.documentElement.requestFullscreen().catch(function(){}); }catch(e){}
-  }
+  /* 全屏不再是开跑流程的一部分 */
 }
 go.addEventListener('click',function(){ if(paused){ resume(); } else { start(); } });
+
+/* 全屏改成手动（F 键）：部分环境下进全屏会拿不到 unadjustedMovement 原始输入，
+   所以不再和「开始」绑定——想全屏自己切，出问题随时退。 */
+addEventListener('keydown',function(e){
+  if(e.key!=='f' && e.key!=='F') return;
+  if(e.ctrlKey||e.metaKey||e.altKey) return;
+  var t=e.target; if(t && (t.tagName==='INPUT'||t.tagName==='SELECT'||t.tagName==='TEXTAREA')) return;
+  if(document.fullscreenElement){ if(document.exitFullscreen) document.exitFullscreen().catch(function(){}); }
+  else if(document.documentElement.requestFullscreen){ document.documentElement.requestFullscreen().catch(function(){}); }
+});
 
 /* 参数折叠：与训练器同一套交互 */
 (function(){

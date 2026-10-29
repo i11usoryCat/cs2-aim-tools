@@ -402,7 +402,8 @@ requestAnimationFrame(loop);
 // 所以不能要求"静止满 80ms"——大多数球根本没有那 80ms。
 // 规则改成：峰值速度之后，第一个速度掉到阈值以下的点就算停点；
 // 如果一路没掉下来（点得早、还在动），退回用最后一帧（点击落点），并单独计数。
-const STOP_SPEED=25*D2R;   // 25°/s
+const STOP_FLOOR=15*D2R;   // 下限 15°/s
+const STOP_FRAC=0.15;      // 相对峰值：掉到 15% 就算这次甩动结束
 function onsetOf(b){
   let onset=null, acc=0, px=b.sY, py=b.sP;
   for(const s of b.traj){
@@ -423,10 +424,12 @@ function stopEndpoint(b){
     sp[i]= dt>1e-6 ? Math.hypot(a[i].yaw-a[i-1].yaw, a[i].pitch-a[i-1].pitch)/dt : 0;
   }
   let iP=1; for(let i=2;i<n;i++) if(sp[i]>sp[iP]) iP=i;   // 峰值速度
+  // 阈值跟着峰值走：绝对 25°/s 会随灵敏度变化，同一个人不同 cm/360 判定点会变
+  const stopThr=Math.max(STOP_FLOOR, STOP_FRAC*sp[iP]);
   const proj=i=>(a[i].yaw-b.sY)*b.ux+(a[i].pitch-b.sP)*b.uy;
   // 峰值之后第一次低于阈值（连续两帧，或已到最后一帧）
   for(let i=iP+1;i<n;i++){
-    const slow = sp[i]<STOP_SPEED && (i>=n-1 || sp[i+1]<STOP_SPEED || sp[i-1]<STOP_SPEED);
+    const slow = sp[i]<stopThr && (i>=n-1 || sp[i+1]<stopThr || sp[i-1]<stopThr);
     if(slow) return {proj:proj(i), t:a[i].t, kind:'stop'};
   }
   // 没掉下来：用点击落点

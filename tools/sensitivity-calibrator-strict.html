@@ -26,6 +26,9 @@
   td,th{padding:9px 20px;text-align:right;border-bottom:1px solid var(--panel)}
   th{color:var(--dim);font-weight:500}
   .big{font-size:30px;font-weight:700;color:var(--acc)}
+#rawWarn .wb{padding:4px 10px;border-radius:7px;border:1px solid currentColor;background:transparent;
+  color:inherit;font:inherit;font-size:12px;cursor:pointer;pointer-events:auto}
+#rawWarn .wb:hover{background:rgba(255,255,255,.10)}
 </style>
 </head>
 <body>
@@ -54,7 +57,7 @@
   <div id="sensHint" style="margin-top:12px;font-size:13.5px;color:var(--dim)"></div>
   <div id="bw" style="margin-top:12px;font-size:13px;line-height:1.8;color:#d29922"></div>
   <button id="go" class="btn">开始</button>
-  <div id="rawWarn" style="display:none;position:fixed;left:50%;top:70px;transform:translateX(-50%);z-index:9999;background:rgba(20,16,8,.92);border:1px solid #d29922;color:#f5d78a;padding:9px 16px;border-radius:10px;font-size:13px;line-height:1.6;max-width:min(560px,calc(100vw - 32px));pointer-events:none">⚠️ 原始输入锁定失败：本次测量经过系统加速，建议值不可比，不允许「应用到设置」。</div>
+  <div id="rawWarn" style="display:none;position:fixed;left:50%;top:70px;transform:translateX(-50%);z-index:9999;background:rgba(20,16,8,.92);border:1px solid #d29922;color:#f5d78a;padding:9px 16px;border-radius:10px;font-size:13px;line-height:1.6;max-width:min(560px,calc(100vw - 32px));pointer-events:auto;text-align:left">⚠️ 原始输入锁定失败：本次测量经过系统加速，建议值不可比，不允许「应用到设置」。</div>
 </div>
 
 <div id="res" class="overlay"><div id="resBody"></div>
@@ -170,17 +173,48 @@ function newTarget(){
   stopPos=null; fastSeen=false; lastT=0;
 }
 
-let rawLockFailed=false;
-function doLock(){
-  function fallback(){
-    rawLockFailed=true;   // 原始输入锁失败：测量经过系统加速，不可比
-    try{ cv.requestPointerLock(); }catch(e){}
-    var el=document.getElementById('rawWarn');
-    if(el) el.style.display='';
+let rawLockFailed=false, plainMode=false;
+/* 原始输入：只有 unadjustedMovement 这条路。失败时不自动重试——
+   自动重试发生在 promise 回调里，已脱离用户手势，必然再失败。
+   改为显示原因 + 两个按钮，点按钮才是新的用户手势。 */
+function lockWarn(reason){
+  rawLockFailed=true;
+  var el=document.getElementById('rawWarn');
+  if(el){
+    el.style.display='';
+    el.innerHTML='⚠️ 原始输入锁定失败（'+reason+'）——系统加速会让偏差数值失真。'
+      +'<span style="display:inline-flex;gap:8px;margin-left:10px;vertical-align:middle">'
+      +'<button id="lockRetry" class="wb">重试</button>'
+      +'<button id="lockPlain" class="wb">用加速输入继续</button></span>'
+      +'<div style="margin-top:6px;font-size:12px;opacity:.85">修法：关掉 Windows「提高指针精确度」 · 别在远程桌面 / 编辑器预览里跑 · 用 Chrome / Edge 直接打开</div>';
+    var a=document.getElementById('lockRetry'), b=document.getElementById('lockPlain');
+    if(a) a.onclick=function(ev){ ev.stopPropagation(); doLock(); };
+    if(b) b.onclick=function(ev){ ev.stopPropagation(); plainLock(); };
   }
-  try{ const r=cv.requestPointerLock({unadjustedMovement:true});
-    if(r&&r.catch) r.catch(fallback); }
-  catch(e){ fallback(); }
+  if(running && !paused) pause();
+}
+function plainLock(){
+  rawLockFailed=true; plainMode=true;
+  try{
+    var p=cv.requestPointerLock();
+    if(p&&p.catch) p.catch(function(){});
+    var el=document.getElementById('rawWarn'); if(el) el.style.display='none';
+  }catch(e){}
+  if(paused) resume();
+}
+function doLock(){
+  rawLockFailed=false;
+  var p;
+  try{ p=cv.requestPointerLock({unadjustedMovement:true}); }
+  catch(e){ lockWarn((e&&e.name)||'unsupported'); return; }
+  if(p&&p.then){
+    p.then(function(){
+      rawLockFailed=false; plainMode=false;
+      var el=document.getElementById('rawWarn'); if(el) el.style.display='none';
+    }).catch(function(err){
+      lockWarn((err&&err.name)||'unsupported');
+    });
+  }
 }
 
 function start(){
@@ -208,7 +242,7 @@ function pause(){ if(!running||paused) return; paused=true; pauseAt=performance.
     try{ document.documentElement.requestFullscreen().catch(function(){}); }catch(e){}
   } }
 function resume(){ if(!paused) return; const d=performance.now()-pauseAt; tSpawn+=d;
-  paused=false; msg.classList.remove('show'); doLock();
+  paused=false; msg.classList.remove('show'); if(!plainMode) doLock();
   // 点「继续」是有效手势：顺带把全屏要回来
   if(!document.fullscreenElement && document.documentElement.requestFullscreen){
     try{ document.documentElement.requestFullscreen().catch(function(){}); }catch(e){}
@@ -403,7 +437,10 @@ document.addEventListener('mousedown',e=>{
   judge(performance.now());
 });
 document.addEventListener('pointerlockchange',()=>{ if(!document.pointerLockElement && running && !paused) pause(); });
-document.addEventListener('pointerlockerror',()=>{ if(running) pause(); });
+document.addEventListener('pointerlockerror',()=>{
+  if(plainMode){ lockWarn('SecurityError'); return; }   // 连普通锁都失败：别静默暂停，给回按钮
+  if(running) pause();
+});
 
 function moveEv(e){
   if(!running||paused) return;

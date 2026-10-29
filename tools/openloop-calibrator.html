@@ -2,8 +2,8 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
-<title>开环标定 · Vernier</title>
-<meta name="description" content="250ms 开环弹道拟合出你「预设的落点」——测的是灵敏度本身，不是修正能力。">
+<title>初段覆盖 · Vernier</title>
+<meta name="description" content="看你的第一段甩动覆盖了目标多远——不外推、不拟合，停点在哪就是哪。这是动作习惯，不是灵敏度。">
 <link rel="canonical" href="https://i11usorycat.github.io/cs2-aim-tools/tools/openloop-calibrator.html">
 <link rel="alternate" hreflang="en" href="https://i11usorycat.github.io/cs2-aim-tools/en/openloop-calibrator.html">
 <link rel="alternate" hreflang="zh" href="https://i11usorycat.github.io/cs2-aim-tools/tools/openloop-calibrator.html">
@@ -51,7 +51,7 @@
 <div id="ui"></div>
 
 <div id="msg" class="overlay show">
-  <div id="ttl" style="font-size:26px;color:var(--txt);font-weight:700;letter-spacing:2px">开环标定</div>
+  <div id="ttl" style="font-size:26px;color:var(--txt);font-weight:700;letter-spacing:2px">初段覆盖</div>
   <div style="margin-top:8px;color:var(--dim);font-size:14px">固定 20° 目标，按实战速度甩，不用刻意快</div>
   <button id="go" class="btn" style="margin-top:26px;padding:16px 64px;font-size:18px;letter-spacing:2px">开 始</button>
   <div id="sum" style="margin-top:14px;font-size:13px;color:var(--dim)"></div>
@@ -64,21 +64,20 @@
       <label class="fld">cm/360<input id="cm" type="number" step="0.1" value="27.1"></label>
       <label class="fld">球数<input id="n" type="number" step="5" value="20"></label>
       <label class="fld">目标角度 °<input id="deg" type="number" step="2" value="20"></label>
-      <label class="fld">可见 ms<input id="expo" type="number" step="50" value="150" min="0"></label>
+      <label class="fld">可见 ms<input id="expo" type="number" step="50" value="0" min="0"></label>
     </div>
     <div style="margin-top:16px;font-size:12.5px;color:var(--dim);line-height:1.8">
-      球只亮 150ms 就消失——你必须凭弹道甩过去，看不到就没法修正。落点 ÷ 目标角度 = 你的弹道增益，这才是灵敏度本身。
-      <br>把「可见 ms」调到 0 就是一直显示（那样会混进修正，别用）。
+      看的是你<b>第一段甩动</b>覆盖了目标多远：0.7 表示你先甩到七成、剩下靠修正补完。
+      <br>这是动作习惯，不是灵敏度；数值稳定，可以随着训练提高。
     </div>
   </div>
   <div id="rawWarn" style="display:none;position:fixed;left:50%;top:70px;transform:translateX(-50%);z-index:9999;background:rgba(20,16,8,.92);border:1px solid var(--gold);color:#f5d78a;padding:9px 16px;border-radius:10px;font-size:13px;line-height:1.6;max-width:min(560px,calc(100vw - 32px));pointer-events:auto;text-align:left">⚠️ 原始输入锁定失败：本次测量经过系统加速，增益不可比，不允许「应用到设置」。</div>
 </div>
 
 <div id="res" class="overlay"><div id="resBody"></div>
-  <button id="again" class="btn">再测一轮（用建议值）</button>
+  <button id="again" class="btn">再测一轮</button>
   <div style="margin-top:12px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
     <button id="copyRes" class="btn" style="background:transparent;border-color:var(--line);color:var(--dim);font-size:13px;padding:8px 16px">复制结果</button>
-    <button id="applyRes" class="btn" style="background:transparent;border-color:var(--line);color:var(--dim);font-size:13px;padding:8px 16px">应用到设置</button>
   </div>
   <div id="applyHint" style="margin-top:8px;font-size:13px;color:var(--acc)"></div></div>
 
@@ -133,7 +132,7 @@ const PITCH_LIM=75*Math.PI/180;
 let W=0,H=0,f=1;
 let yaw=0, pitch=0;
 let running=false, paused=false, pauseAt=0;
-let DPI=800, YAW=0.022, CM=27.1, nBalls=20, TARGET_DEG=20, EXPOSE=0.15;
+let DPI=800, YAW=0.022, CM=27.1, nBalls=20, TARGET_DEG=20, EXPOSE=0;
 let sYaw=0, sPitch=0, tYaw=0, tPitch=0, tSpawn=0, nextSpawn=0;
 let traj=[], balls=[], ballOn=false;
 let result=null, lastYaw=0, lastPitch=0;
@@ -477,12 +476,11 @@ function finish(){
     '<div style="font-size:17px;color:var(--acc);margin-bottom:4px">'+L2('结果','Result')+'</div>'+
     (rawLockFailed? '<div style="margin-top:6px;font-size:13.5px;color:#f85149">'+L2('⚠️ 本次输入未校准（原始输入锁定失败），增益不可比。','⚠️ Raw input lock failed — gain is not comparable.')+'</div>' : '')+
     '<table class="rt">'+
-    (rawLockFailed? '' : row(L2('开环增益','Open-loop gain'), gain.toFixed(3)+'（'+gTxt+'）· '+L2('误差 ±','error ±')+(ci*100).toFixed(2)+'%', 'big'))+
+    (rawLockFailed? '' : row(L2('初段覆盖','First-move coverage'), Math.round(gain*100)+'%· '+L2('误差 ±','error ±')+(ci*100).toFixed(2)+'%', 'big'))+
     row(L2('停点 / 点击','Stop / click'), Math.round(stopRate*100)+'% / '+Math.round(clickRate*100)+L2('%（点击＝还在动就点，用点击落点）','% (click = fired while still moving; click position used)'))+
-    (rawLockFailed? '' : row(L2('建议 cm/360','Suggested cm/360'), cmC.toFixed(1)+' cm → '+L2('灵敏度','sensitivity')+' <b>'+sensOf(cmC).toFixed(2)+'</b>'))+
     row(L2('样本','Samples'), gains.length+L2(' 球（前 3 球已跳过）',' balls (first 3 skipped)'))+
     '</table>'+
-    '<div style="margin-top:10px;font-size:13.5px;color:var(--dim)">'+L2('开环弹道 = 还没开始修正的那一段。gain = 首次停住的位置 ÷ 目标角度——不外推、不拟合，停点在哪就是哪。','The open-loop ballistic = the stretch before correction starts. gain = position at the first stop ÷ target angle — no extrapolation, no curve fitting.')+'</div>';
+    '<div style="margin-top:10px;font-size:13.5px;color:var(--dim)">'+L2('覆盖 = 首次停住的位置 ÷ 目标角度。0.7 表示你先甩到七成、剩下靠修正——这是动作习惯，不是灵敏度误差。','The open-loop ballistic = the stretch before correction starts. gain = position at the first stop ÷ target angle — no extrapolation, no curve fitting.')+'</div>';
   res.classList.add('show');
 }
 function showShort(n){
@@ -494,29 +492,21 @@ function showShort(n){
 
 /* ————— 控制 ————— */
 document.getElementById('again').addEventListener('click',function(){
-  if(result && isFinite(result.cmNew)) setVal(cmEl, Math.round(result.cmNew*10)/10);
+  /* 不再把"建议值"写回 cm：这个数不是灵敏度误差 */
   res.classList.remove('show'); start();
 });
 document.getElementById('copyRes').addEventListener('click',function(e){
   e.stopPropagation();
   if(!result) return;
   const t=(window.__IS_EN
-    ? 'Open-loop gain '+result.gain.toFixed(3)+' · cm/360 '+result.cmNew.toFixed(1)+' · sensitivity '+result.sensNew.toFixed(2)
-    : '开环增益 '+result.gain.toFixed(3)+' · cm/360 '+result.cmNew.toFixed(1)+' · 灵敏度 '+result.sensNew.toFixed(2));
+    ? 'First-move coverage '+Math.round(result.gain*100)+'% · stop/click '+Math.round(result.stopRate*100)+'%'+'/'+Math.round(result.clickRate*100)+'%'
+    : '初段覆盖 '+Math.round(result.gain*100)+'% · 停点/点击 '+Math.round(result.stopRate*100)+'%'+'/'+Math.round(result.clickRate*100)+'%');
   const h=document.getElementById('applyHint');
   if(navigator.clipboard&&navigator.clipboard.writeText){
     navigator.clipboard.writeText(t).then(function(){ if(h) h.textContent=(window.__IS_EN?'Copied ✓ ':'已复制 ✓ ')+t; });
   } else { try{ prompt('复制：',t); }catch(err){} }
 });
-document.getElementById('applyRes').addEventListener('click',function(e){
-  e.stopPropagation();
-  if(!result) return;
-  const h=document.getElementById('applyHint');
-  if(rawLockFailed){ if(h) h.textContent=window.__IS_EN?'⚠️ Raw input unavailable — not applied.':'⚠️ 原始输入不可用——没有应用。'; return; }
-  const cfg={dpi:DPI, yaw:YAW, sens:Math.round(result.sensNew*100)/100, cm:Math.round(result.cmNew*100)/100};
-  try{ localStorage.setItem('cs2at.cfg', JSON.stringify(cfg)); }catch(err){}
-  if(h) h.textContent=(window.__IS_EN?'Applied to settings ✓ cm/360 ':'已应用到设置 ✓ cm/360 ')+cfg.cm+(window.__IS_EN?' · sensitivity ':' · 灵敏度 ')+cfg.sens;
-});
+/* 「应用到设置」已移除：初段覆盖不是灵敏度误差，不能据此改 cm/360 */
 addEventListener('keydown',function(e){
   if(e.key==='Escape'){
     if(running && !paused){ pause(); }
@@ -550,10 +540,11 @@ addEventListener('keydown',function(e){
     '命中不是目标；建议看拟合出来的增益。':'Hits are not the goal; watch the fitted gain.',
     '鼠标 DPI':'Mouse DPI','球数':'Balls','目标角度 °':'Target angle °',
     '开始':'Start','开 始':'START','参数 ▾':'Parameters ▾','收起参数 ▴':'Hide parameters ▴','继续':'Resume','← 返回':'← Back',
-    '结果':'Result','开环增益':'Open-loop gain','误差 ±':'error ±',
-    '停点检出':'Stop detected','建议 cm/360':'Suggested cm/360','灵敏度':'sensitivity','样本':'Samples','球':' balls',
-    '再测一轮（用建议值）':'Run again (with suggestion)','复制结果':'Copy result','应用到设置':'Apply to settings',
-    '开环弹道 = 还没开始修正的那 250ms；gain = 拟合落点 ÷ 目标角度。测的是灵敏度本身。':'The open-loop ballistic = the 250 ms before correction starts; gain = fitted endpoint ÷ target angle. This measures sensitivity itself.'
+    '结果':'Result','初段覆盖':'First-move coverage','误差 ±':'error ±',
+    '停点 / 点击':'Stop / click','样本':'Samples','球':' balls',
+    '再测一轮':'Run again','复制结果':'Copy result',
+    '看的是你':'What it measures: ','第一段甩动':'your first movement','覆盖了目标多远':'how far it covers toward the target',
+    '开环弹道 = 还没开始修正的那一段。gain = 首次停住的位置 ÷ 目标角度——不外推、不拟合，停点在哪就是哪。':'The open-loop ballistic = the 250 ms before correction starts; gain = fitted endpoint ÷ target angle. This measures sensitivity itself.'
   };
   var RULES=[
     [/^第 (\d+) \/ (\d+) 球$/,'Ball $1 / $2'],

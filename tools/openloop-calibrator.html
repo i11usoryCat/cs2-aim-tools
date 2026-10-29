@@ -514,6 +514,60 @@ addEventListener('keydown',function(e){
   }
 });
 
+/* ————— 自检：注入已知增益，验证整条测量链 —————
+   用法：页面地址加 ?selftest=1
+   不经过指针锁，直接把合成轨迹灌进 moveEv，跑完读 finish() 的结果。
+   判定标准：读出的覆盖与注入增益相差 ≤3%。 */
+(function(){
+  if(!/[?&]selftest/.test(location.search)) return;
+  const CASES=[0.85,1.00,1.15], N=12, TOL=0.03, D=0.18;
+  const mjf=u=>{ if(u<0)u=0; if(u>1)u=1; return 10*u*u*u-15*u*u*u*u+6*u*u*u*u*u; };
+  function inject(dx){
+    const e=new Event('pointermove');
+    Object.defineProperty(e,'movementX',{value:dx});
+    Object.defineProperty(e,'movementY',{value:0});
+    moveEv(e);
+  }
+  function trial(G){
+    newTarget();
+    const y0=sYaw, y1=tYaw, t0=performance.now();
+    return new Promise(res=>{
+      (function step(){
+        const el=(performance.now()-t0)/1000;
+        const want=y0+(y1-y0)*G*mjf(el/D);
+        const dx=(want-yaw)/kOf(CM);
+        if(Math.abs(dx)>0.5) inject(dx);
+        if(el<D+0.03) setTimeout(step,4); else { judge(); res(); }
+      })();
+    });
+  }
+  async function run(){
+    const cm0=CM, t0=TARGET_DEG, n0=nBalls;
+    const rows=[]; let allOk=true;
+    running=true; paused=false;
+    for(const G of CASES){
+      running=true; paused=false;          // finish() 会把 running 置 false，每档要重开
+      balls=[]; traj=[]; ballOn=false; CM=cm0; TARGET_DEG=20; EXPOSE=0;
+      for(let i=0;i<N;i++) await trial(G);
+      finish();
+      const got=result? result.gain : NaN;
+      const ok=isFinite(got) && Math.abs(got-G)<=TOL;
+      if(!ok) allOk=false;
+      rows.push({G:G, got:got, ok:ok});
+    }
+    running=false; TARGET_DEG=t0; nBalls=n0;
+    const el=document.getElementById('resBody');
+    el.innerHTML='<div style="font-size:17px;color:var(--acc);margin-bottom:10px">测量链自检</div>'+
+      '<table class="rt">'+rows.map(r=>'<tr><th>注入 '+Math.round(r.G*100)+'%</th><td'+(r.ok?' class="big"':'')+'>'+
+        (isFinite(r.got)? Math.round(r.got*100)+'%' : '—')+' &nbsp;'+(r.ok?'✓':'✗')+'</td></tr>').join('')+'</table>'+
+      '<div style="margin-top:12px;font-size:13.5px;color:'+(allOk?'var(--acc)':'#f85149')+'">'+
+      (allOk? '✓ 测量链正常（误差 ≤3%），读数可信。' : '✗ 测量链异常：读数与注入值不符，本轮数据不可用。')+'</div>'+
+      '<div style="margin-top:8px;font-size:12.5px;color:var(--dim)">每档 '+N+' 球，合成最小急动度轨迹，经真实 pointermove 路径注入。</div>';
+    document.getElementById('res').classList.add('show');
+  }
+  setTimeout(run,400);
+})();
+
 /* ————— i18n ————— */
 (function(){
   var EN=(function(){ try{

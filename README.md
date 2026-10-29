@@ -19,8 +19,8 @@ Individual drills:
 
 | Tool | URL |
 | --- | --- |
-| Sensitivity calibrator | https://i11usorycat.github.io/cs2-aim-tools/tools/sensitivity-calibrator.html |
-| Calibrator (strict) | https://i11usorycat.github.io/cs2-aim-tools/tools/sensitivity-calibrator-strict.html |
+| Click-bias checker | https://i11usorycat.github.io/cs2-aim-tools/tools/sensitivity-calibrator-strict.html |
+| First-move coverage | https://i11usorycat.github.io/cs2-aim-tools/tools/openloop-calibrator.html |
 | Adaptive random flick | https://i11usorycat.github.io/cs2-aim-tools/tools/aim-trainer.html?mode=random&count=40&limit=1 |
 | Blocked repetition | https://i11usorycat.github.io/cs2-aim-tools/tools/aim-trainer.html?mode=block&count=40&limit=0 |
 | Micro-precision | https://i11usorycat.github.io/cs2-aim-tools/tools/aim-trainer.html?mode=precision&count=40&limit=0 |
@@ -28,6 +28,21 @@ Individual drills:
 ---
 
 ## Features
+
+### Two different measurements
+
+| Page | What it measures | Direction |
+| --- | --- | --- |
+| **Click-bias checker** (`sensitivity-calibrator-strict.html`) | Where your click lands relative to the target, after correction | Closed loop — bias only, near zero for a tuned setting |
+| **First-move coverage** (`openloop-calibrator.html`) | How far your first movement travels before the correction starts | Open loop — typically 70–80% for everyone |
+
+Neither derives your "ideal" sensitivity. Sensitivities between 16 and 32 cm/360 produced no
+measurable difference in a controlled experiment (see `docs/methodology.md`), so the honest
+output of the click-bias page is usually *do not change anything*.
+
+Both pages were validated end-to-end by injecting synthetic motion with a known gain. The
+open-loop page can repeat that check in your own browser: append **`?selftest=1`** to its URL
+and it will report whether the measurement chain holds (±3% tolerance).
 
 ### Sensitivity calibration
 

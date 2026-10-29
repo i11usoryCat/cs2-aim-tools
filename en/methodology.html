@@ -164,12 +164,68 @@ memory buffering     -&gt; measured 4207 Hz
 
 <p>A 34x difference on the same 8K mouse. Always rule this out before measuring polling rate.</p>
 
+<h2>The open-loop detour: three models, one honest reframe</h2>
+
+<p>If the first 250&nbsp;ms of a flick is still ballistic, its endpoint ought to encode the
+<em>setting</em> rather than the <em>correction</em>. Three models were built. All failed
+the same way: the fitted amplitude absorbed the shape of the movement.</p>
+
+<h3>v5 &mdash; exponential rise, A&middot;(1&nbsp;&minus;&nbsp;e<sup>&minus;t/&tau;</sup>)</h3>
+
+<p>Synthetic minimum-jerk trajectories (the realistic S-shape) with a known gain of 1.00:</p>
+
+<pre><code>duration   reported gain
+0.15 s     1.089
+0.20 s     1.172
+0.25 s     1.281</code></pre>
+
+<p>The model has no acceleration phase, so fitting it to an S-curve inflates the amplitude.</p>
+
+<h3>v6 &mdash; minimum-jerk, A&middot;(10u&sup3;&nbsp;&minus;&nbsp;15u&#8308;&nbsp;+&nbsp;6u&#8309;)</h3>
+
+<p>Correct on clean synthetic data to &plusmn;1.6%, but on a real recording the same motion
+read 0.88 with the exponential and 1.33 with this model. A and D are not separately
+identifiable from a truncated trajectory: a longer, flatter curve fits equally well with a
+larger amplitude.</p>
+
+<h3>v7 &mdash; first stop, no model at all</h3>
+
+<p>Take the position at the moment speed falls below 15% of its peak &mdash; no extrapolation.
+Validated end-to-end, with synthetic motion injected through the page&rsquo;s own
+<code>pointermove</code> path:</p>
+
+<pre><code>injected   cm/360   reported
+0.85       27.1     84%
+1.00       27.1     99%
+1.15       27.1     114%
+1.00       40.0     99%</code></pre>
+
+<p>The chain is accurate to &plusmn;1% and independent of the sensitivity setting.</p>
+
+<h3>What it actually measures</h3>
+
+<p>With the chain proven, the remaining readings had to be believed &mdash; and they sat at
+<strong>71% at 20&deg; and 71% at 40&deg;</strong> (CI &plusmn;13&ndash;14%, statistically
+indistinguishable). A pure gain error would also be distance-invariant, but a correctly
+tuned sensitivity would land near 100%. 71% means the first movement covers only about
+71% of the distance and a correction supplies the rest.</p>
+
+<p>That is the two-phase structure of human pointing, not a sensitivity error. The page was
+renamed from &ldquo;open-loop calibration&rdquo; to <strong>first-move coverage</strong>, and
+its &ldquo;suggested cm/360&rdquo; and &ldquo;apply to settings&rdquo; controls were removed &mdash;
+each run was multiplying cm/360 by about 0.7.</p>
+
+<p>Self-check: append <code>?selftest=1</code> to the page URL. It injects three known
+gains and reports whether the chain still holds in the current browser.</p>
+
 <h2>Conclusions</h2>
 
 <li>**Sensitivity between 16 and 32 cm/360 has no significant effect** on measured performance; do not over-invest in tuning it.</li>
 <li>If you calibrate, use the overshoot method, but **pool samples, exclude hits, and guard against drift**.</li>
 <li>Use a **single difficulty controller** and an **85% success target**, otherwise the feedback loop diverges.</li>
 <li>Most of the felt difference after a hardware or engine change comes from rebuilding motor memory, which only repetition can fix.</li>
+<li><strong>Pointing tasks cannot measure gain error.</strong> Closed-loop correction erases it; opening the loop removes the information the movement is planned from. What remains measurable is <em>where the first movement stops</em> (first-move coverage) and <em>whether the landing is systematically off-centre</em> (click bias).</li>
+<li>Verify the measuring chain before trusting a number: the open-loop page self-checks at <code>?selftest=1</code>.</li>
 
 
 </body>

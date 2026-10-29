@@ -64,9 +64,11 @@
       <label class="fld">cm/360<input id="cm" type="number" step="0.1" value="27.1"></label>
       <label class="fld">球数<input id="n" type="number" step="5" value="20"></label>
       <label class="fld">目标角度 °<input id="deg" type="number" step="2" value="20"></label>
+      <label class="fld">可见 ms<input id="expo" type="number" step="50" value="150" min="0"></label>
     </div>
     <div style="margin-top:16px;font-size:12.5px;color:var(--dim);line-height:1.8">
-      只看甩出的头 250 毫秒：这段手按预设走、还没开始修正。拟合出「你会停在哪」，才是真正的灵敏度——命中不是目标，看增益。
+      球只亮 150ms 就消失——你必须凭弹道甩过去，看不到就没法修正。落点 ÷ 目标角度 = 你的弹道增益，这才是灵敏度本身。
+      <br>把「可见 ms」调到 0 就是一直显示（那样会混进修正，别用）。
     </div>
   </div>
   <div id="rawWarn" style="display:none;position:fixed;left:50%;top:70px;transform:translateX(-50%);z-index:9999;background:rgba(20,16,8,.92);border:1px solid var(--gold);color:#f5d78a;padding:9px 16px;border-radius:10px;font-size:13px;line-height:1.6;max-width:min(560px,calc(100vw - 32px));pointer-events:auto;text-align:left">⚠️ 原始输入锁定失败：本次测量经过系统加速，增益不可比，不允许「应用到设置」。</div>
@@ -131,7 +133,7 @@ const PITCH_LIM=75*Math.PI/180;
 let W=0,H=0,f=1;
 let yaw=0, pitch=0;
 let running=false, paused=false, pauseAt=0;
-let DPI=800, YAW=0.022, CM=27.1, nBalls=20, TARGET_DEG=20;
+let DPI=800, YAW=0.022, CM=27.1, nBalls=20, TARGET_DEG=20, EXPOSE=0.15;
 let sYaw=0, sPitch=0, tYaw=0, tPitch=0, tSpawn=0, nextSpawn=0;
 let traj=[], balls=[], ballOn=false;
 let result=null, lastYaw=0, lastPitch=0;
@@ -319,6 +321,7 @@ function start(){
   cmEl.value=CM.toFixed(1);
   nBalls=parseInt(nEl.value)||20; if(nBalls<10) nBalls=10; if(nBalls>60) nBalls=60;
   TARGET_DEG=parseFloat(degEl.value)||20; if(TARGET_DEG<5) TARGET_DEG=5; if(TARGET_DEG>120) TARGET_DEG=120;
+  try{ const ex=parseFloat(document.getElementById('expo').value); EXPOSE = isFinite(ex)? Math.max(0, ex)/1000 : 0.15; }catch(e){ EXPOSE=0.15; }
   yaw=0; pitch=0; balls=[]; traj=[]; ballOn=false;
   rawLockFailed=false; plainMode=false;
   try{ var rw=document.getElementById('rawWarn'); if(rw) rw.style.display='none'; }catch(e){}
@@ -367,10 +370,11 @@ function loop(now){
   grid();
   // 球
   if(ballOn){
+    const show = EXPOSE<=0 || (now-tSpawn) <= EXPOSE*1000;   // 到点就不画了，但点击照常记录
     const cp2=Math.cos(tPitch);
     const tx=DIST*cp2*Math.sin(tYaw), ty=DIST*Math.sin(tPitch), tz=DIST*cp2*Math.cos(tYaw);
     const p=project(tx,ty,tz);
-    if(p){
+    if(p && show){
       // 球：与标定器同款——tgtFill 填充 + tgt 描边 + 中心点
       const rad=Math.max(5*devicePixelRatio, f*Math.tan(1.5*D2R));
       ctx.beginPath(); ctx.arc(p.sx,p.sy,rad,0,Math.PI*2);

@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="en" data-theme="sand">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>跟枪标定 · Vernier</title>
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<style>
+:root{--bg:#f7f2e8;--panel:#fdfaf3;--panel2:#efe7d7;--txt:#33291c;--dim:#7b6a54;
+  --line:#e2d7c3;--line2:#cfc1a6;--acc:#c2410c;--acc2:#9a3412;--on-acc:#fff;
+  --gold:#d29922;--head:rgba(247,242,232,.85)}
+html[data-theme=night]{--bg:#0d1117;--panel:#161b22;--panel2:#1c2430;--txt:#e6edf3;--dim:#8b98a5;
+  --line:#2a333f;--line2:#3a4552;--acc:#58a6ff;--acc2:#2f81f7;--on-acc:#0d1117;
+  --gold:#d29922;--head:rgba(13,17,23,.85)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font:15px/1.65 -apple-system,"Segoe UI","Microsoft YaHei",system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;transition:background .3s,color .3s}
+a{color:var(--acc);text-decoration:none}
+.page{max-width:620px;margin:0 auto;padding:26px 18px 70px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:18px}
+.back{font-size:13.5px;color:var(--dim)}
+.title{font-size:20px;color:var(--acc);font-weight:700}
+.msg{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:14px}
+.msg .hint{font-size:13.5px;color:var(--dim);margin-top:10px}
+.row{display:flex;flex-wrap:wrap;gap:12px;margin-top:14px;align-items:flex-end}
+label{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--dim)}
+input,select{background:var(--bg);color:var(--txt);border:1px solid var(--line);border-radius:8px;
+  padding:8px 10px;font-size:14px;width:110px;outline:none}
+input:focus{border-color:var(--acc)}
+.btn{background:var(--acc);color:var(--on-acc);border:none;border-radius:10px;padding:11px 34px;
+  font-size:15px;font-weight:600;cursor:pointer;transition:.15s}
+.btn:hover{filter:brightness(1.1)}
+.btn:disabled{opacity:.45;cursor:default}
+#sum{margin-top:12px;font-size:13px;color:var(--dim)}
+#rawWarn{display:none;position:fixed;left:50%;top:70px;transform:translateX(-50%);z-index:9999;
+  background:rgba(20,16,8,.92);border:1px solid var(--gold);color:#f5d78a;padding:9px 16px;
+  border-radius:10px;font-size:13px;max-width:min(560px,calc(100vw - 32px));pointer-events:none}
+/* 竞技场 */
+#arena{position:fixed;inset:0;background:var(--bg);z-index:900;display:none;cursor:crosshair}
+#arena .hud{position:absolute;left:18px;top:14px;font-size:13px;color:var(--dim);user-select:none}
+#arena .tip{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);
+  font-size:12.5px;color:var(--dim);user-select:none}
+/* 结果浮层 */
+.overlay{position:fixed;inset:0;z-index:950;display:none;align-items:center;justify-content:center;
+  background:rgba(10,8,4,.5)}
+.overlay.show{display:flex}
+.res{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:26px;
+  max-width:560px;width:calc(100vw - 36px);max-height:86vh;overflow:auto}
+.rt{width:100%;border-collapse:collapse;margin-top:10px}
+.rt th,.rt td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);font-size:14px}
+.rt th{color:var(--dim);font-weight:500;font-size:13px}
+.rt td.big{color:var(--acc);font-weight:700}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="top">
+    <a class="back" href="../app.html#play">← 返回训练中心</a>
+    <div class="title" id="ttl">跟枪标定</div>
+  </div>
+  <div class="msg">
+    <div style="font-size:17px;color:var(--acc);margin-bottom:6px">90 秒跟枪 · 每帧一个样本</div>
+    <div>目标走圆，准星压在目标上。跟枪是每帧采样：90 秒 ≈ 5000+ 帧，误差半宽能到 ±0.5% 以内——比数「球」快一个数量级。<br>
+    <span style="color:var(--acc)">跟枪 ≠ 甩枪：这里估的是增益（你偏多少），实战里再用甩枪确认手感。</span></div>
+    <div class="row">
+      <label>鼠标 DPI <input id="dpi" type="number" step="100" value="800" style="width:90px"></label>
+      <label>m_yaw <input id="yaw" type="number" step="0.0001" value="0.022" style="width:100px"></label>
+      <label>cm/360 <input id="cm" type="number" step="0.1" value="27.1" style="width:90px"></label>
+      <label>角速度 °/s <input id="w" type="number" step="5" value="60" style="width:80px"></label>
+      <label>半径 ° <input id="r" type="number" step="1" value="15" style="width:70px"></label>
+      <label>时长 秒 <input id="t" type="number" step="10" value="90" style="width:70px"></label>
+    </div>
+    <div id="sum" style="margin-top:12px"></div>
+    <button id="go" class="btn">开始</button>
+    <div id="rawWarn">⚠️ 原始输入锁定失败：本次测量经过系统加速，增益估计不可比，不允许「应用到设置」。</div>
+  </div>
+</div>
+
+<div id="arena">
+  <canvas id="cv"></canvas>
+  <div class="hud" id="hud">0:00 · 0 帧</div>
+  <div class="tip">准星压在目标上，跟住它 · Esc 结束并出结果</div>
+</div>
+
+<div id="res" class="overlay"><div class="res"><div id="resBody"></div>
+  <button id="again" class="btn" style="margin-top:16px">再测一轮（用建议值）</button>
+  <div style="margin-top:12px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+    <button id="copyRes" class="btn" style="background:transparent;border:1px solid var(--line);color:var(--dim);font-size:13px;padding:8px 16px">复制结果</button>
+    <button id="applyRes" class="btn" style="background:transparent;border:1px solid var(--line);color:var(--dim);font-size:13px;padding:8px 16px">应用到设置</button>
+  </div>
+  <div id="applyHint" style="margin-top:8px;font-size:13px;color:var(--acc)"></div>
+</div></div>
+
+<script>
+'use strict';
+/* ————— 基础状态 ————— */
+var D2R=Math.PI/180;
+var dpiEl=document.getElementById('dpi'), yawEl=document.getElementById('yaw'),
+    cmEl=document.getElementById('cm'), wEl=document.getElementById('w'),
+    rEl=document.getElementById('r'), tEl=document.getElementById('t');
+var cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+var arena=document.getElementById('arena'), hud=document.getElementById('hud');
+var yaw=0, pitch=0;           // 准星视角（玩家旋转的累计角度）
+var running=false, t0=0, T=90000;
+var targetAng=0;              // 目标相位
+var tA=[], thY=[], thP=[], phY=[], phP=[], erA=[];
+var result=null;
+var DPI=800, YAW=0.022, CM=27.1;
+var lastThY=0, lastThP=0, lastPhY=0, lastPhP=0, lastT=0, firstFrame=true;
+var rawLockFailed=false;
+
+function wrap180(a){ a=((a+180)%360+360)%360-180; return a; }
+function sensOf(cm){ return 360/((cm/2.54)*DPI)/YAW; }
+function kOf(cm){ return 360/(cm*DPI)*2.54/YAW; }   // 每鼠标计数转视角度（=360/cm/DPI*2.54/yaw 的等价口径）
+
+/* ————— 参数读取（URL 优先，其次 cs2at.cfg） ————— */
+function setVal(el,v){ if(!el) return; el.value=v; try{ el.dispatchEvent(new Event('input',{bubbles:true})); }catch(e){} }
+function updSum(){
+  var s=''; try{
+    s=window.__IS_EN
+      ? Math.round(CM*10)/10+' cm/360 · sensitivity '+sensOf(CM).toFixed(2)+' · DPI '+DPI
+      : Math.round(CM*10)/10+' cm/360 · 灵敏度 '+sensOf(CM).toFixed(2)+' · DPI '+DPI;
+  }catch(e){}
+  document.getElementById('sum').textContent=s;
+}
+dpiEl.addEventListener('input',function(){ DPI=parseFloat(dpiEl.value)||800; updSum(); });
+yawEl.addEventListener('input',function(){ YAW=parseFloat(yawEl.value)||0.022; updSum(); });
+cmEl.addEventListener('input',function(){ CM=parseFloat(cmEl.value)||27.1; updSum(); });
+try{
+  var q=new URLSearchParams(location.search);
+  var cfg=JSON.parse(localStorage.getItem('cs2at.cfg')||'null');
+  if(q.get('dpi')) setVal(dpiEl,q.get('dpi')); else if(cfg&&cfg.dpi) setVal(dpiEl,cfg.dpi);
+  if(q.get('yaw')) setVal(yawEl,q.get('yaw')); else if(cfg&&cfg.yaw) setVal(yawEl,cfg.yaw);
+  if(q.get('cm')) setVal(cmEl,q.get('cm')); else if(cfg&&cfg.cm) setVal(cmEl,cfg.cm);
+}catch(e){}
+updSum();
+
+/* ————— 指针与锁 ————— */
+function doLock(){
+  function fallback(){
+    rawLockFailed=true;
+    try{ cv.requestPointerLock(); }catch(e){}
+    var el=document.getElementById('rawWarn'); if(el) el.style.display='';
+  }
+  try{ var r=arena.requestPointerLock({unadjustedMovement:true});
+    if(r&&r.catch) r.catch(fallback); }
+  catch(e){ fallback(); }
+}
+function moveEv(e){
+  if(!running) return;
+  var k=kOf(CM);
+  yaw  += (e.movementX||0)*k;
+  pitch-= (e.movementY||0)*k;
+  if(pitch> 25*D2R) pitch= 25*D2R;
+  if(pitch<-25*D2R) pitch=-25*D2R;
+}
+addEventListener(('onpointerrawupdate' in window)?'pointerrawupdate':'pointermove', moveEv, true);
+
+/* ————— 任务 ————— */
+function size(){
+  var d=Math.min(innerWidth,innerHeight);
+  cv.width=innerWidth; cv.height=innerHeight;
+  cv.style.width=innerWidth+'px'; cv.style.height=innerHeight+'px';
+  return d;
+}
+var pxPerDeg=0;
+function start(){
+  DPI=parseFloat(dpiEl.value)||800;
+  YAW=parseFloat(yawEl.value)||0.022;
+  CM=parseFloat(cmEl.value)||27.1;
+  if(!isFinite(CM)||CM<12) CM=12; if(CM>60) CM=60;
+  T=(parseFloat(tEl.value)||90)*1000; if(T<2000) T=2000; if(T>600000) T=600000;
+  W_DEG=parseFloat(wEl.value)||60; if(W_DEG<5) W_DEG=5; if(W_DEG>400) W_DEG=400;
+  R_DEG=parseFloat(rEl.value)||15; if(R_DEG<3) R_DEG=3; if(R_DEG>40) R_DEG=40;
+  yaw=0; pitch=0; targetAng=0; t0=performance.now();
+  tA=[]; thY=[]; thP=[]; phY=[]; phP=[]; erA=[];
+  firstFrame=true;
+  running=true;
+  document.getElementById('res').classList.remove('show');
+  document.querySelector('.page').style.display='none';
+  arena.style.display='block';
+  size();
+  doLock();
+  requestAnimationFrame(step);
+}
+var W_DEG=60, R_DEG=15;
+function step(now){
+  if(!running) return;
+  var t=(now-t0)/1000;
+  var th=R_DEG*D2R*Math.cos(W_DEG*D2R*t);
+  var tp=R_DEG*D2R*Math.sin(W_DEG*D2R*t);
+  var ey=wrap180((th-yaw)/D2R), ep=(tp-pitch)/D2R;   // 目标相对准星的视角度
+  // 每帧一个样本：目标角度 vs 准星角度
+  if(!firstFrame){
+    var dt=now-lastT;
+    var dth=Math.hypot(th-lastThY, tp-lastThP);
+    var dph=Math.hypot(yaw-lastPhY, pitch-lastPhP);
+    tA.push(t); thY.push(th); thP.push(tp); phY.push(yaw); phP.push(pitch);
+    erA.push({ey:ey, ep:ep, dth:dth, dph:dph});
+  } else { firstFrame=false; }
+  lastT=now; lastThY=th; lastThP=tp; lastPhY=yaw; lastPhP=pitch;
+  // 画
+  ctx.clearRect(0,0,cv.width,cv.height);
+  var cxp=cv.width/2, cyp=cv.height/2;
+  var kpx=pxPerDeg*1;
+  ctx.strokeStyle='var(--txt)'; ctx.globalAlpha=.5; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.arc(cxp,cyp,R_DEG*kpx,0,Math.PI*2); ctx.stroke();
+  ctx.globalAlpha=1;
+  // 准星
+  ctx.strokeStyle='var(--txt)'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(cxp-9,cyp); ctx.lineTo(cxp+9,cyp); ctx.moveTo(cxp,cyp-9); ctx.lineTo(cxp,cyp+9); ctx.stroke();
+  // 目标（相对位置 = 视角误差）
+  var tx=cxp+ey*kpx, ty=cyp-ep*kpx;
+  ctx.fillStyle='var(--acc2)';
+  ctx.beginPath(); ctx.arc(tx,ty,9,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='var(--on-acc)';
+  ctx.beginPath(); ctx.arc(tx,ty,3.5,0,Math.PI*2); ctx.fill();
+  // HUD
+  var left=Math.max(0,(T-(now-t0))/1000);
+  hud.textContent=left.toFixed(0)+' 秒 · '+erA.length+' 帧';
+  if(now-t0>=T){ running=false; finish(); return; }
+  requestAnimationFrame(step);
+}
+function size(){ var d=Math.min(innerWidth,innerHeight); pxPerDeg=d/72; cv.width=innerWidth; cv.height=innerHeight; cv.style.width=innerWidth+'px'; cv.style.height=innerHeight+'px'; }
+
+/* ————— 统计 ————— */
+function finish(){
+  try{ if(document.pointerLockElement) document.exitPointerLock(); }catch(e){}
+  arena.style.display='none';
+  document.querySelector('.page').style.display='';
+  var n=erA.length;
+  // 增益 = 准星角速度 / 目标角速度（两帧窗对齐时间跨度；跳过头 1 秒的捕捉段）
+  var rs=[], sdth=0, sdph=0;
+  for(var i=2;i<n;i++){
+    var ti=tA[i]; if(ti<1.0) continue;
+    var dth=Math.hypot(thY[i]-thY[i-2], thP[i]-thP[i-2]);
+    var dph=Math.hypot(phY[i]-phY[i-2], phP[i]-phP[i-2]);
+    if(dth>0.0004){ sdth+=dth; sdph+=dph;
+      if(dth>0.002 && dph>0.0004) rs.push(dph/dth); }
+  }
+  var g= sdth>0? sdph/sdth : 1;
+  try{ window.__dbg={rs:rs.slice(0,12), sdth:sdth, sdph:sdph, n:n}; }catch(e){}
+  var m=0, sd=0;
+  rs.forEach(function(v){ m+=v; }); m=rs.length? m/rs.length : 1;
+  rs.forEach(function(v){ sd+=(v-m)*(v-m); });
+  sd=rs.length>1? Math.sqrt(sd/(rs.length-1)) : 0;
+  var se=sd/Math.sqrt(Math.max(1,rs.length));
+  var ci=1.96*se/Math.max(0.0001,m);   // 相对误差半宽
+  // 相位滞后：找 L 使 |φ(t)−θ(t−L)| 最小
+  var lag=0, bestErr=Infinity;
+  var dts=(n>1)? (tA[n-1]-tA[0])/(n-1) : 0.016;
+  for(var L=0; L<=400; L+=20){
+    var off=Math.round((L/1000)/Math.max(0.001,dts));
+    var s2=0, c=0;
+    for(var i=0;i<n;i++){
+      var j=i-off; if(j<0) continue;
+      var dy=wrap180((phY[i]-thY[j])/D2R), dp=(phP[i]-thP[j])/D2R;
+      s2+=dy*dy+dp*dp; c++;
+    }
+    var e2=c? s2/c : Infinity;
+    if(e2<bestErr){ bestErr=e2; lag=L; }
+  }
+  // 跟踪误差 RMS（度，跳过前 1 秒捕捉段）
+  var es=0, ec=0;
+  for(var k=0;k<n;k++){ if(tA[k]<1.0) continue;
+    es+=erA[k].ey*erA[k].ey+erA[k].ep*erA[k].ep; ec++; }
+  var rms=Math.sqrt(es/Math.max(1,ec));
+  // 建议：cm 乘增益（g<1 = 准星跟慢了 = 灵敏度偏低 = cm 调小）
+  var cmNew=CM*g;
+  if(cmNew<8) cmNew=8; if(cmNew>80) cmNew=80;
+  result={summary:{g:g, n:n, nRatio:rs.length, ci:ci, lag:lag, rms:rms, cmNew:cmNew, sensNew:sensOf(cmNew), cm:CM, sensNow:sensOf(CM)}};
+  var row=function(k,v,cls){ return '<tr><th>'+k+'</th><td'+(cls?' class="'+cls+'"':'')+'>'+v+'</td></tr>'; };
+  var gTxt=(g>=1?'+':'')+((g-1)*100).toFixed(1)+'%';
+  var trust= (rs.length<200 || ci>0.01)? '（样本少/波动大，多测一轮）' : '';
+  document.getElementById('resBody').innerHTML=
+    '<div style="font-size:17px;color:var(--acc);margin-bottom:4px">结果</div>'+
+    '<table class="rt">'+
+    row('增益（准星/目标）', (g.toFixed(3))+'　('+gTxt+')', 'big')+
+    row('跟踪误差 RMS', rms.toFixed(2)+'°')+
+    row('相位滞后', lag+' ms')+
+    row('建议 cm/360', cmNew.toFixed(1)+' cm → 灵敏度 <b>'+sensOf(cmNew).toFixed(2)+'</b>', 'big')+
+    row('数据与误差', '共 '+rs.length+' 帧 · 增益误差 ±'+(ci*100).toFixed(2)+'%'+trust)+
+    '</table>'+
+    '<div style="margin-top:10px;font-size:13.5px;color:var(--dim)">跟枪估的是增益：把 cm/360 缩到 ±1% 后，再用甩枪（训练中心「快速标定」）确认实战手感。</div>';
+  document.getElementById('res').classList.add('show');
+}
+
+/* ————— 控制 ————— */
+document.getElementById('go').addEventListener('click',start);
+document.getElementById('again').addEventListener('click',function(){
+  var s=result&&result.summary; if(!s) return;
+  setVal(cmEl, Math.round(s.cmNew*10)/10);
+  start();
+});
+document.getElementById('copyRes').addEventListener('click',function(e){
+  e.stopPropagation();
+  var s=result&&result.summary; if(!s) return;
+  var t='gain '+(s.g*100).toFixed(1)+'% · cm/360 '+s.cmNew.toFixed(1)+' · sens '+s.sensNew.toFixed(2);
+  var h=document.getElementById('applyHint');
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(t).then(function(){ if(h) h.textContent=(window.__IS_EN?'Copied ✓ ':'已复制 ✓ ')+t; });
+  } else { try{ prompt('复制：',t); }catch(err){} }
+});
+document.getElementById('applyRes').addEventListener('click',function(e){
+  e.stopPropagation();
+  var s=result&&result.summary; if(!s) return;
+  var h=document.getElementById('applyHint');
+  if(rawLockFailed){ if(h) h.textContent=window.__IS_EN?'⚠️ Raw input unavailable — not applied.':'⚠️ 原始输入不可用——没有应用。'; return; }
+  var cfg={dpi:DPI, yaw:YAW, sens:Math.round(s.sensNew*100)/100, cm:Math.round(s.cmNew*100)/100};
+  try{ localStorage.setItem('cs2at.cfg', JSON.stringify(cfg)); }catch(err){}
+  if(h) h.textContent=(window.__IS_EN?'Applied to settings ✓ cm/360 ':'已应用到设置 ✓ cm/360 ')+cfg.cm+(window.__IS_EN?' · sensitivity ':' · 灵敏度 ')+cfg.sens;
+});
+addEventListener('keydown',function(e){ if(e.key==='Escape' && running){ running=false; finish(); } });
+addEventListener('keydown',function(e){ if(e.key==='Escape' && document.getElementById('res').classList.contains('show')){ document.getElementById('res').classList.remove('show'); } });
+
+/* ————— i18n ————— */
+(function(){
+  var EN=(function(){ try{
+    var q=new URLSearchParams(location.search);
+    if(q.get('lang')) return q.get('lang')==='en';
+    var s=localStorage.getItem('cs2at.lang');
+    if(s) return s==='en';
+    var n=(navigator.language||'en').toLowerCase();
+    return n.indexOf('zh')!==0;
+  }catch(e){ return true; } })();
+  window.__IS_EN=EN;
+  try{
+    var rw=document.getElementById('rawWarn');
+    if(rw) rw.textContent='⚠️ Raw input lock failed: this measurement is system-accelerated — the gain estimate is not comparable and cannot be applied to settings.';
+  }catch(e){}
+  if(!EN) return;
+  var D={
+    '跟枪标定':'Tracking calibration',
+    '90 秒跟枪 · 每帧一个样本':'90-second tracking · one sample per frame',
+    '目标走圆，准星压在目标上。跟枪是每帧采样：90 秒 ≈ 5000+ 帧，误差半宽能到 ±0.5% 以内——比数「球」快一个数量级。':'A target circles; keep your crosshair on it. Tracking samples every frame: ~5000+ frames in 90 s bring the half-width below ±0.5% — an order of magnitude faster than counting shots.',
+    '跟枪 ≠ 甩枪：这里估的是增益（你偏多少），实战里再用甩枪确认手感。':'Tracking ≠ flicking: this estimates your gain (how far off you are); confirm real feel with flick drills.',
+    '鼠标 DPI':'Mouse DPI','角速度 °/s':'Angular speed °/s','半径 °':'Radius °','时长 秒':'Duration s',
+    '开始':'Start',
+    '← 返回训练中心':'← Back to hub',
+    '准星压在目标上，跟住它 · Esc 结束并出结果':'Keep the crosshair on the target · Esc ends and shows results',
+    '结果':'Result',
+    '增益（准星/目标）':'Gain (crosshair / target)',
+    '跟踪误差 RMS':'Tracking error RMS',
+    '相位滞后':'Phase lag',
+    '建议 cm/360':'Suggested cm/360',
+    '数据与误差':'Samples & error',
+    '再测一轮（用建议值）':'One more round (with suggestion)',
+    '复制结果':'Copy result','应用到设置':'Apply to settings',
+    '跟枪估的是增益：把 cm/360 缩到 ±1% 后，再用甩枪（训练中心「快速标定」）确认实战手感。':'Tracking estimates gain: narrow cm/360 to ±1%, then confirm real feel with flicking (Quick calibration in the hub).'
+  };
+  var RULES=[
+    [/^共 (\d+) 帧 · 增益误差 ±([\d.]+)%（样本少\/波动大，多测一轮）$/,'$1 frames · gain error ±$2% (few samples / noisy — run another round)'],
+    [/^共 (\d+) 帧 · 增益误差 ±([\d.]+)%$/,'$1 frames · gain error ±$2%'],
+    [/^(\d+) 秒 · (\d+) 帧$/,'$1 s · $2 frames']
+  ];
+  function tr(t){
+    var s=t.trim(); if(!s) return t;
+    var m=s.match(/^(.+?)[:：]$/);
+    if(m&&D[m[1]]!==undefined) return D[m[1]]+':';
+    if(D[s]!==undefined) return D[s];
+    for(var i=0;i<RULES.length;i++){ var r=RULES[i]; if(r[0].test(s)) return s.replace(r[0],r[1]); }
+    return s;
+  }
+  function walk(node){
+    if(!node) return;
+    var kids=node.childNodes;
+    for(var i=0;i<kids.length;i++){
+      var k=kids[i];
+      if(k.nodeType===3){ var v=k.nodeValue; if(v&&v.trim()) k.nodeValue=tr(v); }
+      else if(k.nodeType===1 && k.tagName!=='SCRIPT' && k.tagName!=='STYLE') walk(k);
+    }
+  }
+  walk(document.body);
+  try{ document.title='Tracking calibration · Vernier'; }catch(e){}
+  try{
+    ['placeholder','title','aria-label'].forEach(function(a){
+      document.querySelectorAll('['+a+']').forEach(function(el){
+        el.setAttribute(a, tr(el.getAttribute(a)||''));
+      });
+    });
+  }catch(e){}
+  // 动态生成的文本在 EN 下重写
+  try{
+    var sum=document.getElementById('sum');
+    if(sum) sum.textContent=''; updSum();
+  }catch(e){}
+})();
+</script>
+</body>
+</html>

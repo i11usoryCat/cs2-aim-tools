@@ -36,7 +36,7 @@
 <div id="msg" class="overlay show">
   <div style="font-size:19px;color:var(--acc);margin-bottom:10px" id="calTitle">灵敏度标定</div>
   <div>每次只出现一个球。看到球后<b>最快速度甩过去并点击</b>。<br>
-  程序记录你甩完的落点，算出你<b>冲过头还是没到</b>。<br><span style="color:var(--acc)">偏差只看没打中的球，命中不参与</span></div>
+  程序记录你甩完的落点，算出你<b>冲过头还是没到</b>。<br><span style="color:var(--acc)">全样本：命中与未命中同样计入</span></div>
   <div style="margin-top:22px;display:grid;grid-template-columns:repeat(3,auto);gap:10px 22px;justify-content:center;font-size:14px;color:var(--dim)">
     <label>鼠标 DPI <input id="dpi" type="number" step="100" value="800" style="width:90px"></label>
     <label>m_yaw <input id="yaw" type="number" step="0.0001" value="0.022" style="width:100px"></label>
@@ -249,30 +249,30 @@ function med(a){ if(!a.length) return 0; const s=[...a].sort((x,y)=>x-y); return
 function finish(){
   running=false;
   if(document.pointerLockElement) document.exitPointerLock();
+  // 全样本（strict 口径）：命中球同样有精确的落点误差，只取未命中有截断偏差
   const posF=[], negF=[];
-  result.f.forEach((v,i)=>{ if(result.hit[i]) return; (v>0?posF:negF).push(v); });
-  const missF = posF.concat(negF);
-  // 偏差只从未命中的球估计（命中不算偏差，与方法论文档一致）
-  allRuns.push({cm:cm360, f:missF.slice()});
+  result.f.forEach(v=>{ (v>0?posF:negF).push(v); });
+  const usedF = result.f.slice();
+  allRuns.push({cm:cm360, f:usedF});
 
   // 汇总估计：每个 miss 换算成"它建议的 cm/360"，最终数取累计均值（CI 就是为均值算的）
   const impliedAll=[];
   allRuns.forEach(r=>{ (r.f||[]).forEach(v=>{ impliedAll.push(r.cm*(1+v)); }); });
   const meanOf = a => a.length ? a.reduce((x,y)=>x+y,0)/a.length : 0;
-  const fm = meanOf(missF);                              // 带符号均值 = 系统偏差（只看 miss）
+  const fm = meanOf(usedF);                              // 带符号均值 = 系统偏差（全样本）
   const lm=med(result.lat), tm=med(result.t), dm=med(result.dist);
   let cmNew=cm360*(1+fm);
   if(cmNew<8) cmNew=8; if(cmNew>80) cmNew=80;
-  // 收敛判据：累计 miss 的 95% 置信区间半宽 <1%（不用两轮差——那是运气判据）
+  // 收敛判据：累计全样本的 95% 置信区间半宽 <1%（不用两轮差——那是运气判据）
   const fCum=[]; allRuns.forEach(r=>{ (r.f||[]).forEach(v=>fCum.push(v)); });
   const nCum=fCum.length;
   const fMeanC=nCum? fCum.reduce((x,y)=>x+y,0)/nCum : 0;
   const fVarC=nCum>1? fCum.reduce((x,y)=>x+(y-fMeanC)*(y-fMeanC),0)/(nCum-1) : 0;
   const SE=Math.sqrt(Math.max(0,fVarC)/Math.max(1,nCum));
   const CI=1.96*SE;
-  const MISS_MIN = FAST? 5 : 8;                            // 快速 5 个 miss、完整 8 个 miss 才谈得上定稿
-  const fastDone = FAST && allRuns.length>=3 && nCum>=MISS_MIN;
-  const conv = fastDone || (nCum>=MISS_MIN && CI < 0.01);
+  const MIN_BALLS = FAST ? 60 : 40;                        // 全样本：每球都有值，按球数算
+  const fastDone = FAST && allRuns.length>=3 && nCum>=MIN_BALLS;
+  const conv = fastDone || (nCum>=MIN_BALLS && CI < 0.01);
   const meanCm = nCum? impliedAll.reduce((x,y)=>x+y,0)/nCum : cm360;
   result.summary={conv:conv, fm:fm, cmNew:meanCm, sensNew:sensOf(meanCm), sensNow:sensOf(cm360), tm:tm, lm:lm, dm:dm};
 
@@ -281,7 +281,7 @@ function finish(){
   let verdict;
   {
     const p2=posF.length, n2=negF.length, tot=p2+n2;
-    if(tot<5) verdict='未命中球太少，数据不足';
+    if(tot<12) verdict='样本太少，数据不足';
     else if(p2 >= n2*1.3) verdict='<b>过头 '+p2+' &gt; 不足 '+n2+'</b> → 灵敏度偏高，调低';
     else if(n2 >= p2*1.3) verdict='<b>不足 '+n2+' &gt; 过头 '+p2+'</b> → 灵敏度偏低，调高';
     else verdict='<b>过头 '+p2+' ≈ 不足 '+n2+'</b> → 灵敏度合适，偏的是动作稳定性';
@@ -299,7 +299,7 @@ function finish(){
     row('不足', negF.length+' 球 ('+np+'%)，中位 '+(med(negF)*100).toFixed(1)+'%')+
     row('总体偏差', (fm>=0?'+':'')+(fm*100).toFixed(1)+'%', 'big')+
     row('建议（'+nCum+' 球平均）', meanCm.toFixed(1)+' cm → sens <b>'+sensOf(meanCm).toFixed(2)+'</b>', 'big')+
-    row('数据与误差', nCum>=3? '共 '+nCum+' 球 · 误差 ±'+(CI*100).toFixed(2)+'%' : '样本太少（'+nCum+' miss），暂无误差估计')+
+    row('数据与误差', nCum>=3? '共 '+nCum+' 球（全样本）· 误差 ±'+(CI*100).toFixed(2)+'%' : '样本太少（'+nCum+' 球），暂无误差估计')+
     '</table>'+
     '<div style="margin-top:12px;font-size:14px">'+verdict+'</div>'+
     (conv
@@ -307,11 +307,11 @@ function finish(){
           ? '<div style="margin-top:8px;color:var(--acc);font-weight:700">✓ 快速标定完成（3 轮）——修明显偏差够用，想更准就继续测</div>'
           : '<div style="margin-top:8px;color:var(--acc);font-weight:700">✓ 数据够了，可以定稿</div>')
       : (FAST
-          ? (nCum<MISS_MIN
-              ? '<div style="margin-top:8px;color:var(--dim);font-size:13px">未命中球太少（'+nCum+'/'+MISS_MIN+'）——把球调小一点，多打出没打中的球</div>'
+          ? (nCum<MIN_BALLS
+              ? '<div style="margin-top:8px;color:var(--dim);font-size:13px">样本还少（'+nCum+'/'+MIN_BALLS+' 球）——继续打完 3 轮</div>'
               : '<div style="margin-top:8px;color:var(--dim);font-size:13px">快速标定：再打 '+(3-allRuns.length)+' 轮出建议（当前建议 '+(meanCm? meanCm.toFixed(1):'—')+' cm）</div>')
-          : (nCum<MISS_MIN
-              ? '<div style="margin-top:8px;color:var(--dim);font-size:13px">未命中球太少（'+nCum+'/'+MISS_MIN+'）——把球调小一点，多打出没打中的球，偏差才算得准</div>'
+          : (nCum<MIN_BALLS
+              ? '<div style="margin-top:8px;color:var(--dim);font-size:13px">样本还少（'+nCum+'/'+MIN_BALLS+' 球）——继续测，球越小越难打、但别为了凑数改设置</div>'
               : '<div style="margin-top:8px;color:var(--dim);font-size:13px">继续测：现在误差 ±'+(CI*100).toFixed(2)+'%，到 ±1% 以内再定稿（已 '+nCum+' 球）</div>')));
   res.classList.add('show');
   try{ addScatter(); }catch(e){}
@@ -451,7 +451,7 @@ function loop(){
     const rad=Math.max(5, f*Math.tan(ballDeg*D2R));
     ctx.beginPath(); ctx.arc(p.sx,p.sy,rad,0,Math.PI*2);
     ctx.fillStyle=SC.tgtFill; ctx.fill();
-    ctx.strokeStyle=SC.tgt; ctx.lineWidth=2.5; ctx.stroke();
+    ctx.strokeStyle=SC.ring||SC.tgt; ctx.lineWidth=2.5; ctx.stroke();
     ctx.beginPath(); ctx.arc(p.sx,p.sy,rad*0.25,0,Math.PI*2);
     ctx.fillStyle=SC.tgt; ctx.fill();
   }
@@ -625,7 +625,7 @@ requestAnimationFrame(loop);
     '复制结果':'Copy result','关闭':'Close','继续':'Continue',
     '过冲':'Overshoot','欠冲':'Undershoot','命中':'Hit','超时':'Timeout',
     '样本与置信':'Samples & confidence',
-    '灵敏度标定':'Sensitivity calibration','偏差只看没打中的球，命中不参与':'Bias comes from misses only — hits don\'t count.',
+    '灵敏度标定':'Sensitivity calibration','全样本：命中与未命中同样计入':'All shots count — hits and misses alike.',
     '应用到设置':'Apply to settings',
     '灵敏度标定 · 快速':'Quick calibration',
     '✓ 快速标定完成（3 轮）——修明显偏差够用，想更准就继续测':'✓ Quick calibration done (3 rounds) — good for fixing obvious bias; keep going for precision',
@@ -649,9 +649,10 @@ requestAnimationFrame(loop);
     [/^共 (\d+) 球 · 误差 ±([\d.]+)%$/,'$1 shots · error ±$2%'],
     [/^继续测：现在误差 ±([\d.]+)%，到 ±1% 以内再定稿（已 (\d+) 球）$/,'Keep going: error is ±$1% — finalize within ±1% ($2 shots so far)'],
     [/^快速标定：再打 (\d+) 轮出建议（当前建议 ([\d.]+) cm）$/,'Quick calibration: $1 more round(s) for the suggestion (current: $2 cm)'],
-    [/^未命中球太少（(\d+)\/(\d+)）——把球调小一点，多打出没打中的球，偏差才算得准$/,'Too few misses ($1/$2) — shrink the dot so you miss more; bias needs misses to be accurate'],
-    [/^未命中球太少（(\d+)\/(\d+)）——把球调小一点，多打出没打中的球$/,'Too few misses ($1/$2) — shrink the dot so you miss more'],
-    [/^样本太少（(\d+) miss），暂无误差估计$/,'Too few samples ($1 miss) — no error estimate yet'],
+    [/^样本还少（(\d+)\/(\d+) 球）——继续测，球越小越难打、但别为了凑数改设置$/,'Still few shots ($1/$2) — keep going; smaller dots are harder, but do not tweak settings to pad the count'],
+    [/^样本还少（(\d+)\/(\d+) 球）——继续打完 3 轮$/,'Still few shots ($1/$2) — finish the 3 rounds'],
+    [/^样本太少（(\d+) 球），暂无误差估计$/,'Too few samples ($1 shots) — no error estimate yet'],
+    [/^共 (\d+) 球（全样本）· 误差 ±([\d.]+)%$/,'$1 shots (all samples) · error ±$2%'],
     [/^建议（累计 (\d+) 球 · 均值）$/,'Suggestion (cumulative $1 shots · mean)'],
     [/^继续测：当前 95% 置信区间 ±([\d.]+)%，到 ±1% 内再定稿（目前已 (\d+) 球）$/,'Keep going: 95% CI ±$1% — finalize within ±1% (currently $2 shots)']
   ];

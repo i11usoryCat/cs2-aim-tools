@@ -1,0 +1,578 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>开环标定 · Vernier</title>
+<meta name="description" content="250ms 开环弹道拟合出你「预设的落点」——测的是灵敏度本身，不是修正能力。">
+<link rel="canonical" href="https://i11usorycat.github.io/cs2-aim-tools/tools/openloop-calibrator.html">
+<link rel="alternate" hreflang="en" href="https://i11usorycat.github.io/cs2-aim-tools/en/openloop-calibrator.html">
+<link rel="alternate" hreflang="zh" href="https://i11usorycat.github.io/cs2-aim-tools/tools/openloop-calibrator.html">
+<link rel="alternate" hreflang="x-default" href="https://i11usorycat.github.io/cs2-aim-tools/">
+<style>
+  html,body{margin:0;height:100%;background:var(--bg);overflow:hidden;color:var(--txt);font-family:"Microsoft YaHei",sans-serif}
+  canvas{display:block;cursor:none}
+  #ui{position:fixed;left:24px;top:20px;font-size:14px;line-height:1.9;pointer-events:none;text-shadow:0 0 6px #000}
+  .overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;
+    text-align:center;font-size:16px;line-height:2;color:var(--txt);background:var(--overlay)}
+  .overlay.show{display:flex}
+  #back{position:fixed;left:16px;top:14px;z-index:40;display:none;font-size:13px;color:var(--dim);
+    text-decoration:none;padding:7px 12px;border-radius:9px;border:1px solid transparent;transition:.15s}
+  #back:hover{color:var(--acc);border-color:var(--line);background:var(--panel)}
+  #back.on{display:inline-block}
+  .btn{margin-top:24px;padding:13px 40px;font-size:16px;font-family:inherit;cursor:pointer;
+    background:var(--acc);border:1px solid var(--acc);color:var(--on-acc);border-radius:8px;pointer-events:auto}
+  .btn:hover{background:var(--acc)}
+  input{width:110px;padding:8px;background:var(--panel);border:1px solid var(--line);color:var(--txt);
+    border-radius:6px;font-size:15px;text-align:center;pointer-events:auto}
+  table{border-collapse:collapse;margin-top:8px}
+  .rt td,.rt th{padding:5px 14px;font-size:14px}
+  #res{overflow:auto;padding:20px}
+  #resBody{max-height:78vh;overflow:auto}
+  td,th{padding:9px 20px;text-align:right;border-bottom:1px solid var(--panel)}
+  th{color:var(--dim);font-weight:500}
+  .big{font-size:30px;font-weight:700;color:var(--acc)}
+  /* 与训练器统一的开始页：参数默认收起 */
+  #msg .pauseHide{display:none}
+  #msg.showParams .pauseHide{display:block}
+  .fld{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--dim);align-items:flex-start}
+  .fld input{padding:7px 9px;background:var(--panel);border:1px solid var(--line);color:var(--txt);
+    border-radius:7px;font-size:14px;width:110px;text-align:center;pointer-events:auto}
+  .more{margin-top:18px;padding:9px 18px;border-radius:9px;border:1px solid var(--line);background:transparent;
+    color:var(--dim);font-size:13px;font-family:inherit;cursor:pointer;pointer-events:auto}
+  .more:hover{color:var(--txt);border-color:var(--acc)}
+  #rawWarn .wb{padding:4px 10px;border-radius:7px;border:1px solid currentColor;background:transparent;
+    color:inherit;font:inherit;font-size:12px;cursor:pointer;pointer-events:auto}
+  #rawWarn .wb:hover{background:rgba(255,255,255,.10)}
+</style>
+</head>
+<body>
+<a id="back" href="../app.html#set">← 返回</a>
+<canvas id="c"></canvas>
+<div id="ui"></div>
+
+<div id="msg" class="overlay show">
+  <div id="ttl" style="font-size:26px;color:var(--txt);font-weight:700;letter-spacing:2px">开环标定</div>
+  <div style="margin-top:8px;color:var(--dim);font-size:14px">固定 20° 目标，按实战速度甩，不用刻意快</div>
+  <button id="go" class="btn" style="margin-top:26px;padding:16px 64px;font-size:18px;letter-spacing:2px">开 始</button>
+  <div id="sum" style="margin-top:14px;font-size:13px;color:var(--dim)"></div>
+  <div id="bw" style="margin-top:10px;font-size:13px;line-height:1.8;color:var(--gold)"></div>
+  <button id="more" class="more">参数 ▾</button>
+  <div class="pauseHide" style="margin-top:22px;width:100%;max-width:560px">
+    <div style="display:flex;flex-wrap:wrap;gap:14px 18px;justify-content:center">
+      <label class="fld">鼠标 DPI<input id="dpi" type="number" step="100" value="800"></label>
+      <label class="fld">m_yaw<input id="yaw" type="number" step="0.0001" value="0.022"></label>
+      <label class="fld">cm/360<input id="cm" type="number" step="0.1" value="27.1"></label>
+      <label class="fld">球数<input id="n" type="number" step="5" value="20"></label>
+      <label class="fld">目标角度 °<input id="deg" type="number" step="2" value="20"></label>
+    </div>
+    <div style="margin-top:16px;font-size:12.5px;color:var(--dim);line-height:1.8">
+      只看甩出的头 250 毫秒：这段手按预设走、还没开始修正。拟合出「你会停在哪」，才是真正的灵敏度——命中不是目标，看增益。
+    </div>
+  </div>
+  <div id="rawWarn" style="display:none;position:fixed;left:50%;top:70px;transform:translateX(-50%);z-index:9999;background:rgba(20,16,8,.92);border:1px solid var(--gold);color:#f5d78a;padding:9px 16px;border-radius:10px;font-size:13px;line-height:1.6;max-width:min(560px,calc(100vw - 32px));pointer-events:auto;text-align:left">⚠️ 原始输入锁定失败：本次测量经过系统加速，增益不可比，不允许「应用到设置」。</div>
+</div>
+
+<div id="res" class="overlay"><div id="resBody"></div>
+  <button id="again" class="btn">再测一轮（用建议值）</button>
+  <div style="margin-top:12px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+    <button id="copyRes" class="btn" style="background:transparent;border-color:var(--line);color:var(--dim);font-size:13px;padding:8px 16px">复制结果</button>
+    <button id="applyRes" class="btn" style="background:transparent;border-color:var(--line);color:var(--dim);font-size:13px;padding:8px 16px">应用到设置</button>
+  </div>
+  <div id="applyHint" style="margin-top:8px;font-size:13px;color:var(--acc)"></div></div>
+
+<script src="../assets/scenes.js"></script>
+<script>
+'use strict';
+/* ————— 场景与主题（同标定器） ————— */
+const SCENES=window.GAME_SCENES;
+const THEME2SCENE=window.THEME2SCENE;
+function pickScene(){
+  try{
+    const q=new URLSearchParams(location.search);
+    if(q.get('scene') && SCENES[q.get('scene')]) return q.get('scene');
+    const th=q.get('theme')||localStorage.getItem('cs2at.theme')||(function(){var d=new Date(),tm=d.getHours()*60+d.getMinutes();return (tm>=1410||tm<460)?'forest':'sand';})();
+    if(th && THEME2SCENE[th]) return THEME2SCENE[th];
+    const sc=localStorage.getItem('cs2at.scene');
+    if(sc && SCENES[sc]) return sc;
+  }catch(e){}
+  return 'classic';
+}
+const SC=SCENES[pickScene()]||SCENES.classic;
+const SITE_THEMES={
+  ink:{bg:'#f7f5f0',panel:'#fffefb',line:'#e2dccf',txt:'#202b2c',dim:'#6d7a7b',acc:'#0f766e'},
+  jade:{bg:'#101917',panel:'#16211f',line:'#2a3a36',txt:'#efeade',dim:'#93a8a1',acc:'#7fbfa6'},
+  lake:{bg:'#eef4f6',panel:'#ffffff',line:'#d2e2e7',txt:'#14313a',dim:'#587a85',acc:'#0e7490'},
+  light:{bg:'#f4f6f9',panel:'#ffffff',line:'#dde4ed',txt:'#1a2230',dim:'#5b6879',acc:'#2f6feb'},
+  sand:{bg:'#f7f2e8',panel:'#fffdf8',line:'#e3d9c6',txt:'#33291c',dim:'#7b6a54',acc:'#c2410c'},
+  forest:{bg:'#0f1a14',panel:'#16241b',line:'#2a4433',txt:'#e8f2ea',dim:'#8aa697',acc:'#4ade80'},
+  mono:{bg:'#15171b',panel:'#1c1f24',line:'#2e333b',txt:'#e8eaee',dim:'#98a0aa',acc:'#c9d1d9'},
+  cyber:{bg:'#120a1f',panel:'#1b1032',line:'#3a2166',txt:'#f1eaff',dim:'#a98fd6',acc:'#c084fc'},
+  night:{bg:'#0b0f14',panel:'#151b24',line:'#2a3442',txt:'#e6edf3',dim:'#8b949e',acc:'#58a6ff'}
+};
+(function(){
+  const th=(function(){ try{ var q=new URLSearchParams(location.search); return q.get('theme')||localStorage.getItem('cs2at.theme')||(function(){var d=new Date(),tm=d.getHours()*60+d.getMinutes();return (tm>=1410||tm<460)?'forest':'sand';})(); }catch(e){ return 'sand'; } })();
+  const t=SITE_THEMES[th]||SITE_THEMES.sand;
+  const dark=!(th==='ink'||th==='light'||th==='lake'||th==='sand');
+  const r=document.documentElement.style;
+  r.setProperty('--bg',t.bg); r.setProperty('--panel',t.panel); r.setProperty('--line',t.line);
+  r.setProperty('--txt',t.txt); r.setProperty('--dim',t.dim); r.setProperty('--acc',t.acc);
+  r.setProperty('--on-acc','#ffffff');
+  r.setProperty('--overlay',dark?'rgba(11,15,20,.96)':'rgba(238,244,246,.97)');
+})();
+
+/* ————— 基础 ————— */
+const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+const ui=document.getElementById('ui');
+const msg=document.getElementById('msg'), go=document.getElementById('go');
+const res=document.getElementById('res'), resBody=document.getElementById('resBody');
+const D2R=Math.PI/180, R2D=180/Math.PI;
+const FOVH=90, DIST=10, EYE=1.6, NEAR=0.25;
+const PITCH_LIM=75*Math.PI/180;
+let W=0,H=0,f=1;
+let yaw=0, pitch=0;
+let running=false, paused=false, pauseAt=0;
+let DPI=800, YAW=0.022, CM=27.1, nBalls=20, TARGET_DEG=20;
+let sYaw=0, sPitch=0, tYaw=0, tPitch=0, tSpawn=0, nextSpawn=0;
+let traj=[], balls=[], ballOn=false;
+let result=null, lastYaw=0, lastPitch=0;
+let rawLockFailed=false, plainMode=false;
+let L2=function(zh,en){ return window.__IS_EN? en: zh; };
+
+function wrapPi(a){ while(a> Math.PI) a-=2*Math.PI; while(a<-Math.PI) a+=2*Math.PI; return a; }
+const sensOf = cm => 360/((cm/2.54)*DPI)/YAW;
+const kOf = cm => (360/((cm/2.54)*DPI))*D2R;
+
+function resize(){
+  W=cv.width=innerWidth*devicePixelRatio; H=cv.height=innerHeight*devicePixelRatio;
+  cv.style.width=innerWidth+'px'; cv.style.height=innerHeight+'px';
+  f=(W/2)/Math.tan(FOVH/2*D2R);
+}
+addEventListener('resize',resize); resize();
+
+function toCam(x,y,z){
+  const cy=Math.cos(yaw), sy=Math.sin(yaw);
+  const x1= x*cy - z*sy, z1= x*sy + z*cy;
+  const cp=Math.cos(pitch), sp=Math.sin(pitch);
+  return {x:x1, y:y*cp - z1*sp, z:y*sp + z1*cp};
+}
+function projCam(c){ return {sx:W/2+(c.x/c.z)*f, sy:H/2-(c.y/c.z)*f}; }
+function project(x,y,z){ const c=toCam(x,y,z); return c.z<=NEAR? null : projCam(c); }
+function line3(x1,y1,z1,x2,y2,z2,color){
+  let a=toCam(x1,y1,z1), b=toCam(x2,y2,z2);
+  if(a.z<NEAR && b.z<NEAR) return;
+  if(a.z<NEAR){ const t=(NEAR-a.z)/(b.z-a.z); a={x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t,z:NEAR}; }
+  else if(b.z<NEAR){ const t=(NEAR-b.z)/(a.z-b.z); b={x:b.x+(a.x-b.x)*t,y:b.y+(a.y-b.y)*t,z:NEAR}; }
+  const pa=projCam(a), pb=projCam(b);
+  ctx.strokeStyle=color; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(pa.sx,pa.sy); ctx.lineTo(pb.sx,pb.sy); ctx.stroke();
+}
+function grid(){
+  const R=44, step=3;
+  for(let v=-R; v<=R; v+=step){
+    line3(v,-EYE,-R, v,-EYE,R, (v===0)?SC.major:SC.minor);
+    line3(-R,-EYE,v, R,-EYE,v, (v===0)?'rgba(88,166,255,.60)':SC.minor);
+    line3(v, 4.2,-R, v, 4.2,R, SC.ceil);
+    line3(-R, 4.2,v, R, 4.2,v, SC.ceil);
+  }
+  for(let i=0;i<8;i++){
+    const a=i*Math.PI/4, px=Math.sin(a)*18, pz=Math.cos(a)*18;
+    line3(px,-EYE,pz, px,4.2,pz, 'rgba(110,122,138,1)');
+  }
+}
+
+/* ————— 参数 ————— */
+const dpiEl=document.getElementById('dpi'), yawEl=document.getElementById('yaw'),
+      cmEl=document.getElementById('cm'), nEl=document.getElementById('n'),
+      degEl=document.getElementById('deg');
+function setVal(el,v){ if(!el) return; el.value=v; try{ el.dispatchEvent(new Event('input',{bubbles:true})); }catch(e){} }
+function updSum(){
+  var s=''; try{
+    s=window.__IS_EN
+      ? Math.round(CM*10)/10+' cm/360 · sensitivity '+sensOf(CM).toFixed(2)+' · DPI '+DPI
+      : Math.round(CM*10)/10+' cm/360 · 灵敏度 '+sensOf(CM).toFixed(2)+' · DPI '+DPI;
+  }catch(e){}
+  document.getElementById('sum').textContent=s;
+}
+dpiEl.addEventListener('input',function(){ DPI=parseFloat(dpiEl.value)||800; updSum(); });
+yawEl.addEventListener('input',function(){ YAW=parseFloat(yawEl.value)||0.022; updSum(); });
+cmEl.addEventListener('input',function(){ CM=parseFloat(cmEl.value)||27.1; updSum(); });
+try{
+  var q=new URLSearchParams(location.search);
+  var cfg=JSON.parse(localStorage.getItem('cs2at.cfg')||'null');
+  if(q.get('dpi')) setVal(dpiEl,q.get('dpi')); else if(cfg&&cfg.dpi) setVal(dpiEl,cfg.dpi);
+  if(q.get('yaw')) setVal(yawEl,q.get('yaw')); else if(cfg&&cfg.yaw) setVal(yawEl,cfg.yaw);
+  if(q.get('cm')) setVal(cmEl,q.get('cm')); else if(cfg&&cfg.cm) setVal(cmEl,cfg.cm);
+}catch(e){}
+updSum();
+try{
+  if(!('onpointerrawupdate' in window)){
+    var bw=document.getElementById('bw');
+    if(bw) bw.textContent='当前浏览器不支持 pointerrawupdate，采样精度降低，建议 Chrome / Edge。';
+  }
+}catch(e){}
+document.getElementById('back').classList.add('on');
+
+/* ————— 指针与锁 ————— */
+/* 原始输入：只有 unadjustedMovement 这条路。失败时不自动重试——
+   自动重试发生在 promise 回调里，已脱离用户手势，必然再失败。
+   改为显示原因 + 两个按钮，点按钮才是新的用户手势。 */
+function lockWarn(reason){
+  rawLockFailed=true;
+  var el=document.getElementById('rawWarn');
+  if(el){
+    el.style.display='';
+    el.innerHTML='⚠️ 原始输入锁定失败（'+reason+'）——系统加速会让增益类数字失真。'
+      +'<span style="display:inline-flex;gap:8px;margin-left:10px;vertical-align:middle">'
+      +'<button id="lockRetry" class="wb">重试</button>'
+      +'<button id="lockPlain" class="wb">用加速输入继续</button></span>'
+      +'<div style="margin-top:6px;font-size:12px;opacity:.85">修法：关掉 Windows「提高指针精确度」 · 别在远程桌面 / 编辑器预览里跑 · 用 Chrome / Edge 直接打开</div>';
+    var a=document.getElementById('lockRetry'), b=document.getElementById('lockPlain');
+    if(a) a.onclick=function(ev){ ev.stopPropagation(); doLock(); };
+    if(b) b.onclick=function(ev){ ev.stopPropagation(); plainLock(); };
+  }
+  if(running && !paused) pause();
+}
+function plainLock(){
+  rawLockFailed=true; plainMode=true;        // 明确降级：结果会标红，且不再强求原始输入
+  try{
+    var p=cv.requestPointerLock();
+    if(p&&p.catch) p.catch(function(){});
+    var el=document.getElementById('rawWarn'); if(el) el.style.display='none';
+  }catch(e){}
+  if(paused) resume();
+}
+function doLock(){
+  rawLockFailed=false;
+  var p;
+  try{ p=cv.requestPointerLock({unadjustedMovement:true}); }
+  catch(e){ lockWarn((e&&e.name)||'unsupported'); return; }
+  if(p&&p.then){
+    p.then(function(){
+      rawLockFailed=false; plainMode=false;
+      var el=document.getElementById('rawWarn'); if(el) el.style.display='none';
+    }).catch(function(err){
+      lockWarn((err&&err.name)||'unsupported');
+    });
+  }
+}
+function moveEv(e){
+  if(!running||paused) return;
+  const k=kOf(CM);
+  yaw  += (e.movementX||0)*k;
+  pitch-= (e.movementY||0)*k;
+  if(pitch> PITCH_LIM) pitch= PITCH_LIM;
+  if(pitch<-PITCH_LIM) pitch=-PITCH_LIM;
+  if(ballOn) traj.push({t:(e.timeStamp-tSpawn)/1000, yaw:yaw, pitch:pitch});   // 原始事件采样，不用 rAF
+}
+addEventListener(('onpointerrawupdate' in window)?'pointerrawupdate':'pointermove', moveEv, true);
+document.addEventListener('pointerlockchange',()=>{
+  if(document.pointerLockElement){
+    if(!plainMode) rawLockFailed=false; // 降级（普通锁）不得清掉警告
+    try{ var rwEl=document.getElementById('rawWarn'); if(rwEl) rwEl.style.display='none'; }catch(e){}
+  }
+  if(!document.pointerLockElement && running && !paused) pause();
+});
+document.addEventListener('pointerlockerror',()=>{
+  if(plainMode){ lockWarn('SecurityError'); return; }   // 连普通锁都失败：别静默暂停，给回按钮
+  if(running) pause();
+});
+
+/* ————— 任务 ————— */
+function newTarget(){
+  const dir=((balls.length)%2===0)? 1 : -1;   // 左右交替
+  const a=dir*TARGET_DEG*D2R, b=(Math.random()*2-1)*3*D2R;
+  sYaw=yaw; sPitch=pitch;
+  tYaw=yaw+a; tPitch=pitch+b;
+  if(tPitch> 14*D2R) tPitch= 14*D2R;
+  if(tPitch<-14*D2R) tPitch=-14*D2R;
+  tSpawn=performance.now();
+  traj=[];
+  ballOn=true;
+}
+function judge(){
+  if(!ballOn) return;
+  ballOn=false;
+  const dxT=wrapPi(tYaw-sYaw), dyT=wrapPi(tPitch-sPitch);
+  const L=Math.hypot(dxT,dyT);
+  if(L<6*D2R){ nextSpawn=performance.now()+300; return; }   // 没甩，忽略
+  const ux=dxT/L, uy=dyT/L;
+  balls.push({traj:traj, ux:ux, uy:uy, sY:sYaw, sP:sPitch, deg:L*R2D});
+  nextSpawn=performance.now()+1000;   // 间隔 1s
+}
+document.addEventListener('mousedown',function(e){ if(running&&!paused) judge(); });
+
+function start(){
+  DPI=parseFloat(dpiEl.value)||800;
+  YAW=parseFloat(yawEl.value)||0.022;
+  CM=parseFloat(cmEl.value)||27.1;
+  if(!isFinite(CM)||CM<12) CM=12; if(CM>60) CM=60;
+  cmEl.value=CM.toFixed(1);
+  nBalls=parseInt(nEl.value)||20; if(nBalls<10) nBalls=10; if(nBalls>60) nBalls=60;
+  TARGET_DEG=parseFloat(degEl.value)||20; if(TARGET_DEG<5) TARGET_DEG=5; if(TARGET_DEG>120) TARGET_DEG=120;
+  yaw=0; pitch=0; balls=[]; traj=[]; ballOn=false;
+  rawLockFailed=false; plainMode=false;
+  try{ var rw=document.getElementById('rawWarn'); if(rw) rw.style.display='none'; }catch(e){}
+  running=true; paused=false; result=null;
+  msg.classList.remove('show'); res.classList.remove('show');
+  doLock();                       // 先锁（同一个手势内），再要全屏
+  if(!document.fullscreenElement && document.documentElement.requestFullscreen)
+    document.documentElement.requestFullscreen().catch(()=>{});
+  newTarget();
+}
+function pause(){
+  if(!running||paused) return;
+  paused=true; pauseAt=performance.now();
+  go.textContent=L2('继续','Resume'); msg.classList.add('show');
+  if(document.pointerLockElement) document.exitPointerLock();
+  if(!document.fullscreenElement && document.documentElement.requestFullscreen){
+    try{ document.documentElement.requestFullscreen().catch(function(){}); }catch(e){}
+  }
+}
+function resume(){
+  if(!paused) return;
+  paused=false; msg.classList.remove('show'); if(!plainMode) doLock();
+  if(!document.fullscreenElement && document.documentElement.requestFullscreen){
+    try{ document.documentElement.requestFullscreen().catch(function(){}); }catch(e){}
+  }
+}
+go.addEventListener('click',function(){ if(paused){ resume(); } else { start(); } });
+
+/* 参数折叠：与训练器同一套交互 */
+(function(){
+  var more=document.getElementById('more'), msg=document.getElementById('msg');
+  if(!more||!msg) return;
+  function sync(){ more.textContent = msg.classList.contains('showParams') ? (window.__IS_EN?'Hide parameters ▴':'收起参数 ▴') : (window.__IS_EN?'Parameters ▾':'参数 ▾'); }
+  more.addEventListener('click', function(e){
+    e.stopPropagation();
+    msg.classList.toggle('showParams');
+    sync();
+  });
+  sync();
+})();
+
+function loop(now){
+  requestAnimationFrame(loop);
+  if(!running||paused) return;
+  ctx.fillStyle=SC.bg; ctx.fillRect(0,0,W,H);
+  grid();
+  // 球
+  if(ballOn){
+    const cp2=Math.cos(tPitch);
+    const tx=DIST*cp2*Math.sin(tYaw), ty=DIST*Math.sin(tPitch), tz=DIST*cp2*Math.cos(tYaw);
+    const p=project(tx,ty,tz);
+    if(p){
+      // 球：与标定器同款——tgtFill 填充 + tgt 描边 + 中心点
+      const rad=Math.max(5*devicePixelRatio, f*Math.tan(1.5*D2R));
+      ctx.beginPath(); ctx.arc(p.sx,p.sy,rad,0,Math.PI*2);
+      ctx.fillStyle=SC.tgtFill; ctx.fill();
+      ctx.strokeStyle=SC.ring||SC.tgt; ctx.lineWidth=2.5; ctx.stroke();
+      ctx.beginPath(); ctx.arc(p.sx,p.sy,rad*0.25,0,Math.PI*2);
+      ctx.fillStyle=SC.tgt; ctx.fill();
+    }
+    if(now-tSpawn>2500){ ballOn=false; nextSpawn=now+400; }   // 太久没甩，跳过
+  }
+  // 准星
+  ctx.strokeStyle=SC.cross||'#fff'; ctx.lineWidth=2;
+  const cxp=W/2, cyp=H/2;
+  ctx.beginPath(); ctx.moveTo(cxp-12,cyp); ctx.lineTo(cxp+12,cyp); ctx.moveTo(cxp,cyp-12); ctx.lineTo(cxp,cyp+12); ctx.stroke();
+  ui.innerHTML=L2('第 '+(balls.length+1)+' / '+nBalls+' 球','Ball '+(balls.length+1)+' / '+nBalls);
+  if(!ballOn && now>=nextSpawn){
+    if(balls.length>=nBalls){ running=false; finish(); return; }
+    newTarget();
+  }
+}
+requestAnimationFrame(loop);
+
+/* ————— 拟合与统计 ————— */
+const TAUS=[0.02,0.025,0.03,0.035,0.04,0.045,0.05,0.055,0.06,0.065,0.07,0.075,0.08,0.09,0.10,0.11,0.12,0.13,0.14,0.15];
+function fitA(b, tau, winFixed){
+  // 起点：累计位移首次超过 0.2°
+  let onset=null, acc=0, px=b.sY, py=b.sP;
+  for(let i=0;i<b.traj.length;i++){
+    const s=b.traj[i];
+    acc+=Math.hypot(s.yaw-px, s.pitch-py); px=s.yaw; py=s.pitch;
+    if(acc>0.2*D2R){ onset=s.t; break; }
+  }
+  if(onset===null) return null;
+  const winEnd=onset+(winFixed? 0.25 : Math.max(0.25, 4*tau));
+  let sw=0, s1=0, swy=0, sy=0, sw2=0, wc=0;
+  for(const s of b.traj){
+    if(s.t<onset || s.t>winEnd) continue;
+    const dt=s.t-onset;
+    const w=1-Math.exp(-dt/tau);
+    const proj=(s.yaw-b.sY)*b.ux+(s.pitch-b.sP)*b.uy;
+    sw+=w; s1+=1; swy+=w*proj; sy+=proj; sw2+=w*w; wc++;
+  }
+  if(wc<6) return null;
+  const det=sw2*s1-sw*sw;
+  if(Math.abs(det)<1e-9) return null;
+  // 带截距：A·(1−e^(−t/τ)) + C —— onset 前已经甩出的角度由 C 吸收
+  const A=(swy*s1-sw*sy)/det;
+  const C=(sw2*sy-sw*swy)/det;
+  return {A:A, C:C, onset:onset, winEnd:winEnd};
+}
+function finish(){
+  running=false;
+  if(document.pointerLockElement) document.exitPointerLock();
+  const valid=balls.filter(b=>b.traj.length>=8);
+  if(valid.length<10){ showShort(valid.length); return; }
+  // τ：前 10 球网格搜索（固定 250ms 窗对比残差，避免窗长不等造成偏置）
+  const calib=valid.slice(0,10);
+  let tau=0.05, bestErr=Infinity;
+  for(const t of TAUS){
+    let err=0, c2=0;
+    for(const b of calib){
+      const ft=fitA(b,t,true);
+      if(!ft||!isFinite(ft.A)) continue;
+      let e2=0;
+      for(const s of b.traj){
+        if(s.t<ft.onset||s.t>ft.winEnd) continue;
+        const w=1-Math.exp(-(s.t-ft.onset)/t);
+        const proj=(s.yaw-b.sY)*b.ux+(s.pitch-b.sP)*b.uy;
+        const r=proj-(ft.A*w+ft.C); e2+=r*r;
+      }
+      err+=e2; c2++;
+    }
+    if(c2 && err/c2<bestErr){ bestErr=err/c2; tau=t; }
+  }
+  // 每球拟合（用定好的 τ），跳过前 3 球（适应）；A+C = 从甩动起点算的总幅度
+  const gains=[];
+  for(let i=3;i<valid.length;i++){
+    const ft=fitA(valid[i], tau, false);
+    if(ft && isFinite(ft.A) && isFinite(ft.C) && (ft.A+ft.C)>0) gains.push((ft.A+ft.C)/(TARGET_DEG*D2R));
+  }
+  if(gains.length<6){ showShort(gains.length); return; }
+  // 几何平均（比值用对数对称）
+  let lg=0; gains.forEach(g=>{ lg+=Math.log(g); });
+  const gain=Math.exp(lg/gains.length);
+  // bootstrap CI（按球重采样）
+  const B=2000, out=[];
+  for(let b2=0;b2<B;b2++){
+    let l2=0;
+    for(let k=0;k<gains.length;k++){ l2+=Math.log(gains[(Math.random()*gains.length)|0]); }
+    out.push(Math.exp(l2/gains.length));
+  }
+  out.sort((a,b)=>a-b);
+  const ci=(out[Math.floor(B*0.975)]-out[Math.floor(B*0.025)])/2/gain;
+  const cmNew=CM*gain;   // 过头(gain>1) = 灵敏度偏高 = cm 调大
+  const cmC=Math.max(8,Math.min(80,cmNew));
+  result={gain:gain, ci:ci, cmNew:cmC, sensNew:sensOf(cmC), balls:gains.length, tau:tau, raw:rawLockFailed};
+  const row=(k,v,cls)=>'<tr><th>'+k+'</th><td'+(cls?' class="'+cls+'"':'')+'>'+v+'</td></tr>';
+  const gTxt=(gain>=1?'+':'')+((gain-1)*100).toFixed(1)+'%';
+  resBody.innerHTML=
+    '<div style="font-size:17px;color:var(--acc);margin-bottom:4px">'+L2('结果','Result')+'</div>'+
+    (rawLockFailed? '<div style="margin-top:6px;font-size:13.5px;color:#f85149">'+L2('⚠️ 本次输入未校准（原始输入锁定失败），增益不可比。','⚠️ Raw input lock failed — gain is not comparable.')+'</div>' : '')+
+    '<table class="rt">'+
+    (rawLockFailed? '' : row(L2('开环增益','Open-loop gain'), gain.toFixed(3)+'（'+gTxt+'）· '+L2('误差 ±','error ±')+(ci*100).toFixed(2)+'%', 'big'))+
+    (rawLockFailed? '' : row(L2('拟合时间常数 τ','Fitted time constant τ'), (tau*1000).toFixed(0)+' ms'))+
+    (rawLockFailed? '' : row(L2('建议 cm/360','Suggested cm/360'), cmC.toFixed(1)+' cm → '+L2('灵敏度','sensitivity')+' <b>'+sensOf(cmC).toFixed(2)+'</b>'))+
+    row(L2('样本','Samples'), gains.length+L2(' 球',' balls'))+
+    '</table>'+
+    '<div style="margin-top:10px;font-size:13.5px;color:var(--dim)">'+L2('开环弹道 = 还没开始修正的那 250ms；gain = 拟合落点 ÷ 目标角度。测的是灵敏度本身。','The open-loop ballistic = the 250 ms before correction starts; gain = fitted endpoint ÷ target angle. This measures sensitivity itself.')+'</div>';
+  res.classList.add('show');
+}
+function showShort(n){
+  resBody.innerHTML=
+    '<div style="font-size:17px;color:var(--acc);margin-bottom:4px">'+L2('结果','Result')+'</div>'+
+    '<div style="margin-top:8px;font-size:14px">'+L2('有效甩动太少（'+n+' 球，至少 6 球）——按实战速度甩，再测一轮。','Too few valid flicks ('+n+' balls, need ≥6) — flick at real speed and run again.')+'</div>';
+  res.classList.add('show');
+}
+
+/* ————— 控制 ————— */
+document.getElementById('again').addEventListener('click',function(){
+  if(result && isFinite(result.cmNew)) setVal(cmEl, Math.round(result.cmNew*10)/10);
+  res.classList.remove('show'); start();
+});
+document.getElementById('copyRes').addEventListener('click',function(e){
+  e.stopPropagation();
+  if(!result) return;
+  const t=(window.__IS_EN
+    ? 'Open-loop gain '+result.gain.toFixed(3)+' · cm/360 '+result.cmNew.toFixed(1)+' · sensitivity '+result.sensNew.toFixed(2)
+    : '开环增益 '+result.gain.toFixed(3)+' · cm/360 '+result.cmNew.toFixed(1)+' · 灵敏度 '+result.sensNew.toFixed(2));
+  const h=document.getElementById('applyHint');
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(t).then(function(){ if(h) h.textContent=(window.__IS_EN?'Copied ✓ ':'已复制 ✓ ')+t; });
+  } else { try{ prompt('复制：',t); }catch(err){} }
+});
+document.getElementById('applyRes').addEventListener('click',function(e){
+  e.stopPropagation();
+  if(!result) return;
+  const h=document.getElementById('applyHint');
+  if(rawLockFailed){ if(h) h.textContent=window.__IS_EN?'⚠️ Raw input unavailable — not applied.':'⚠️ 原始输入不可用——没有应用。'; return; }
+  const cfg={dpi:DPI, yaw:YAW, sens:Math.round(result.sensNew*100)/100, cm:Math.round(result.cmNew*100)/100};
+  try{ localStorage.setItem('cs2at.cfg', JSON.stringify(cfg)); }catch(err){}
+  if(h) h.textContent=(window.__IS_EN?'Applied to settings ✓ cm/360 ':'已应用到设置 ✓ cm/360 ')+cfg.cm+(window.__IS_EN?' · sensitivity ':' · 灵敏度 ')+cfg.sens;
+});
+addEventListener('keydown',function(e){
+  if(e.key==='Escape'){
+    if(running && !paused){ pause(); }
+    else if(res.classList.contains('show')){ res.classList.remove('show'); }
+  }
+});
+
+/* ————— i18n ————— */
+(function(){
+  var EN=(function(){ try{
+    var q=new URLSearchParams(location.search);
+    if(q.get('lang')) return q.get('lang')==='en';
+    var s=localStorage.getItem('cs2at.lang');
+    if(s) return s==='en';
+    var n=(navigator.language||'en').toLowerCase();
+    return n.indexOf('zh')!==0;
+  }catch(e){ return true; } })();
+  window.__IS_EN=EN;
+  try{ document.documentElement.setAttribute('lang', EN?'en':'zh-CN'); }catch(e){}
+  if(!EN) return;
+  try{
+    var rw=document.getElementById('rawWarn');
+    if(rw) rw.textContent='⚠️ Raw input lock failed: this run is system-accelerated — the gain is not comparable and cannot be applied to settings.';
+  }catch(e){}
+  var D={
+    '开环标定':'Open-loop calibration',
+    '固定 20° 目标，按实战速度甩，不用刻意快':'Fixed 20° targets — flick at real speed, no need to rush',
+    '固定 20° 目标，左右交替，按实战速度甩，不用刻意快。':'Fixed 20° targets alternating left/right — flick at real speed, no need to rush.',
+    '只看甩出的头 250 毫秒：这段手按预设走、还没开始修正。拟合出「你会停在哪」，才是真正的灵敏度——命中不是目标，看增益。':'Only the first 250 ms counts: your hand follows the preset before correction starts. Fit where you would stop — that is your true sensitivity. Hits are not the goal; watch the gain.',
+    '只看甩出的头 250 毫秒：这段手按预设走、还没开始修正——拟合出「你会停在哪」，才是真正的灵敏度。':'Only the first 250 ms counts: your hand follows the preset before correction starts — fit where you would stop, and that is your true sensitivity.',
+    '命中不是目标；建议看拟合出来的增益。':'Hits are not the goal; watch the fitted gain.',
+    '鼠标 DPI':'Mouse DPI','球数':'Balls','目标角度 °':'Target angle °',
+    '开始':'Start','开 始':'START','参数 ▾':'Parameters ▾','收起参数 ▴':'Hide parameters ▴','继续':'Resume','← 返回':'← Back',
+    '结果':'Result','开环增益':'Open-loop gain','误差 ±':'error ±',
+    '拟合时间常数 τ':'Fitted time constant τ','建议 cm/360':'Suggested cm/360','灵敏度':'sensitivity','样本':'Samples','球':' balls',
+    '再测一轮（用建议值）':'Run again (with suggestion)','复制结果':'Copy result','应用到设置':'Apply to settings',
+    '开环弹道 = 还没开始修正的那 250ms；gain = 拟合落点 ÷ 目标角度。测的是灵敏度本身。':'The open-loop ballistic = the 250 ms before correction starts; gain = fitted endpoint ÷ target angle. This measures sensitivity itself.'
+  };
+  var RULES=[
+    [/^第 (\d+) \/ (\d+) 球$/,'Ball $1 / $2'],
+    [/^有效甩动太少（(\d+) 球，至少 6 球）——按实战速度甩，再测一轮。$/,'Too few valid flicks ($1 balls, need ≥6) — flick at real speed and run again.']
+  ];
+  function tr(t){
+    var s=t.trim(); if(!s) return t;
+    var m2=s.match(/^(.+?)[:：]$/);
+    if(m2&&D[m2[1]]!==undefined) return D[m2[1]]+':';
+    if(D[s]!==undefined) return D[s];
+    for(var i=0;i<RULES.length;i++){ var r=RULES[i]; if(r[0].test(s)) return s.replace(r[0],r[1]); }
+    return s;
+  }
+  function walk(node){
+    if(!node) return;
+    var kids=node.childNodes;
+    for(var i=0;i<kids.length;i++){
+      var k=kids[i];
+      if(k.nodeType===3){ var v=k.nodeValue; if(v&&v.trim()) k.nodeValue=tr(v); }
+      else if(k.nodeType===1 && k.tagName!=='SCRIPT' && k.tagName!=='STYLE') walk(k);
+    }
+  }
+  walk(document.body);
+  try{ document.title='Open-loop calibration · Vernier'; }catch(e){}
+  try{
+    ['placeholder','title','aria-label'].forEach(function(a){
+      document.querySelectorAll('['+a+']').forEach(function(el){
+        el.setAttribute(a, tr(el.getAttribute(a)||''));
+      });
+    });
+  }catch(e){}
+  try{ updSum(); }catch(e){}
+})();
+</script>
+</body>
+</html>

@@ -177,8 +177,6 @@ const hitFxMode=(function(){ try{ var m=localStorage.getItem('cs2at.hitFx'); if(
 const hitCrossMode=(function(){ try{ var m=localStorage.getItem('cs2at.hitCross'); if(m==='0') m='off'; if(!m||m==='1') m='auto'; return m; }catch(e){ return 'auto'; } })();
 const hitCrossColor=(function(){ try{ return localStorage.getItem('cs2at.hitCrossColor')||''; }catch(e){ return ''; } })();
 const hitFxMix=(function(){ try{ return localStorage.getItem('cs2at.hitFxMix')||'11'; }catch(e){ return '11'; } })();
-// 球的质感（高光/阴影）：设置页开关，默认开
-const ballTex=(function(){ try{ return localStorage.getItem('cs2at.ballTex')!=='0'; }catch(e){ return true; } })();
 let running=false, paused=false, pauseAt=0, endMode='count', endTime=120, endAt=0;
 let statePreset=false;   // 状态快测入口：数据层与自适应随机分开
 let waiting=false, cdUntil=0, cdTimer=null, endStarted=false;
@@ -1099,25 +1097,12 @@ function drawFrame(now){
     const p=project(tw,th,td);
     if(p){
       const rad=Math.max(4, f*Math.tan(radius*D2R));
-      if(ballTex){
-        if(SC.dark){
-          // 深色用光：1px 内高光（左上 25% 白点），零色带零膨胀
-          ctx.beginPath();
-          ctx.arc(p.sx-rad*0.25, p.sy-rad*0.25, Math.max(1.2, rad*0.18), 0, Math.PI*2);
-          ctx.fillStyle='rgba(255,255,255,.35)'; ctx.fill();
-        } else {
-          // 浅色用影：右下 12% 偏移、8% 黑、1.2 倍接触阴影
-          ctx.beginPath();
-          ctx.arc(p.sx+rad*0.12, p.sy+rad*0.12, rad*1.2, 0, Math.PI*2);
-          ctx.fillStyle='rgba(0,0,0,.08)'; ctx.fill();
-        }
-      }
-      // 实心目标 + 细环（浅色场景线更细、靠边不靠光）
+      // 统一球体（与标定页/跟枪页同款）：tgtFill 填充 + tgt 描边 + 中心点
+      // 单一平面渲染：不加高光、不加阴影——2D 里偏移的高光会跟着球跑，像脏点
       ctx.beginPath(); ctx.arc(p.sx,p.sy,rad,0,Math.PI*2);
       ctx.fillStyle=SC.tgtFill; ctx.fill();
-      ctx.strokeStyle=SC.ring; ctx.lineWidth=SC.dark? 2.5 : 1.5; ctx.stroke();
-      // 中心点
-      ctx.beginPath(); ctx.arc(p.sx,p.sy,rad*0.22,0,Math.PI*2);
+      ctx.strokeStyle=SC.ring||SC.tgt; ctx.lineWidth=2.5; ctx.stroke();
+      ctx.beginPath(); ctx.arc(p.sx,p.sy,rad*0.25,0,Math.PI*2);
       ctx.fillStyle=SC.tgt; ctx.fill();
       // 倒计时只当警告：剩余 <35% 才出现，画在球内侧，不冒充靶子
       if(limitChk.checked){

@@ -602,18 +602,19 @@ try{
       <div class="hint" id="gameConvHint" style="margin-top:10px">先选游戏，再改下面的灵敏度；改完自动换算，DPI 不动。只按腰射，开镜倍率不适用。m_yaw 没改过就别动（默认 0.022 就是对的）。</div>
 
       <div class="row" style="margin-top:14px">
-        <a class="tile" data-cal style="flex:1;min-width:240px;max-width:440px" href="tools/sensitivity-calibrator.html?fast=1">
+        <a class="tile" data-cal style="flex:1;min-width:240px;max-width:440px" href="tools/sensitivity-calibrator-strict.html?fast=1">
           <div class="t">快速标定</div>
           <div class="d">固定 3 轮出建议，新手快速找到自己的灵敏度。</div>
         </a>
-        <a class="tile" data-cal style="flex:1;min-width:240px;max-width:440px" href="tools/sensitivity-calibrator.html">
+        <a class="tile" data-cal style="flex:1;min-width:240px;max-width:440px" href="tools/sensitivity-calibrator-strict.html">
           <div class="t">灵敏度标定</div>
           <div class="d">遇到瓶颈的用户：找出属于这个阶段最好的灵敏度。</div>
         </a>
-        <a class="tile" data-cal style="flex:1;min-width:240px;max-width:440px" href="tools/tracking-calibrator.html">
-          <div class="t">跟枪标定</div>
-          <div class="d">90 秒跟枪、每帧采样，把增益缩到 ±1%；再用甩枪确认实战手感。</div>
+        <a class="tile" data-cal style="flex:1;min-width:240px;max-width:440px" href="tools/openloop-calibrator.html">
+          <div class="t">开环标定</div>
+          <div class="d">拟合甩出前 250ms 的弹道——测「预设落点」，灵敏度本身。</div>
         </a>
+
       </div>
       <div class="hint" style="margin-top:12px">换鼠标、改 DPI 或手感发飘，先回来重新标定一次。</div>
     </div>
@@ -683,7 +684,6 @@ try{
         <div id="prevCross" style="position:absolute;inset:0"></div>
       </div>
       <div class="row" style="margin-top:10px;align-items:center;gap:18px">
-        <label class="sw"><input type="checkbox" id="iBallTex" checked> 球的质感（高光 / 阴影）</label>
       </div>
       <div class="row" style="margin-top:10px">
         <button id="sceneImport" style="padding:8px 16px">导入准星</button>
@@ -883,7 +883,7 @@ const EN={
   '测出你每次都甩过头还是不够，把明显的偏差修掉。':'Measures whether you overshoot or fall short, and fixes the obvious bias.',
   '快速标定':'Quick calibration','固定 3 轮出建议，新手快速找到自己的灵敏度。':'3 fixed rounds then a suggestion — the fast way for beginners to find their sensitivity.',
   '遇到瓶颈的用户：找出属于这个阶段最好的灵敏度。':'Hit a plateau? Find the best sensitivity for your current stage.',
-  '跟枪标定':'Tracking calibration','90 秒跟枪、每帧采样，把增益缩到 ±1%；再用甩枪确认实战手感。':'90-second tracking, frame-by-frame sampling, gain to ±1%; confirm real feel with flicks.',
+  '开环标定':'Open-loop calibration','拟合甩出前 250ms 的弹道——测「预设落点」，灵敏度本身。':'Fits your first 250 ms of flick — measures the preset endpoint, sensitivity itself.',
   '语言 / Language':'Language',
   '输入设备':'Input device',
   '选训练时的输入设备；手柄瞄准方式在这里调。':'Pick the training input device; gamepad aim style is tuned here.',
@@ -918,7 +918,7 @@ const EN={
   // 场景名
   '经典':'Classic','浅灰':'Pale grey','暗蓝':'Night blue','纯黑':'Pure black','沙色':'Sandstone',
   '训练场景配色':'Training scene palette','训练页 3D 场景的背景、网格与准星配色。':'Background, grid and crosshair colours in the trainer.',
-  '球的质感（高光 / 阴影）':'Ball texture (highlight / shadow)',
+
   '准星':'Crosshair',
   '样式、尺寸、颜色都可调；分享码只包含准星。':'Style, size and colour are all adjustable; the share code covers the crosshair only.',
   '样式':'Style','十字':'Cross','圆点':'Dot','静态':'Static','动态':'Dynamic',
@@ -1287,7 +1287,10 @@ function renderDrills(){
      u:'tools/aim-trainer.html?mode=wide&count=30&limit=0'+q},
     {g:'练习', t:'微调训练',d:'目标匀速漂移，跟着点。VAL / APEX / OW 的核心项目。',
      dEN:'Targets drift at a steady speed — click while tracking. Core skill for VAL / APEX / OW.',
-     u:'tools/aim-trainer.html?mode=track&count=30&limit=0'+q}
+     u:'tools/aim-trainer.html?mode=track&count=30&limit=0'+q},
+    {g:'评估', t:'跟枪测试',d:'90 秒跟枪，输出跟踪误差 RMS、相位滞后、速度增益——检验跟枪手感。',
+     dEN:'90-second tracking: error RMS, phase lag and speed gain — test your tracking feel.',
+     u:'tools/tracking-calibrator.html?'+q.slice(1)}
   ];
   const drillEN=false;   // 说明已进词典，渲染只出中文，翻译交给 translateRoot
   const groups=[['评估','Assessment'],['练习','Practice']];
@@ -1608,7 +1611,6 @@ function fillSettings(){
   $('iPerf').checked=localStorage.getItem(K_PERF)==='1';
   $('iFps').value=localStorage.getItem(K_FPS)||'0';
   $('iFpsShow').checked=localStorage.getItem(K_FPSSHOW)!=='0';
-  $('iBallTex').checked=localStorage.getItem('cs2at.ballTex')!=='0';
   try{
     const d=parseInt(localStorage.getItem('cs2at.delay'));
     $('iDelay').value = isNaN(d)? 3 : Math.max(0,Math.min(5,d));

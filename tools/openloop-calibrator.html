@@ -394,67 +394,52 @@ function loop(now){
 requestAnimationFrame(loop);
 
 /* ————— 拟合与统计 ————— */
-// 真人甩枪是 S 形（先加速后减速），不是指数。指数模型没有加速段，
-// 会把"动作形状"吸收进 A —— 实测同一个灵敏度能被读成 1.09~1.28。
-// 改用最小急动度：θ(u) = A·(10u³ − 15u⁴ + 6u⁵)，u = (t−onset)/D
-const DS=[0.10,0.12,0.14,0.16,0.18,0.20,0.24,0.28,0.32,0.38,0.45,0.55];
-function mj(u){ if(u<0) u=0; else if(u>1) u=1; return 10*u*u*u-15*u*u*u*u+6*u*u*u*u*u; }
-function fitA(b, tau, winFixed){
-  // 起点：累计位移首次超过 0.2°
+// 不外推，也不拟合曲线：直接找"首次停住"的位置。
+// 甩枪 = 弹道段（开环）+ 修正段（闭环）。弹道段的落点就是速度第一次归零的地方。
+// 曲线拟合做不到这件事：A 和 D 在一段截断轨迹里不能同时辨识，
+// 同一个动作指数模型读 0.88、S 曲线模型读 1.33 —— 那是模型在替数据说话。
+const STOP_SPEED=25*D2R;   // 25°/s
+const STOP_HOLD=0.08;      // 连续 80ms
+function onsetOf(b){
   let onset=null, acc=0, px=b.sY, py=b.sP;
-  for(let i=0;i<b.traj.length;i++){
-    const s=b.traj[i];
+  for(const s of b.traj){
     acc+=Math.hypot(s.yaw-px, s.pitch-py); px=s.yaw; py=s.pitch;
     if(acc>0.2*D2R){ onset=s.t; break; }
   }
+  return onset;
+}
+function stopEndpoint(b){
+  const onset=onsetOf(b);
   if(onset===null) return null;
-  const winEnd=onset+(winFixed? 0.35 : Math.max(0.35, 1.6*tau));
-  let sw=0, s1=0, swy=0, sy=0, sw2=0, wc=0;
-  for(const s of b.traj){
-    if(s.t<onset || s.t>winEnd) continue;
-    const dt=s.t-onset;
-    const w=mj(dt/tau);
-    const proj=(s.yaw-b.sY)*b.ux+(s.pitch-b.sP)*b.uy;
-    sw+=w; s1+=1; swy+=w*proj; sy+=proj; sw2+=w*w; wc++;
+  const a=b.traj; let lo=-1;
+  for(let i=1;i<a.length;i++){
+    if(a[i].t<onset) continue;
+    const dt=a[i].t-a[i-1].t;
+    if(dt<=1e-6) continue;
+    const sp=Math.hypot(a[i].yaw-a[i-1].yaw, a[i].pitch-a[i-1].pitch)/dt;
+    if(sp>STOP_SPEED){ lo=-1; continue; }
+    if(lo<0) lo=a[i].t;
+    if(a[i].t-lo>=STOP_HOLD){
+      return {proj:(a[i].yaw-b.sY)*b.ux+(a[i].pitch-b.sP)*b.uy, t:a[i].t, onset:onset};
+    }
   }
-  if(wc<6) return null;
-  const det=sw2*s1-sw*sw;
-  if(Math.abs(det)<1e-9) return null;
-  // 带截距：A·(1−e^(−t/τ)) + C —— onset 前已经甩出的角度由 C 吸收
-  const A=(swy*s1-sw*sy)/det;
-  const C=(sw2*sy-sw*swy)/det;
-  return {A:A, C:C, onset:onset, winEnd:winEnd};
+  return null;
 }
 function finish(){
   running=false;
   if(document.pointerLockElement) document.exitPointerLock();
   const valid=balls.filter(b=>b.traj.length>=8);
   if(valid.length<10){ showShort(valid.length); return; }
-  // τ：前 10 球网格搜索（固定 250ms 窗对比残差，避免窗长不等造成偏置）
-  const calib=valid.slice(0,10);
-  let tau=0.20, bestErr=Infinity;
-  for(const t of DS){
-    let err=0, c2=0;
-    for(const b of calib){
-      const ft=fitA(b,t,true);
-      if(!ft||!isFinite(ft.A)) continue;
-      let e2=0;
-      for(const s of b.traj){
-        if(s.t<ft.onset||s.t>ft.winEnd) continue;
-        const w=mj((s.t-ft.onset)/t);
-        const proj=(s.yaw-b.sY)*b.ux+(s.pitch-b.sP)*b.uy;
-        const r=proj-(ft.A*w+ft.C); e2+=r*r;
-      }
-      err+=e2; c2++;
-    }
-    if(c2 && err/c2<bestErr){ bestErr=err/c2; tau=t; }
-  }
-  // 每球拟合（用定好的 τ），跳过前 3 球（适应）；A+C = 从甩动起点算的总幅度
-  const gains=[];
+  // 每球取首次停点，跳过前 3 球（适应）
+  const gains=[]; let tried=0, stopped=0;
   for(let i=3;i<valid.length;i++){
-    const ft=fitA(valid[i], tau, false);
-    if(ft && isFinite(ft.A) && isFinite(ft.C) && (ft.A+ft.C)>0) gains.push((ft.A+ft.C)/(TARGET_DEG*D2R));
+    tried++;
+    const st=stopEndpoint(valid[i]);
+    if(!st || !(st.proj>0)) continue;
+    stopped++;
+    gains.push(st.proj/(TARGET_DEG*D2R));
   }
+  const stopRate = tried? stopped/tried : 0;
   if(gains.length<6){ showShort(gains.length); return; }
   // 几何平均（比值用对数对称）
   let lg=0; gains.forEach(g=>{ lg+=Math.log(g); });
@@ -470,7 +455,7 @@ function finish(){
   const ci=(out[Math.floor(B*0.975)]-out[Math.floor(B*0.025)])/2/gain;
   const cmNew=CM*gain;   // 过头(gain>1) = 灵敏度偏高 = cm 调大
   const cmC=Math.max(8,Math.min(80,cmNew));
-  result={gain:gain, ci:ci, cmNew:cmC, sensNew:sensOf(cmC), balls:gains.length, tau:tau, raw:rawLockFailed};
+  result={gain:gain, ci:ci, cmNew:cmC, sensNew:sensOf(cmC), balls:gains.length, stopRate:stopRate, raw:rawLockFailed};
   const row=(k,v,cls)=>'<tr><th>'+k+'</th><td'+(cls?' class="'+cls+'"':'')+'>'+v+'</td></tr>';
   const gTxt=(gain>=1?'+':'')+((gain-1)*100).toFixed(1)+'%';
   resBody.innerHTML=
@@ -478,11 +463,11 @@ function finish(){
     (rawLockFailed? '<div style="margin-top:6px;font-size:13.5px;color:#f85149">'+L2('⚠️ 本次输入未校准（原始输入锁定失败），增益不可比。','⚠️ Raw input lock failed — gain is not comparable.')+'</div>' : '')+
     '<table class="rt">'+
     (rawLockFailed? '' : row(L2('开环增益','Open-loop gain'), gain.toFixed(3)+'（'+gTxt+'）· '+L2('误差 ±','error ±')+(ci*100).toFixed(2)+'%', 'big'))+
-    (rawLockFailed? '' : row(L2('拟合动作时长 D','Fitted movement duration D'), (tau*1000).toFixed(0)+' ms'))+
+    row(L2('停点检出','Stop detected'), Math.round(stopRate*100)+L2('%（没停住的球不计）','% (continuous flicks are dropped)'))+
     (rawLockFailed? '' : row(L2('建议 cm/360','Suggested cm/360'), cmC.toFixed(1)+' cm → '+L2('灵敏度','sensitivity')+' <b>'+sensOf(cmC).toFixed(2)+'</b>'))+
     row(L2('样本','Samples'), gains.length+L2(' 球（前 3 球已跳过）',' balls (first 3 skipped)'))+
     '</table>'+
-    '<div style="margin-top:10px;font-size:13.5px;color:var(--dim)">'+L2('开环弹道 = 还没开始修正的那一段；gain = 拟合落点 ÷ 目标角度。用 S 形（最小急动度）拟合，不把动作快慢算成灵敏度。','The open-loop ballistic = the stretch before correction starts; gain = fitted endpoint ÷ target angle. Fitted with an S-curve (minimum jerk) so movement speed is not read as sensitivity.')+'</div>';
+    '<div style="margin-top:10px;font-size:13.5px;color:var(--dim)">'+L2('开环弹道 = 还没开始修正的那一段。gain = 首次停住的位置 ÷ 目标角度——不外推、不拟合，停点在哪就是哪。','The open-loop ballistic = the stretch before correction starts. gain = position at the first stop ÷ target angle — no extrapolation, no curve fitting.')+'</div>';
   res.classList.add('show');
 }
 function showShort(n){
@@ -551,7 +536,7 @@ addEventListener('keydown',function(e){
     '鼠标 DPI':'Mouse DPI','球数':'Balls','目标角度 °':'Target angle °',
     '开始':'Start','开 始':'START','参数 ▾':'Parameters ▾','收起参数 ▴':'Hide parameters ▴','继续':'Resume','← 返回':'← Back',
     '结果':'Result','开环增益':'Open-loop gain','误差 ±':'error ±',
-    '拟合时间常数 τ':'Fitted time constant τ','建议 cm/360':'Suggested cm/360','灵敏度':'sensitivity','样本':'Samples','球':' balls',
+    '停点检出':'Stop detected','建议 cm/360':'Suggested cm/360','灵敏度':'sensitivity','样本':'Samples','球':' balls',
     '再测一轮（用建议值）':'Run again (with suggestion)','复制结果':'Copy result','应用到设置':'Apply to settings',
     '开环弹道 = 还没开始修正的那 250ms；gain = 拟合落点 ÷ 目标角度。测的是灵敏度本身。':'The open-loop ballistic = the 250 ms before correction starts; gain = fitted endpoint ÷ target angle. This measures sensitivity itself.'
   };

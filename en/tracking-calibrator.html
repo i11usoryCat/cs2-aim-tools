@@ -1,119 +1,186 @@
 <!doctype html>
-<html lang="en" data-theme="sand">
+<html lang="zh-CN">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Tracking calibration · Vernier</title><link rel="canonical" href="https://i11usorycat.github.io/cs2-aim-tools/en/tracking-calibrator.html"><link rel="alternate" hreflang="en" href="https://i11usorycat.github.io/cs2-aim-tools/en/tracking-calibrator.html"><link rel="alternate" hreflang="zh" href="https://i11usorycat.github.io/cs2-aim-tools/tools/tracking-calibrator.html"><link rel="alternate" hreflang="x-default" href="https://i11usorycat.github.io/cs2-aim-tools/"><meta property="og:title" content="Vernier — tracking calibration"><meta property="og:description" content="90 seconds of circular tracking, one sample per frame: estimate your sensitivity gain to ±1%, then confirm with flicks."><meta property="og:image" content="https://i11usorycat.github.io/cs2-aim-tools/assets/og-en.png"><meta property="og:url" content="https://i11usorycat.github.io/cs2-aim-tools/en/tracking-calibrator.html">
-<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<title>Tracking test · Vernier</title><link rel="canonical" href="https://i11usorycat.github.io/cs2-aim-tools/en/tracking-calibrator.html"><link rel="alternate" hreflang="en" href="https://i11usorycat.github.io/cs2-aim-tools/en/tracking-calibrator.html"><link rel="alternate" hreflang="zh" href="https://i11usorycat.github.io/cs2-aim-tools/tools/tracking-calibrator.html"><link rel="alternate" hreflang="x-default" href="https://i11usorycat.github.io/cs2-aim-tools/"><meta property="og:title" content="Vernier — tracking test"><meta property="og:description" content="90 seconds of circular tracking: error RMS, phase lag and speed gain. No install, all local."><meta property="og:image" content="https://i11usorycat.github.io/cs2-aim-tools/assets/og-en.png"><meta property="og:url" content="https://i11usorycat.github.io/cs2-aim-tools/en/tracking-calibrator.html">
+<meta name="description" content="90 seconds of circular tracking: error RMS, phase lag and speed gain. No install, all local.">
+<link rel="canonical" href="https://i11usorycat.github.io/cs2-aim-tools/tools/tracking-calibrator.html">
+<link rel="alternate" hreflang="en" href="https://i11usorycat.github.io/cs2-aim-tools/en/tracking-calibrator.html">
+<link rel="alternate" hreflang="zh" href="https://i11usorycat.github.io/cs2-aim-tools/tools/tracking-calibrator.html">
+<link rel="alternate" hreflang="x-default" href="https://i11usorycat.github.io/cs2-aim-tools/">
 <style>
-:root{--bg:#f7f2e8;--panel:#fdfaf3;--panel2:#efe7d7;--txt:#33291c;--dim:#7b6a54;
-  --line:#e2d7c3;--line2:#cfc1a6;--acc:#c2410c;--acc2:#9a3412;--on-acc:#fff;
-  --gold:#d29922;--head:rgba(247,242,232,.85)}
-html[data-theme=night]{--bg:#0d1117;--panel:#161b22;--panel2:#1c2430;--txt:#e6edf3;--dim:#8b98a5;
-  --line:#2a333f;--line2:#3a4552;--acc:#58a6ff;--acc2:#2f81f7;--on-acc:#0d1117;
-  --gold:#d29922;--head:rgba(13,17,23,.85)}
-*{box-sizing:border-box;margin:0;padding:0}
-body{background:var(--bg);color:var(--txt);font:15px/1.65 -apple-system,"Segoe UI","Microsoft YaHei",system-ui,sans-serif;
-  -webkit-font-smoothing:antialiased;transition:background .3s,color .3s}
-a{color:var(--acc);text-decoration:none}
-.page{max-width:620px;margin:0 auto;padding:26px 18px 70px}
-.top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:18px}
-.back{font-size:13.5px;color:var(--dim)}
-.title{font-size:20px;color:var(--acc);font-weight:700}
-.msg{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px;margin-bottom:14px}
-.msg .hint{font-size:13.5px;color:var(--dim);margin-top:10px}
-.row{display:flex;flex-wrap:wrap;gap:12px;margin-top:14px;align-items:flex-end}
-label{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--dim)}
-input,select{background:var(--bg);color:var(--txt);border:1px solid var(--line);border-radius:8px;
-  padding:8px 10px;font-size:14px;width:110px;outline:none}
-input:focus{border-color:var(--acc)}
-.btn{background:var(--acc);color:var(--on-acc);border:none;border-radius:10px;padding:11px 34px;
-  font-size:15px;font-weight:600;cursor:pointer;transition:.15s}
-.btn:hover{filter:brightness(1.1)}
-.btn:disabled{opacity:.45;cursor:default}
-#sum{margin-top:12px;font-size:13px;color:var(--dim)}
-#rawWarn{display:none;position:fixed;left:50%;top:70px;transform:translateX(-50%);z-index:9999;
-  background:rgba(20,16,8,.92);border:1px solid var(--gold);color:#f5d78a;padding:9px 16px;
-  border-radius:10px;font-size:13px;max-width:min(560px,calc(100vw - 32px));pointer-events:none}
-/* 竞技场 */
-#arena{position:fixed;inset:0;background:var(--bg);z-index:900;display:none;cursor:crosshair}
-#arena .hud{position:absolute;left:18px;top:14px;font-size:13px;color:var(--dim);user-select:none}
-#arena .tip{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);
-  font-size:12.5px;color:var(--dim);user-select:none}
-/* 结果浮层 */
-.overlay{position:fixed;inset:0;z-index:950;display:none;align-items:center;justify-content:center;
-  background:rgba(10,8,4,.5)}
-.overlay.show{display:flex}
-.res{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:26px;
-  max-width:560px;width:calc(100vw - 36px);max-height:86vh;overflow:auto}
-.rt{width:100%;border-collapse:collapse;margin-top:10px}
-.rt th,.rt td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);font-size:14px}
-.rt th{color:var(--dim);font-weight:500;font-size:13px}
-.rt td.big{color:var(--acc);font-weight:700}
+  html,body{margin:0;height:100%;background:var(--bg);overflow:hidden;color:var(--txt);font-family:"Microsoft YaHei",sans-serif}
+  canvas{display:block;cursor:none}
+  #ui{position:fixed;left:24px;top:20px;font-size:14px;line-height:1.9;pointer-events:none;text-shadow:0 0 6px #000}
+  .overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;
+    text-align:center;font-size:16px;line-height:2;color:var(--txt);background:var(--overlay)}
+  .overlay.show{display:flex}
+  #back{position:fixed;left:16px;top:14px;z-index:40;display:none;font-size:13px;color:var(--dim);
+    text-decoration:none;padding:7px 12px;border-radius:9px;border:1px solid transparent;transition:.15s}
+  #back:hover{color:var(--acc);border-color:var(--line);background:var(--panel)}
+  #back.on{display:inline-block}
+  .btn{margin-top:24px;padding:13px 40px;font-size:16px;font-family:inherit;cursor:pointer;
+    background:var(--acc);border:1px solid var(--acc);color:var(--on-acc);border-radius:8px;pointer-events:auto}
+  .btn:hover{background:var(--acc)}
+  input{width:110px;padding:8px;background:var(--panel);border:1px solid var(--line);color:var(--txt);
+    border-radius:6px;font-size:15px;text-align:center;pointer-events:auto}
+  table{border-collapse:collapse;margin-top:8px}
+  .rt td,.rt th{padding:5px 14px;font-size:14px}
+  #res{overflow:auto;padding:20px}
+  #resBody{max-height:78vh;overflow:auto}
+  td,th{padding:9px 20px;text-align:right;border-bottom:1px solid var(--panel)}
+  th{color:var(--dim);font-weight:500}
+  .big{font-size:30px;font-weight:700;color:var(--acc)}
+  /* 与训练器统一的开始页：参数默认收起 */
+  #msg .pauseHide{display:none}
+  #msg.showParams .pauseHide{display:block}
+  .fld{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--dim);align-items:flex-start}
+  .fld input{padding:7px 9px;background:var(--panel);border:1px solid var(--line);color:var(--txt);
+    border-radius:7px;font-size:14px;width:110px;text-align:center;pointer-events:auto}
+  .more{margin-top:18px;padding:9px 18px;border-radius:9px;border:1px solid var(--line);background:transparent;
+    color:var(--dim);font-size:13px;font-family:inherit;cursor:pointer;pointer-events:auto}
+  .more:hover{color:var(--txt);border-color:var(--acc)}
 </style>
 </head>
 <body>
-<div class="page">
-  <div class="top">
-    <a class="back" href="../app.html#play">← 返回训练中心</a>
-    <div class="title" id="ttl">跟枪标定</div>
-  </div>
-  <div class="msg">
-    <div style="font-size:17px;color:var(--acc);margin-bottom:6px">90 秒跟枪 · 每帧一个样本</div>
-    <div>目标走圆，准星压在目标上。跟枪是每帧采样：90 秒 ≈ 5000+ 帧，误差半宽能到 ±0.5% 以内——比数「球」快一个数量级。<br>
-    <span style="color:var(--acc)">跟枪 ≠ 甩枪：这里估的是增益（你偏多少），实战里再用甩枪确认手感。</span></div>
-    <div class="row">
-      <label>鼠标 DPI <input id="dpi" type="number" step="100" value="800" style="width:90px"></label>
-      <label>m_yaw <input id="yaw" type="number" step="0.0001" value="0.022" style="width:100px"></label>
-      <label>cm/360 <input id="cm" type="number" step="0.1" value="27.1" style="width:90px"></label>
-      <label>角速度 °/s <input id="w" type="number" step="5" value="60" style="width:80px"></label>
-      <label>半径 ° <input id="r" type="number" step="1" value="15" style="width:70px"></label>
-      <label>时长 秒 <input id="t" type="number" step="10" value="90" style="width:70px"></label>
+<a id="back" href="../app.html#play">← 返回</a>
+<canvas id="c"></canvas>
+<div id="ui"></div>
+
+<div id="msg" class="overlay show">
+  <div id="ttl" style="font-size:26px;color:var(--txt);font-weight:700;letter-spacing:2px">跟枪测试</div>
+  <div style="margin-top:8px;color:var(--dim);font-size:14px">目标走圆，准星压在目标上</div>
+  <button id="go" class="btn" style="margin-top:26px;padding:16px 64px;font-size:18px;letter-spacing:2px">开 始</button>
+  <div id="sum" style="margin-top:14px;font-size:13px;color:var(--dim)"></div>
+  <div id="bw" style="margin-top:10px;font-size:13px;line-height:1.8;color:var(--gold)"></div>
+  <button id="more" class="more">参数 ▾</button>
+  <div class="pauseHide" style="margin-top:22px;width:100%;max-width:560px">
+    <div style="display:flex;flex-wrap:wrap;gap:14px 18px;justify-content:center">
+      <label class="fld">鼠标 DPI<input id="dpi" type="number" step="100" value="800"></label>
+      <label class="fld">m_yaw<input id="yaw" type="number" step="0.0001" value="0.022"></label>
+      <label class="fld">cm/360<input id="cm" type="number" step="0.1" value="27.1"></label>
+      <label class="fld">相位角速度 °/s<input id="w" type="number" step="5" value="60"></label>
+      <label class="fld">半径 °<input id="r" type="number" step="1" value="15"></label>
+      <label class="fld">时长 秒<input id="t" type="number" step="10" value="90"></label>
     </div>
-    <div id="sum" style="margin-top:12px"></div>
-    <button id="go" class="btn">开始</button>
-    <div id="rawWarn">⚠️ 原始输入锁定失败：本次测量经过系统加速，增益估计不可比，不允许「应用到设置」。</div>
+    <div style="margin-top:16px;font-size:12.5px;color:var(--dim);line-height:1.8">
+      跟枪 ≠ 灵敏度标定：这里测跟枪手感（误差 RMS、相位滞后、速度增益）；找灵敏度请用「灵敏度标定」。
+    </div>
   </div>
+  <div id="rawWarn" style="display:none;position:fixed;left:50%;top:70px;transform:translateX(-50%);z-index:9999;background:rgba(20,16,8,.92);border:1px solid var(--gold);color:#f5d78a;padding:9px 16px;border-radius:10px;font-size:13px;line-height:1.6;max-width:min(560px,calc(100vw - 32px));pointer-events:none">⚠️ 原始输入锁定失败：本次测量经过系统加速，误差指标不可比。</div>
 </div>
 
-<div id="arena">
-  <canvas id="cv"></canvas>
-  <div class="hud" id="hud">0:00 · 0 帧</div>
-  <div class="tip">准星压在目标上，跟住它 · Esc 结束并出结果</div>
-</div>
-
-<div id="res" class="overlay"><div class="res"><div id="resBody"></div>
-  <button id="again" class="btn" style="margin-top:16px">再测一轮（用建议值）</button>
+<div id="res" class="overlay"><div id="resBody"></div>
+  <button id="again" class="btn">再测一轮</button>
   <div style="margin-top:12px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
-    <button id="copyRes" class="btn" style="background:transparent;border:1px solid var(--line);color:var(--dim);font-size:13px;padding:8px 16px">复制结果</button>
-    <button id="applyRes" class="btn" style="background:transparent;border:1px solid var(--line);color:var(--dim);font-size:13px;padding:8px 16px">应用到设置</button>
+    <button id="copyRes" class="btn" style="background:transparent;border-color:var(--line);color:var(--dim);font-size:13px;padding:8px 16px">复制结果</button>
   </div>
-  <div id="applyHint" style="margin-top:8px;font-size:13px;color:var(--acc)"></div>
-</div></div>
+  <div id="copyHint" style="margin-top:8px;font-size:13px;color:var(--acc)"></div></div>
 
+<script src="../assets/scenes.js"></script>
 <script>
 'use strict';
-/* ————— 基础状态 ————— */
-var D2R=Math.PI/180;
-var dpiEl=document.getElementById('dpi'), yawEl=document.getElementById('yaw'),
-    cmEl=document.getElementById('cm'), wEl=document.getElementById('w'),
-    rEl=document.getElementById('r'), tEl=document.getElementById('t');
-var cv=document.getElementById('cv'), ctx=cv.getContext('2d');
-var arena=document.getElementById('arena'), hud=document.getElementById('hud');
-var yaw=0, pitch=0;           // 准星视角（玩家旋转的累计角度）
-var running=false, t0=0, T=90000;
-var targetAng=0;              // 目标相位
-var tA=[], thY=[], thP=[], phY=[], phP=[], erA=[];
-var result=null;
-var DPI=800, YAW=0.022, CM=27.1;
-var lastThY=0, lastThP=0, lastPhY=0, lastPhP=0, lastT=0, firstFrame=true;
-var rawLockFailed=false;
+/* ————— 场景与主题（同标定器：页面皮肤跟随站点） ————— */
+const SCENES=window.GAME_SCENES;
+const THEME2SCENE=window.THEME2SCENE;
+function pickScene(){
+  try{
+    const q=new URLSearchParams(location.search);
+    if(q.get('scene') && SCENES[q.get('scene')]) return q.get('scene');
+    const th=q.get('theme')||localStorage.getItem('cs2at.theme')||(function(){var d=new Date(),tm=d.getHours()*60+d.getMinutes();return (tm>=1410||tm<460)?'forest':'sand';})();
+    if(th && THEME2SCENE[th]) return THEME2SCENE[th];
+    const sc=localStorage.getItem('cs2at.scene');
+    if(sc && SCENES[sc]) return sc;
+  }catch(e){}
+  return 'classic';
+}
+const SC=SCENES[pickScene()]||SCENES.classic;
+const SITE_THEMES={
+  ink:{bg:'#f7f5f0',panel:'#fffefb',line:'#e2dccf',txt:'#202b2c',dim:'#6d7a7b',acc:'#0f766e'},
+  jade:{bg:'#101917',panel:'#16211f',line:'#2a3a36',txt:'#efeade',dim:'#93a8a1',acc:'#7fbfa6'},
+  lake:{bg:'#eef4f6',panel:'#ffffff',line:'#d2e2e7',txt:'#14313a',dim:'#587a85',acc:'#0e7490'},
+  light:{bg:'#f4f6f9',panel:'#ffffff',line:'#dde4ed',txt:'#1a2230',dim:'#5b6879',acc:'#2f6feb'},
+  sand:{bg:'#f7f2e8',panel:'#fffdf8',line:'#e3d9c6',txt:'#33291c',dim:'#7b6a54',acc:'#c2410c'},
+  forest:{bg:'#0f1a14',panel:'#16241b',line:'#2a4433',txt:'#e8f2ea',dim:'#8aa697',acc:'#4ade80'},
+  mono:{bg:'#15171b',panel:'#1c1f24',line:'#2e333b',txt:'#e8eaee',dim:'#98a0aa',acc:'#c9d1d9'},
+  cyber:{bg:'#120a1f',panel:'#1b1032',line:'#3a2166',txt:'#f1eaff',dim:'#a98fd6',acc:'#c084fc'},
+  night:{bg:'#0b0f14',panel:'#151b24',line:'#2a3442',txt:'#e6edf3',dim:'#8b949e',acc:'#58a6ff'}
+};
+(function(){
+  const th=(function(){ try{ var q=new URLSearchParams(location.search); return q.get('theme')||localStorage.getItem('cs2at.theme')||(function(){var d=new Date(),tm=d.getHours()*60+d.getMinutes();return (tm>=1410||tm<460)?'forest':'sand';})(); }catch(e){ return 'sand'; } })();
+  const t=SITE_THEMES[th]||SITE_THEMES.sand;
+  const dark=!(th==='ink'||th==='light'||th==='lake'||th==='sand');
+  const r=document.documentElement.style;
+  r.setProperty('--bg',t.bg); r.setProperty('--panel',t.panel); r.setProperty('--line',t.line);
+  r.setProperty('--txt',t.txt); r.setProperty('--dim',t.dim); r.setProperty('--acc',t.acc);
+  r.setProperty('--on-acc','#ffffff');
+  r.setProperty('--overlay',dark?'rgba(11,15,20,.96)':'rgba(238,244,246,.97)');
+})();
 
-function wrap180(a){ a=((a+180)%360+360)%360-180; return a; }
-function sensOf(cm){ return 360/((cm/2.54)*DPI)/YAW; }
-function kOf(cm){ return 360/(cm*DPI)*2.54/YAW; }   // 每鼠标计数转视角度（=360/cm/DPI*2.54/yaw 的等价口径）
+/* ————— 基础 ————— */
+const cv=document.getElementById('c'), ctx=cv.getContext('2d');
+const ui=document.getElementById('ui');
+const msg=document.getElementById('msg'), go=document.getElementById('go');
+const res=document.getElementById('res'), resBody=document.getElementById('resBody');
+const D2R=Math.PI/180, R2D=180/Math.PI;
+const FOVH=90, DIST=10, EYE=1.6, NEAR=0.25;
+const PITCH_LIM=75*Math.PI/180;
+let W=0,H=0,f=1;
+let yaw=0, pitch=0;
+let running=false, paused=false, pauseAt=0;
+let t0=0, T=90000;
+let DPI=800, YAW=0.022, CM=27.1, W_DEG=60, R_DEG=15;
+let tA=[], thY=[], thP=[], phY=[], phP=[], erA=[];
+let result=null, lastT=0, firstFrame=true;
+let rawLockFailed=false;
+let L2=function(zh,en){ return window.__IS_EN? en: zh; };
+
+function wrapPi(a){ while(a> Math.PI) a-=2*Math.PI; while(a<-Math.PI) a+=2*Math.PI; return a; }
+const sensOf = cm => 360/((cm/2.54)*DPI)/YAW;
+const kOf = cm => (360/((cm/2.54)*DPI))*D2R;
+
+function resize(){
+  W=cv.width=innerWidth*devicePixelRatio; H=cv.height=innerHeight*devicePixelRatio;
+  cv.style.width=innerWidth+'px'; cv.style.height=innerHeight+'px';
+  f=(W/2)/Math.tan(FOVH/2*D2R);
+}
+addEventListener('resize',resize); resize();
+
+function toCam(x,y,z){
+  const cy=Math.cos(yaw), sy=Math.sin(yaw);
+  const x1= x*cy - z*sy, z1= x*sy + z*cy;
+  const cp=Math.cos(pitch), sp=Math.sin(pitch);
+  return {x:x1, y:y*cp - z1*sp, z:y*sp + z1*cp};
+}
+function projCam(c){ return {sx:W/2+(c.x/c.z)*f, sy:H/2-(c.y/c.z)*f}; }
+function project(x,y,z){ const c=toCam(x,y,z); return c.z<=NEAR? null : projCam(c); }
+function line3(x1,y1,z1,x2,y2,z2,color){
+  let a=toCam(x1,y1,z1), b=toCam(x2,y2,z2);
+  if(a.z<NEAR && b.z<NEAR) return;
+  if(a.z<NEAR){ const t=(NEAR-a.z)/(b.z-a.z); a={x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t,z:NEAR}; }
+  else if(b.z<NEAR){ const t=(NEAR-b.z)/(a.z-b.z); b={x:b.x+(a.x-b.x)*t,y:b.y+(a.y-b.y)*t,z:NEAR}; }
+  const pa=projCam(a), pb=projCam(b);
+  ctx.strokeStyle=color; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(pa.sx,pa.sy); ctx.lineTo(pb.sx,pb.sy); ctx.stroke();
+}
+function grid(){
+  const R=44, step=3;
+  for(let v=-R; v<=R; v+=step){
+    line3(v,-EYE,-R, v,-EYE,R, (v===0)?SC.major:SC.minor);
+    line3(-R,-EYE,v, R,-EYE,v, (v===0)?'rgba(88,166,255,.60)':SC.minor);
+    line3(v, 4.2,-R, v, 4.2,R, SC.ceil);
+    line3(-R, 4.2,v, R, 4.2,v, SC.ceil);
+  }
+  for(let i=0;i<8;i++){
+    const a=i*Math.PI/4, px=Math.sin(a)*18, pz=Math.cos(a)*18;
+    line3(px,-EYE,pz, px,4.2,pz, 'rgba(110,122,138,1)');
+  }
+}
 
 /* ————— 参数读取（URL 优先，其次 cs2at.cfg） ————— */
+const dpiEl=document.getElementById('dpi'), yawEl=document.getElementById('yaw'),
+      cmEl=document.getElementById('cm'), wEl=document.getElementById('w'),
+      rEl=document.getElementById('r'), tEl=document.getElementById('t');
 function setVal(el,v){ if(!el) return; el.value=v; try{ el.dispatchEvent(new Event('input',{bubbles:true})); }catch(e){} }
 function updSum(){
   var s=''; try{
@@ -134,6 +201,13 @@ try{
   if(q.get('cm')) setVal(cmEl,q.get('cm')); else if(cfg&&cfg.cm) setVal(cmEl,cfg.cm);
 }catch(e){}
 updSum();
+try{
+  if(!('onpointerrawupdate' in window)){
+    var bw=document.getElementById('bw');
+    if(bw) bw.textContent='当前浏览器不支持 pointerrawupdate，采样精度降低，建议 Chrome / Edge。';
+  }
+}catch(e){}
+document.getElementById('back').classList.add('on');
 
 /* ————— 指针与锁 ————— */
 function doLock(){
@@ -142,176 +216,230 @@ function doLock(){
     try{ cv.requestPointerLock(); }catch(e){}
     var el=document.getElementById('rawWarn'); if(el) el.style.display='';
   }
-  try{ var r=arena.requestPointerLock({unadjustedMovement:true});
+  try{ const r=cv.requestPointerLock({unadjustedMovement:true});
     if(r&&r.catch) r.catch(fallback); }
   catch(e){ fallback(); }
 }
 function moveEv(e){
-  if(!running) return;
-  var k=kOf(CM);
+  if(!running||paused) return;
+  const k=kOf(CM);
   yaw  += (e.movementX||0)*k;
   pitch-= (e.movementY||0)*k;
-  if(pitch> 25*D2R) pitch= 25*D2R;
-  if(pitch<-25*D2R) pitch=-25*D2R;
+  if(pitch> PITCH_LIM) pitch= PITCH_LIM;
+  if(pitch<-PITCH_LIM) pitch=-PITCH_LIM;
 }
 addEventListener(('onpointerrawupdate' in window)?'pointerrawupdate':'pointermove', moveEv, true);
+document.addEventListener('pointerlockchange',()=>{
+  if(document.pointerLockElement){   // 重新锁上 = 原始输入恢复
+    rawLockFailed=false;
+    try{ var rwEl=document.getElementById('rawWarn'); if(rwEl) rwEl.style.display='none'; }catch(e){}
+  }
+  if(!document.pointerLockElement && running && !paused) pause();
+});
+document.addEventListener('pointerlockerror',()=>{ if(running) pause(); });
 
 /* ————— 任务 ————— */
-function size(){
-  var d=Math.min(innerWidth,innerHeight);
-  cv.width=innerWidth; cv.height=innerHeight;
-  cv.style.width=innerWidth+'px'; cv.style.height=innerHeight+'px';
-  return d;
-}
-var pxPerDeg=0;
 function start(){
   DPI=parseFloat(dpiEl.value)||800;
   YAW=parseFloat(yawEl.value)||0.022;
   CM=parseFloat(cmEl.value)||27.1;
   if(!isFinite(CM)||CM<12) CM=12; if(CM>60) CM=60;
+  cmEl.value=CM.toFixed(1);
   T=(parseFloat(tEl.value)||90)*1000; if(T<2000) T=2000; if(T>600000) T=600000;
   W_DEG=parseFloat(wEl.value)||60; if(W_DEG<5) W_DEG=5; if(W_DEG>400) W_DEG=400;
   R_DEG=parseFloat(rEl.value)||15; if(R_DEG<3) R_DEG=3; if(R_DEG>40) R_DEG=40;
-  yaw=0; pitch=0; targetAng=0; t0=performance.now();
+  yaw=0; pitch=0; t0=performance.now();
   tA=[]; thY=[]; thP=[]; phY=[]; phP=[]; erA=[];
-  firstFrame=true;
-  running=true;
-  document.getElementById('res').classList.remove('show');
-  document.querySelector('.page').style.display='none';
-  arena.style.display='block';
-  size();
+  firstFrame=true; lastT=0;
+  rawLockFailed=false;
+  try{ var rw=document.getElementById('rawWarn'); if(rw) rw.style.display='none'; }catch(e){}
+  running=true; paused=false; result=null;
+  msg.classList.remove('show'); res.classList.remove('show');
+  if(!document.fullscreenElement && document.documentElement.requestFullscreen)
+    document.documentElement.requestFullscreen().catch(()=>{});
   doLock();
-  requestAnimationFrame(step);
 }
-var W_DEG=60, R_DEG=15;
-function step(now){
-  if(!running) return;
-  var t=(now-t0)/1000;
-  var th=R_DEG*D2R*Math.cos(W_DEG*D2R*t);
-  var tp=R_DEG*D2R*Math.sin(W_DEG*D2R*t);
-  var ey=wrap180((th-yaw)/D2R), ep=(tp-pitch)/D2R;   // 目标相对准星的视角度
-  // 每帧一个样本：目标角度 vs 准星角度
+
+function pause(){
+  if(!running||paused) return;
+  paused=true; pauseAt=performance.now();
+  go.textContent=L2('继续','Resume'); msg.classList.add('show');
+  if(document.pointerLockElement) document.exitPointerLock();
+  if(!document.fullscreenElement && document.documentElement.requestFullscreen){
+    try{ document.documentElement.requestFullscreen().catch(function(){}); }catch(e){}
+  }
+}
+function resume(){
+  if(!paused) return;
+  const d=performance.now()-pauseAt; t0+=d;
+  paused=false; msg.classList.remove('show'); doLock();
+  if(!document.fullscreenElement && document.documentElement.requestFullscreen){
+    try{ document.documentElement.requestFullscreen().catch(function(){}); }catch(e){}
+  }
+}
+go.addEventListener('click',function(){ if(paused){ resume(); } else { start(); } });
+
+/* 参数折叠：与训练器同一套交互 */
+(function(){
+  var more=document.getElementById('more'), msg=document.getElementById('msg');
+  if(!more||!msg) return;
+  function sync(){ more.textContent = msg.classList.contains('showParams') ? (window.__IS_EN?'Hide parameters ▴':'收起参数 ▴') : (window.__IS_EN?'Parameters ▾':'参数 ▾'); }
+  more.addEventListener('click', function(e){
+    e.stopPropagation();
+    msg.classList.toggle('showParams');
+    sync();
+  });
+  sync();
+})();
+
+function loop(now){
+  requestAnimationFrame(loop);
+  if(!running||paused) return;
+  const t=(now-t0)/1000;
+  const th=R_DEG*D2R*Math.cos(W_DEG*D2R*t);
+  const tp=R_DEG*D2R*Math.sin(W_DEG*D2R*t);
+  const ey=wrapPi(th-yaw)/D2R, ep=(tp-pitch)/D2R;
   if(!firstFrame){
-    var dt=now-lastT;
-    var dth=Math.hypot(th-lastThY, tp-lastThP);
-    var dph=Math.hypot(yaw-lastPhY, pitch-lastPhP);
     tA.push(t); thY.push(th); thP.push(tp); phY.push(yaw); phP.push(pitch);
-    erA.push({ey:ey, ep:ep, dth:dth, dph:dph});
+    erA.push({ey:ey, ep:ep});
   } else { firstFrame=false; }
-  lastT=now; lastThY=th; lastThP=tp; lastPhY=yaw; lastPhP=pitch;
-  // 画
-  ctx.clearRect(0,0,cv.width,cv.height);
-  var cxp=cv.width/2, cyp=cv.height/2;
-  var kpx=pxPerDeg*1;
-  ctx.strokeStyle='var(--txt)'; ctx.globalAlpha=.5; ctx.lineWidth=1;
-  ctx.beginPath(); ctx.arc(cxp,cyp,R_DEG*kpx,0,Math.PI*2); ctx.stroke();
-  ctx.globalAlpha=1;
-  // 准星
-  ctx.strokeStyle='var(--txt)'; ctx.lineWidth=1.5;
-  ctx.beginPath(); ctx.moveTo(cxp-9,cyp); ctx.lineTo(cxp+9,cyp); ctx.moveTo(cxp,cyp-9); ctx.lineTo(cxp,cyp+9); ctx.stroke();
-  // 目标（相对位置 = 视角误差）
-  var tx=cxp+ey*kpx, ty=cyp-ep*kpx;
-  ctx.fillStyle='var(--acc2)';
-  ctx.beginPath(); ctx.arc(tx,ty,9,0,Math.PI*2); ctx.fill();
-  ctx.fillStyle='var(--on-acc)';
-  ctx.beginPath(); ctx.arc(tx,ty,3.5,0,Math.PI*2); ctx.fill();
-  // HUD
-  var left=Math.max(0,(T-(now-t0))/1000);
-  hud.textContent=left.toFixed(0)+' 秒 · '+erA.length+' 帧';
+  lastT=now;
+
+  // 画（同标定器：场景 + 网格 + 目标球）
+  ctx.fillStyle=SC.bg; ctx.fillRect(0,0,W,H);
+  grid();
+  const cp2=Math.cos(tp);
+  const tx=DIST*cp2*Math.sin(th), ty=DIST*Math.sin(tp), tz=DIST*cp2*Math.cos(th);
+  const p=project(tx,ty,tz);
+  if(p){
+    // 球：与标定器同款——tgtFill 填充 + tgt 描边 + 中心点
+    const rad=Math.max(5*devicePixelRatio, f*Math.tan(1.5*D2R));
+    ctx.beginPath(); ctx.arc(p.sx,p.sy,rad,0,Math.PI*2);
+    ctx.fillStyle=SC.tgtFill; ctx.fill();
+    ctx.strokeStyle=SC.tgt; ctx.lineWidth=2.5; ctx.stroke();
+    ctx.beginPath(); ctx.arc(p.sx,p.sy,rad*0.25,0,Math.PI*2);
+    ctx.fillStyle=SC.tgt; ctx.fill();
+  }
+  ctx.strokeStyle=SC.cross||'#fff'; ctx.lineWidth=2;
+  const cxp=W/2, cyp=H/2;
+  ctx.beginPath(); ctx.moveTo(cxp-12,cyp); ctx.lineTo(cxp+12,cyp); ctx.moveTo(cxp,cyp-12); ctx.lineTo(cxp,cyp+12); ctx.stroke();
+
+  const left=Math.max(0,(T-(now-t0))/1000);
+  ui.innerHTML=L2(left.toFixed(0)+' 秒 · '+erA.length+' 帧', left.toFixed(0)+' s · '+erA.length+' frames');
   if(now-t0>=T){ running=false; finish(); return; }
-  requestAnimationFrame(step);
 }
-function size(){ var d=Math.min(innerWidth,innerHeight); pxPerDeg=d/72; cv.width=innerWidth; cv.height=innerHeight; cv.style.width=innerWidth+'px'; cv.style.height=innerHeight+'px'; }
+requestAnimationFrame(loop);
 
 /* ————— 统计 ————— */
 function finish(){
-  try{ if(document.pointerLockElement) document.exitPointerLock(); }catch(e){}
-  arena.style.display='none';
-  document.querySelector('.page').style.display='';
-  var n=erA.length;
-  // 增益 = 准星角速度 / 目标角速度（两帧窗对齐时间跨度；跳过头 1 秒的捕捉段）
-  var rs=[], sdth=0, sdph=0;
-  for(var i=2;i<n;i++){
-    var ti=tA[i]; if(ti<1.0) continue;
-    var dth=Math.hypot(thY[i]-thY[i-2], thP[i]-thP[i-2]);
-    var dph=Math.hypot(phY[i]-phY[i-2], phP[i]-phP[i-2]);
-    if(dth>0.0004){ sdth+=dth; sdph+=dph;
-      if(dth>0.002 && dph>0.0004) rs.push(dph/dth); }
+  running=false;
+  if(document.pointerLockElement) document.exitPointerLock();
+  const n=erA.length;
+  const lapDur=2*Math.PI/(W_DEG*D2R);
+  // 水平量（去均值）回归：目标 ±15° 的信号全用上——差分会把信号几乎全扔掉
+  let mtx=0,mty=0,mpx=0,mpy=0,c=0;
+  for(let i=0;i<n;i++){ if(tA[i]<1.0) continue;
+    mtx+=thY[i]; mty+=thP[i]; mpx+=phY[i]; mpy+=phP[i]; c++; }
+  if(c>0){ mtx/=c; mty/=c; mpx/=c; mpy/=c; }
+  let stt=0, stp=0, spq=0;
+  const blocks=[];   // 每圈一个 block（bootstrap 用）
+  for(let i=0;i<n;i++){ if(tA[i]<1.0) continue;
+    const tx=thY[i]-mtx, ty=thP[i]-mty;
+    const px=phY[i]-mpx, py=phP[i]-mpy;
+    const qx=-ty, qy=tx;              // 正交方向：带相位的信号投影到原方向会被 cos(ωL) 衰减
+    stt += tx*tx + ty*ty;
+    stp += px*tx + py*ty;             // 同相分量
+    spq += px*qx + py*qy;             // 正交分量
+    const lap=Math.floor(tA[i]/lapDur);
+    (blocks[lap]=blocks[lap]||[]).push([tx,ty,px,py]);
   }
-  var g= sdth>0? sdph/sdth : 1;
-  try{ window.__dbg={rs:rs.slice(0,12), sdth:sdth, sdph:sdph, n:n}; }catch(e){}
-  var m=0, sd=0;
-  rs.forEach(function(v){ m+=v; }); m=rs.length? m/rs.length : 1;
-  rs.forEach(function(v){ sd+=(v-m)*(v-m); });
-  sd=rs.length>1? Math.sqrt(sd/(rs.length-1)) : 0;
-  var se=sd/Math.sqrt(Math.max(1,rs.length));
-  var ci=1.96*se/Math.max(0.0001,m);   // 相对误差半宽
-  // 相位滞后：找 L 使 |φ(t)−θ(t−L)| 最小
-  var lag=0, bestErr=Infinity;
-  var dts=(n>1)? (tA[n-1]-tA[0])/(n-1) : 0.016;
-  for(var L=0; L<=400; L+=20){
-    var off=Math.round((L/1000)/Math.max(0.001,dts));
-    var s2=0, c=0;
-    for(var i=0;i<n;i++){
-      var j=i-off; if(j<0) continue;
-      var dy=wrap180((phY[i]-thY[j])/D2R), dp=(phP[i]-thP[j])/D2R;
-      s2+=dy*dy+dp*dp; c++;
+  const a=stp/Math.max(1e-9,stt), b=spq/Math.max(1e-9,stt);
+  const gain=Math.hypot(a,b);                         // 不再被 cos(ωL) 衰减
+  const phase=-Math.atan2(b,a);                       // rad
+  const lagMs=phase/(W_DEG*D2R)*1000;                 // 同一拟合顺带给出滞后
+  const nlaps=blocks.length;
+  // 分圈 bootstrap：帧间自相关大，直接算 SE 会过于自信
+  function bootstrapCI(B){
+    const out=[];
+    for(let bb=0;bb<B;bb++){
+      let bn1=0, bn2=0, bd=0;
+      for(let k=0;k<blocks.length;k++){
+        const blk=blocks[(Math.random()*blocks.length)|0];
+        for(let q=0;q<blk.length;q++){ const p=blk[q];
+          bd+=p[0]*p[0]+p[1]*p[1]; bn1+=p[2]*p[0]+p[3]*p[1]; bn2+=p[2]*(-p[1])+p[3]*p[0]; }
+      }
+      const ga=bn1/Math.max(1e-9,bd), gb=bn2/Math.max(1e-9,bd);
+      out.push(Math.hypot(ga,gb));
     }
-    var e2=c? s2/c : Infinity;
-    if(e2<bestErr){ bestErr=e2; lag=L; }
+    out.sort((a2,b2)=>a2-b2);
+    return [out[Math.floor(B*0.025)], out[Math.floor(B*0.975)]];
   }
-  // 跟踪误差 RMS（度，跳过前 1 秒捕捉段）
-  var es=0, ec=0;
-  for(var k=0;k<n;k++){ if(tA[k]<1.0) continue;
+  const bs=blocks.length>=3? bootstrapCI(2000) : null;
+  const ci=(bs && isFinite(gain))? (bs[1]-bs[0])/2/Math.max(0.0001,gain) : NaN;
+  const ok= c>=600 && nlaps>=6;   // 至少 6 圈（36 秒以上）
+  const minSec=Math.ceil(6*lapDur);
+  let es=0, ec=0;
+  for(let k=0;k<n;k++){ if(tA[k]<1.0) continue;
     es+=erA[k].ey*erA[k].ey+erA[k].ep*erA[k].ep; ec++; }
-  var rms=Math.sqrt(es/Math.max(1,ec));
-  // 建议：cm 乘增益（g<1 = 准星跟慢了 = 灵敏度偏低 = cm 调小）
-  var cmNew=CM*g;
-  if(cmNew<8) cmNew=8; if(cmNew>80) cmNew=80;
-  result={summary:{g:g, n:n, nRatio:rs.length, ci:ci, lag:lag, rms:rms, cmNew:cmNew, sensNew:sensOf(cmNew), cm:CM, sensNow:sensOf(CM)}};
-  var row=function(k,v,cls){ return '<tr><th>'+k+'</th><td'+(cls?' class="'+cls+'"':'')+'>'+v+'</td></tr>'; };
-  var gTxt=(g>=1?'+':'')+((g-1)*100).toFixed(1)+'%';
-  var trust= (rs.length<200 || ci>0.01)? '（样本少/波动大，多测一轮）' : '';
-  document.getElementById('resBody').innerHTML=
-    '<div style="font-size:17px;color:var(--acc);margin-bottom:4px">结果</div>'+
+  const rms=Math.sqrt(es/Math.max(1,ec));
+  const lag=Math.max(0, Math.round(lagMs));
+  result={ok:ok, gain:gain, ci:ci, nlaps:nlaps, rms:rms, lag:lag, n:c, frames:n, raw:rawLockFailed};
+  // 与上一轮对比
+  let prevTxt='';
+  try{
+    const prev=JSON.parse(localStorage.getItem('cs2at.track')||'null');
+    if(prev && isFinite(prev.rms) && isFinite(prev.lag)){
+      const dr=rms-prev.rms, dl=lag-prev.lag;
+      prevTxt='<div style="margin-top:8px;font-size:13px;color:var(--dim)">'+
+        L2('对比上一轮：RMS '+(dr>=0?'▲ +':'▼ ')+dr.toFixed(2)+'° · 滞后 '+(dl>=0?'▲ +':'▼ ')+dl+' ms',
+           'vs last run: RMS '+(dr>=0?'▲ +':'▼ ')+dr.toFixed(2)+'° · lag '+(dl>=0?'▲ +':'▼ ')+dl+' ms')+'</div>';
+    }
+    localStorage.setItem('cs2at.track', JSON.stringify({rms:rms, lag:lag, gain:gain}));
+  }catch(e){}
+  const row=(k,v,cls)=>'<tr><th>'+k+'</th><td'+(cls?' class="'+cls+'"':'')+'>'+v+'</td></tr>';
+  let body;
+  if(!ok){
+    body='<div style="font-size:17px;color:var(--acc);margin-bottom:4px">'+L2('结果','Result')+'</div>'+
+      '<div style="margin-top:8px;font-size:14px">'+L2('有效样本太少（'+c+' 帧 / '+nlaps+' 圈，至少 6 圈 ≈ '+minSec+' 秒）——跟住目标，再测一轮。','Too few valid samples ('+c+' frames / '+nlaps+' laps, need ≥6 laps ≈ '+minSec+' s) — stay on target and run again.')+'</div>';
+  } else {
+    const gTxt=(gain>=1?'+':'')+((gain-1)*100).toFixed(1)+'%';
+    const ciTxt=isFinite(ci)? (ci*100).toFixed(2)+'%' : '—';
+    body='<div style="font-size:17px;color:var(--acc);margin-bottom:4px">'+L2('结果','Result')+'</div>'+
+    (rawLockFailed
+      ? '<div style="margin-top:6px;font-size:13.5px;color:#f85149">'+L2('⚠️ 本次输入未校准（原始输入锁定失败），增益数值不可比，仅 RMS / 滞后可参考。','⚠️ Raw input lock failed — the gain number is not comparable; only RMS / lag are meaningful.')+'</div>'
+      : '')+
     '<table class="rt">'+
-    row('增益（准星/目标）', (g.toFixed(3))+'　('+gTxt+')', 'big')+
-    row('跟踪误差 RMS', rms.toFixed(2)+'°')+
-    row('相位滞后', lag+' ms')+
-    row('建议 cm/360', cmNew.toFixed(1)+' cm → 灵敏度 <b>'+sensOf(cmNew).toFixed(2)+'</b>', 'big')+
-    row('数据与误差', '共 '+rs.length+' 帧 · 增益误差 ±'+(ci*100).toFixed(2)+'%'+trust)+
+    row(L2('跟踪误差 RMS','Tracking error RMS'), rms.toFixed(2)+'°', 'big')+
+    row(L2('相位滞后','Phase lag'), lag+' ms')+
+    (rawLockFailed? '' : row(L2('速度增益','Speed gain'), gain.toFixed(3)+'（'+gTxt+'）· '+L2('误差 ±','error ±')+ciTxt))+
+    row(L2('样本','Samples'), c+L2(' 帧 · ',' frames · ')+nlaps+L2(' 圈',' laps'))+
     '</table>'+
-    '<div style="margin-top:10px;font-size:13.5px;color:var(--dim)">跟枪估的是增益：把 cm/360 缩到 ±1% 后，再用甩枪（训练中心「快速标定」）确认实战手感。</div>';
-  document.getElementById('res').classList.add('show');
+    (prevTxt||'');
+  }
+  body+='<div style="margin-top:10px;font-size:13.5px;color:var(--dim)">'+L2('跟枪 ≠ 灵敏度标定：这里测跟枪手感；找灵敏度请用「灵敏度标定」。','Tracking ≠ sensitivity calibration: this measures tracking feel; use Sensitivity calibration to find your sensitivity.')+'</div>';
+  resBody.innerHTML=body;
+  res.classList.add('show');
 }
 
 /* ————— 控制 ————— */
-document.getElementById('go').addEventListener('click',start);
-document.getElementById('again').addEventListener('click',function(){
-  var s=result&&result.summary; if(!s) return;
-  setVal(cmEl, Math.round(s.cmNew*10)/10);
-  start();
-});
+document.getElementById('again').addEventListener('click',function(){ res.classList.remove('show'); start(); });
 document.getElementById('copyRes').addEventListener('click',function(e){
   e.stopPropagation();
-  var s=result&&result.summary; if(!s) return;
-  var t='gain '+(s.g*100).toFixed(1)+'% · cm/360 '+s.cmNew.toFixed(1)+' · sens '+s.sensNew.toFixed(2);
-  var h=document.getElementById('applyHint');
+  if(!result||!result.ok) return;
+  const t=(window.__IS_EN
+    ? 'Tracking: RMS '+result.rms.toFixed(2)+'° · lag '+result.lag+' ms'+(result.raw?'':' · speed gain '+result.gain.toFixed(3))
+    : '跟枪：RMS '+result.rms.toFixed(2)+'° · 滞后 '+result.lag+' ms'+(result.raw?'':' · 速度增益 '+result.gain.toFixed(3)));
+  const h=document.getElementById('copyHint');
   if(navigator.clipboard&&navigator.clipboard.writeText){
     navigator.clipboard.writeText(t).then(function(){ if(h) h.textContent=(window.__IS_EN?'Copied ✓ ':'已复制 ✓ ')+t; });
   } else { try{ prompt('复制：',t); }catch(err){} }
 });
-document.getElementById('applyRes').addEventListener('click',function(e){
-  e.stopPropagation();
-  var s=result&&result.summary; if(!s) return;
-  var h=document.getElementById('applyHint');
-  if(rawLockFailed){ if(h) h.textContent=window.__IS_EN?'⚠️ Raw input unavailable — not applied.':'⚠️ 原始输入不可用——没有应用。'; return; }
-  var cfg={dpi:DPI, yaw:YAW, sens:Math.round(s.sensNew*100)/100, cm:Math.round(s.cmNew*100)/100};
-  try{ localStorage.setItem('cs2at.cfg', JSON.stringify(cfg)); }catch(err){}
-  if(h) h.textContent=(window.__IS_EN?'Applied to settings ✓ cm/360 ':'已应用到设置 ✓ cm/360 ')+cfg.cm+(window.__IS_EN?' · sensitivity ':' · 灵敏度 ')+cfg.sens;
+addEventListener('keydown',function(e){
+  if(e.key==='Escape'){
+    if(running && !paused){ pause(); }
+    else if(res.classList.contains('show')){ res.classList.remove('show'); }
+  }
 });
-addEventListener('keydown',function(e){ if(e.key==='Escape' && running){ running=false; finish(); } });
-addEventListener('keydown',function(e){ if(e.key==='Escape' && document.getElementById('res').classList.contains('show')){ document.getElementById('res').classList.remove('show'); } });
 
 /* ————— i18n ————— */
 (function(){
@@ -321,42 +449,35 @@ addEventListener('keydown',function(e){ if(e.key==='Escape' && document.getEleme
     var s=localStorage.getItem('cs2at.lang');
     if(s) return s==='en';
     var n=(navigator.language||'en').toLowerCase();
-    return n.indexOf('zh')!==0;
+    return true;
   }catch(e){ return true; } })();
   window.__IS_EN=EN;
+  try{ document.documentElement.setAttribute('lang', EN?'en':'zh-CN'); }catch(e){}
+  if(!EN) return;
   try{
     var rw=document.getElementById('rawWarn');
-    if(rw) rw.textContent='⚠️ Raw input lock failed: this measurement is system-accelerated — the gain estimate is not comparable and cannot be applied to settings.';
+    if(rw) rw.textContent='⚠️ Raw input lock failed: this run is system-accelerated — metrics are not comparable.';
   }catch(e){}
-  if(!EN) return;
   var D={
-    '跟枪标定':'Tracking calibration',
-    '90 秒跟枪 · 每帧一个样本':'90-second tracking · one sample per frame',
-    '目标走圆，准星压在目标上。跟枪是每帧采样：90 秒 ≈ 5000+ 帧，误差半宽能到 ±0.5% 以内——比数「球」快一个数量级。':'A target circles; keep your crosshair on it. Tracking samples every frame: ~5000+ frames in 90 s bring the half-width below ±0.5% — an order of magnitude faster than counting shots.',
-    '跟枪 ≠ 甩枪：这里估的是增益（你偏多少），实战里再用甩枪确认手感。':'Tracking ≠ flicking: this estimates your gain (how far off you are); confirm real feel with flick drills.',
-    '鼠标 DPI':'Mouse DPI','角速度 °/s':'Angular speed °/s','半径 °':'Radius °','时长 秒':'Duration s',
-    '开始':'Start',
-    '← 返回训练中心':'← Back to hub',
-    '准星压在目标上，跟住它 · Esc 结束并出结果':'Keep the crosshair on the target · Esc ends and shows results',
+    '跟枪测试':'Tracking test',
+    '目标走圆，准星压在目标上':'Keep your crosshair on the circling target',
+    '目标走圆，准星压在目标上。输出跟踪误差 RMS、相位滞后、速度增益三个训练指标。':'A target circles; keep your crosshair on it. Outputs three training metrics: tracking error RMS, phase lag and speed gain.',
+    '跟枪 ≠ 灵敏度标定：这里测跟枪手感；找灵敏度请用「灵敏度标定」。':'Tracking ≠ sensitivity calibration: this measures tracking feel; use Sensitivity calibration to find your sensitivity.',
+    '跟枪 ≠ 灵敏度标定：这里测跟枪手感（误差 RMS、相位滞后、速度增益）；找灵敏度请用「灵敏度标定」。':'Tracking ≠ sensitivity calibration: this measures tracking feel (error RMS, phase lag, speed gain); use Sensitivity calibration to find your sensitivity.',
+    '鼠标 DPI':'Mouse DPI','相位角速度 °/s':'Phase angular speed °/s','半径 °':'Radius °','时长 秒':'Duration s',
+    '开始':'Start','开 始':'START','参数 ▾':'Parameters ▾','收起参数 ▴':'Hide parameters ▴','继续':'Resume','← 返回':'← Back',
     '结果':'Result',
-    '增益（准星/目标）':'Gain (crosshair / target)',
-    '跟踪误差 RMS':'Tracking error RMS',
-    '相位滞后':'Phase lag',
-    '建议 cm/360':'Suggested cm/360',
-    '数据与误差':'Samples & error',
-    '再测一轮（用建议值）':'One more round (with suggestion)',
-    '复制结果':'Copy result','应用到设置':'Apply to settings',
-    '跟枪估的是增益：把 cm/360 缩到 ±1% 后，再用甩枪（训练中心「快速标定」）确认实战手感。':'Tracking estimates gain: narrow cm/360 to ±1%, then confirm real feel with flicking (Quick calibration in the hub).'
+    '跟踪误差 RMS':'Tracking error RMS','相位滞后':'Phase lag','速度增益':'Speed gain','误差 ±':'error ±','样本':'Samples',
+    '帧 · ':' frames · ','圈':' laps',
+    '再测一轮':'Run again','复制结果':'Copy result'
   };
   var RULES=[
-    [/^共 (\d+) 帧 · 增益误差 ±([\d.]+)%（样本少\/波动大，多测一轮）$/,'$1 frames · gain error ±$2% (few samples / noisy — run another round)'],
-    [/^共 (\d+) 帧 · 增益误差 ±([\d.]+)%$/,'$1 frames · gain error ±$2%'],
-    [/^(\d+) 秒 · (\d+) 帧$/,'$1 s · $2 frames']
+    [/^有效样本太少（(\d+) 帧 \/ (\d+) 圈，至少 6 圈 ≈ (\d+) 秒）——跟住目标，再测一轮。$/,'Too few valid samples ($1 frames / $2 laps, need ≥6 laps ≈ $3 s) — stay on target and run again.']
   ];
   function tr(t){
     var s=t.trim(); if(!s) return t;
-    var m=s.match(/^(.+?)[:：]$/);
-    if(m&&D[m[1]]!==undefined) return D[m[1]]+':';
+    var m2=s.match(/^(.+?)[:：]$/);
+    if(m2&&D[m2[1]]!==undefined) return D[m2[1]]+':';
     if(D[s]!==undefined) return D[s];
     for(var i=0;i<RULES.length;i++){ var r=RULES[i]; if(r[0].test(s)) return s.replace(r[0],r[1]); }
     return s;
@@ -371,7 +492,7 @@ addEventListener('keydown',function(e){ if(e.key==='Escape' && document.getEleme
     }
   }
   walk(document.body);
-  try{ document.title='Tracking calibration · Vernier'; }catch(e){}
+  try{ document.title='Tracking test · Vernier'; }catch(e){}
   try{
     ['placeholder','title','aria-label'].forEach(function(a){
       document.querySelectorAll('['+a+']').forEach(function(el){
@@ -379,11 +500,7 @@ addEventListener('keydown',function(e){ if(e.key==='Escape' && document.getEleme
       });
     });
   }catch(e){}
-  // 动态生成的文本在 EN 下重写
-  try{
-    var sum=document.getElementById('sum');
-    if(sum) sum.textContent=''; updSum();
-  }catch(e){}
+  try{ updSum(); }catch(e){}
 })();
 </script>
 </body>

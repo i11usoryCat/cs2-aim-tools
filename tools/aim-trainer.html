@@ -61,7 +61,10 @@
 <div id="msg" class="overlay show">
   <div id="titleTop" style="font-size:26px;color:var(--txt);font-weight:700;letter-spacing:2px">甩枪训练</div>
   <div style="margin-top:8px;color:var(--dim);font-size:14px">看到球 → 甩过去 → 手停 → 点击</div>
-  <button id="go" class="btn" style="margin-top:26px;padding:16px 64px;font-size:18px;letter-spacing:2px">开 始</button>
+  <div style="margin-top:26px;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap">
+    <button id="go" class="btn" style="margin-top:0;padding:16px 64px;font-size:18px;letter-spacing:2px">开 始</button>
+    <button id="fsBtn" type="button" style="padding:14px 22px;font-size:14px;border-radius:9px;border:1px solid var(--line);background:transparent;color:var(--dim);cursor:pointer;font-family:inherit">全屏 ⛶</button>
+  </div>
   <div id="sensHint" style="margin-top:14px;font-size:13px;color:var(--dim);cursor:pointer"
        title="点击修改参数">…</div>
   <div id="bw" style="margin-top:10px;font-size:13px;color:var(--acc)"></div>
@@ -446,13 +449,12 @@ function start(){
   applyRes(); resize();   // 训练内视角按分辨率设置
   msg.classList.remove('show'); res.classList.remove('show');
 
-  // 流程：全屏 → 点击锁定光标 → 倒计时 → 首球。
-  // 现在只进入"等待锁定"状态，锁定成功（或笔/手柄）才走 beginCountdownOrSession
+  // 流程：全屏（独立按钮，可选）→ 点「开始」锁光标 → 倒计时 → 首球。
+  // 不再在开跑时抢全屏：requestFullscreen 会吃掉 transient activation，
+  // 官方要求 requestPointerLock() 必须先于它，拆成两次点击最稳。
   waiting=true; running=false; paused=false;
   if(cdTimer){ clearInterval(cdTimer); cdTimer=null; }
   var cd0=document.getElementById('cd'); if(cd0) cd0.classList.remove('show');
-  if(!document.fullscreenElement && document.documentElement.requestFullscreen)
-    document.documentElement.requestFullscreen().catch(function(){});
   // 笔/手柄设备不用锁光标：直接开始倒计时
   if(device==='pen' || device==='pad'){ setTimeout(beginCountdownOrSession, 60); }
 }
@@ -489,8 +491,6 @@ function beginSession(){
   yaw=0; pitch=0; alive=false; endStarted=false;
   nextAt=performance.now()+300;
   endAt = performance.now() + endTime*1000;   // 整场计时从首球出生起（spawn 里重设）
-  if(!document.fullscreenElement && document.documentElement.requestFullscreen)
-    document.documentElement.requestFullscreen().catch(function(){});
 }
 
 function spawn(){
@@ -856,6 +856,23 @@ function finish(){
 }
 
 go.addEventListener('click',e=>{ e.stopPropagation(); start(); });
+
+/* 全屏单独一个按钮：官方文档要求 requestPointerLock() 必须在 requestFullscreen() 之前调用，
+   因为 requestFullscreen 会吃掉 transient activation。把它拆成两次点击，两边都不用抢手势。 */
+(function(){
+  var b=document.getElementById('fsBtn');
+  if(!b) return;
+  function sync(){ b.textContent = document.fullscreenElement ? '退出全屏 ⤢' : '全屏 ⛶'; }
+  b.addEventListener('click', function(e){
+    e.stopPropagation();
+    try{
+      if(document.fullscreenElement){ document.exitFullscreen && document.exitFullscreen().catch(function(){}); }
+      else if(document.documentElement.requestFullscreen){ document.documentElement.requestFullscreen().catch(function(){}); }
+    }catch(err){}
+  });
+  document.addEventListener('fullscreenchange', sync);
+  sync();
+})();
 document.getElementById('again').addEventListener('click',e=>{ e.stopPropagation(); start(); });
 document.getElementById('copy').addEventListener('click', function(e){
   e.stopPropagation();
@@ -891,15 +908,11 @@ document.addEventListener('pointerdown',function(e){
 function pause(){ if(!running||paused)return; paused=true; pauseAt=performance.now();
   go.textContent='继续'; msg.classList.add('show'); msg.classList.add('paused'); if(document.pointerLockElement) document.exitPointerLock();
   // ESC 只暂停、不退全屏：丢全屏就立刻要回来（同一按键手势内通常能成功）
-  if(!document.fullscreenElement && document.documentElement.requestFullscreen){
-    try{ document.documentElement.requestFullscreen().catch(function(){}); }catch(e){}
-  } }
+  /* 全屏由独立按钮控制，暂停/继续不再抢手势 */ }
 function resume(){ msg.classList.remove('paused'); if(endMode==='time'){ endAt += performance.now()-pauseAt; } if(!paused)return; const d=performance.now()-pauseAt;
   if(alive) tSpawn+=d; nextAt+=d; paused=false; msg.classList.remove('show'); doLock();
   // 点「继续」是有效手势：顺带把全屏要回来
-  if(!document.fullscreenElement && document.documentElement.requestFullscreen){
-    try{ document.documentElement.requestFullscreen().catch(function(){}); }catch(e){}
-  } }
+  /* 全屏由独立按钮控制，暂停/继续不再抢手势 */ }
 let hadLock=false, lockFails=0;
 document.addEventListener('pointerlockchange', function(){
   if(document.pointerLockElement){

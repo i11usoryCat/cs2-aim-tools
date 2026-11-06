@@ -1981,7 +1981,11 @@ $('iGame').addEventListener('change',()=>{
 $('iSens').addEventListener('change',()=>{ applyGameSens(); });
 
 cfg=load(K_CFG,cfg);
-LANG=(function(){ try{ var s=localStorage.getItem(K_LANG); if(s) return s;
+LANG=(function(){
+  try{
+    var q=new URLSearchParams(location.search);          // ?lang=en 优先：英文镜像跳过来时靠它
+    var ql=q.get('lang'); if(ql==='en'||ql==='zh') return ql;
+    var s=localStorage.getItem(K_LANG); if(s) return s;
     var n=(navigator.language||'en').toLowerCase(); return n.indexOf('zh')===0? 'zh':'en';
   }catch(e){ return 'en'; } })();   // 按浏览器语言自动选：中文浏览器看中文，其余默认英文
 if('scrollRestoration' in history) history.scrollRestoration='manual';

@@ -951,7 +951,20 @@ let LANG='zh';
 const ZH={};
 Object.keys(EN).forEach(k=>{ ZH[EN[k]]=k; });
 const __ORIG=new WeakMap();   // 记住每个文本节点的原文，来回切换不累积
-function L(zh,en){ return (LANG==='en') ? en : zh; }
+function L(zh,en){
+  try{ if(en && EN[zh]===undefined) EN[zh]=en; if(zh && ZH[en]===undefined) ZH[en]=zh; }catch(e){}
+  return (LANG==='en') ? en : zh;
+}
+const TX_RULES=[
+  [/^360° 转身需要 ([\d.]+) cm · 180° 需要 ([\d.]+) cm · 灵敏度 ([\d.]+)（m_yaw ([\d.]+) · DPI (\d+)）$/,
+   m=>'360° turn needs '+m[1]+' cm · 180° needs '+m[2]+' cm · sensitivity '+m[3]+' (m_yaw '+m[4]+' · DPI '+m[5]+')'],
+  [/^360° turn needs ([\d.]+) cm · 180° needs ([\d.]+) cm · sensitivity ([\d.]+) \(m_yaw ([\d.]+) · DPI (\d+)\)$/,
+   m=>'360° 转身需要 '+m[1]+' cm · 180° 需要 '+m[2]+' cm · 灵敏度 '+m[3]+'（m_yaw '+m[4]+' · DPI '+m[5]+'）'],
+  [/^(\d+) 球$/, m=>m[1]+' balls'],
+  [/^(\d+) balls$/, m=>m[1]+' 球'],
+  [/^第 (\d+) 球$/, m=>'Ball '+m[1]],
+  [/^Ball (\d+)$/, m=>'第 '+m[1]+' 球'],
+];
 function translateRoot(root, lang){
   try{
     if(!root || !document.createTreeWalker) return;
@@ -963,7 +976,9 @@ function translateRoot(root, lang){
       if(orig===undefined){ orig=n.nodeValue; __ORIG.set(n, orig); }
       const t=orig.trim();
       if(!t) continue;
-      n.nodeValue = map[t] ? orig.replace(t, map[t]) : orig;
+      let out = map[t] ? orig.replace(t, map[t]) : orig;
+      if(out===orig){ for(let i=0;i<TX_RULES.length;i++){ const m=t.match(TX_RULES[i][0]); if(m){ out=TX_RULES[i][1](m); break; } } }
+      n.nodeValue = out;
     }
   }catch(e){}
 }

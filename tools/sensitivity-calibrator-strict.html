@@ -125,7 +125,7 @@ const SC=SCENES[pickScene()]||SCENES.classic;
 // 快速标定：固定 3 轮出建议（新手快速找灵敏度），不做收敛判据
 const FAST=(function(){ try{ return new URLSearchParams(location.search).get('fast')==='1'; }catch(e){ return false; } })();
 try{ if(FAST){
-  var ct=document.getElementById('calTitle'); if(ct) ct.textContent='灵敏度标定 · 快速';
+  var ct=document.getElementById('calTitle'); if(ct) ct.textContent=(window.__IS_EN?'Sensitivity calibration · Fast':'灵敏度标定 · 快速');
   var nEl=document.getElementById('n'); if(nEl) nEl.value='20';
 } }catch(e){}
 // 页面主题跟随站点（不再是独立皮）
@@ -272,7 +272,7 @@ function start(){
 }
 
 function pause(){ if(!running||paused) return; paused=true; pauseAt=performance.now();
-  go.textContent='继续'; msg.classList.add('show'); if(document.pointerLockElement) document.exitPointerLock();
+  go.textContent=(window.__IS_EN?'Resume':'继续'); msg.classList.add('show'); if(document.pointerLockElement) document.exitPointerLock();
   // ESC 只暂停、不退全屏：丢全屏就立刻要回来
   /* 全屏不再是开跑流程的一部分 */ }
 function resume(){ if(!paused) return; const d=performance.now()-pauseAt; tSpawn+=d;
@@ -414,7 +414,7 @@ function addScatter(){
 
   var cap=document.createElement('div');
   cap.style.cssText='text-align:center;font-size:12px;color:var(--dim);margin-top:6px';
-  cap.textContent='落点：上=过头 下=不足 · 圈内=命中';
+  cap.textContent=(window.__IS_EN?'Landing: up = overshoot, down = undershoot · inside the ring = hit':'落点：上=过头 下=不足 · 圈内=命中');
 
   var body=document.getElementById('resBody');
   if(body){ body.appendChild(cv); body.appendChild(cap); }
@@ -427,7 +427,10 @@ go.addEventListener('click',e=>{ e.stopPropagation(); if(paused) resume(); else 
 (function(){
   var b=document.getElementById('fsBtn');
   if(!b) return;
-  function sync(){ b.textContent = document.fullscreenElement ? '退出全屏 ⤢' : '全屏 ⛶'; }
+  function sync(){
+    var en = (typeof window.__IS_EN==='boolean') ? window.__IS_EN : false;
+    b.textContent = document.fullscreenElement ? (en?'Exit fullscreen ⤢':'退出全屏 ⤢') : (en?'Fullscreen ⛶':'全屏 ⛶');
+  }
   b.addEventListener('click', function(e){
     e.stopPropagation();
     try{

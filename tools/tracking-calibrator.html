@@ -545,6 +545,7 @@ addEventListener('keydown',function(e){
     return n.indexOf('zh')!==0;
   }catch(e){ return true; } })();
   window.__IS_EN=EN;
+  try{ if(EN) document.title="Tracking test · Vernier"; }catch(e){}   // 英文模式下标题也要跟着走
   try{ document.documentElement.setAttribute('lang', EN?'en':'zh-CN'); }catch(e){}
   if(!EN) return;
   try{

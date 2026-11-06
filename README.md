@@ -44,6 +44,25 @@ Both pages were validated end-to-end by injecting synthetic motion with a known 
 open-loop page can repeat that check in your own browser: append **`?selftest=1`** to its URL
 and it will report whether the measurement chain holds (±3% tolerance).
 
+### Quality check (run before every push)
+
+```bash
+node scripts/qa.cjs            # 跑本地目录
+node scripts/qa.cjs --root .   # 指定根目录
+```
+
+开一个 headless Edge，把 `index.html`、`app.html`、`program.html`、`tools/*`、`en/*` 逐页加载，检查：
+
+| 检查 | 说明 |
+|---|---|
+| console | 未捕获异常 + `console.error` |
+| 死链 | 页内 `href/src` 指向的本地文件是否存在 |
+| 重复 id | 同一页出现两次的 `id`（会打断 `getElementById`） |
+| 水平溢出 | `scrollWidth - clientWidth > 2px`（窄屏遮挡） |
+| 语言覆盖 | 切到英文后仍残留、且不在词典里的中文串 |
+
+结果写到 `qa-report.md` / `qa-report.json`，**问题数必须为 0 才提交**。
+
 ### Sensitivity calibration
 
 The calibrator records where each flick actually lands relative to the target and derives the sensitivity you should be using:

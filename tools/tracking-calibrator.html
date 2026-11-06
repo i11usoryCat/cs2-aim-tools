@@ -2,6 +2,26 @@
 <html lang="zh-CN">
 <head>
 <meta charset="utf-8">
+<script>/* 剪贴板兜底：writeText 在失焦/无权限时抛 NotAllowedError（未捕获会进 console），统一降级到 execCommand */
+(function(){
+  try{
+    var c = navigator.clipboard;
+    if(!c || !c.writeText) return;
+    var orig = c.writeText.bind(c);
+    c.writeText = function(t){
+      return orig(t).catch(function(){
+        var ta = document.createElement('textarea');
+        ta.value = t; ta.setAttribute('readonly','');
+        ta.style.cssText = 'position:fixed;top:-1000px;left:-1000px;opacity:0';
+        document.body.appendChild(ta);
+        ta.select(); ta.setSelectionRange(0, ta.value.length);
+        var ok = false; try{ ok = document.execCommand('copy'); }catch(e){}
+        ta.remove();
+        if(!ok){ try{ window.prompt('复制失败，请手动复制：', t); }catch(e){} }   // 兜底：绝不抛未捕获异常
+      });
+    };
+  }catch(e){}
+})();</script>
 <title>跟枪测试 · Vernier</title>
 <meta name="description" content="90 秒圆形跟枪测试：跟踪误差 RMS、相位滞后、速度增益——检验跟枪手感；找灵敏度请用灵敏度标定。">
 <link rel="canonical" href="https://i11usorycat.github.io/cs2-aim-tools/tools/tracking-calibrator.html">

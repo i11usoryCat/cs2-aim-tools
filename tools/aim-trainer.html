@@ -5,7 +5,7 @@
 <title>甩枪训练 · 自适应难度</title>
 <link rel="icon" href="../assets/favicon.svg">
 <style>
-  html,body{margin:0;height:100%;background:var(--bg);overflow:hidden;color:var(--txt);font-family:"Microsoft YaHei",sans-serif}
+  html,body{margin:0;height:100%;background:var(--bg);overflow:hidden;color:var(--txt);font-family:"Microsoft YaHei UI","Microsoft YaHei","Noto Sans SC","Segoe UI",system-ui,sans-serif}
   canvas{display:block;cursor:none}
   #hud{position:fixed;left:22px;top:16px;font-size:14px;line-height:1.9;pointer-events:none;text-shadow:0 0 6px #000}
   #hud b{color:var(--acc)}
@@ -69,7 +69,7 @@
        title="点击修改参数">…</div>
   <div id="bw" style="margin-top:10px;font-size:13px;color:var(--acc)"></div>
 
-  <button id="pauseMore" style="margin-top:16px;padding:9px 18px;border-radius:9px;border:1px solid var(--line);background:transparent;color:var(--dim);font-size:13px;font-family:inherit;cursor:pointer">参数 ▾</button>
+  <button id="more" type="button" style="margin-top:18px;padding:9px 18px;border-radius:9px;border:1px solid var(--line);background:transparent;color:var(--dim);font-size:13px;font-family:inherit;cursor:pointer">参数 ▾</button>
   <div class="pauseHide" style="margin-top:26px;width:100%;max-width:560px">
     <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center">
       <label class="fld">模式
@@ -1467,19 +1467,17 @@ requestAnimationFrame(loop);
 <script>
 (function(){
   var back=document.getElementById('back');
-  var msg=document.getElementById('msg');
   // 返回键不能被游戏的 mousedown（射击/继续）吃掉
   ['mousedown','pointerdown','mouseup','pointerup','click'].forEach(function(t){
     back.addEventListener(t, function(e){ e.stopPropagation(); }, true);
   });
-  function sync(){
-    var on=back && msg && msg.classList.contains('show');
-    if(back) back.classList.toggle('on', !!on);
-  }
-  if(msg && back){
-    new MutationObserver(sync).observe(msg,{attributes:true,attributeFilter:['class']});
-    sync();
-  }
+  // 返回键只在开始/暂停/结果等浮层（.overlay.show）出现时显示：游戏中隐藏，全屏里点不到，还会压住左上角 HUD
+  function sync(){ back.classList.toggle('on', document.querySelectorAll('.overlay.show').length>0); }
+  ['msg','res'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el) new MutationObserver(sync).observe(el,{attributes:true,attributeFilter:['class']});
+  });
+  sync();
   addEventListener('keydown', function(e){
     if(e.key!=='Escape') return;
     if(document.fullscreenElement) return;   // 全屏时 Esc 只退出全屏，不离开页面
@@ -1489,7 +1487,7 @@ requestAnimationFrame(loop);
 
 /* ===== 暂停面板：参数折叠 ===== */
 (function(){
-  var more=document.getElementById('pauseMore'), msg=document.getElementById('msg');
+  var more=document.getElementById('more'), msg=document.getElementById('msg');
   if(!more||!msg) return;
   function sync(){
     more.style.display = 'inline-block';

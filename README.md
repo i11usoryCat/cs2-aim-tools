@@ -63,6 +63,15 @@ node scripts/qa.cjs --root .   # 指定根目录
 
 结果写到 `qa-report.md` / `qa-report.json`，**问题数必须为 0 才提交**。
 
+再加一道**交互猴测试**（静态检查抓不到"点一下会不会炸"）：
+
+```bash
+node scripts/qa-monkey.cjs --max 10
+```
+
+逐个按钮：重载页面 → 点击 → 收集异常（每次调用 5s 超时，永不挂死）。
+结果写到 `qa-monkey.md`，**异常条目必须为 0**。
+
 ### Sensitivity calibration
 
 The calibrator records where each flick actually lands relative to the target and derives the sensitivity you should be using:

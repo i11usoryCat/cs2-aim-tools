@@ -882,7 +882,10 @@ go.addEventListener('click',e=>{ e.stopPropagation(); start(); });
 (function(){
   var b=document.getElementById('fsBtn');
   if(!b) return;
-  function sync(){ b.textContent = document.fullscreenElement ? '退出全屏 ⤢' : '全屏 ⛶'; }
+  function sync(){
+    var en = (typeof window.__IS_EN==='boolean') ? window.__IS_EN : false;
+    b.textContent = document.fullscreenElement ? (en?'Exit fullscreen ⤢':'退出全屏 ⤢') : (en?'Fullscreen ⛶':'全屏 ⛶');
+  }
   b.addEventListener('click', function(e){
     e.stopPropagation();
     try{
@@ -926,7 +929,7 @@ document.addEventListener('pointerdown',function(e){
 });
 
 function pause(){ if(!running||paused)return; paused=true; pauseAt=performance.now();
-  go.textContent='继续'; msg.classList.add('show'); msg.classList.add('paused'); if(document.pointerLockElement) document.exitPointerLock();
+  go.textContent=(window.__IS_EN?'Resume':'继续'); msg.classList.add('show'); msg.classList.add('paused'); if(document.pointerLockElement) document.exitPointerLock();
   // ESC 只暂停、不退全屏：丢全屏就立刻要回来（同一按键手势内通常能成功）
   /* 全屏由独立按钮控制，暂停/继续不再抢手势 */ }
 function resume(){ msg.classList.remove('paused'); if(endMode==='time'){ endAt += performance.now()-pauseAt; } if(!paused)return; const d=performance.now()-pauseAt;

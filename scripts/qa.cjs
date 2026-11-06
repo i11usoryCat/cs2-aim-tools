@@ -25,6 +25,7 @@ function checkLinks(pageRel, links) {
   const base = path.dirname(path.join(ROOT, pageRel));
   const bad = [];
   for (const link of links) {
+    if (/['"`+]|\$\{/.test(link)) continue;   // 内联 JS 里的模板串，不是真链接
     let target = path.resolve(base, link);
     let ok = fs.existsSync(target) || fs.existsSync(target + '.html') || fs.existsSync(path.join(target, 'index.html'));
     if (!ok) bad.push(link);

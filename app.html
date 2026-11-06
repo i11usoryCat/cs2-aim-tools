@@ -883,6 +883,7 @@ const EN={
   '测出你每次都甩过头还是不够，把明显的偏差修掉。':'Measures whether you overshoot or fall short, and fixes the obvious bias.',
   '快速标定':'Quick calibration','固定 3 轮出建议，新手快速找到自己的灵敏度。':'3 fixed rounds then a suggestion — the fast way for beginners to find their sensitivity.',
   '遇到瓶颈的用户：找出属于这个阶段最好的灵敏度。':'Hit a plateau? Find the best sensitivity for your current stage.',
+  '初段覆盖':'First-move coverage','看你第一段甩动覆盖了目标多远——动作习惯，不是灵敏度。':'How far your first movement covers toward the target — a habit, not your sensitivity.',
   '开环标定':'Open-loop calibration','拟合甩出前 250ms 的弹道——测「预设落点」，灵敏度本身。':'Fits your first 250 ms of flick — measures the preset endpoint, sensitivity itself.',
   '语言 / Language':'Language',
   '输入设备':'Input device',
@@ -950,7 +951,26 @@ let LANG='zh';
 const ZH={};
 Object.keys(EN).forEach(k=>{ ZH[EN[k]]=k; });
 const __ORIG=new WeakMap();   // 记住每个文本节点的原文，来回切换不累积
-function L(zh,en){ return (LANG==='en') ? en : zh; }
+function L(zh,en){
+  // 每一条经过 L() 的文案都登记进词典：切换语言的"克隆层"靠词典翻译，
+  // 不登记的话这些动态文案在擦除过程中还是旧语言，完了才突然跳变。
+  try{
+    if(en && EN[zh]===undefined) EN[zh]=en;
+    if(zh && ZH[en]===undefined) ZH[en]=zh;
+  }catch(e){}
+  return (LANG==='en') ? en : zh;
+}
+// 带数字的文案没法整句查词典，用规则（双向）
+const TX_RULES=[
+  [/^360° 转身需要 ([\d.]+) cm · 180° 需要 ([\d.]+) cm · 灵敏度 ([\d.]+)（m_yaw ([\d.]+) · DPI (\d+)）$/,
+   m=>'360° turn needs '+m[1]+' cm · 180° needs '+m[2]+' cm · sensitivity '+m[3]+' (m_yaw '+m[4]+' · DPI '+m[5]+')'],
+  [/^360° turn needs ([\d.]+) cm · 180° needs ([\d.]+) cm · sensitivity ([\d.]+) \(m_yaw ([\d.]+) · DPI (\d+)\)$/,
+   m=>'360° 转身需要 '+m[1]+' cm · 180° 需要 '+m[2]+' cm · 灵敏度 '+m[3]+'（m_yaw '+m[4]+' · DPI '+m[5]+'）'],
+  [/^(\d+) 球$/, m=>m[1]+' balls'],
+  [/^(\d+) balls$/, m=>m[1]+' 球'],
+  [/^第 (\d+) 球$/, m=>'Ball '+m[1]],
+  [/^Ball (\d+)$/, m=>'第 '+m[1]+' 球'],
+];
 function translateRoot(root, lang){
   try{
     if(!root || !document.createTreeWalker) return;
@@ -962,7 +982,14 @@ function translateRoot(root, lang){
       if(orig===undefined){ orig=n.nodeValue; __ORIG.set(n, orig); }
       const t=orig.trim();
       if(!t) continue;
-      n.nodeValue = map[t] ? orig.replace(t, map[t]) : orig;
+      let out = map[t] ? orig.replace(t, map[t]) : orig;
+      if(out===orig){
+        for(let i=0;i<TX_RULES.length;i++){
+          const m=t.match(TX_RULES[i][0]);
+          if(m){ out=TX_RULES[i][1](m); break; }
+        }
+      }
+      n.nodeValue = out;
     }
   }catch(e){}
 }

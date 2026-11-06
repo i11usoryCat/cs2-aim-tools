@@ -15,14 +15,28 @@ function listPages() {
     for (const f of fs.readdirSync(dir, { withFileTypes: true })) {
       const rel = prefix ? prefix + '/' + f.name : f.name;
       if (f.isDirectory()) { if (['node_modules','.git','assets','docs','scripts','windows'].includes(f.name)) continue; walk(path.join(dir, f.name), rel); }
-      else if (f.name.endsWith('.html') && !/(backup|_fb|logo-|结果页预览)/.test(f.name)) out.push(rel);
+      else if (f.name.endsWith('.html') && !/(backup|_fb|logo-|结果页预览)/.test(f.name)) {
+        // 跳转 stub 会在检查前就 location.replace 走，导致把目标页的链接算到它头上——单独跳过，
+        // 由发布流程里的「跳转验收」负责检查它们。
+        const src = fs.readFileSync(path.join(dir, f.name), 'utf8');
+        if (/<meta http-equiv="refresh"|location\.replace\(/.test(src)) { continue; }
+        out.push(rel);
+      }
     }
   };
   walk(ROOT, '');
   return out.sort();
 }
-function checkLinks(pageRel, links) {
-  const base = path.dirname(path.join(ROOT, pageRel));
+function checkLinks(pageRel, links, finalHref) {
+  // 用"实际停留的页面"做基准：跳转 stub 会把浏览器带走到别的目录
+  let base = path.dirname(path.join(ROOT, pageRel));
+  if (finalHref && finalHref.indexOf('file://') === 0) {
+    try {
+      const fp = decodeURIComponent(new URL(finalHref).pathname).replace(/^\//, '');
+      const abs = path.resolve(fp);
+      if (abs.toLowerCase().indexOf(path.resolve(ROOT).toLowerCase()) === 0) base = path.dirname(abs);
+    } catch (e) {}
+  }
   const bad = [];
   for (const link of links) {
     if (/['"`+]|\$\{/.test(link)) continue;   // 内联 JS 里的模板串，不是真链接
@@ -71,9 +85,10 @@ const I18N = "(function(){ if(typeof EN!=='object') return 'skip'; try{ if(typeo
       const dups = JSON.parse(await ev(ID_DUP) || '[]');
       const overflow = await ev(OVERFLOW);
       const i18n = await ev(I18N);
-      return { errs: errs, links: links, dups: dups, overflow: overflow, i18n: i18n };
+      const finalHref = await ev('location.href');
+      return { errs: errs, links: links, dups: dups, overflow: overflow, i18n: i18n, finalHref: finalHref };
     });
-    if (!r.error) r.deadLinks = checkLinks(rel, r.links || []);
+    if (!r.error) r.deadLinks = checkLinks(rel, r.links || [], r.finalHref);
     results.push(Object.assign({ page: rel }, r));
     process.stdout.write('.');
   }

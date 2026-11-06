@@ -2,6 +2,26 @@
 <html lang="en" data-theme="sand">
 <head>
 <meta charset="utf-8">
+<script>/* 剪贴板兜底：writeText 在失焦/无权限时抛 NotAllowedError（未捕获会进 console），统一降级到 execCommand */
+(function(){
+  try{
+    var c = navigator.clipboard;
+    if(!c || !c.writeText) return;
+    var orig = c.writeText.bind(c);
+    c.writeText = function(t){
+      return orig(t).catch(function(){
+        var ta = document.createElement('textarea');
+        ta.value = t; ta.setAttribute('readonly','');
+        ta.style.cssText = 'position:fixed;top:-1000px;left:-1000px;opacity:0';
+        document.body.appendChild(ta);
+        ta.select(); ta.setSelectionRange(0, ta.value.length);
+        var ok = false; try{ ok = document.execCommand('copy'); }catch(e){}
+        ta.remove();
+        if(!ok){ try{ window.prompt('复制失败，请手动复制：', t); }catch(e){} }   // 兜底：绝不抛未捕获异常
+      });
+    };
+  }catch(e){}
+})();</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Vernier · 分毫</title>
 <meta name="description" content="分毫 Vernier —— 灵敏度标定、六维检查与每日训练计划。本地存储，无账号无广告。">

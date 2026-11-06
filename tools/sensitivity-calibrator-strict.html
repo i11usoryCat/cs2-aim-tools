@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <title>灵敏度标定 · 过冲法（全样本）</title>
 <style>
-  html,body{margin:0;height:100%;background:var(--bg);overflow:hidden;color:var(--txt);font-family:"Microsoft YaHei",sans-serif}
+  html,body{margin:0;height:100%;background:var(--bg);overflow:hidden;color:var(--txt);font-family:"Microsoft YaHei UI","Microsoft YaHei","Noto Sans SC","Segoe UI",system-ui,sans-serif}
   canvas{display:block;cursor:none}
   #ui{position:fixed;left:24px;top:20px;font-size:14px;line-height:1.9;pointer-events:none;text-shadow:0 0 6px #000}
   .overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;
@@ -26,6 +26,17 @@
   td,th{padding:9px 20px;text-align:right;border-bottom:1px solid var(--panel)}
   th{color:var(--dim);font-weight:500}
   .big{font-size:30px;font-weight:700;color:var(--acc)}
+  /* 与训练器统一的开始页：参数默认收起 */
+  #msg .pauseHide{display:none}
+  #msg.showParams .pauseHide{display:block}
+  .fld{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--dim);align-items:flex-start}
+  .fld input{padding:7px 9px;background:var(--panel);border:1px solid var(--line);color:var(--txt);
+    border-radius:7px;font-size:14px;width:110px;text-align:center;pointer-events:auto}
+  .fld select{padding:7px 9px;background:var(--panel);border:1px solid var(--line);color:var(--txt);
+    border-radius:7px;font-size:14px;font-family:inherit;width:auto;max-width:100%;pointer-events:auto}
+  .more{margin-top:18px;padding:9px 18px;border-radius:9px;border:1px solid var(--line);background:transparent;
+    color:var(--dim);font-size:13px;font-family:inherit;cursor:pointer;pointer-events:auto}
+  .more:hover{color:var(--txt);border-color:var(--acc)}
 #rawWarn .wb{padding:4px 10px;border-radius:7px;border:1px solid currentColor;background:transparent;
   color:inherit;font:inherit;font-size:12px;cursor:pointer;pointer-events:auto}
 #rawWarn .wb:hover{background:rgba(255,255,255,.10)}
@@ -37,29 +48,32 @@
 <div id="ui"></div>
 
 <div id="msg" class="overlay show">
-  <div style="font-size:19px;color:var(--acc);margin-bottom:10px" id="calTitle">灵敏度标定</div>
-  <div>每次只出现一个球。看到球后<b>最快速度甩过去并点击</b>。<br>
+  <div id="calTitle" style="font-size:26px;color:var(--txt);font-weight:700;letter-spacing:2px">灵敏度标定</div>
+  <div style="margin-top:8px;font-size:14px;color:var(--dim)">每次只出现一个球。看到球后<b>最快速度甩过去并点击</b>。<br>
   程序记录你甩完的落点，算出你<b>冲过头还是没到</b>。<br><span style="color:var(--acc)">全样本：命中与未命中同样计入</span></div>
-  <div style="margin-top:22px;display:grid;grid-template-columns:repeat(3,auto);gap:10px 22px;justify-content:center;font-size:14px;color:var(--dim)">
-    <label>鼠标 DPI <input id="dpi" type="number" step="100" value="800" style="width:90px"></label>
-    <label>m_yaw <input id="yaw" type="number" step="0.0001" value="0.022" style="width:100px"></label>
-    <label>cm/360 <input id="cm" type="number" step="0.1" value="27.1" style="width:90px"></label>
-    <label>游戏灵敏度 <input id="sens" type="number" step="0.01" value="" placeholder="自动" style="width:90px"></label>
-    <label>球数 <input id="n" type="number" step="10" value="40" style="width:80px"></label>
-    <label>球大小 <select id="bs" style="padding:7px;background:var(--panel);border:1px solid var(--line);color:var(--txt);border-radius:6px;font-size:14px;pointer-events:auto">
-      <option value="2.0">大（2.0°）</option>
-      <option value="1.5" selected>标准（1.5°）</option>
-      <option value="1.0">小（1.0°）</option>
-      <option value="0.7">很小（0.7°）</option>
-      <option value="0.45">极小（0.45°）</option>
-    </select></label>
+  <div style="margin-top:26px;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap">
+    <button id="go" class="btn" style="margin-top:0;padding:16px 64px;font-size:18px;letter-spacing:2px">开始</button>
+    <button id="fsBtn" type="button" style="padding:14px 22px;font-size:14px;border-radius:9px;border:1px solid var(--line);background:transparent;color:var(--dim);cursor:pointer;font-family:inherit">全屏 ⛶</button>
   </div>
-  <div id="sensHint" style="margin-top:12px;font-size:13.5px;color:var(--dim)"></div>
-  <div id="bw" style="margin-top:12px;font-size:13px;line-height:1.8;color:#d29922"></div>
-  <div style="margin-top:24px;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap">
-  <button id="go" class="btn" style="margin-top:0">开始</button>
-  <button id="fsBtn" type="button" style="padding:12px 20px;font-size:14px;border-radius:9px;border:1px solid var(--line);background:transparent;color:var(--dim);cursor:pointer;font-family:inherit">全屏 ⛶</button>
-</div>
+  <div id="sensHint" style="margin-top:14px;font-size:13px;color:var(--dim)"></div>
+  <div id="bw" style="margin-top:10px;font-size:13px;line-height:1.8;color:#d29922"></div>
+  <button id="more" class="more">参数 ▾</button>
+  <div class="pauseHide" style="margin-top:22px;width:100%;max-width:560px">
+    <div style="display:flex;flex-wrap:wrap;gap:14px 18px;justify-content:center">
+      <label class="fld">鼠标 DPI<input id="dpi" type="number" step="100" value="800" style="width:90px"></label>
+      <label class="fld">m_yaw<input id="yaw" type="number" step="0.0001" value="0.022" style="width:100px"></label>
+      <label class="fld">cm/360<input id="cm" type="number" step="0.1" value="27.1" style="width:90px"></label>
+      <label class="fld">游戏灵敏度<input id="sens" type="number" step="0.01" value="" placeholder="自动" style="width:90px"></label>
+      <label class="fld">球数<input id="n" type="number" step="10" value="40" style="width:80px"></label>
+      <label class="fld">球大小<select id="bs">
+        <option value="2.0">大（2.0°）</option>
+        <option value="1.5" selected>标准（1.5°）</option>
+        <option value="1.0">小（1.0°）</option>
+        <option value="0.7">很小（0.7°）</option>
+        <option value="0.45">极小（0.45°）</option>
+      </select></label>
+    </div>
+  </div>
   <div id="rawWarn" style="display:none;position:fixed;left:50%;top:70px;transform:translateX(-50%);z-index:9999;background:rgba(20,16,8,.92);border:1px solid #d29922;color:#f5d78a;padding:9px 16px;border-radius:10px;font-size:13px;line-height:1.6;max-width:min(560px,calc(100vw - 32px));pointer-events:auto;text-align:left">⚠️ 原始输入锁定失败：本次测量经过系统加速，建议值不可比，不允许「应用到设置」。</div>
 </div>
 
@@ -405,6 +419,19 @@ go.addEventListener('click',e=>{ e.stopPropagation(); if(paused) resume(); else 
   sync();
 })();
 
+/* 参数折叠：与训练器同一套交互 */
+(function(){
+  var more=document.getElementById('more'), msg=document.getElementById('msg');
+  if(!more||!msg) return;
+  function sync(){ more.textContent = msg.classList.contains('showParams') ? (window.__IS_EN?'Hide parameters ▴':'收起参数 ▴') : (window.__IS_EN?'Parameters ▾':'参数 ▾'); }
+  more.addEventListener('click', function(e){
+    e.stopPropagation();
+    msg.classList.toggle('showParams');
+    sync();
+  });
+  sync();
+})();
+
 /* 全屏改成手动（F 键）：部分环境下进全屏会拿不到 unadjustedMovement 原始输入，
    所以不再和「开始」绑定——想全屏自己切，出问题随时退。 */
 addEventListener('keydown',function(e){
@@ -677,7 +704,7 @@ requestAnimationFrame(loop);
     '程序记录你甩完的落点，算出你':'It records where you land — ',
     '冲过头还是没到':'overshot or undershot',
     '。':'.',
-    '开始':'START','重新开始':'Restart','结束':'End','结果':'Result',
+    '开始':'START','重新开始':'Restart','结束':'End','结果':'Result','参数 ▾':'Parameters ▾','收起参数 ▴':'Hide parameters ▴',
     '鼠标 DPI':'Mouse DPI','当前 cm/360':'Current cm/360','游戏灵敏度':'Game sensitivity',
     '球数':'Shots','球大小':'Dot size','标准（1.5°）':'Standard (1.5°)','大（2.2°）':'Large (2.2°)','小（1.0°）':'Small (1.0°)',
     '大（2.0°）':'Large (2.0°)','很小（0.7°）':'Very small (0.7°)','极小（0.45°）':'Tiny (0.45°)',

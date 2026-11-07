@@ -195,6 +195,8 @@ const EN_UI=(function(){ try{
     var n=(navigator.language||'en').toLowerCase();
     return n.indexOf('zh')!==0;
   }catch(e){ return true; } })();   // 按浏览器语言自动选：中文浏览器看中文，其余默认英文
+window.__IS_EN = EN_UI;
+try{ var __fb=document.getElementById('fsBtn'); if(__fb) __fb.textContent = EN_UI ? 'Fullscreen ⛶' : '全屏 ⛶'; }catch(e){}
 // 命中特效（flash/shatter/both/off）与准星击中反馈（auto/custom/off）
 const hitFxMode=(function(){ try{ var m=localStorage.getItem('cs2at.hitFx'); if(m==='0') m='off'; if(!m||m==='1') m='flash'; return m; }catch(e){ return 'flash'; } })();
 const hitCrossMode=(function(){ try{ var m=localStorage.getItem('cs2at.hitCross'); if(m==='0') m='off'; if(!m||m==='1') m='auto'; return m; }catch(e){ return 'auto'; } })();

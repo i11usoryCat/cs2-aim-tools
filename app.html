@@ -463,6 +463,87 @@ try{
     *{animation:none!important;transition:none!important}
     .langLayer{animation:none!important}
   }
+
+  /* ============================================================
+     纸面手册 · Paper manual（与训练器的「黑色仪器」刻意区分）
+     只动样式：不改 id / 事件 / 存储键
+     ============================================================ */
+  :root{
+    --h-sec:21px; --h-card:15.5px;
+    --card-pad-y:22px; --card-pad-x:24px; --card-gap:14px;
+    --ease:cubic-bezier(.2,.8,.2,1); --t-fast:120ms; --t-mid:170ms;
+    --rule-ink:color-mix(in srgb, var(--txt) 14%, transparent);
+  }
+
+  /* —— 版式节奏：统一的字阶与留白 —— */
+  h2{
+    display:flex; align-items:center; gap:12px;
+    width:auto; font-size:var(--h-sec); letter-spacing:.2px;
+    margin:0 0 6px; padding:0;
+  }
+  h2::before{                      /* 游标刻度：左侧的竖条刻度 */
+    content:""; width:8px; height:20px; flex:none; border-radius:1px;
+    background:repeating-linear-gradient(to bottom, var(--acc) 0 1px, transparent 1px 4px);
+    opacity:.7;
+  }
+  h2::after{                       /* 细线向右渐隐，像手册的分节线 */
+    content:""; position:static; flex:1; height:1px; width:auto; border-radius:0;
+    background:linear-gradient(to right, var(--line2), transparent 72%);
+  }
+  .grp{                            /* 分组小标签：刻度 + 细线 */
+    grid-column:1/-1; margin:18px 0 2px; padding:0;
+    display:flex; align-items:center; gap:10px;
+    font-size:12px; color:var(--dim); letter-spacing:2px;
+  }
+  .grp::before{content:""; width:14px; height:9px;
+    background:repeating-linear-gradient(to right, var(--dim2) 0 1px, transparent 1px 4px)}
+  .grp::after{content:""; flex:1; height:1px; background:var(--line)}
+  .hint{margin:10px 0 22px; line-height:1.7}
+
+  /* —— 身份元素：卡片左侧的细刻度，hover 时推进 —— */
+  a.tile,.tile,.card{ position:relative; border-radius:14px }
+  a.tile,.tile{ padding:var(--card-pad-y) var(--card-pad-x) }
+  .card{ padding:var(--card-pad-y) var(--card-pad-x); margin-bottom:var(--card-gap) }
+  a.tile::before{
+    content:""; position:absolute; left:-1px; top:16px; bottom:16px; width:2px; border-radius:2px;
+    background:repeating-linear-gradient(to bottom, var(--acc) 0 1px, transparent 1px 6px);
+    opacity:0; transform:scaleY(.55); transform-origin:top;
+    transition:opacity var(--t-mid) var(--ease), transform var(--t-mid) var(--ease);
+  }
+  a.tile:hover::before{opacity:.85; transform:scaleY(1)}
+  a.tile{transition:transform var(--t-mid) var(--ease), border-color var(--t-fast) ease-out, box-shadow var(--t-mid) var(--ease)}
+  a.tile:hover{transform:translateY(-2px)}
+  a.tile .t::after{transition:transform var(--t-mid) var(--ease), color var(--t-fast) ease-out}
+
+  /* —— 卡片标题与正文的层次 —— */
+  .t{font-size:var(--h-card); letter-spacing:.2px; margin-bottom:6px}
+  .d{font-size:13px; line-height:1.65}
+
+  /* —— 微动效：标签切换 120ms 淡入 —— */
+  section{animation:paperIn var(--t-fast) ease-out}
+  @keyframes paperIn{from{opacity:0}to{opacity:1}}
+
+  /* —— 数字排版：所有读数等宽，跳动不再抖 —— */
+  body{font-variant-numeric:tabular-nums; -moz-font-feature-settings:"tnum" 1}
+  .v{font-size:27px; letter-spacing:-.4px}
+  .k{letter-spacing:.4px}
+  table td, table th{font-variant-numeric:tabular-nums}
+  #calcHint{font-variant-numeric:tabular-nums; letter-spacing:.2px}
+
+  /* —— 窄屏：卡片单列、导航不溢出 —— */
+  @media (max-width:900px){
+    main{padding:26px 18px 72px}
+    .grid{grid-template-columns:1fr; gap:12px}
+    .row{gap:10px}
+    header{padding:8px 14px; gap:4px}
+    nav a{padding:7px 10px; font-size:13px}
+    h2{font-size:19px}
+    a.tile,.card{--card-pad-x:18px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    a.tile::before{transition:none}
+    section{animation:none}
+  }
 </style>
 </head>
 <body>
@@ -1349,7 +1430,7 @@ function renderDrills(){
   const drillEN=false;   // 说明已进词典，渲染只出中文，翻译交给 translateRoot
   const groups=[['评估','Assessment'],['练习','Practice']];
   $('drillGrid').innerHTML=groups.map(function(g){
-    return '<div style="grid-column:1/-1;margin-top:14px;font-size:13px;color:var(--dim);letter-spacing:1px">'+
+    return '<div class="grp">'+
       (document.documentElement.getAttribute('lang')==='en'? g[1] : g[0])+'</div>'+
       items.filter(function(i){ return i.g===g[0]; }).map(function(i){
         return '<a class="tile" href="'+i.u+'"><div class="t">'+i.t+'</div><div class="d">'+(drillEN?i.dEN:i.d)+'</div></a>';

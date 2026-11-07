@@ -706,7 +706,10 @@ try{
   .today:hover{background:color-mix(in srgb,var(--txt) 4%, transparent); border-color:var(--line2)}
   .today .td-r{color:var(--dim); font-size:13px; font-variant-numeric:tabular-nums}
 
-  #drillGrid{display:block !important}          /* 容器不再是卡片网格，改成目录 */
+  #play{display:none; min-height:calc(100vh - 220px); box-sizing:border-box; margin-bottom:0}
+  #play.on{display:flex; flex-direction:column; justify-content:center; margin:0}
+  #play h2{margin-top:0}
+  #drillGrid{display:block !important; width:100%}   /* 容器不再是卡片网格，改成目录 */
   #drillGrid .cols{display:grid; grid-template-columns:repeat(5,1fr); gap:0 28px}
   #drillGrid .grp{
     margin:0 0 4px; padding:0; display:flex; gap:8px; align-items:baseline;
@@ -723,8 +726,20 @@ try{
   #drillGrid .item:hover{background:color-mix(in srgb,var(--txt) 4%, transparent)}
   #drillGrid .item .ar{color:var(--dim2); transition:transform 120ms linear, color 120ms linear}
   #drillGrid .item:hover .ar{transform:translateX(2px); color:var(--acc)}
+  /* 目录下方的紧凑状态条：11px 标签 / 24px 数字 / 1px 分隔线 */
+  .statsbar{
+    display:grid; grid-template-columns:repeat(3,1fr); gap:0 28px;
+    margin:26px 0 0; padding:16px 0 0; border-top:1px solid var(--line);
+    max-height:80px; box-sizing:border-box;
+  }
+  .statsbar .sb{display:flex; align-items:baseline; gap:10px; min-width:0}
+  .statsbar .sb-k{font-size:11px; letter-spacing:.18em; color:var(--dim); text-transform:none}
+  .statsbar .sb-v{font-size:24px; line-height:1; font-variant-numeric:tabular-nums; color:var(--txt); white-space:nowrap}
+  .statsbar .sb-v.dim{color:var(--dim2)}
+
   @media (max-width:900px){
     #drillGrid .cols{grid-template-columns:repeat(2,1fr); gap:0 18px}
+    .statsbar{grid-template-columns:1fr; gap:10px 0; max-height:none}
   }
 </style>
 </head>
@@ -807,6 +822,7 @@ try{
     <div class="hint">不知道自己该用多少灵敏度？<a href="#set" style="color:var(--acc);text-decoration:none;font-weight:600">去标定一次</a>，把明显的过头/不足修掉。</div>
 
     <div class="grid" id="drillGrid"></div>
+    <div class="statsbar" id="statsBar"></div>
 
 
   </section>
@@ -1316,6 +1332,7 @@ function applyLang(l){
   try{ if(window.__updateCalc) window.__updateCalc(); }catch(e){}
   try{ if(window.__vRender) window.__vRender(); }catch(e){}
   try{ if(window.__planCalRender) window.__planCalRender(); }catch(e){}
+  try{ if(window.__renderStatsBar) window.__renderStatsBar(); }catch(e){}
 }
 function setLang(l){ LANG=l; try{ localStorage.setItem(K_LANG,l); }catch(e){} }
 
@@ -1724,7 +1741,42 @@ function renderDrills(){
   });
   html+='</div>';
   $('drillGrid').innerHTML=html;
+  renderStatsBar();
 }
+
+// 目录下方的紧凑状态条：最近六维 / 本周天数 / 当前灵敏度
+function renderStatsBar(){
+  const el=$('statsBar'); if(!el) return;
+  let runs=[]; try{ runs=load(K_RUNS,[])||[]; }catch(e){}
+  // 六维：最近一次 check 的总分（六项均值）
+  let six='—';
+  const checks=runs.filter(r=>r.mode==='check' && r.s6 && typeof r.s6==='object')
+    .sort((a,b)=> new Date(a.d).getTime() - new Date(b.d).getTime());   // 按日期，取最近一次
+  if(checks.length){
+    const s=checks[checks.length-1].s6;
+    const vals=['react','first','second','micro','wide','attn'].map(k=>+s[k]).filter(v=>isFinite(v));
+    if(vals.length) six=String(Math.round(vals.reduce((a,b)=>a+b,0)/vals.length));
+  }
+  // 本周：最近 7 天里有训练记录的天数
+  let days=0;
+  try{
+    const now=Date.now(), set={};
+    runs.forEach(r=>{ const t=new Date(r.d).getTime(); if(isFinite(t) && now-t <= 7*86400000 && now-t >= -86400000) set[r.d]=1; });
+    days=Object.keys(set).length;
+  }catch(e){}
+  // 灵敏度：当前 cm/360
+  let cm='未设置';
+  try{ const c=+cfg.cm; if(isFinite(c)&&c>0) cm=c.toFixed(1)+' cm/360'; }catch(e){}
+  const en = document.documentElement.getAttribute('lang')==='en';
+  const T = en
+    ? { last:'Last', week:'This week', sens:'Sensitivity', six:'Six-skill', day:' days', unset:'not set' }
+    : { last:'最近', week:'本周', sens:'灵敏度', six:'六维', day:' 天', unset:'未设置' };
+  el.innerHTML=
+    '<div class="sb"><span class="sb-k">'+T.last+'</span><span class="sb-v'+(six==='—'?' dim':'')+'">'+T.six+' '+six+'</span></div>'+
+    '<div class="sb"><span class="sb-k">'+T.week+'</span><span class="sb-v'+(days?'':' dim')+'">'+days+T.day+'</span></div>'+
+    '<div class="sb"><span class="sb-k">'+T.sens+'</span><span class="sb-v'+(cm==='未设置'?' dim':'')+'">'+(cm==='未设置'?T.unset:cm)+'</span></div>';
+}
+window.__renderStatsBar = renderStatsBar;
 
 // 最佳 = 持久 best 与有效 runs 合并：历史最佳不丢，raw 不可比记录不参与
 // 状态快测与自适应随机在数据层分开：preset=state 的 run 归入 random|state

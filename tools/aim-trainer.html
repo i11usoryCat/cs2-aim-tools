@@ -1299,8 +1299,9 @@ requestAnimationFrame(loop);
   if(!el) return;
   var ok = (typeof window !== 'undefined') && ('onpointerrawupdate' in window);
   if(!ok){
-    el.innerHTML = '⚠️ 当前浏览器不支持原始输入（pointerrawupdate）：反应时间会偏大，跨浏览器不可比<br>' +
-      '建议使用 <b style="color:var(--acc)">Chrome</b> 或 <b style="color:var(--acc)">Edge</b>';
+    el.innerHTML = EN_UI
+      ? '⚠️ No raw pointer input in this browser (pointerrawupdate): reaction times will be inflated and not comparable across browsers<br>Use <b style="color:var(--acc)">Chrome</b> or <b style="color:var(--acc)">Edge</b>'
+      : '⚠️ 当前浏览器不支持原始输入（pointerrawupdate）：反应时间会偏大，跨浏览器不可比<br>建议使用 <b style="color:var(--acc)">Chrome</b> 或 <b style="color:var(--acc)">Edge</b>';
   } else {
     // 有 rawupdate 但原始锁可能失败（部分 Linux/Wayland、远程桌面）：先警告，失败时再显示
     var raw=document.createElement('div');

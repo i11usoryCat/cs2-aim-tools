@@ -526,6 +526,8 @@
           var el = root || (typeof document !== 'undefined' ? document.documentElement : null);
           if (!el) return;
           el.style.setProperty('--overlay', css(p.bg, a));
+          // 材质用：深色场地 = 高光 .28 / 接触阴影 .55（assets/ui-material.css 读取）
+          el.setAttribute('data-arena-dark', p.dark ? '1' : '0');
           // 开始页文案区局部 scrim（与 tools/aim-trainer.html 同款变量与配方）：
           // 浅色 = SC.bg 暖白 0.55、暗色 = SC.bg 暗色 0.35；只盖中间带，天空/地面保持通透
           var peak = p.dark ? 0.35 : 0.55;

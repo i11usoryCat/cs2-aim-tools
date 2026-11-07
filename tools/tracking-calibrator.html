@@ -71,6 +71,7 @@
     color:inherit;font:inherit;font-size:12px;cursor:pointer;pointer-events:auto}
   #rawWarn .wb:hover{background:rgba(255,255,255,.10)}
 </style>
+<link rel="stylesheet" href="../assets/ui-material.css">
 </head>
 <body>
 <a id="back" href="../app.html#play">← 返回</a>
@@ -81,8 +82,8 @@
   <div id="ttl" style="font-size:26px;color:var(--txt);font-weight:700;letter-spacing:2px">跟枪测试</div>
   <div style="margin-top:8px;color:var(--dim);font-size:14px">目标走圆，准星压在目标上</div>
   <div style="margin-top:26px;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap">
-    <button id="go" class="btn" style="margin-top:0;padding:16px 64px;font-size:18px;letter-spacing:2px">开 始</button>
-    <button id="fsBtn" type="button" style="padding:14px 22px;font-size:14px;border-radius:9px;border:1px solid var(--line);background:transparent;color:var(--dim);cursor:pointer;font-family:inherit">全屏 ⛶</button>
+    <button id="go" class="btn">开 始</button>
+    <button id="fsBtn" type="button" class="btn ghost">全屏 ⛶</button>
   </div>
   <div id="sum" style="margin-top:14px;font-size:13px;color:var(--dim)"></div>
   <div id="bw" style="margin-top:10px;font-size:13px;line-height:1.8;color:var(--gold)"></div>
@@ -106,7 +107,7 @@
 <div id="res" class="overlay"><div id="resBody"></div>
   <button id="again" class="btn">再测一轮</button>
   <div style="margin-top:12px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
-    <button id="copyRes" class="btn" style="background:transparent;border-color:var(--line);color:var(--dim);font-size:13px;padding:8px 16px">复制结果</button>
+    <button id="copyRes" class="btn ghost btn-sm">复制结果</button>
   </div>
   <div id="copyHint" style="margin-top:8px;font-size:13px;color:var(--acc)"></div></div>
 
@@ -149,6 +150,36 @@ const SITE_THEMES={
   r.setProperty('--txt',t.txt); r.setProperty('--dim',t.dim); r.setProperty('--acc',t.acc);
   r.setProperty('--on-acc','#ffffff');
   r.setProperty('--overlay',dark?'rgba(11,15,20,.96)':'rgba(238,244,246,.97)');
+})();
+
+/* --on-acc 自适应：按强调色亮度自动选黑/白，修「白字压亮绿 1.74:1」的老问题。
+   只改 --on-acc 这一个变量，不动 --acc 本身，也不动其它任何颜色。 */
+(function(){
+  function relLum(c){
+    var s=String(c||'').trim(), rgb=null;
+    if(s.charAt(0)==='#'){
+      s=s.slice(1);
+      if(s.length===3) s=s.charAt(0)+s.charAt(0)+s.charAt(1)+s.charAt(1)+s.charAt(2)+s.charAt(2);
+      if(/^[0-9a-fA-F]{6}$/.test(s)){ var n=parseInt(s,16); rgb=[(n>>16)&255,(n>>8)&255,n&255]; }
+    } else {
+      var m=/rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(s);
+      if(m) rgb=[+m[1],+m[2],+m[3]];
+    }
+    if(!rgb) return 0;
+    function f(v){ v/=255; return v<=0.03928? v/12.92 : Math.pow((v+0.055)/1.055,2.4); }
+    return 0.2126*f(rgb[0]) + 0.7152*f(rgb[1]) + 0.0722*f(rgb[2]);
+  }
+  var root=document.documentElement;
+  function apply(){
+    var acc=getComputedStyle(root).getPropertyValue('--acc').trim();
+    if(!acc) return;
+    var next=relLum(acc)>0.32 ? '#0b0f14' : '#ffffff';
+    if(root.style.getPropertyValue('--on-acc').trim()===next) return;   // 幂等：避免 MutationObserver 自激
+    root.style.setProperty('--on-acc', next);
+  }
+  apply();
+  try{ new MutationObserver(apply).observe(root,{attributes:true,attributeFilter:['class','data-theme','style']}); }catch(e){}
+  try{ addEventListener('load',apply); }catch(e){}
 })();
 
 /* ————— 基础 ————— */

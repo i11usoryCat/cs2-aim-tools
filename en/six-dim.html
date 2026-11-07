@@ -176,11 +176,9 @@ let yaw=0, pitch=0, tYaw=0, tPitch=0, sYaw=0, sPitch=0;
 const EN_UI=(function(){ try{
     var q=new URLSearchParams(location.search);
     if(q.get('lang')) return q.get('lang')==='en';
-    var s=localStorage.getItem('cs2at.lang');
-    if(s) return s==='en';
-    var n=(navigator.language||'en').toLowerCase();
-    return n.indexOf('zh')!==0;
-  }catch(e){ return true; } })();   // 按浏览器语言自动选：中文浏览器看中文，其余默认英文
+    // en/ 英文镜像页：默认英文；只有显式 ?lang=zh 才中文（旧逻辑按浏览器语言，中文系统会整页中文）
+    return true;
+  }catch(e){ return true; } })();
 // 命中特效（flash/shatter/both/off）与准星击中反馈（auto/custom/off）
 const hitFxMode=(function(){ try{ var m=localStorage.getItem('cs2at.hitFx'); if(m==='0') m='off'; if(!m||m==='1') m='flash'; return m; }catch(e){ return 'flash'; } })();
 const hitCrossMode=(function(){ try{ var m=localStorage.getItem('cs2at.hitCross'); if(m==='0') m='off'; if(!m||m==='1') m='auto'; return m; }catch(e){ return 'auto'; } })();
@@ -1388,11 +1386,10 @@ requestAnimationFrame(loop);
   var EN = (function(){
     try{
       var q=new URLSearchParams(location.search);
+      // 这是 en/ 目录的英文镜像页：默认英文；只有显式 ?lang=zh 才切中文。
+      // （旧逻辑按 navigator.language 判定，中文系统打开 en/six-dim.html 会显示中文 → qa 的 en-untranslated 报残留）
       if(q.get('lang')) return q.get('lang')==='en';
-      var sv=localStorage.getItem('cs2at.lang');
-      if(sv) return sv==='en';
-      var nv=(navigator.language||'en').toLowerCase();
-      return nv.indexOf('zh')!==0;
+      return true;
     }catch(e){ return true; }
   })();
   if(!EN) return;
@@ -1412,6 +1409,12 @@ requestAnimationFrame(loop);
     '自适应随机':'Adaptive random','定角重复':'Fixed angle','小球精度':'Precision',
     '大角度甩枪':'Wide flick','移动跟枪':'Moving target','微调训练':'Micro-adjust','六维检查（90秒）':'Check-up (90 s)','目标大小°':'Target size °',
     '阶梯精度':'Staircase precision','随机距离':'Random distance','分轴定位':'Axis-staged',
+    '参数 ▾':'Options ▾','收起参数 ▴':'Hide options ▴','跟随主题':'Follow theme',
+    '点击画面开始':'Click the screen to start',
+    '90 秒 · 题目一样 · 方向随机':'90 s · same questions · random direction',
+    '换模式':'Switch mode',
+    '收缩模式（球越打越小）':'Shrink mode (dot gets smaller)',
+    '鼠标 DPI':'Mouse DPI',
     '阶梯精度：球会按命中率自动变大变小，收敛后的尺寸 = 85% 命中率下能稳定打中的最小目标。':'Staircase precision: the dot grows or shrinks with your hit rate; the converged size is the smallest target you can hold at 85%.',
     '随机距离：目标距离 5–45° 随机，练换距离时的适应力，结果按距离分箱。':'Random distance: targets appear at a random 5–45° distance; trains adaptation when the distance changes, and results are binned by distance.',
     '分轴定位：目标出现后，两条红竖线标出目标的水平位置；准星横向进入带内立即变绿，随后只剩垂直微调，点击。记录 T1 横移用时 / T2 微调用时 / 纵向误差；渐隐 A0–A4 五级，连续 5 次进带升级。':'Axis-staged: two red vertical lines mark the target\'s horizontal position; when the crosshair enters the band it turns green instantly (no dwell), then only vertical fine-adjust remains — click. Records T1 sweep time / T2 micro-adjust time / vertical error; fading levels A0–A4, upgraded after 5 consecutive band entries.',

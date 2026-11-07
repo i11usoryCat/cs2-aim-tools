@@ -61,6 +61,10 @@
   .more{margin-top:18px;padding:9px 18px;border-radius:9px;border:1px solid var(--line);background:transparent;
     color:var(--dim);font-size:13px;font-family:inherit;cursor:pointer;pointer-events:auto}
   .more:hover{color:var(--txt);border-color:var(--acc)}
+  .modeRow{display:flex;gap:12px;flex-wrap:wrap;margin-top:8px}
+  .modeRow .btn{margin-top:0}
+  .modeRow .btn.is-on{border-color:var(--acc);color:var(--txt)}
+  #modeHint{max-width:640px}
   #rawWarn .wb{padding:4px 10px;border-radius:7px;border:1px solid currentColor;background:transparent;
     color:inherit;font:inherit;font-size:12px;cursor:pointer;pointer-events:auto}
   #rawWarn .wb:hover{background:rgba(255,255,255,.10)}
@@ -81,16 +85,22 @@
   </div>
   <div id="sum" style="margin-top:16px;font-size:13px;line-height:16px;color:var(--dim)"></div>
   <div id="bw" style="margin-top:8px;font-size:13px;line-height:24px;color:var(--gold)"></div>
-  <div class="ff-sec">02 / PARAMETERS</div>
+  <div class="ff-sec">02 / MODE</div>
+  <div class="modeRow">
+    <button id="modeSine" type="button" class="btn ghost btn-sm is-on">连续正弦</button>
+    <button id="modeStep" type="button" class="btn ghost btn-sm">步进跟随（灵敏度探针）</button>
+  </div>
+  <div id="modeHint" style="margin-top:8px;font-size:12px;color:var(--dim);line-height:24px"></div>
+  <div class="ff-sec">03 / PARAMETERS</div>
   <button id="more" class="more">参数 ▾</button>
   <div class="pauseHide" style="margin-top:16px;width:100%;max-width:640px">
     <div style="display:flex;flex-wrap:wrap;gap:16px 24px;justify-content:flex-start">
       <label class="fld">鼠标 DPI<input id="dpi" type="number" step="100" value="800"></label>
       <label class="fld">m_yaw<input id="yaw" type="number" step="0.0001" value="0.022"></label>
       <label class="fld">cm/360<input id="cm" type="number" step="0.1" value="27.1"></label>
-      <label class="fld">相位角速度 °/s<input id="w" type="number" step="5" value="60"></label>
-      <label class="fld">半径 °<input id="r" type="number" step="1" value="15"></label>
-      <label class="fld">时长 秒<input id="t" type="number" step="10" value="90"></label>
+      <label class="fld sineOnly">相位角速度 °/s<input id="w" type="number" step="5" value="60"></label>
+      <label class="fld sineOnly">半径 °<input id="r" type="number" step="1" value="15"></label>
+      <label class="fld sineOnly">时长 秒<input id="t" type="number" step="10" value="90"></label>
     </div>
     <div style="margin-top:16px;font-size:12px;color:var(--dim);line-height:24px">
       跟枪 ≠ 灵敏度标定：这里测跟枪手感（误差 RMS、相位滞后、速度增益）；找灵敏度请用「灵敏度标定」。
@@ -99,7 +109,7 @@
   <div id="rawWarn" style="display:none;position:fixed;left:50%;top:70px;transform:translateX(-50%);z-index:9999;background:rgba(20,16,8,.92);border:1px solid var(--gold);color:#f5d78a;padding:9px 16px;border-radius:0;font-size:13px;line-height:1.6;max-width:min(560px,calc(100vw - 32px));pointer-events:auto;text-align:left">⚠️ 原始输入锁定失败：本次测量经过系统加速，误差指标不可比。</div>
 </div>
 
-<div id="res" class="overlay"><div class="ff-sec" style="margin-top:0">03 / RESULT</div><div id="resBody"></div>
+<div id="res" class="overlay"><div class="ff-sec" style="margin-top:0">04 / RESULT</div><div id="resBody"></div>
   <button id="again" class="btn">再测一轮</button>
   <div style="margin-top:16px;display:flex;gap:12px;justify-content:flex-start;flex-wrap:wrap">
     <button id="copyRes" class="btn ghost btn-sm">复制结果</button>
@@ -244,6 +254,26 @@ try{
   if(q.get('cm')) setVal(cmEl,q.get('cm')); else if(cfg&&cfg.cm) setVal(cmEl,cfg.cm);
 }catch(e){}
 updSum();
+
+/* ————— 模式：连续正弦 / 步进跟随（灵敏度探针） ————— */
+let mode='sine';
+const modeSineBtn=document.getElementById('modeSine'), modeStepBtn=document.getElementById('modeStep'),
+      modeHintEl=document.getElementById('modeHint');
+function setMode(m){
+  mode=(m==='step')?'step':'sine';
+  if(modeSineBtn) modeSineBtn.classList.toggle('is-on', mode==='sine');
+  if(modeStepBtn) modeStepBtn.classList.toggle('is-on', mode==='step');
+  document.querySelectorAll('.sineOnly').forEach(function(el){ el.style.display = mode==='sine' ? '' : 'none'; });
+  if(modeHintEl) modeHintEl.innerHTML = mode==='step'
+    ? L2('步进跟随：目标瞬移，间隔阶梯自适应（连 3 次到位缩 8%、失败加 8%），A/B 交错 4 块 × 10 秒，约 43 秒。','Step follow: targets teleport; adaptive interval staircase (3 hits → −8%, miss → +8%); A/B interleaved 4 × 10 s, ~43 s.')
+    : L2('连续正弦：目标绕圆匀速运动，测跟踪误差 / 相位滞后 / 速度增益。','Continuous sine: target orbits at constant speed; measures tracking error / phase lag / speed gain.');
+  try{ updSum(); }catch(e){}
+}
+function pickMode(m){ if(running) return; setMode(m); }
+if(modeSineBtn) modeSineBtn.addEventListener('click',function(e){ e.stopPropagation(); pickMode('sine'); });
+if(modeStepBtn) modeStepBtn.addEventListener('click',function(e){ e.stopPropagation(); pickMode('step'); });
+setMode('sine');
+
 try{
   if(!('onpointerrawupdate' in window)){
     var bw=document.getElementById('bw');
@@ -309,7 +339,8 @@ function doLock(){
 }
 function moveEv(e){
   if(!running||paused) return;
-  const k=kOf(CM);
+  // 步进探针：B 块把「鼠标→角度」灵敏度乘 ×1.15（A = 当前灵敏度，B = 更高一档）
+  const k=kOf(CM)*((mode==='step'&&SP)?SP.kMul:1);
   yaw  += (e.movementX||0)*k;
   pitch-= (e.movementY||0)*k;
   if(pitch> PITCH_LIM) pitch= PITCH_LIM;
@@ -330,6 +361,7 @@ document.addEventListener('pointerlockerror',()=>{
 
 /* ————— 任务 ————— */
 function start(){
+  if(mode==='step'){ startProbe(); return; }
   DPI=parseFloat(dpiEl.value)||800;
   YAW=parseFloat(yawEl.value)||0.022;
   CM=parseFloat(cmEl.value)||27.1;
@@ -359,6 +391,7 @@ function pause(){
 function resume(){
   if(!paused) return;
   const d=performance.now()-pauseAt; t0+=d;
+  if(SP){ SP.startAt+=d; if(SP.trial) SP.trial.t0+=d; }
   paused=false; msg.classList.remove('show'); if(!plainMode) doLock();
   /* 全屏不再是开跑流程的一部分 */
 }
@@ -407,6 +440,215 @@ addEventListener('keydown',function(e){
   sync();
 })();
 
+/* ————— 步进跟随 · 灵敏度探针 —————
+   连续正弦追踪测不出灵敏度：人是闭环控制器，会用手速把增益误差补偿掉。
+   改用「瞬移目标」：目标在水平方向随机角度瞬移；每次允许时间 = 阶梯自适应间隔
+   （连续 3 次到位 ×0.92，失败 ×1.08）→ 收敛到 ~75–80% 成功率，避免天花板 / 地板效应。
+   A/B/A/B 交错块：A = 当前灵敏度，B = 灵敏度 ×1.15；
+   比较 A/B 的过冲比 → 方向判断（过冲随灵敏度上升 = 当前偏高）。
+   指标：到位用时 / 过冲比（首次越过目标的角度 ÷ 目标距离）/ 抖动次数。
+   总时长 3s 准备 + 4×10s = 43s（<45s）。 */
+const PROBE={
+  blocks:['A','B','A','B'],
+  blockMs:10000,
+  countdownMs:3000,
+  bMul:1.15,                 // B 块灵敏度倍数
+  tolDeg:1.6,                // 到位容差（度）
+  stepMinDeg:10, stepMaxDeg:22,
+  jitterDeadbandDeg:0.05,    // 抖动判定的位置增量死区（度）
+  interval0:1200, intervalMin:350, intervalMax:2500,
+  down:0.92, up:1.08, streak:3
+};
+let SP=null;
+
+function newProbeBlock(){ return {n:0,succ:0,arrN:0,arrSum:0,ovSum:0,jitSum:0}; }
+
+function startProbe(){
+  DPI=parseFloat(dpiEl.value)||800;
+  YAW=parseFloat(yawEl.value)||0.022;
+  CM=parseFloat(cmEl.value)||27.1;
+  if(!isFinite(CM)||CM<12) CM=12; if(CM>60) CM=60;
+  cmEl.value=CM.toFixed(1);
+  yaw=0; pitch=0;
+  rawLockFailed=false; plainMode=false;
+  try{ var rw=document.getElementById('rawWarn'); if(rw) rw.style.display='none'; }catch(e){}
+  SP={
+    startAt:performance.now()+PROBE.countdownMs,
+    blockIdx:-1, kMul:1, interval:PROBE.interval0, streak:0,
+    trial:null, trials:[],
+    blockStats:{A:newProbeBlock(),B:newProbeBlock()}
+  };
+  running=true; paused=false; result=null;
+  msg.classList.remove('show'); res.classList.remove('show');
+  doLock();
+}
+
+function spawnProbeTrial(now){
+  if(!SP) return;
+  const dir=Math.random()<0.5?-1:1;
+  const stepDeg=PROBE.stepMinDeg+Math.random()*(PROBE.stepMaxDeg-PROBE.stepMinDeg);
+  const block=PROBE.blocks[SP.blockIdx]||'A';
+  SP.tYaw=wrapPi(yaw+dir*stepDeg*D2R);
+  SP.tPitch=pitch;
+  SP.trial={
+    t0:now, block:block, dir:dir, dist:stepDeg*D2R,
+    sYaw:yaw, sPitch:pitch, tYaw:SP.tYaw, tPitch:SP.tPitch,
+    arrived:false, arrival:null, maxProj:0, lastProg:0, lastSign:0,
+    jitter:0, endErr:null, success:false, overshoot:0
+  };
+}
+
+function updateProbeTrial(tr,now){
+  const dx=wrapPi(tr.tYaw-yaw), dy=wrapPi(tr.tPitch-pitch);
+  const err=Math.hypot(dx,dy)*R2D;
+  const prog=wrapPi(yaw-tr.sYaw)*tr.dir;          // 沿目标方向的带符号进度（rad）
+  if(prog>tr.maxProj) tr.maxProj=prog;
+  if(err<=PROBE.tolDeg && !tr.arrived){ tr.arrived=true; tr.arrival=now-tr.t0; }
+  // 抖动：到位之后，沿目标轴的位置增量方向反转（死区过滤手抖噪声）
+  const dprog=prog-tr.lastProg;
+  if(tr.arrived && Math.abs(dprog)>PROBE.jitterDeadbandDeg*D2R){
+    const sign=dprog>0?1:-1;
+    if(tr.lastSign && sign!==tr.lastSign) tr.jitter++;
+    tr.lastSign=sign;
+  }
+  tr.lastProg=prog;
+  tr.endErr=err;
+}
+
+function resolveProbeTrial(tr,now){
+  if(!SP||!tr) return;
+  if(tr.endErr===null || tr.endErr===undefined){
+    tr.endErr=Math.hypot(wrapPi(tr.tYaw-yaw),wrapPi(tr.tPitch-pitch))*R2D;
+  }
+  tr.success=!!(tr.arrived && tr.endErr<=PROBE.tolDeg);
+  tr.overshoot=tr.dist>0 ? Math.max(0,(tr.maxProj-tr.dist)/tr.dist) : 0;
+  const b=SP.blockStats[tr.block];
+  b.n++;
+  if(tr.success) b.succ++;
+  if(tr.arrived){ b.arrN++; b.arrSum+=tr.arrival; }
+  b.ovSum+=tr.overshoot;
+  b.jitSum+=tr.jitter;
+  SP.trials.push(tr);
+  if(tr.success){
+    SP.streak++;
+    if(SP.streak>=PROBE.streak){ SP.interval=Math.max(PROBE.intervalMin, SP.interval*PROBE.down); SP.streak=0; }
+  } else {
+    SP.interval=Math.min(PROBE.intervalMax, SP.interval*PROBE.up);
+    SP.streak=0;
+  }
+  SP.trial=null;
+}
+
+function drawTargetBall(yawT,pitchT){
+  const cp2=Math.cos(pitchT);
+  const tx=DIST*cp2*Math.sin(yawT), ty=DIST*Math.sin(pitchT), tz=DIST*cp2*Math.cos(yawT);
+  const p=project(tx,ty,tz);
+  if(!p) return;
+  const rad=Math.max(5*devicePixelRatio, f*Math.tan(1.5*D2R));
+  ctx.beginPath(); ctx.arc(p.sx,p.sy,rad,0,Math.PI*2);
+  ctx.fillStyle=SC.tgtFill; ctx.fill();
+  ctx.strokeStyle=SC.ring||SC.tgt; ctx.lineWidth=2.5; ctx.stroke();
+  ctx.beginPath(); ctx.arc(p.sx,p.sy,rad*0.25,0,Math.PI*2);
+  ctx.fillStyle=SC.tgt; ctx.fill();
+}
+function drawCrosshair(){
+  ctx.strokeStyle=SC.cross||'#fff'; ctx.lineWidth=2;
+  const cxp=W/2, cyp=H/2;
+  ctx.beginPath(); ctx.moveTo(cxp-12,cyp); ctx.lineTo(cxp+12,cyp); ctx.moveTo(cxp,cyp-12); ctx.lineTo(cxp,cyp+12); ctx.stroke();
+}
+
+function loopStep(now){
+  if(!SP){ running=false; return; }
+  arena.setView(yaw,pitch,f); arena.draw(now);
+  const P=SP, t=now-P.startAt;
+  const total=PROBE.blockMs*PROBE.blocks.length;
+  if(t<0){
+    drawCrosshair();
+    const n=Math.max(1, Math.ceil(-t/1000));
+    ui.innerHTML=L2('准备 '+n+' · 步进跟随','Ready '+n+' · step follow');
+    return;
+  }
+  if(t>=total){ finishProbe(); return; }
+  const bi=Math.min(PROBE.blocks.length-1, Math.floor(t/PROBE.blockMs));
+  if(bi!==P.blockIdx){
+    if(P.trial) resolveProbeTrial(P.trial, now);
+    P.blockIdx=bi;
+    P.kMul=PROBE.blocks[bi]==='B'? PROBE.bMul : 1;
+    spawnProbeTrial(now);
+  } else if(!P.trial){
+    spawnProbeTrial(now);
+  }
+  if(P.trial){
+    updateProbeTrial(P.trial, now);
+    if(now-P.trial.t0>=P.interval){ resolveProbeTrial(P.trial, now); spawnProbeTrial(now); }
+  }
+  if(P.trial) drawTargetBall(P.trial.tYaw, P.trial.tPitch);
+  drawCrosshair();
+  const left=Math.max(0, Math.ceil((total-t)/1000));
+  const b=PROBE.blocks[P.blockIdx]||'A';
+  const st=P.blockStats[b];
+  const sr=st.n? Math.round(st.succ/st.n*100):0;
+  ui.innerHTML=L2('步进跟随 · '+left+' 秒 · '+b+' 块 · 间隔 '+Math.round(P.interval)+' ms · 成功率 '+sr+'%',
+                  'Step follow · '+left+'s · block '+b+' · interval '+Math.round(P.interval)+'ms · hit '+sr+'%');
+}
+
+function finishProbe(){
+  running=false;
+  try{ ui.innerHTML=''; }catch(e){}
+  if(document.pointerLockElement) document.exitPointerLock();
+  const P=SP; SP=null;
+  const trials=P?P.trials:[];
+  const A=P?P.blockStats.A:newProbeBlock();
+  const B=P?P.blockStats.B:newProbeBlock();
+  const n=trials.length;
+  let arrSum=0, arrN=0, ovSum=0, jitSum=0, succN=0;
+  for(var i=0;i<n;i++){ var tr=trials[i];
+    if(tr.arrival!==null){ arrSum+=tr.arrival; arrN++; }
+    ovSum+=tr.overshoot; jitSum+=tr.jitter; if(tr.success) succN++;
+  }
+  const avgOv=function(b){ return b.n? b.ovSum/b.n : NaN; };
+  const avgArr=function(b){ return b.arrN? b.arrSum/b.arrN : NaN; };
+  const ovA=avgOv(A), ovB=avgOv(B);
+  const dOv=(isFinite(ovA)&&isFinite(ovB))? ovB-ovA : NaN;
+  const DIR_TH=0.05;
+  let dirKey='unknown';
+  if(isFinite(dOv) && A.n>=3 && B.n>=3){ dirKey = dOv>DIR_TH?'high':(dOv<-DIR_TH?'low':'match'); }
+  result={
+    mode:'step', ok:n>0, n:n, succAll:n? succN/n:0, interval:P?Math.round(P.interval):0,
+    arrAvg:arrN? arrSum/arrN : NaN, ovAvg:n? ovSum/n:NaN, jitAvg:n? jitSum/n:NaN,
+    ovA:ovA, ovB:ovB, dOv:dOv, dirKey:dirKey, A:A, B:B, raw:rawLockFailed
+  };
+  const row=function(k,v,cls){ return '<tr><th>'+k+'</th><td'+(cls?' class="'+cls+'"':'')+'>'+v+'</td></tr>'; };
+  const fmt=function(v,digits,suffix){ return isFinite(v)? v.toFixed(digits)+suffix : '—'; };
+  let dirText;
+  if(dirKey==='high') dirText=L2('过冲随灵敏度上升（B×1.15 的过冲高于 A）→ 当前灵敏度偏高；建议把 cm/360 调大约 10–15% 后复测。','Overshoot rises with sensitivity (B×1.15 > A) → current sensitivity is too high; raise cm/360 by ~10–15% and retest.');
+  else if(dirKey==='low') dirText=L2('灵敏度上升反而降低过冲（B×1.15 的过冲低于 A）→ 当前灵敏度偏低；建议把 cm/360 调小约 10–15% 后复测。','Overshoot falls as sensitivity rises (B×1.15 < A) → current sensitivity is too low; lower cm/360 by ~10–15% and retest.');
+  else if(dirKey==='match') dirText=L2('A/B 过冲差异小于 5% → 灵敏度方向接近匹配，或本局噪声偏大。','A/B overshoot difference is below 5% → direction looks matched, or this run was noisy.');
+  else dirText=L2('有效样本不足（A/B 各需 ≥3 次）→ 方向无法判断，再测一轮。','Not enough samples (need ≥3 per block) → direction undetermined; run again.');
+  let body='<div style="font-size:17px;color:var(--acc);margin-bottom:4px">'+L2('步进跟随 · 结果','Step follow · Result')+'</div>';
+  if(!n){
+    body+='<div style="margin-top:8px;font-size:14px">'+L2('没有采集到有效步进。','No valid step trials captured.')+'</div>';
+  } else {
+    body+=(rawLockFailed?'<div style="margin-top:6px;font-size:13.5px;color:#f85149">'+L2('⚠️ 本次输入未校准（原始输入锁定失败），数值仅供参考。','⚠️ Raw input lock failed — numbers are indicative only.')+'</div>':'')+
+      '<table class="rt">'+
+      row(L2('到位用时','Time to arrive'), isFinite(result.arrAvg)? Math.round(result.arrAvg)+' ms' : '—', 'big')+
+      row(L2('过冲比','Overshoot ratio'), fmt(result.ovAvg*100,1,'%'))+
+      row(L2('抖动次数','Jitter count'), fmt(result.jitAvg,1,' '+L2('次','times')))+
+      row(L2('成功率','Success rate'), Math.round(result.succAll*100)+'%')+
+      row(L2('自适应间隔','Adaptive interval'), result.interval+' ms')+
+      row(L2('步进次数','Step trials'), n+L2(' 次',' trials'))+
+      '</table>'+
+      '<table class="rt" style="margin-top:14px">'+
+      row(L2('A = 当前灵敏度','A = current sensitivity'), L2('过冲 ','overshoot ')+fmt(ovA*100,1,'%')+' · '+L2('到位 ','arrive ')+fmt(avgArr(A),0,' ms')+' · '+L2('成功 ','hit ')+Math.round((A.n?A.succ/A.n:0)*100)+'%')+
+      row(L2('B = 灵敏度 ×1.15','B = sensitivity ×1.15'), L2('过冲 ','overshoot ')+fmt(ovB*100,1,'%')+' · '+L2('到位 ','arrive ')+fmt(avgArr(B),0,' ms')+' · '+L2('成功 ','hit ')+Math.round((B.n?B.succ/B.n:0)*100)+'%')+
+      '</table>'+
+      '<div style="margin-top:12px;font-size:14px;line-height:24px;color:var(--txt)">'+L2('方向判断：','Direction: ')+dirText+'</div>';
+  }
+  body+='<div style="margin-top:10px;font-size:13px;line-height:24px;color:var(--dim)">'+L2('注意：未完全排除适应效应，仅供方向参考。','Note: adaptation effects are not fully ruled out — directional reference only.')+'</div>';
+  resBody.innerHTML=body;
+  res.classList.add('show');
+}
+
 let idleLast=0;
 function loop(now){
   requestAnimationFrame(loop);
@@ -415,6 +657,7 @@ function loop(now){
     if(now-(idleLast||0)>=30){ idleLast=now; arena.setView(yaw,pitch,f); arena.draw(now); }
     return;
   }
+  if(mode==='step'){ loopStep(now); return; }
   const t=(now-t0)/1000;
   const th=R_DEG*D2R*Math.cos(W_DEG*D2R*t);
   const tp=R_DEG*D2R*Math.sin(W_DEG*D2R*t);
@@ -546,9 +789,17 @@ document.getElementById('again').addEventListener('click',function(){ res.classL
 document.getElementById('copyRes').addEventListener('click',function(e){
   e.stopPropagation();
   if(!result||!result.ok) return;
-  const t=(window.__IS_EN
-    ? 'Tracking: RMS '+result.rms.toFixed(2)+'° · lag '+result.lag+' ms'+(result.raw?'':' · speed gain '+result.gain.toFixed(3))
-    : '跟枪：RMS '+result.rms.toFixed(2)+'° · 滞后 '+result.lag+' ms'+(result.raw?'':' · 速度增益 '+result.gain.toFixed(3)));
+  let t;
+  if(result.mode==='step'){
+    const dirTxt={high:(window.__IS_EN?'too high':'偏高'),low:(window.__IS_EN?'too low':'偏低'),match:(window.__IS_EN?'matched':'匹配'),unknown:(window.__IS_EN?'undetermined':'未判定')}[result.dirKey]||result.dirKey;
+    t=(window.__IS_EN
+      ? 'Step follow: arrive '+Math.round(result.arrAvg)+' ms · overshoot '+(result.ovAvg*100).toFixed(1)+'% · jitter '+result.jitAvg.toFixed(1)+' · direction '+dirTxt
+      : '步进跟随：到位 '+Math.round(result.arrAvg)+' ms · 过冲比 '+(result.ovAvg*100).toFixed(1)+'% · 抖动 '+result.jitAvg.toFixed(1)+' 次 · 方向 '+dirTxt);
+  } else {
+    t=(window.__IS_EN
+      ? 'Tracking: RMS '+result.rms.toFixed(2)+'° · lag '+result.lag+' ms'+(result.raw?'':' · speed gain '+result.gain.toFixed(3))
+      : '跟枪：RMS '+result.rms.toFixed(2)+'° · 滞后 '+result.lag+' ms'+(result.raw?'':' · 速度增益 '+result.gain.toFixed(3)));
+  }
   const h=document.getElementById('copyHint');
   if(navigator.clipboard&&navigator.clipboard.writeText){
     navigator.clipboard.writeText(t).then(function(){ if(h) h.textContent=(window.__IS_EN?'Copied ✓ ':'已复制 ✓ ')+t; });
@@ -583,6 +834,11 @@ addEventListener('keydown',function(e){
   var D={
     '跟枪测试':'Tracking test',
     '目标走圆，准星压在目标上':'Keep your crosshair on the circling target',
+    '连续正弦':'Continuous sine',
+    '步进跟随（灵敏度探针）':'Step follow (sensitivity probe)',
+    '步进跟随':'Step follow',
+    '连续正弦：目标绕圆匀速运动，测跟踪误差 / 相位滞后 / 速度增益。':'Continuous sine: target orbits at constant speed; measures tracking error / phase lag / speed gain.',
+    '步进跟随：目标瞬移，间隔阶梯自适应（连 3 次到位缩 8%、失败加 8%），A/B 交错 4 块 × 10 秒，约 43 秒。':'Step follow: targets teleport; adaptive interval staircase (3 hits → −8%, miss → +8%); A/B interleaved 4 × 10 s, ~43 s.',
     '目标走圆，准星压在目标上。输出跟踪误差 RMS、相位滞后、速度增益三个训练指标。':'A target circles; keep your crosshair on it. Outputs three training metrics: tracking error RMS, phase lag and speed gain.',
     '跟枪 ≠ 灵敏度标定：这里测跟枪手感；找灵敏度请用「灵敏度标定」。':'Tracking ≠ sensitivity calibration: this measures tracking feel; use Sensitivity calibration to find your sensitivity.',
     '跟枪 ≠ 灵敏度标定：这里测跟枪手感（误差 RMS、相位滞后、速度增益）；找灵敏度请用「灵敏度标定」。':'Tracking ≠ sensitivity calibration: this measures tracking feel (error RMS, phase lag, speed gain); use Sensitivity calibration to find your sensitivity.',

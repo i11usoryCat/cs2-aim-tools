@@ -43,15 +43,23 @@
       rgba(var(--scrim-rgb,11,15,20), 0) 100%)}
   #msg>*{position:relative;z-index:1}
   /* 结果页：半透明面板承载内容（正文 ≥7:1 / 次要 ≥4.5:1），按钮按主/次分层 */
-  #resPanel{width:100%;max-width:640px;padding:30px 34px 26px;border-radius:12px;
+  #resPanel{box-sizing:border-box;width:100%;max-width:640px;padding:30px 56px 30px 34px;border-radius:12px;text-align:left;line-height:1.7;
     background:rgba(var(--scrim-rgb,11,15,20),var(--res-panel-a,.86));
     border:1px solid color-mix(in srgb,var(--txt) 16%,transparent);
     -webkit-backdrop-filter:blur(var(--ovblur,2.5px));backdrop-filter:blur(var(--ovblur,2.5px))}
-  #res .btn{background:transparent;border:1px solid color-mix(in srgb,var(--txt) 32%,transparent);color:var(--txt)}
-  #res .btn:hover{background:transparent;border-color:var(--txt)}
-  #res #again{background:var(--txt);border-color:var(--txt);color:var(--bg);font-weight:600}
-  #res #again:hover{background:var(--txt);border-color:var(--txt)}
-  #res #close{color:var(--txt)}
+  #res .btn{background-color:transparent;border:1px solid color-mix(in srgb,var(--txt) 32%,transparent);color:var(--txt)}
+  #res .btn:hover{background-color:transparent;border-color:var(--txt)}
+  #res #again{background-color:var(--txt);border-color:var(--txt);color:var(--bg);font-weight:600}
+  #res #again:hover{background-color:var(--txt);border-color:var(--txt)}
+  /* 动作行：主按钮在左、次按钮在右；<560px 竖排 */
+  #resActions{margin-top:28px;display:flex;gap:12px;align-items:center;justify-content:space-between}
+  #resSubActions{display:flex;gap:12px;align-items:center}
+  #resActions .btn{margin:0}
+  @media (max-width:560px){
+    #resPanel{padding:26px 8% 26px 20px}
+    #resActions,#resSubActions{flex-direction:column;align-items:stretch}
+    #resActions .btn{width:100%;margin-top:0}
+  }
   #back{position:fixed;left:16px;top:14px;z-index:40;display:none;
     font-size:13px;color:var(--dim);text-decoration:none;padding:7px 12px;border-radius:9px;
     border:1px solid transparent;transition:.15s;letter-spacing:.5px}
@@ -66,7 +74,7 @@
   #msg.paused .pauseHide + a{display:none}
   .btn{margin-top:22px;padding:13px 40px;font-size:16px;font-family:inherit;cursor:pointer;
     background:var(--acc);border:1px solid var(--acc);color:var(--on-acc);border-radius:8px;pointer-events:auto}
-  .btn:hover{background:var(--acc)}
+  .btn:hover{background-color:var(--acc)}
   .btn.alt{background:var(--panel);border-color:var(--line);margin-left:10px;color:var(--txt)}
   .btn.alt:hover{background:var(--panel);border-color:var(--acc);color:var(--acc)}
   table{border-collapse:collapse;margin-top:12px}
@@ -74,26 +82,33 @@
   th{color:var(--dim);font-weight:500}
   input[type=checkbox]{width:16px;height:16px;vertical-align:-2px;pointer-events:auto}
   .fld{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--dim)}
+  /* 输入框：只有内阴影（凹陷），不要底部 1px 反光——那会让它看起来凸起 */
   .fld input{padding:7px 9px;background:var(--panel);border:1px solid var(--line);color:var(--txt);
-    border-radius:7px;font-size:14px;font-family:inherit;width:112px}
+    border-radius:7px;font-size:14px;font-family:inherit;width:112px;
+    box-shadow:inset 0 1px 2px rgba(0,0,0,.07)}
   .fld select{padding:7px 9px;background:var(--panel);border:1px solid var(--line);color:var(--txt);
-    border-radius:7px;font-size:14px;font-family:inherit;width:auto;max-width:100%}
+    border-radius:7px;font-size:14px;font-family:inherit;width:auto;max-width:100%;
+    box-shadow:inset 0 1px 2px rgba(0,0,0,.07)}
   summary::-webkit-details-marker{display:none}
   /* ===== 浮层排版（art-direction §2） ===== */
   .art-kicker{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);line-height:1.6}
   .res-num{font-size:clamp(28px,3.2vw,40px);font-weight:800;line-height:1.02;letter-spacing:-.01em;
-    color:var(--acc);font-variant-numeric:tabular-nums;margin-top:8px}
+    color:var(--acc);font-variant-numeric:tabular-nums;margin-top:10px;text-align:left;
+    padding-bottom:16px;border-bottom:1px solid var(--line);position:relative}
+  .res-num::after{content:"";position:absolute;right:0;bottom:-1px;width:24px;height:3px;
+    background:var(--gold,#a8842f)}
   .res-num i{font-style:normal;font-size:.42em;font-weight:600;color:var(--dim);margin-left:4px;letter-spacing:0}
   .res-note{margin-top:10px;font-size:13px;color:var(--dim);line-height:1.7;font-variant-numeric:tabular-nums}
-  .res-advice{margin:22px auto 0;font-size:13px;color:var(--dim);line-height:1.75;max-width:560px}
-  .res-table{margin:22px auto 0;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums;width:100%;max-width:560px}
+  .res-advice{margin:20px 0 0;font-size:13px;color:var(--dim);line-height:1.75}
+  .res-table{margin:20px 0 0;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums;width:100%}
   .res-table th{font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:500;color:var(--dim)}
-  .res-table td,.res-table th{padding:8px 12px;border-bottom:1px solid var(--line);text-align:right;line-height:1.5}
+  .res-table td,.res-table th{box-sizing:border-box;height:28px;padding:0 12px;border-top:1px solid var(--line);border-bottom:none;
+    text-align:right;vertical-align:middle}
+  .res-table th{border-top-color:color-mix(in srgb,var(--txt) 24%,transparent)}
   .res-table td:first-child,.res-table th:first-child{text-align:left}
-  .res-table tr:last-child td{border-bottom:none}
   .res-foot{margin-top:14px;font-size:13px;color:var(--dim)}
   #resBody{width:100%;max-width:640px}
-  .res-bars{max-width:560px;margin:22px auto 0;text-align:left}
+  .res-bars{margin:20px 0 0;text-align:left}
   .res-bar{margin:11px 0}
   .res-bar .lbl{display:flex;justify-content:space-between;gap:12px;font-size:13px;color:var(--dim);font-variant-numeric:tabular-nums}
   .res-bar .lbl b{color:var(--txt);font-weight:600}
@@ -121,12 +136,100 @@
   }
   @media (prefers-reduced-motion: reduce){
     .overlay.show>*{animation:none!important}
-    .btn:hover,.btn.alt:hover,.btn:active,.btn.alt:active,#more:hover,#more:active{transform:none!important}
-    .btn,.btn.alt,#more{transition:opacity .01s linear!important}
+    .btn:hover,.btn.alt:hover,.btn:active,.btn.alt:active,#more:hover,#more:active,
+    #fsBtn:hover,#fsBtn:active,#resSubActions .btn:hover,#resSubActions .btn:active{transform:none!important}
+    .btn,.btn.alt,#more,#fsBtn,#resSubActions .btn,#go,#again{transition:opacity .01s linear!important}
+    #res .res-table tbody tr{transition:none!important}
   }
+
+  /* ===== 材质（material-spec v1）：只叠光与影，不改色值；深色场地高光 .28 / 接触阴影 .55 ===== */
+  #go, #res #again{background-image:linear-gradient(180deg,
+      color-mix(in srgb,var(--acc) 88%,#fff) 0%,
+      var(--acc) 52%,
+      color-mix(in srgb,var(--acc) 90%,#000) 100%);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,var(--mat-hi,.45)),
+      inset 0 -2px 6px rgba(0,0,0,.16),
+      0 2px 0 color-mix(in srgb,var(--acc) 72%,#000),
+      0 10px 24px -12px rgba(0,0,0,var(--mat-contact,.16));
+    transition:transform 140ms cubic-bezier(.2,.8,.2,1),box-shadow 140ms cubic-bezier(.2,.8,.2,1),filter 140ms ease}
+  #res #again{background-image:linear-gradient(180deg,
+      color-mix(in srgb,var(--txt) 88%,#fff) 0%,
+      var(--txt) 52%,
+      color-mix(in srgb,var(--txt) 90%,#000) 100%);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,var(--mat-hi,.45)),
+      inset 0 -2px 6px rgba(0,0,0,.16),
+      0 2px 0 color-mix(in srgb,var(--txt) 72%,#000),
+      0 10px 24px -12px rgba(0,0,0,var(--mat-contact,.16))}
+  #go:hover, #res #again:hover{filter:brightness(1.04)}
+  #go:active{transform:translateY(1px);
+    box-shadow:inset 0 1px 2px rgba(0,0,0,.22),
+      0 1px 0 color-mix(in srgb,var(--acc) 72%,#000),
+      0 4px 10px -8px rgba(0,0,0,.5)}
+  #res #again:active{transform:translateY(1px);
+    box-shadow:inset 0 1px 2px rgba(0,0,0,.22),
+      0 1px 0 color-mix(in srgb,var(--txt) 72%,#000),
+      0 4px 10px -8px rgba(0,0,0,.5)}
+  /* 次按钮 / 参数开关：平贴，无立体感——只有 1px 线框；立体感只留给主按钮 */
+  #fsBtn, #more, #resSubActions .btn{
+    background-color:var(--sec-bg,rgba(255,255,255,.03));
+    background-image:none;
+    border:1px solid var(--line);
+    box-shadow:none;
+    color:var(--dim);
+    transition:background-color 140ms ease,color 140ms ease,border-color 140ms ease}
+  #fsBtn:hover, #more:hover, #resSubActions .btn:hover{
+    background-color:var(--sec-bg-hover,rgba(255,255,255,.07));
+    border-color:var(--line);
+    color:var(--txt);
+    transform:none}
+  /* 按下只压暗，不位移、不立体 */
+  #fsBtn:active, #more:active, #resSubActions .btn:active{
+    background-color:var(--sec-bg-active,rgba(0,0,0,.16));
+    border-color:var(--line);
+    color:var(--txt);
+    transform:none;box-shadow:none}
+  /* 结果面板：玻璃顶部高光 + 1px 亮边 + 接触阴影 */
+  #resPanel{border-color:rgba(255,255,255,var(--mat-edge,.55));
+    box-shadow:inset 0 1px 0 rgba(255,255,255,var(--mat-hi,.45)),
+      inset 0 24px 26px -24px rgba(255,255,255,var(--mat-sheen,.24)),
+      0 18px 30px -24px rgba(0,0,0,var(--mat-contact,.16))}
+  /* 表格行：轻微材质反馈（不改文字色） */
+  #res .res-table tbody tr{transition:background-color 140ms ease}
+  #res .res-table tbody tr:hover{background-color:color-mix(in srgb,var(--txt) 4%,transparent)}
 </style>
 </head>
 <body>
+<script>/* --on-acc 自适应：按强调色亮度自动选黑/白，修「白字压亮绿 1.74:1」的老问题。
+   只改 --on-acc 这一个变量；--acc 与其它颜色一律不动。越早越好：body 一出现就执行。 */
+(function(){
+  function relLum(c){
+    c=(c||'').trim();
+    var hx=/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(c);
+    if(hx){
+      var h=hx[1]; if(h.length===3){h=h[0]+h[0]+h[1]+h[1]+h[2]+h[2];}
+      var n=parseInt(h,16), rgb=[(n>>16)&255,(n>>8)&255,n&255];
+      function f(v){ v/=255; return v<=0.03928? v/12.92 : Math.pow((v+0.055)/1.055,2.4); }
+      return 0.2126*f(rgb[0])+0.7152*f(rgb[1])+0.0722*f(rgb[2]);
+    }
+    var m=/rgba?\((d+),\s*(d+),\s*(d+)/.exec(c); if(!m) return 0;
+    function f2(v){ v/=255; return v<=0.03928? v/12.92 : Math.pow((v+0.055)/1.055,2.4); }
+    return 0.2126*f2(+m[1]) + 0.7152*f2(+m[2]) + 0.0722*f2(+m[3]);
+  }
+  function apply(){
+    try{
+      var acc=getComputedStyle(document.documentElement).getPropertyValue('--acc').trim();
+      var L=relLum(acc);
+      var want=L>0.32 ? '#0b0f14' : '#ffffff';
+      var r=document.documentElement.style;
+      if(r.getPropertyValue('--on-acc').trim()!==want) r.setProperty('--on-acc',want);
+    }catch(e){}
+  }
+  apply();
+  try{ new MutationObserver(apply).observe(document.documentElement,{attributes:true,attributeFilter:['class','data-theme','style']}); }catch(e){}
+  try{ addEventListener('load',apply); }catch(e){}
+})();</script>
 <canvas id="c" style="touch-action:none"></canvas>
 <div id="grab">点击画面开始</div>
 <a id="back" href="../app.html#play">← 返回</a>
@@ -138,13 +241,13 @@
   <div id="modeNote" style="margin-top:8px;color:var(--dim);font-size:13px;max-width:580px;line-height:1.7;display:none"></div>
   <div style="margin-top:30px;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap">
     <button id="go" class="btn" style="margin-top:0;padding:15px 56px;font-size:16px;letter-spacing:2px">开 始</button>
-    <button id="fsBtn" type="button" style="padding:14px 22px;font-size:14px;border-radius:9px;border:1px solid var(--line);background:transparent;color:var(--dim);cursor:pointer;font-family:inherit">全屏 ⛶</button>
+    <button id="fsBtn" type="button" style="padding:14px 22px;font-size:14px;border-radius:9px;cursor:pointer;font-family:inherit">全屏 ⛶</button>
   </div>
   <div id="sensHint" style="margin-top:18px;font-size:13px;color:var(--dim);cursor:pointer;font-variant-numeric:tabular-nums"
        title="点击修改参数">…</div>
   <div id="bw" style="margin-top:10px;font-size:13px;color:var(--acc);font-variant-numeric:tabular-nums"></div>
 
-  <button id="more" type="button" style="margin-top:28px;padding:9px 18px;border-radius:9px;border:1px solid var(--line);background:transparent;color:var(--dim);font-size:13px;font-family:inherit;cursor:pointer">参数 ▾</button>
+  <button id="more" type="button" style="margin-top:28px;padding:9px 18px;border-radius:9px;font-size:13px;font-family:inherit;cursor:pointer">参数 ▾</button>
   <div class="pauseHide" style="margin-top:26px;width:100%;max-width:560px">
     <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center">
       <label class="fld">模式
@@ -216,15 +319,13 @@
 </div>
 <div id="res" class="overlay"><div id="resPanel">
   <div id="resBody"></div>
-  <div><button id="again" class="btn" style="min-width:200px">再来一组</button>
-  <div style="margin-top:14px">
-    <button id="copy" class="btn alt">复制本组数据</button>
-    <button id="close" class="btn alt">关闭</button>
+  <div id="resActions">
+    <button id="again" class="btn" style="min-width:176px">再来一组</button>
+    <div id="resSubActions">
+      <button id="copy" class="btn alt">复制本组数据</button>
+      <a class="btn alt" href="../app.html#play" style="text-decoration:none">回训练中心</a>
+    </div>
   </div>
-  <div style="margin-top:12px;display:flex;gap:16px;justify-content:center">
-    <a class="btn alt" href="../app.html#plan" style="text-decoration:none">回计划</a>
-    <a class="btn alt" href="../app.html#play" style="text-decoration:none">回训练中心</a>
-  </div></div>
 </div></div>
 
 <script src="../assets/scenes.js"></script>
@@ -563,6 +664,19 @@ function arenaOverlayTint(){
     document.documentElement.style.setProperty('--scrim-a', light?'0.55':'0.35');
     // 结果页面板：正文/次要文字都要 ≥7:1 / ≥4.5:1
     document.documentElement.style.setProperty('--res-panel-a', light?'0.92':'0.86');
+    // 材质（material-spec §5）：深色场地浮层高光降到 .28、接触阴影提到 .55；浅色用默认档
+    const dark=!!SC.dark;
+    document.documentElement.style.setProperty('--mat-hi', dark?'.28':'.45');
+    document.documentElement.style.setProperty('--mat-soft', dark?'.28':'.55');
+    document.documentElement.style.setProperty('--mat-soft-h', dark?'.42':'.75');
+    document.documentElement.style.setProperty('--mat-contact', dark?'.55':'.16');
+    document.documentElement.style.setProperty('--mat-ink', dark?'.20':'.06');
+    document.documentElement.style.setProperty('--mat-sheen', dark?'.14':'.24');
+    document.documentElement.style.setProperty('--mat-edge', dark?'.28':'.55');
+    // 次按钮：平贴，只有线框（深色场地按规范：.03 / .07 / 按下压暗 .16）
+    document.documentElement.style.setProperty('--sec-bg', dark?'rgba(255,255,255,.03)':'rgba(0,0,0,.03)');
+    document.documentElement.style.setProperty('--sec-bg-hover', dark?'rgba(255,255,255,.07)':'rgba(0,0,0,.06)');
+    document.documentElement.style.setProperty('--sec-bg-active', dark?'rgba(0,0,0,.16)':'rgba(0,0,0,.10)');
   }catch(e){}
 }
 function arenaEnsureCache(){
@@ -1662,6 +1776,19 @@ function checkScores(){
   const sAttn=clamp(50+(hl-hf)*100);
   return { react:sReact, reactMs:reactMs, first:sFirst, second:sSecond, secondCov:secondCov, micro:sMicro, wide:sWide, attn:sAttn };
 }
+/* 结果页读数窗标签：模式名 + 难度参数（art-direction §2 / 任务：仪表读数） */
+function resKicker(zhBase, enBase, zhExtra, enExtra){
+  var base=EN_UI?enBase:zhBase;
+  var extra=EN_UI?enExtra:zhExtra;
+  return '<div class="art-kicker">'+base+(extra? ' · '+extra : '')+'</div>';
+}
+function resParamExtra(){
+  var zh, en;
+  if(endMode==='time'){ zh=Math.round(endTime)+' 秒'; en=Math.round(endTime)+' s'; }
+  else { zh=TOTAL+' 球'; en=TOTAL+' shots'; }
+  if(limitChk && limitChk.checked && mode!=='track'){ zh+=' · 限时 '+Math.round(allowed)+' ms'; en+=' · limit '+Math.round(allowed)+' ms'; }
+  return [zh, en];
+}
 function checkReportHtml(){
   const S=window.__s6=checkScores();
   if(!S){
@@ -1746,7 +1873,7 @@ function checkReportHtml(){
   }
   const vals=ITEMS.map(function(i){ return S[i.k]; }).filter(function(v){ return typeof v==='number'; });
   const avg=vals.length? Math.round(vals.reduce(function(a,b){ return a+b; },0)/vals.length) : null;
-  return '<div class="art-kicker">'+(EN_UI?'90-second check-up':'90 秒六维检查')+'</div>'+
+  return resKicker('90 秒六维检查','90-second check-up', trial+' 球', trial+' shots')+
     (avg!==null? '<div class="res-num">'+avg+'<i>/100</i></div>' : '')+
     '<div class="res-note">'+trial+' '+(EN_UI?'balls':'球')+' · '+(EN_UI?'six skills · same questions':'六项 · 题目一样')+'</div>'+
     vsHint+
@@ -1808,7 +1935,8 @@ function staircaseReportHtml(){
   const revTbl = stRev.length
     ? '<table class="res-table"><tr><th>'+T("反转点","Reversal")+'</th><th>'+T("半径 (°)","Radius (°)")+'</th></tr>'+revRows+'</table>'
     : '';
-  return '<div class="art-kicker">'+T("阶梯精度","Staircase precision")+'</div>'+
+  var kp=resParamExtra();
+  return resKicker('阶梯精度','Staircase precision', kp[0], kp[1])+
     '<div class="res-num">'+dia.toFixed(2)+'<i>°</i></div>'+
     '<div class="res-note">'+T("85% 命中率下的最小目标直径","smallest target diameter held at 85%")+' · ±'+ci.toFixed(2)+'° · '+
       (rev.length? T("反转 ","reversals ")+stRev.length+T(" 次（前 2 次热身）"," (first 2 warm-up)") : T("反转次数不足","not enough reversals"))+' · '+hitRate+'% · '+Math.round(mt)+' ms</div>'+
@@ -1836,7 +1964,9 @@ function distanceReportHtml(){
   if(trial<20) advice=T("球数偏少，分箱还不可比——至少 30 球再看。","Few shots — bins are noisy; run 30+ before comparing.");
   else if(hitRate<60) advice=T("整体命中率偏低：先把球放大一档，或缩短距离区间。","Overall hit rate is low — enlarge the target or narrow the distance range.");
   else advice=T("看四个箱子的命中率差：差距越大，说明你越依赖某一个距离。","Compare the four bins — the bigger the spread, the more you rely on one distance.");
-  return '<div class="art-kicker">'+T("随机距离","Random distance")+'</div>'+
+  var kp2=resParamExtra();
+  return resKicker('随机距离','Random distance',
+    T("距离 5–45° 随机","5–45° random")+' · '+kp2[0], T("距离 5–45° 随机","5–45° random")+' · '+kp2[1])+
     '<div class="res-num">'+hitRate+'<i>%</i></div>'+
     '<div class="res-note">'+T("中位用时 ","median ")+Math.round(mt)+' ms · '+trial+T(" 球"," shots")+' · '+T("距离 5–45° 随机","5–45° random")+'</div>'+
     '<div class="res-advice">'+advice+'</div>'+
@@ -1874,12 +2004,14 @@ function finish(){
     else { advice='命中 '+Math.round(overallHit*100)+'%，稳了。下一组限时收紧 10%，继续加压。'; }
   }
   const MODE_LABEL={random:'自适应随机',block:'定角重复',precision:'小球精度',wide:'大角度甩枪',track:'移动跟枪',staircase:'阶梯精度',distance:'随机距离',check:'六维检查'};
+  const MODE_EN={random:'Adaptive random',block:'Fixed angle',precision:'Small-target precision',wide:'Wide flick',track:'Tracking',staircase:'Staircase precision',distance:'Random distance',check:'Six-skill check'};
   const modeTxt=MODE_LABEL[mode]||mode;
+  const kp=resParamExtra();
   const tbl = blocks.length
     ? '<table class="res-table"><tr><th>阶段</th><th>用时</th><th>命中率</th><th>限时</th><th>球半径</th></tr>'+rows+'</table>'
     : '';
   resBody.innerHTML =
-    '<div class="art-kicker">'+modeTxt+'</div>'+
+    resKicker(modeTxt, MODE_EN[mode]||mode, kp[0], kp[1])+
     '<div class="res-num">'+Math.round(overallHit*100)+'<i>%</i></div>'+
     '<div class="res-note">中位用时 '+overallMT.toFixed(0)+' ms · '+trial+' 球 · 最长连击 '+bestStreak+'</div>'+
     '<div class="res-advice">'+advice+'</div>'+
@@ -1962,8 +2094,6 @@ document.getElementById('copy').addEventListener('click', function(e){
     }).catch(function(){ alert(t); });
   } else { alert(t); }
 });
-document.getElementById('close').addEventListener('click',e=>{ e.stopPropagation(); res.classList.remove('show'); msg.classList.add('show'); });
-
 document.addEventListener('pointerdown', function(e){
   if(e.pointerType==='pen'){ penActive=true; return; }   // 笔不抢指针锁
   if(device!=='mouse') return;                            // 手柄/绘画板设备不抢指针锁
@@ -2573,7 +2703,9 @@ requestAnimationFrame(loop);
   // 返回键只在开始/暂停/结果等浮层（.overlay.show）出现时显示：游戏中隐藏，全屏里点不到，还会压住左上角 HUD
   function sync(){
     var shown=document.querySelectorAll('.overlay.show').length>0;
-    back.classList.toggle('on', shown);
+    var resShown=!!(document.getElementById('res') && document.getElementById('res').classList.contains('show'));
+    // 结果页的出口都在面板里：隐藏左上角「← 返回」；开始/暂停页仍保留
+    back.classList.toggle('on', shown && !resShown);
     // 浮层出现时隐藏游戏 HUD：结果页/暂停页不再叠着旧 HUD 文字（开始页 HUD 本来就是空的）
     hud.style.visibility = shown? 'hidden' : '';
   }

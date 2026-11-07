@@ -35,6 +35,32 @@ try{
   if(l) document.documentElement.setAttribute('lang',l==='en'?'en':'zh-CN');
 }catch(e){}
 </script>
+<script>
+/* --on-acc 自适应：按强调色亮度自动选黑/白，修「白字压亮绿 1.74:1」的老问题 */
+(function(){
+  function relLum(c){
+    var m=/rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(c||''); if(!m) return 0;
+    function f(v){ v/=255; return v<=0.03928? v/12.92 : Math.pow((v+0.055)/1.055,2.4); }
+    return 0.2126*f(+m[1]) + 0.7152*f(+m[2]) + 0.0722*f(+m[3]);
+  }
+  // 变量值可能是 #rrggbb，先丢进一个隐藏元素让浏览器算成 rgb() 再取亮度
+  var probe=document.createElement('span');
+  probe.style.cssText='position:absolute;left:-9999px;top:-9999px;visibility:hidden';
+  function attach(){ try{ (document.body||document.documentElement).appendChild(probe); }catch(e){} }
+  if(document.body) attach(); else addEventListener('DOMContentLoaded',attach);
+  function apply(){
+    var acc=getComputedStyle(document.documentElement).getPropertyValue('--acc').trim();
+    if(!acc) return;
+    try{ probe.style.color=acc; }catch(e){}
+    var L=relLum(getComputedStyle(probe).color||acc);
+    if(acc.charAt(0)==='#' && L===0){ return; }   // 拿不到 rgb 时先不动，等 load 再试
+    document.documentElement.style.setProperty('--on-acc', L>0.32 ? '#0b0f14' : '#ffffff');
+  }
+  apply();
+  try{ new MutationObserver(apply).observe(document.documentElement,{attributes:true,attributeFilter:['class','data-theme','style']}); }catch(e){}
+  try{ addEventListener('load',apply); }catch(e){}
+})();
+</script>
 <meta name="description" content="Vernier — aim, measured. Browser-based aim lab: sensitivity calibration, 90-second six-skill check, four-week plan. No install, no account, all local.">
 <meta property="og:title" content="Vernier — aim, measured">
 <meta property="og:description" content="Browser-based aim lab: sensitivity calibration, 90-second six-skill check, four-week plan. No install, no account, all local.">
@@ -123,7 +149,7 @@ try{
 
   .start{
     margin-top:44px;min-width:172px;padding:17px 30px;font-size:17px;font-weight:700;letter-spacing:4px;text-align:center;
-    font-family:inherit;color:#fff;cursor:pointer;border:none;border-radius:14px;
+    font-family:inherit;color:var(--on-acc,#fff);cursor:pointer;border:none;border-radius:14px;
     background:linear-gradient(150deg,var(--acc),var(--acc2));
     box-shadow:0 16px 34px -14px color-mix(in srgb,var(--acc) 55%,transparent);
     transition:transform .18s cubic-bezier(.2,.8,.2,1), box-shadow .18s;
@@ -153,7 +179,7 @@ try{
   .langTop span{padding:7px 13px;min-width:38px;text-align:center;font-size:12.5px;color:var(--dim);cursor:pointer;
     transition:.15s;user-select:none}
   .langTop span:hover{background:var(--panel);color:var(--txt)}
-  .langTop span.on{background:var(--acc);color:#fff;font-weight:600}
+  .langTop span.on{background:var(--acc);color:var(--on-acc,#fff);font-weight:600}
   /* ——— 手机提示条 ——— */
   #mobileTip{display:none;position:fixed;left:50%;bottom:18px;transform:translateX(-50%);
     z-index:9300;align-items:center;gap:12px;padding:10px 14px 10px 20px;
@@ -161,7 +187,7 @@ try{
     border-radius:999px;font-size:13px;white-space:nowrap;max-width:calc(100vw - 20px);
     box-shadow:0 12px 32px -14px color-mix(in srgb,var(--txt) 30%,transparent)}
   #mobileTip button{font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;
-    background:var(--acc);color:#fff;border:none;border-radius:9px;padding:7px 14px;
+    background:var(--acc);color:var(--on-acc,#fff);border:none;border-radius:9px;padding:7px 14px;
     white-space:nowrap;flex-shrink:0}
   #mobileTip button:hover{filter:brightness(1.08)}
   @media (max-width:520px){
@@ -197,7 +223,7 @@ try{
   .by{margin-top:22px; font-size:11px; letter-spacing:.18em; color:var(--dim)}
   .start{
     margin-top:44px; padding:16px 46px; min-width:0; border:none; border-radius:8px;
-    background:var(--acc); color:#fff; font-size:14px; font-weight:600; letter-spacing:.12em;
+    background:var(--acc); color:var(--on-acc,#fff); font-size:14px; font-weight:600; letter-spacing:.12em;
     box-shadow:none;
   }
   .start:hover{transform:translateY(-1px); box-shadow:none; filter:none; background:var(--acc2,#9a3412)}
@@ -248,6 +274,57 @@ try{
   @media (prefers-reduced-motion:reduce){
     a.item::before{transition:none}
     a.item:hover{transform:none}
+  }
+
+  /* ============================================================
+     材质层（material-spec v1）：只叠光与影，不改色值 / 版式 / 字号
+     ============================================================ */
+  :root{
+    --mat-hl:rgba(255,255,255,.45);
+    --mat-hl-strong:rgba(255,255,255,.70);
+    --mat-contact:rgba(0,0,0,.16);
+    --ease-mat:cubic-bezier(.2,.8,.2,1);
+  }
+  html[data-theme="forest"],html[data-theme="night"],html[data-theme="jade"],html[data-theme="ink"]{
+    --mat-hl:rgba(255,255,255,.18);
+    --mat-hl-strong:rgba(255,255,255,.26);
+    --mat-contact:rgba(0,0,0,.55);
+  }
+
+  /* 主按钮：顶部高光 + 底部接触阴影 + 按下陷 1px */
+  .start{
+    background-image:linear-gradient(180deg,
+      color-mix(in srgb,var(--acc) 88%, #fff) 0%,
+      var(--acc) 52%,
+      color-mix(in srgb,var(--acc) 90%, #000) 100%);
+    box-shadow:
+      inset 0 1px 0 var(--mat-hl),
+      inset 0 -2px 6px var(--mat-contact),
+      0 2px 0 color-mix(in srgb,var(--acc) 72%, #000),
+      0 10px 24px -12px rgba(0,0,0,.45);
+    transition:transform 140ms var(--ease-mat), box-shadow 140ms var(--ease-mat);
+  }
+  .start:hover{
+    box-shadow:
+      inset 0 1px 0 var(--mat-hl),
+      inset 0 -2px 6px var(--mat-contact),
+      0 2px 0 color-mix(in srgb,var(--acc) 72%, #000),
+      0 16px 30px -12px rgba(0,0,0,.5);
+  }
+  .start:active{
+    transform:translateY(1px);
+    box-shadow:
+      inset 0 1px 2px rgba(0,0,0,.22),
+      0 1px 0 color-mix(in srgb,var(--acc) 72%, #000),
+      0 4px 10px -8px rgba(0,0,0,.5);
+  }
+
+  /* 语言分段控件：选中态用内描边，不发光 */
+  .langTop span.on{ box-shadow:inset 0 -2px 0 rgba(0,0,0,.18), inset 0 1px 0 var(--mat-hl-strong) }
+
+  @media (prefers-reduced-motion:reduce){
+    .start{transition:none}
+    .start:active{transform:none}
   }
 </style>
 </head>

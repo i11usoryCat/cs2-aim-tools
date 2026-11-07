@@ -219,11 +219,13 @@ function lockWarn(reason){
   var el=document.getElementById('rawWarn');
   if(el){
     el.style.display='';
-    el.innerHTML='⚠️ 原始输入锁定失败（'+reason+'）——系统加速会让偏差数值失真。'
+    var EN = !!window.__IS_EN;
+    el.innerHTML=(EN?'⚠️ Raw input lock failed ('+reason+') — system acceleration distorts the numbers.'
+                    :'⚠️ 原始输入锁定失败（'+reason+'）——系统加速会让偏差数值失真。')
       +'<span style="display:inline-flex;gap:8px;margin-left:10px;vertical-align:middle">'
-      +'<button id="lockRetry" class="wb">重试</button>'
-      +'<button id="lockPlain" class="wb">用加速输入继续</button></span>'
-      +'<div style="margin-top:6px;font-size:12px;opacity:.85">修法：关掉 Windows「提高指针精确度」 · 别在远程桌面 / 编辑器预览里跑 · 用 Chrome / Edge 直接打开</div>';
+      +'<button id="lockRetry" class="wb">'+(EN?'Retry':'重试')+'</button>'
+      +'<button id="lockPlain" class="wb">'+(EN?'Continue accelerated':'用加速输入继续')+'</button></span>'
+      +'<div style="margin-top:6px;font-size:12px;opacity:.85">'+(EN?'Fix: turn off Windows “Enhance pointer precision” · avoid remote desktop / editor previews · open directly in Chrome / Edge':'修法：关掉 Windows「提高指针精确度」 · 别在远程桌面 / 编辑器预览里跑 · 用 Chrome / Edge 直接打开')+'</div>';
     var a=document.getElementById('lockRetry'), b=document.getElementById('lockPlain');
     if(a) a.onclick=function(ev){ ev.stopPropagation(); doLock(); };
     if(b) b.onclick=function(ev){ ev.stopPropagation(); plainLock(); };

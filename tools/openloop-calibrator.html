@@ -255,11 +255,13 @@ function lockWarn(reason){
   var el=document.getElementById('rawWarn');
   if(el){
     el.style.display='';
-    el.innerHTML='⚠️ 原始输入锁定失败（'+reason+'）——系统加速会让增益类数字失真。'
+    var EN = !!window.__IS_EN;
+    el.innerHTML=(EN?'⚠️ Raw input lock failed ('+reason+') — system acceleration distorts the numbers.'
+                    :'⚠️ 原始输入锁定失败（'+reason+'）——系统加速会让增益类数字失真。')
       +'<span style="display:inline-flex;gap:8px;margin-left:10px;vertical-align:middle">'
-      +'<button id="lockRetry" class="wb">重试</button>'
-      +'<button id="lockPlain" class="wb">用加速输入继续</button></span>'
-      +'<div style="margin-top:6px;font-size:12px;opacity:.85">修法：关掉 Windows「提高指针精确度」 · 别在远程桌面 / 编辑器预览里跑 · 用 Chrome / Edge 直接打开</div>';
+      +'<button id="lockRetry" class="wb">'+(EN?'Retry':'重试')+'</button>'
+      +'<button id="lockPlain" class="wb">'+(EN?'Continue accelerated':'用加速输入继续')+'</button></span>'
+      +'<div style="margin-top:6px;font-size:12px;opacity:.85">'+(EN?'Fix: turn off Windows “Enhance pointer precision” · avoid remote desktop / editor previews · open directly in Chrome / Edge':'修法：关掉 Windows「提高指针精确度」 · 别在远程桌面 / 编辑器预览里跑 · 用 Chrome / Edge 直接打开')+'</div>';
     var a=document.getElementById('lockRetry'), b=document.getElementById('lockPlain');
     if(a) a.onclick=function(ev){ ev.stopPropagation(); doLock(); };
     if(b) b.onclick=function(ev){ ev.stopPropagation(); plainLock(); };
@@ -607,12 +609,16 @@ addEventListener('keydown',function(e){
     }
     running=false; TARGET_DEG=t0; nBalls=n0; window.__SELFTEST=false;
     const el=document.getElementById('resBody');
-    el.innerHTML='<div style="font-size:17px;color:var(--acc);margin-bottom:10px">测量链自检</div>'+
-      '<table class="rt">'+rows.map(r=>'<tr><th>注入 '+Math.round(r.G*100)+'%</th><td'+(r.ok?' class="big"':'')+'>'+
+    const EN=!!window.__IS_EN;
+    el.innerHTML='<div style="font-size:17px;color:var(--acc);margin-bottom:10px">'+(EN?'Measurement chain self-check':'测量链自检')+'</div>'+
+      '<table class="rt">'+rows.map(r=>'<tr><th>'+(EN?'injected ':'注入 ')+Math.round(r.G*100)+'%</th><td'+(r.ok?' class="big"':'')+'>'+
         (isFinite(r.got)? Math.round(r.got*100)+'%' : '—')+' &nbsp;'+(r.ok?'✓':'✗')+'</td></tr>').join('')+'</table>'+
       '<div style="margin-top:12px;font-size:13.5px;color:'+(allOk?'var(--acc)':'#f85149')+'">'+
-      (allOk? '✓ 测量链正常（误差 ≤3%），读数可信。' : '✗ 测量链异常：读数与注入值不符，本轮数据不可用。')+'</div>'+
-      '<div style="margin-top:8px;font-size:12.5px;color:var(--dim)">每档 '+N+' 球，合成最小急动度轨迹，经真实 pointermove 路径注入。</div>';
+      (allOk? (EN?'✓ Chain OK (error ≤3%) — the readings are trustworthy.':'✓ 测量链正常（误差 ≤3%），读数可信。')
+            : (EN?'✗ Chain broken: readings do not match the injected gain, this run is unusable.':'✗ 测量链异常：读数与注入值不符，本轮数据不可用。'))+'</div>'+
+      '<div style="margin-top:8px;font-size:12.5px;color:var(--dim)">'+
+      (EN? N+' balls per row · synthetic minimum-jerk motion injected through the real pointermove path.'
+         : '每档 '+N+' 球，合成最小急动度轨迹，经真实 pointermove 路径注入。')+'</div>';
     document.getElementById('res').classList.add('show');
   }
   setTimeout(run,400);

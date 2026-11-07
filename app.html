@@ -903,6 +903,7 @@ const EN={
   '测出你每次都甩过头还是不够，把明显的偏差修掉。':'Measures whether you overshoot or fall short, and fixes the obvious bias.',
   '快速标定':'Quick calibration','固定 3 轮出建议，新手快速找到自己的灵敏度。':'3 fixed rounds then a suggestion — the fast way for beginners to find their sensitivity.',
   '遇到瓶颈的用户：找出属于这个阶段最好的灵敏度。':'Hit a plateau? Find the best sensitivity for your current stage.',
+  '阶梯精度':'Staircase precision','随机距离':'Random distance',
   '初段覆盖':'First-move coverage','看你第一段甩动覆盖了目标多远——动作习惯，不是灵敏度。':'How far your first movement covers toward the target — a habit, not your sensitivity.',
   '开环标定':'Open-loop calibration','拟合甩出前 250ms 的弹道——测「预设落点」，灵敏度本身。':'Fits your first 250 ms of flick — measures the preset endpoint, sensitivity itself.',
   '语言 / Language':'Language',
@@ -1320,9 +1321,15 @@ function renderDrills(){
     {g:'评估', t:'状态快测',d:'20 球无时限，球大小按命中率自适应，快速看今天手感。',
      dEN:'20 dots, no time limit — size adapts to your hit rate. A quick feel check for today.',
      u:'tools/aim-trainer.html?mode=random&count=20&limit=0&preset=state'+q},
+    {g:'评估', t:'阶梯精度',d:'球按命中率自动变大变小，收敛到你 85% 命中率下的最小目标——精度阈值，可复测对比。',
+     dEN:'Size adapts to your hit rate and converges on the smallest target you can hit at 85% — a repeatable precision threshold.',
+     u:'tools/aim-trainer.html?mode=staircase&count=40&limit=0'+q},
     {g:'练习', t:'自适应随机',d:'球固定 1.5°，只调限时，按 85% 成功率走。主练用这个。',
      dEN:'Fixed 1.5° dots — only the time limit adjusts toward 85% success. For main practice.',
      u:'tools/aim-trainer.html?mode=random&count=40&limit=1'+q},
+    {g:'练习', t:'随机距离',d:'距离 5–45° 随机、方向随机，练换距离的适应力；结果按四档距离分组对比。',
+     dEN:'Distance 5–45° random, direction random — trains adaptation across distances, reported per distance bin.',
+     u:'tools/aim-trainer.html?mode=distance&count=40&limit=0'+q},
     {g:'练习', t:'定角重复',d:'同一轴左右交替 8 球，形成运动程序，热身用。',
      dEN:'8 dots alternating left/right on one axis to build a motor program. For warm-up.',
      u:'tools/aim-trainer.html?mode=block&count=40&limit=0'+q},
@@ -1706,8 +1713,15 @@ function fillSettings(){
   updateCalc();
 }
 function persistCfg(){
-  cfg={dpi:num($('iDpi'),1000), yaw:num($('iYaw'),0.022), sens:num($('iSens'),1.92), cm:num($('iCm'),27.1)};
+  const d=cv(num($('iDpi'),800),800), y=cv(num($('iYaw'),0.022),0.022);
+  const c=cv(parseFloat($('iCm').value), 27.1);
+  const shown=parseFloat($('iSens').value);
+  // 显示值是"当前游戏刻度"，内部统一存本站刻度；空/0 不覆盖已有值
+  const internal=(isFinite(shown)&&shown>0)? shown/gameScale() : cfg.sens;
+  cfg={dpi:d, yaw:y, sens:Math.round(internal*10000)/10000, cm:Math.round(c*100)/100};
   save(K_CFG,cfg);
+  // 非 CS2 游戏：把当前显示的（该游戏刻度的）灵敏度也记一份，重载/切回来都不丢
+  if(gameYaw()>0 && isFinite(shown) && shown>0){ try{ localStorage.setItem(sensKey(currentGame()), String(shown)); }catch(e){} }
 }
 // 标定卡带当前设置参数（DPI/yaw/cm/sens），标定器按真值换算
 (function(){
@@ -1720,12 +1734,30 @@ function persistCfg(){
   }catch(e){}
 })();
 
+// 换算用的是"当前游戏的有效 yaw"：CS2 = m_yaw 字段；VAL/OW2/R6 用它自己的 yaw。
+// 之前这里写死 iYaw，选了非 Source 游戏后 cm↔灵敏度 会按错的角度换算。
+function effYaw(){
+  const gy=gameYaw();
+  const y=num($('iYaw'),0.022);
+  return cv(gy>0? gy : y, 0.022);
+}
+function cv(v, def){ return (isFinite(v)&&v>0)? v : def; }
 ['iDpi','iYaw','iSens','iCm'].forEach(id=>{
   $(id).addEventListener('input',()=>{
-    const d=num($('iDpi'),1000), y=num($('iYaw'),0.022);
-    if(id==='iSens'){ const s=num($('iSens'),0); if(s>0&&d>0&&y>0) $('iCm').value=(360/(s*y)/d*2.54).toFixed(1); }
-    if(id==='iCm'){ const c=num($('iCm'),0); if(c>0&&d>0&&y>0) $('iSens').value=(360/((c/2.54)*d)/y).toFixed(2); }
-    if(id==='iDpi'||id==='iYaw'){ const c=num($('iCm'),0); if(c>0&&d>0&&y>0) $('iSens').value=(360/((c/2.54)*d)/y).toFixed(2); }
+    const d=cv(num($('iDpi'),800),800), y=effYaw();
+    if(id==='iSens'){
+      const s=parseFloat($('iSens').value);
+      if(isFinite(s)&&s>0) $('iCm').value=(914.4/(s*y*d)).toFixed(1);
+    }
+    if(id==='iCm'){
+      const c=parseFloat($('iCm').value);
+      if(isFinite(c)&&c>0) $('iSens').value=(914.4/(c*y*d)).toFixed(2);
+    }
+    if(id==='iDpi'||id==='iYaw'){
+      // 改 DPI / m_yaw 时保持 cm/360 不变（同一只手的瞄感不能因为换硬件就变），反推灵敏度
+      const c=parseFloat($('iCm').value);
+      if(isFinite(c)&&c>0) $('iSens').value=(914.4/(c*y*d)).toFixed(2);
+    }
     updateCalc();
     persistCfg();   // 灵敏度卡：改动即存，不用翻到底
   });
@@ -1736,9 +1768,17 @@ function chkSave(id,key){ const el=document.getElementById(id); if(!el) return;
 function valSave(id,key){ const el=document.getElementById(id); if(!el) return;
   el.addEventListener('change',()=>{ try{ localStorage.setItem(key, el.value); }catch(e){} }); }
 chkSave('iPerf',K_PERF); chkSave('iFpsShow',K_FPSSHOW); chkSave('iBallTex','cs2at.ballTex');
-valSave('iFps',K_FPS); valSave('iDelay','cs2at.delay'); valSave('iRes','cs2at.res');
+valSave('iFps',K_FPS); valSave('iRes','cs2at.res');
+function saveDelay(){
+  const el=$('iDelay'); const v=parseInt(el.value);
+  const clamped=isNaN(v)? 3 : Math.max(0,Math.min(5,v));
+  el.value=String(clamped);
+  try{ localStorage.setItem('cs2at.delay', String(clamped)); }catch(e){}
+}
+$('iDelay').addEventListener('change', saveDelay);
+$('iDelay').addEventListener('blur', saveDelay);
 valSave('iDev','cs2at.device'); valSave('iPadMode','cs2at.padMode');
-$('iDelay').addEventListener('input',()=>{ try{ localStorage.setItem('cs2at.delay', String(Math.max(0,Math.min(5,parseInt($('iDelay').value)||3)))); }catch(e){} });
+$('iDelay').addEventListener('input',saveDelay);
 $('iResW').addEventListener('change',()=>{ try{ localStorage.setItem('cs2at.resW', $('iResW').value); }catch(e){} });
 $('iResH').addEventListener('change',()=>{ try{ localStorage.setItem('cs2at.resH', $('iResH').value); }catch(e){} });
 $('defBtn').addEventListener('click',()=>{
@@ -1752,6 +1792,8 @@ $('defBtn').addEventListener('click',()=>{
    'cs2at.crossLen','cs2at.crossWid','cs2at.crossGap','cs2at.crossAlpha','cs2at.crossDot','cs2at.crossOutline',
    'cs2at.dotSize','cs2at.dotOutline','cs2at.hitFx','cs2at.hitFxMix','cs2at.hitCross','cs2at.hitCrossColor']
     .forEach(k=>{ try{ localStorage.removeItem(k); }catch(e){} });
+  // 每款游戏各自记的灵敏度（cs2at.sens.*）也要清，否则重置后切回 VAL 会冒出旧值
+  try{ Object.keys(localStorage).forEach(k=>{ if(k.indexOf('cs2at.sens.')===0) localStorage.removeItem(k); }); }catch(e){}
   fillSettings();
 });
 $('iRes').addEventListener('change',()=>{ $('resCustom').style.display = $('iRes').value==='custom' ? '' : 'none'; });
@@ -1944,6 +1986,7 @@ function applyGameSens(quiet){
     cfg.sens=Math.round(internal*10000)/10000; cfg.cm=Math.round(cm*100)/100;
     cfg.dpi=dpi; cfg.yaw=sy;
     if(!quiet) save(K_CFG,cfg);   // 只在用户操作时落盘；打开设置页的对齐只改显示
+    if(!quiet){ try{ localStorage.setItem(sensKey(currentGame()), String(disp)); }catch(e){} }   // 记住这款游戏的灵敏度
     $('iSens').value=String(disp); $('iCm').value=String(cfg.cm);
     if(!quiet){
       $('gameConvHint').textContent=L('已切换：cm/360 ','Switched: cm/360 ')+cfg.cm+L(' · 本站灵敏度 ',' · site sensitivity ')+cfg.sens.toFixed(4)+L('，DPI '," (DPI ")+dpi+L(' 不变',' unchanged)');
@@ -1958,6 +2001,10 @@ function syncYawVisible(){
     $('yawBox').style.display = show? '' : 'none';
   }catch(e){}
 }
+// 每款游戏各自的灵敏度记一份，切回来不会丢（以前是强制写 0）
+function sensKey(g){ return 'cs2at.sens.'+g; }
+function currentGame(){ return ($('iGame') && $('iGame').value) || 'cs2'; }
+function storedGameSens(g){ try{ const v=parseFloat(localStorage.getItem(sensKey(g))); return (isFinite(v)&&v>0)? v : null; }catch(e){ return null; } }
 function syncGameScale(quiet){
   try{
     const name=$('iGame').selectedOptions[0].textContent;
@@ -1968,14 +2015,21 @@ function syncGameScale(quiet){
       $('iSens').value = String(cfg.sens);
       applyGameSens(quiet);
     } else {
-      // 其他游戏：默认 0，自己填该游戏的灵敏度，改完自动换算
-      $('iSens').value = '0';
+      // 其他游戏：显示上次为这款游戏存下的值；没有就留空（留空 ≠ 0）
+      const v=storedGameSens(currentGame());
+      $('iSens').value = (v!==null)? String(v) : '';
       updateCalc();
     }
   }catch(e){}
 }
 $('iGame').addEventListener('change',()=>{
-  try{ localStorage.setItem('cs2at.game', $('iGame').value); }catch(e){}
+  try{
+    const prev=localStorage.getItem('cs2at.game')||'cs2';
+    const now=currentGame();
+    const v=parseFloat($('iSens').value);
+    if(prev!==now && isFinite(v)&&v>0) localStorage.setItem(sensKey(prev), String(v));  // 先存住上一款游戏的灵敏度
+    localStorage.setItem('cs2at.game', now);
+  }catch(e){}
   syncGameScale();
 });
 $('iSens').addEventListener('change',()=>{ applyGameSens(); });

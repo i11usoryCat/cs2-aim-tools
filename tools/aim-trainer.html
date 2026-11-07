@@ -237,6 +237,7 @@
           <option value="check">六维检查（90秒）</option>
           <option value="staircase">阶梯精度</option>
           <option value="distance">随机距离</option>
+          <option value="axis">分轴定位（横移→微调）</option>
         </select>
       </label>
       <label class="fld" id="fldEnd">结束方式
@@ -383,6 +384,43 @@ let blockAnchorYaw=0, blockAnchorPitch=0, blockAmp=0, blockSide=1, blockAxis=[1,
 let stRadius=1.5, stStep=0.30, stRun=0, stDir=0, stRev=[], stK=6;
 // 随机距离：按实际角度分箱记录（度）
 let dzDist=[], dzHit=[], dzMt=[];
+/* ===== 分轴定位（Axis-staged） =====
+   目标出现 → 两条 1px 竖线标出水平带 → 准星横向进带立刻变绿 → 只剩垂直微调 → 点击。
+   记录 T1 横移 / T2 微调 / 纵向误差；A0–A4 渐隐，localStorage 存等级。 */
+const AXIS_TIERS=[
+  {r:2.0, tmo:1400, zh:'大', en:'Large'},
+  {r:1.2, tmo:1000, zh:'中', en:'Mid'},
+  {r:0.7, tmo:800,  zh:'小', en:'Small'}
+];
+const AXIS_FADE_FACTOR=[2.0,1.6,1.3,1.3,2.0];   // A0–A3 带宽容差系数；A4 无线、容差回到 2.0
+const AXIS_FADE_DESC=['带 = 2.0×半径，实线','带 = 1.6×半径，实线','带 = 1.3×半径，虚线','线 0.4s 后淡出','无线，纯 2D 瞄准'];
+let axisLevel=0, axisEnterStreak=0, axisMissStreak=0;
+let axisBalls=[], axisTierIdx=0, axisCurTier=0, axisTierForce=-1, axisLevelOverride=false;
+let axisEntered=false, axisEntryAt=0, axisT1=null, axisGreen=false, axisPulseUntil=0;
+function axisLoad(){
+  try{
+    const q=new URLSearchParams(location.search);
+    if(q.get('axisLevel')!==null){ const v=parseInt(q.get('axisLevel')); if(!isNaN(v)&&v>=0&&v<=4){ axisLevel=v; axisLevelOverride=true; } }
+    if(q.get('axisTier')!==null){ const t=parseInt(q.get('axisTier')); if(!isNaN(t)&&t>=0&&t<=2) axisTierForce=t; }
+    if(axisLevelOverride) return;
+    const s=JSON.parse(localStorage.getItem('cs2at.axisFade')||'{}');
+    if(typeof s.level==='number') axisLevel=Math.max(0,Math.min(4,Math.round(s.level)));
+    if(typeof s.enter==='number') axisEnterStreak=Math.max(0,s.enter);
+    if(typeof s.miss==='number') axisMissStreak=Math.max(0,s.miss);
+  }catch(e){}
+}
+function axisSave(){
+  if(axisLevelOverride) return;
+  try{ localStorage.setItem('cs2at.axisFade', JSON.stringify({level:axisLevel,enter:axisEnterStreak,miss:axisMissStreak})); }catch(e){}
+}
+function axisBandHalfDeg(){
+  const f=AXIS_FADE_FACTOR[axisLevel]!==undefined? AXIS_FADE_FACTOR[axisLevel] : 2.0;
+  return radius*f/2;
+}
+function axisNextTier(){
+  if(axisTierForce>=0) return axisTierForce;
+  return (axisTierIdx++)%3;
+}
 let fpsCap=0, fpsShow=true, lastDraw=0, fpsFrames=0, fpsLast=0, fpsVal=0;
 
 const wrapPi=a=>{ while(a>Math.PI)a-=2*Math.PI; while(a<-Math.PI)a+=2*Math.PI; return a; };
@@ -895,7 +933,7 @@ const ATMOS={
   margin:0.22,                 // 天幕缓存上下留白（pitch 平移余量，覆盖 ±12°）
   par:[0.36,0.24,0.15],        // 三层剪影的视差（×W×yaw，单位 px/rad）
   ridgeH:[0.10,0.13,0.16],     // 三层剪影高度（×H，暗色场景）
-  ridgeHL:[0.030,0.042,0.055], // 三层剪影高度（×H，浅色晨雾：低矮远山，不压地平线行）
+  ridgeHL:[0.20,0.14,0.10],    // 三层剪影高度（×H，浅色晨雾：按参考 P.ridgeHFrac 浅色档）
   ridgeA:[0.26,0.36,0.46],     // 三层剪影不透明度（暗色场景）
   ridgeAL:[0.85,0.90,0.95],    // 三层剪影不透明度（浅色场景）
   fogH:0.42, fogHL:0.22,       // 雾带高度（×H，暗 / 浅）
@@ -945,12 +983,16 @@ function _atmSprite(size, rgb, peak){
 }
 function atmBuildMistSky(g, hw, hh){
   const hy=hh*0.5, M=Math.floor(H*ATMOS.margin), P=MIST;
-  // 天幕：冷灰蓝（≈0.53）保持到 58%，靠近地平线快速过渡到暖白（≈0.88）
+  // 天幕：冷灰蓝连续渐变到地平线（可见天空是 f=0.306…1，必须一路平滑，不能在中段收尾）
   const gs=g.createLinearGradient(0,0,0,hy);
   gs.addColorStop(0,_atmCSS(P.skyTop,1));
-  gs.addColorStop(0.45,_atmCSS(P.skyMid,1));
-  gs.addColorStop(0.87,_atmCSS(P.skyLow,1));
-  gs.addColorStop(0.93,_atmCSS(_atmMix(P.skyLow,P.horizon,0.95),1));
+  gs.addColorStop(0.30,_atmCSS(_atmMix(P.skyTop,P.skyMid,0.55),1));
+  gs.addColorStop(0.48,_atmCSS(P.skyMid,1));
+  gs.addColorStop(0.62,_atmCSS(_atmMix(P.skyMid,P.skyLow,0.55),1));
+  gs.addColorStop(0.74,_atmCSS(_atmMix(P.skyLow,P.horizon,0.10),1));
+  gs.addColorStop(0.84,_atmCSS(_atmMix(P.skyLow,P.horizon,0.30),1));
+  gs.addColorStop(0.92,_atmCSS(_atmMix(P.skyLow,P.horizon,0.55),1));
+  gs.addColorStop(0.965,_atmCSS(_atmMix(P.skyLow,P.horizon,0.78),1));
   gs.addColorStop(1,_atmCSS(P.horizon,1));
   g.fillStyle=gs; g.fillRect(0,0,hw,hy);
   // 晨光：克制，只做氛围
@@ -1113,9 +1155,16 @@ function atmBuildRidge(i){
   const col=dark? [0,0,0] : MIST.silhouette;
   const aTop=dark? ATMOS.ridgeA[i] : ATMOS.ridgeAL[i];
   const grd=g.createLinearGradient(0,0,0,h2);
-  grd.addColorStop(0,_atmCSS(col,aTop));
-  grd.addColorStop(0.55,_atmCSS(col,aTop*0.62));
-  grd.addColorStop(1,_atmCSS(col,0));
+  if(dark){
+    grd.addColorStop(0,_atmCSS(col,aTop));
+    grd.addColorStop(0.55,_atmCSS(col,aTop*0.62));
+    grd.addColorStop(1,_atmCSS(col,0));
+  } else {
+    // 浅色：山脚不透明（压在地平线上），顶部略淡；避免山体“浮”在雾上
+    grd.addColorStop(0,_atmCSS(col,aTop*0.55));
+    grd.addColorStop(0.55,_atmCSS(col,aTop*0.85));
+    grd.addColorStop(1,_atmCSS(col,aTop));
+  }
   g.fillStyle=grd;
   const f1=1.7*(i+1)+0.8, f2=4.3*(i+1)+1.7, f3=9.7*(i+1)+0.4;
   const p1=i*2.1+0.6, p2=i*3.7+1.2, p3=i*1.3+2.4;
@@ -1182,6 +1231,20 @@ function drawAtmosphereFog(){
   const hy=H*0.5+f*Math.tan(pitch);
   const off=SC.dark?0:ATMOS.fogYOffL*H;   // 晨雾更低：压在地面附近而不是铺满全屏
   ctx.drawImage(atmFogCv, 0, hy-atmFogHD*0.5+off, W, atmFogHD);
+  // 固定地平线：pitch=0 时严格 1px 落在 H*0.5；暗/浅同一条几何线，只换颜色（不参与剪影高度）
+  const dprH=Math.max(1, Math.round(devicePixelRatio||1));
+  const ly=Math.round(hy)-Math.floor(dprH/2);
+  ctx.save();
+  if(SC.dark){
+    const ui=_rgbOf(SC.ui||SC.cross,0);
+    ctx.fillStyle='rgba('+ui[0]+','+ui[1]+','+ui[2]+',0.30)';
+  } else {
+    // 浅色晨雾：地平线用晨光暖白（与 MIST.horizon 同族），保证这一行是明确的读数线
+    const hz=MIST.horizon;
+    ctx.fillStyle='rgba('+hz[0]+','+hz[1]+','+hz[2]+',0.55)';
+  }
+  ctx.fillRect(0, ly, W, dprH);
+  ctx.restore();
 }
 function drawCrossGlow(){
   if(!atmCrossCv) return;
@@ -1400,10 +1463,11 @@ function applyModeDefaults(){
     limitChk.checked=false; stRadius=1.5; stStep=0.30; stRun=0; stDir=0; stRev=[]; radius=stRadius;
   }
   else if(mode==='distance'){ radius=R0; limitChk.checked=false; dzDist=[]; dzHit=[]; dzMt=[]; }
+  else if(mode==='axis'){ radius=AXIS_TIERS[1].r; limitChk.checked=true; axisTierIdx=0; axisTierForce=-1; axisLevelOverride=false; axisLoad(); }
   try{ if(mode!=='check'){ localStorage.setItem('cs2at.endMode',endMode); localStorage.setItem('cs2at.endTime',String(endTime)); } }catch(e){}
   try{
     var sz=parseFloat(document.getElementById('sizeOv').value);
-    if(mode!=='staircase' && !isNaN(sz)&&sz>=0.35&&sz<=3) radius=sz;   // 自定义球大小覆盖各模式默认值（阶梯模式除外：尺寸是它的因变量）
+    if(mode!=='staircase' && mode!=='axis' && !isNaN(sz)&&sz>=0.35&&sz<=3) radius=sz;   // 自定义球大小覆盖各模式默认值（阶梯/分轴的尺寸是模式变量）
   }catch(e){}
 }
 
@@ -1523,6 +1587,7 @@ function beginSession(){
   trial=0; hits=0; streak=0; bestStreak=0; if(mode==='random') radius=R0; allowed=800; timeouts=0; timeFactor=1.25;
   times=[]; errs=[]; hitFlags=[]; blocks=[]; blockTimes=[]; blockHits=0;
   if(mode==='check'){ checkIdx=0; checkData=[]; checkCur=null; checkSpeed=0; }
+  if(mode==='axis'){ axisBalls=[]; axisTierIdx=0; axisEntered=false; axisEntryAt=0; axisT1=null; axisGreen=false; axisPulseUntil=0; axisLoad(); }
   yaw=0; pitch=0; alive=false; endStarted=false;
   nextAt=performance.now()+300;
   endAt = performance.now() + endTime*1000;   // 整场计时从首球出生起（spawn 里重设）
@@ -1613,6 +1678,16 @@ function spawn(){
     const sx=(Math.cos(ang)<0? -1 : 1);
     tYaw=yaw+sx*dxDeg*D2R; tPitch=pitch+dyDeg*D2R;
     radius=R0;
+  } else if(mode==='axis'){
+    // 三档球半径轮换；目标出现在中距离侧向，给横移留出动作空间
+    axisCurTier=axisNextTier();
+    const cfg=AXIS_TIERS[axisCurTier];
+    radius=cfg.r; allowed=cfg.tmo;
+    const side=(Math.random()<0.5?-1:1);
+    tYaw=yaw+side*(8+Math.random()*10)*D2R;
+    tPitch=pitch+(Math.random()*2-1)*4*D2R;
+    axisEntered=false; axisEntryAt=0; axisT1=null; axisGreen=false; axisPulseUntil=0;
+    window.__axisGreenAt=0;
   } else {
     const a=(Math.random()<0.5?-1:1)*(12+Math.random()*16)*D2R;
     const b=(Math.random()*2-1)*8*D2R;
@@ -1626,15 +1701,43 @@ function spawn(){
 function judge(){
   if(!running||paused||!alive) return;
   const now=performance.now();
-  const err=Math.hypot(wrapPi(tYaw-yaw), wrapPi(tPitch-pitch))*R2D;
+  const dxDeg=wrapPi(tYaw-yaw)*R2D;
+  const dyDeg=wrapPi(tPitch-pitch)*R2D;
+  const err=Math.hypot(dxDeg,dyDeg);
   const hitQ=Math.max(0, Math.min(1, err/Math.max(0.01,radius)));   // 反馈用：偏差 / 球半径（0=正中，1=擦边）
   const hitRad=radius;                                              // 反馈用：命中时的球半径（之后难度可能改它）
   const mt=now-tSpawn;
-  const overtime = (limitChk.checked && mt>allowed) || (mode==='track' && mt>=tDur*1000-1);
-  const hit = (err<=radius) && !overtime;
+  const overtime = (mode==='track') ? (mt>=tDur*1000-1)
+    : (mode==='axis' ? (mt>allowed) : (limitChk.checked && mt>allowed));
+  // 分轴定位：横向进带即绿（当帧判定，无 dwell），同时记录 T1
+  if(mode==='axis' && !axisEntered){
+    const bh=axisBandHalfDeg();
+    if(Math.abs(dxDeg)<=bh){
+      axisEntered=true; axisEntryAt=now; axisT1=now-tSpawn; axisPulseUntil=now+80;
+      window.__axisGreenAt=now;
+    }
+  }
+  const hit = (mode==='axis')
+    ? (!overtime && (axisLevel===4 ? err<=radius : (Math.abs(dxDeg)<=axisBandHalfDeg() && Math.abs(dyDeg)<=radius)))
+    : ((err<=radius) && !overtime);
   if(overtime) timeouts++;
 
   trial++; times.push(mt); errs.push(err); hitFlags.push(hit);
+  if(mode==='axis'){
+    axisBalls.push({tierIdx:axisCurTier, r:radius, t1:axisT1,
+      t2:(axisEntered&&!overtime)?Math.round(now-axisEntryAt):null,
+      dy:dyDeg, hit:hit, entered:axisEntered, timeout:overtime});
+    // 渐隐 A0–A4：连续 5 次进带升级；进带失败或连续 2 次未命中降级
+    if(!axisLevelOverride){
+      if(axisEntered){
+        axisEnterStreak++; axisMissStreak=0;
+        if(axisEnterStreak>=5 && axisLevel<4){ axisLevel++; axisEnterStreak=0; }
+      } else { axisLevel=Math.max(0,axisLevel-1); axisEnterStreak=0; }
+      if(!hit){ axisMissStreak++; if(axisMissStreak>=2){ axisLevel=Math.max(0,axisLevel-1); axisMissStreak=0; } }
+      else axisMissStreak=0;
+      axisSave();
+    }
+  }
   if(mode==='check'){
     const c=checkCur||{kind:'mid', firstStop:true, firstErr:err, firstMove:null, firstStopAt:0};
     if(checkIdx>=CHECK_WARMUP){   // 前 6 球热身，不计分
@@ -1947,6 +2050,56 @@ function distanceReportHtml(){
     '<table class="res-table"><tr><th>'+T("距离","Distance")+'</th><th>'+T("命中率","Hit rate")+'</th><th>'+T("用时","Time")+'</th><th>'+T("球数","Shots")+'</th></tr>'+rows+'</table>'+
     '<div class="res-foot">'+T("每个箱子只统计该距离区间内实际打过的球；用时只算命中球。","Each bin counts the shots actually fired at that distance; time uses hits only.")+'</div>';
 }
+function axisReportHtml(){
+  const B=axisBalls.slice();
+  const hitN=B.filter(function(b){ return b.hit; }).length;
+  const hitRate=B.length? Math.round(hitN/B.length*100) : 0;
+  const t1s=B.filter(function(b){ return b.t1!==null; }).map(function(b){ return b.t1; });
+  const t2s=B.filter(function(b){ return b.t2!==null; }).map(function(b){ return b.t2; });
+  const dys=B.filter(function(b){ return !b.timeout; }).map(function(b){ return Math.abs(b.dy); });
+  const t1=Math.round(med(t1s)), t2=Math.round(med(t2s)), dy=med(dys);
+  window.__axisReport={t1:t1, t2:t2, dy:Math.round(dy*100)/100, hit:hitRate, level:axisLevel, n:B.length};
+  const levelTxt='A'+axisLevel+' · '+(AXIS_FADE_DESC[axisLevel]||'');
+  let tierRows='';
+  AXIS_TIERS.forEach(function(cfg,ti){
+    // 只统计本档实际打过的球；没跑到的档显示「—」，绝不套用总体中位数
+    const g=B.filter(function(b){ return b.tierIdx===ti; });
+    if(!g.length){
+      tierRows+='<tr><td>'+(EN_UI?cfg.en:cfg.zh)+' · '+cfg.r.toFixed(1)+'°</td><td>—</td><td>—</td><td>—</td><td>—</td><td>0</td></tr>';
+      return;
+    }
+    const gh=g.filter(function(b){ return b.hit; }).length;
+    const g1s=g.filter(function(b){ return b.t1!==null; }).map(function(b){ return b.t1; });
+    const g2s=g.filter(function(b){ return b.t2!==null; }).map(function(b){ return b.t2; });
+    const gds=g.filter(function(b){ return !b.timeout; }).map(function(b){ return Math.abs(b.dy); });
+    const g1=g1s.length? Math.round(med(g1s)) : null;
+    const g2=g2s.length? Math.round(med(g2s)) : null;
+    const gd=gds.length? med(gds) : null;
+    tierRows+='<tr><td>'+(EN_UI?cfg.en:cfg.zh)+' · '+cfg.r.toFixed(1)+'°</td>'+
+      '<td>'+(g1===null?'—':g1+' ms')+'</td>'+
+      '<td>'+(g2===null?'—':g2+' ms')+'</td>'+
+      '<td>'+(gd===null?'—':gd.toFixed(2)+'°')+'</td>'+
+      '<td>'+Math.round(gh/g.length*100)+'%</td>'+
+      '<td>'+g.length+'</td></tr>';
+  });
+  let advice;
+  if(t1>800) advice=EN_UI? 'T1 is large: the horizontal sweep is a gross action — move faster first, then settle.'
+    : 'T1 偏大：横移是大肌群动作——先扫快一点，再减速。';
+  else if(t2>260) advice=EN_UI? 'T2 is large: you are still correcting after entering the band — stop on entry, only fine-tune vertically.'
+    : 'T2 偏大：进带后还在修正——进带就停手，只上下微调。';
+  else if(dy>0.6) advice=EN_UI? 'Vertical error is large: after the sweep, lock vertical before clicking.'
+    : '纵向误差偏大：横移到位后先压住垂直，再点。';
+  else advice=EN_UI? 'Stages are separated cleanly — keep the same pace and push the band width down.'
+    : '两段分得很干净——保持节奏，去更窄的带。';
+  return resKicker('分轴定位','Axis-staged', TOTAL+' 球', TOTAL+' shots')+
+    '<div class="res-num">'+t1+'<i>ms</i></div>'+
+    '<div class="res-note">T1 中位 · T2 '+t2+' ms · 纵向误差 '+dy.toFixed(2)+'° · 命中 '+hitRate+'% · 渐隐 '+levelTxt+'</div>'+
+    resSec('02','判断','Verdict')+
+    '<div class="res-advice">'+advice+'</div>'+
+    resSec('03','分档','By tier')+
+    '<table class="res-table"><tr><th>档位</th><th>T1</th><th>T2</th><th>纵向误差</th><th>命中率</th><th>球数</th></tr>'+tierRows+'</table>'+
+    '<div class="res-foot">渐隐：连续 5 次进带升级；进带失败或连续 2 次未命中降级（当前 '+levelTxt+'）</div>';
+}
 function finish(){
   running=false; alive=false;
   if(document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(function(){});
@@ -1977,8 +2130,8 @@ function finish(){
     else if(overallHit<0.85){ advice='命中 '+Math.round(overallHit*100)+'%，在调整区——保持难度，再打一组看趋势。'; }
     else { advice='命中 '+Math.round(overallHit*100)+'%，稳了。下一组限时收紧 10%，继续加压。'; }
   }
-  const MODE_LABEL={random:'自适应随机',block:'定角重复',precision:'小球精度',wide:'大角度甩枪',track:'移动跟枪',staircase:'阶梯精度',distance:'随机距离',check:'六维检查'};
-  const MODE_EN={random:'Adaptive random',block:'Fixed angle',precision:'Small-target precision',wide:'Wide flick',track:'Tracking',staircase:'Staircase precision',distance:'Random distance',check:'Six-skill check'};
+  const MODE_LABEL={random:'自适应随机',block:'定角重复',precision:'小球精度',wide:'大角度甩枪',track:'移动跟枪',staircase:'阶梯精度',distance:'随机距离',check:'六维检查',axis:'分轴定位'};
+  const MODE_EN={random:'Adaptive random',block:'Fixed angle',precision:'Small-target precision',wide:'Wide flick',track:'Tracking',staircase:'Staircase precision',distance:'Random distance',check:'Six-skill check',axis:'Axis-staged'};
   const modeTxt=MODE_LABEL[mode]||mode;
   const kp=resParamExtra();
   const tbl = blocks.length
@@ -2034,6 +2187,7 @@ function finish(){
   if(mode==='check') resBody.innerHTML=checkReportHtml();
   else if(mode==='staircase') resBody.innerHTML=staircaseReportHtml();
   else if(mode==='distance') resBody.innerHTML=distanceReportHtml();
+  else if(mode==='axis') resBody.innerHTML=axisReportHtml();
   res.classList.add('show');
   if(mode==='check') setTimeout(drawCheckScatter, 30);
 }
@@ -2256,7 +2410,17 @@ function loop(){
   // FPS 窗口从真正开跑那一刻起算（点击「开始」到开跑之间的等待空窗不算掉帧）
   if(!fpsRunOn){ fpsRunOn=true; fpsFrames=0; fpsLast=now; }
 
-  if(alive && limitChk.checked && mode!=='track' && now-tSpawn>allowed){ judge(); }
+  if(alive && mode!=='track' && now-tSpawn>allowed && (mode==='axis' || limitChk.checked)){ judge(); }
+  // 分轴定位：横向进带当帧变绿（与绘制同一帧），并记录 T1
+  if(mode==='axis' && alive){
+    const dxDegNow=wrapPi(tYaw-yaw)*R2D;
+    const inside=Math.abs(dxDegNow)<=axisBandHalfDeg();
+    if(inside && !axisEntered){
+      axisEntered=true; axisEntryAt=now; axisT1=now-tSpawn; axisPulseUntil=now+80;
+      window.__axisGreenAt=now;
+    }
+    if(inside!==axisGreen){ axisGreen=inside; }
+  }
   // 六维检查：停点兜底——鼠标不动 200ms 即视为第一段甩动结束
   // （低速鼠标停下时不产生移动事件，纯靠事件流测不到停点）
   if(mode==='check' && alive && checkCur && checkCur.moved && !checkCur.firstStop && now-checkCur.lastFast>350){
@@ -2294,6 +2458,52 @@ function dynamicFactor(now){
   return dynAmt;
 }
 
+// 分轴定位：两条 1px 竖线标出水平带；进带变绿（当帧），只做 80ms 亮度脉冲，不缩放/不位移
+function axisGuideAlpha(now){
+  if(axisLevel!==3) return 1;
+  const mt=now-tSpawn;
+  if(mt<=400) return 1;
+  if(mt>=650) return 0;
+  return 1-(mt-400)/250;
+}
+// 进带变绿后：300ms 内保持，之后 200ms 淡到 40%（提示在，但不抢纵向微调的注意力）
+function axisEnterAlpha(now){
+  if(!axisEntered) return 1;
+  const e=now-axisEntryAt;
+  if(e<=300) return 1;
+  if(e>=500) return 0.4;
+  return 1-(e-300)/200*0.6;
+}
+function drawAxisGuides(now, p){
+  if(mode!=='axis' || axisLevel>=4) return;
+  const a=axisGuideAlpha(now); if(a<=0.02) return;
+  const bh=axisBandHalfDeg()*D2R;
+  const dpr=devicePixelRatio||1;
+  const horizonY=H*0.5+f*Math.tan(pitch);
+  const topY=Math.max(horizonY, p? p.sy : horizonY);   // 顶部与目标中心同高截断；不穿过天空
+  const x1=W*0.5+f*Math.tan(wrapPi(tYaw-bh-yaw));
+  const x2=W*0.5+f*Math.tan(wrapPi(tYaw+bh-yaw));
+  const aa=a*axisEnterAlpha(now);
+  window.__axisGuideAlpha=Math.round(aa*100)/100;
+  window.__axisGuideEntered=axisEntered;
+  ctx.save();
+  ctx.globalAlpha=aa;
+  ctx.strokeStyle=axisGreen? '#4ade80' : '#E0407F';
+  ctx.lineWidth=1*dpr;
+  if(axisLevel===2) ctx.setLineDash([6*dpr,6*dpr]);
+  ctx.beginPath();
+  ctx.moveTo(x1, topY); ctx.lineTo(x1, H);
+  ctx.moveTo(x2, topY); ctx.lineTo(x2, H);
+  ctx.stroke();
+  if(axisGreen && now<axisPulseUntil){   // 变绿瞬间 80ms 亮度脉冲
+    ctx.globalAlpha=aa*0.55;
+    ctx.strokeStyle='#b7ffd0';
+    ctx.setLineDash([]);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
 // 渲染与输入分离：输入只改角度，绘制全走 rAF 主循环
 function drawFrame(now){
   const frameDt=Math.min(80, lastDraw? now-lastDraw : 16);
@@ -2306,6 +2516,7 @@ function drawFrame(now){
     const tw=DIST*cp*Math.sin(tYaw), th=DIST*Math.sin(tPitch), td=DIST*cp*Math.cos(tYaw);
     const p=project(tw,th,td);
     if(p){
+      if(mode==='axis') drawAxisGuides(now,p);
       const rad=Math.max(4, f*Math.tan(radius*D2R));
       // 统一球体（与标定页/跟枪页同款）：tgtFill 填充 + tgt 描边 + 中心点
       // 单一平面渲染：不加高光、不加阴影——2D 里偏移的高光会跟着球跑，像脏点
@@ -2464,10 +2675,12 @@ function updateHud(now){
   const html=(endMode==='time'
       ? '剩余 <b>'+Math.max(0,((endAt-performance.now())/1000)).toFixed(1)+'</b>s &nbsp; 已打 <b>'+trial+'</b> 球'
       : '第 <b>'+(trial+1)+'</b>/'+TOTAL)
-      +' &nbsp; 球半径 <b>'+radius.toFixed(2)+'°</b> &nbsp; '+cm360.toFixed(1)+' cm/360<br>'+
+      +' &nbsp; 球半径 <b>'+radius.toFixed(2)+'°</b> &nbsp; '+cm360.toFixed(1)+' cm/360'+
+      (mode==='axis'? ' &nbsp; 分轴 <b>A'+axisLevel+'</b>':'')+'<br>'+
     '近 10 球命中率 <b>'+rate+'%</b> &nbsp; 连击 <b>'+streak+'</b>'+(limitChk.checked? ' &nbsp; 限时 <b>'+Math.round(allowed)+'ms</b>':'')+'<br>'+
     (fpsShow? ' <span style="color:var(--hud-fps,var(--acc))">· '+fpsVal+' fps</span>':'')+
-    '<br><span style="font-size:13px;color:var(--hud-dim,var(--dim))">看到球 → 甩过去 → 手停 → 点击</span>';
+    '<br><span style="font-size:13px;color:var(--hud-dim,var(--dim))">'+
+      (mode==='axis'? (axisLevel>=4? 'A4 无线：直接二维瞄准 → 点击' : '先横移进带（线变绿）→ 上下微调 → 点击') : '看到球 → 甩过去 → 手停 → 点击')+'</span>';
   if(html!==hudLastHtml){ hudLastHtml=html; hud.innerHTML=html; }
 }
 requestAnimationFrame(loop);
@@ -2800,7 +3013,8 @@ requestAnimationFrame(loop);
       if(mn){
         var notes={
           staircase:'固定 18° 距离，球会按命中率自动变大变小；收敛后的尺寸 = 你在 85% 命中率下能稳定打中的最小目标。',
-          distance:'距离 5–45° 随机、方向随机；练「换距离」时的适应力，结果按距离分箱对比。'
+          distance:'距离 5–45° 随机、方向随机；练「换距离」时的适应力，结果按距离分箱对比。',
+          axis:'分轴定位：目标出现 → 两条竖线标出水平带 → 准星横移进带立刻变绿 → 只剩上下微调 → 点击。记 T1 横移 / T2 微调 / 纵向误差。'
         };
         mn.textContent = notes[ms.value] || '';
         mn.style.display = notes[ms.value] ? '' : 'none';

@@ -31,7 +31,7 @@
   #hud b{color:var(--acc)}
   .overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;
     text-align:center;font-size:16px;line-height:2;color:var(--txt);background:var(--overlay);overflow:auto;padding:24px;
-    -webkit-backdrop-filter:blur(2.5px);backdrop-filter:blur(2.5px)}
+    -webkit-backdrop-filter:blur(var(--ovblur,2.5px));backdrop-filter:blur(var(--ovblur,2.5px))}
   /* 结果页内容比视口高时，居中会裁掉顶部且滚不上去；safe center 在溢出时退回 start */
   .overlay{align-items:safe center;justify-content:safe center}
   .overlay.show{display:flex}
@@ -370,6 +370,17 @@ function _seg(x1,y1,z1,x2,y2,z2){
   ctx.lineTo(W/2+(bx/bz)*f, H/2-(by/bz)*f);
 }
 
+// 场景明暗调优：浅色场景（SC.dark=false）提对比：刻线透明度 ×1.7、线宽 ×1.2；
+// night / jade / ink 等暗色场景倍率恒为 1，渲染结果与之前完全一致。
+let _arBoost=1, _arLW=1, _arLabelA=0.66;
+function _arTune(){
+  const light=!SC.dark;
+  _arBoost=light?1.8:1;
+  _arLW=light?1.2:1;
+  _arLabelA=Math.min(1, ARENA.labelA*(light?1.7:1));
+}
+function _arA(a){ const v=a*_arBoost; return v>1?1:v; }
+
 const _AR_CY=4.2;   // 天顶高度（沿用旧网格）
 function arenaCeiling(){
   const dpr=devicePixelRatio||1;
@@ -379,13 +390,13 @@ function arenaCeiling(){
       const s=AR_SIN[i], c=AR_COS[i];
       _seg(ARENA.ceilBand[b]*s, _AR_CY, ARENA.ceilBand[b]*c, ARENA.ceilBand[b+1]*s, _AR_CY, ARENA.ceilBand[b+1]*c);
     }
-    ctx.globalAlpha=ARENA.ceilA[b]; ctx.strokeStyle=SC.ceil; ctx.lineWidth=1*dpr; ctx.stroke();
+    ctx.globalAlpha=_arA(ARENA.ceilA[b]); ctx.strokeStyle=SC.ceil; ctx.lineWidth=1*dpr*_arLW; ctx.stroke();
   }
   for(let k=0;k<AR_CEIL_RINGS.length;k++){
     const R=AR_CEIL_RINGS[k], pts=R.pts;
     ctx.beginPath();
     for(let j=0;j<R.seg;j++) _seg(pts[j*2], _AR_CY, pts[j*2+1], pts[j*2+2], _AR_CY, pts[j*2+3]);
-    ctx.globalAlpha=ARENA.ceilRA[k]; ctx.strokeStyle=SC.ceil; ctx.lineWidth=1*dpr; ctx.stroke();
+    ctx.globalAlpha=_arA(ARENA.ceilRA[k]); ctx.strokeStyle=SC.ceil; ctx.lineWidth=1*dpr*_arLW; ctx.stroke();
   }
   ctx.globalAlpha=1;
 }
@@ -399,7 +410,7 @@ function arenaFloor(){
       const s=AR_SIN[i], c=AR_COS[i], r1=ARENA.bandR[b], r2=(b<3?ARENA.bandR[b+1]:ARENA.rOut-2.6);
       _seg(r1*s, gY, r1*c, r2*s, gY, r2*c);
     }
-    ctx.globalAlpha=ARENA.minorA[b]; ctx.strokeStyle=SC.minor; ctx.lineWidth=(b<2?1.1:0.9)*dpr; ctx.stroke();
+    ctx.globalAlpha=_arA(ARENA.minorA[b]); ctx.strokeStyle=SC.minor; ctx.lineWidth=(b<2?1.1:0.9)*dpr*_arLW; ctx.stroke();
   }
   // 15° 长刻度：贯通半径，远端越出外圈一点（卡尺主刻度）
   for(let b=0;b<4;b++){
@@ -408,24 +419,24 @@ function arenaFloor(){
       const s=AR_SIN[i], c=AR_COS[i], r1=ARENA.bandR[b], r2=(b<3?ARENA.bandR[b+1]:ARENA.rOut+1.4);
       _seg(r1*s, gY, r1*c, r2*s, gY, r2*c);
     }
-    ctx.globalAlpha=ARENA.majorA[b]; ctx.strokeStyle=SC.major; ctx.lineWidth=(b<2?1.8:1.3)*dpr; ctx.stroke();
+    ctx.globalAlpha=_arA(ARENA.majorA[b]); ctx.strokeStyle=SC.major; ctx.lineWidth=(b<2?1.8:1.3)*dpr*_arLW; ctx.stroke();
   }
   // 0° 主轴：基准线
   ctx.beginPath(); _seg(ARENA.r0, gY, 0, ARENA.rOut, gY, 0);
-  ctx.globalAlpha=ARENA.axisA; ctx.strokeStyle=SC.ui; ctx.lineWidth=2*dpr; ctx.stroke();
+  ctx.globalAlpha=_arA(ARENA.axisA); ctx.strokeStyle=SC.ui; ctx.lineWidth=2*dpr*_arLW; ctx.stroke();
   // 地面同心刻度圈
   for(let k=0;k<AR_RINGS.length;k++){
     const R=AR_RINGS[k], pts=R.pts;
     ctx.beginPath();
     for(let j=0;j<R.seg;j++) _seg(pts[j*2], gY, pts[j*2+1], pts[j*2+2], gY, pts[j*2+3]);
-    ctx.globalAlpha=ARENA.ringA[k]; ctx.strokeStyle=SC.minor; ctx.lineWidth=1*dpr; ctx.stroke();
+    ctx.globalAlpha=_arA(ARENA.ringA[k]); ctx.strokeStyle=SC.minor; ctx.lineWidth=1*dpr*_arLW; ctx.stroke();
   }
   // 量角器外缘（主色刻度框）
   const OR=AR_RINGS[AR_RINGS.length-1], opts=OR.pts;
   ctx.beginPath();
   for(let j=0;j<OR.seg;j++) _seg(opts[j*2], gY, opts[j*2+1], opts[j*2+2], gY, opts[j*2+3]);
-  ctx.globalAlpha=0.32; ctx.strokeStyle=SC.major; ctx.lineWidth=1.4*dpr; ctx.stroke();
-  ctx.globalAlpha=0.30; ctx.strokeStyle=SC.ui; ctx.lineWidth=2.4*dpr; ctx.stroke();
+  ctx.globalAlpha=_arA(0.32); ctx.strokeStyle=SC.major; ctx.lineWidth=1.4*dpr*_arLW; ctx.stroke();
+  ctx.globalAlpha=_arA(0.30); ctx.strokeStyle=SC.ui; ctx.lineWidth=2.4*dpr*_arLW; ctx.stroke();
   ctx.globalAlpha=1;
 }
 function arenaLabels(){
@@ -437,7 +448,7 @@ function arenaLabels(){
     if(!_pt(ARENA.labelR*s, gY, ARENA.labelR*c)) continue;
     if(_px<-26||_px>W+26||_py<-10||_py>H+10) continue;
     const edge=Math.min(_px, W-_px)/(W*0.16);
-    ctx.globalAlpha=ARENA.labelA*Math.min(1, Math.max(0.16, edge));
+    ctx.globalAlpha=_arLabelA*Math.min(1, Math.max(0.16, edge));
     ctx.fillText(AR_LABELS[i], _px, _py);
   }
   ctx.globalAlpha=1; ctx.textAlign='left'; ctx.textBaseline='alphabetic';
@@ -490,7 +501,11 @@ function _rgbOf(hex, amt){
   return [Math.max(0,Math.min(255,((n>>16)&255)+a)), Math.max(0,Math.min(255,((n>>8)&255)+a)), Math.max(0,Math.min(255,(n&255)+a))];
 }
 function arenaOverlayTint(){
-  try{ document.documentElement.style.setProperty('--overlay', hexA(SC.bg, SC.dark?0.40:0.55)); }catch(e){}
+  try{
+    const light=!SC.dark;
+    document.documentElement.style.setProperty('--overlay', hexA(SC.bg, light?0.34:0.40));
+    document.documentElement.style.setProperty('--ovblur', light?'1.0px':'2.5px');
+  }catch(e){}
 }
 function arenaEnsureCache(){
   if(arKey===SC && arW===W && arH===H) return;
@@ -505,40 +520,76 @@ function arenaEnsureCache(){
   const hg=arHazeCv.getContext('2d');
   if(hg){
     const hy=hh*0.5;
-    const sil=_rgbOf(SC.bg, SC.dark?16:-18);
-    hg.fillStyle='rgb('+sil[0]+','+sil[1]+','+sil[2]+')';
-    hg.globalAlpha=SC.dark?0.50:0.34;
-    hg.beginPath(); hg.moveTo(0, hy+2);
-    for(let x=0;x<=hw;x+=3){
-      const h1=(0.5+0.5*Math.sin(x*0.012+1.7))*hh*0.045;
-      const h2=(0.5+0.5*Math.sin(x*0.029+4.1))*hh*0.028;
-      hg.lineTo(x, hy-(h1+h2));
+    if(SC.dark){
+      // —— 暗色场景：原有「光晕 + 雾」配方，保持不变 ——
+      const sil=_rgbOf(SC.bg, SC.dark?16:-18);
+      hg.fillStyle='rgb('+sil[0]+','+sil[1]+','+sil[2]+')';
+      hg.globalAlpha=SC.dark?0.50:0.34;
+      hg.beginPath(); hg.moveTo(0, hy+2);
+      for(let x=0;x<=hw;x+=3){
+        const h1=(0.5+0.5*Math.sin(x*0.012+1.7))*hh*0.045;
+        const h2=(0.5+0.5*Math.sin(x*0.029+4.1))*hh*0.028;
+        hg.lineTo(x, hy-(h1+h2));
+      }
+      hg.lineTo(hw, hy+2); hg.closePath(); hg.fill();
+      hg.globalAlpha=1;
+      // 渐变雾：用 SC.bg 的雾把远处刻度洗进远景
+      const fog=_rgbOf(SC.bg,0), fgc=SC.dark?0.55:0.60;
+      const lg=hg.createLinearGradient(0,0,0,hh);
+      lg.addColorStop(0,'rgba('+fog[0]+','+fog[1]+','+fog[2]+',0)');
+      lg.addColorStop(0.36,'rgba('+fog[0]+','+fog[1]+','+fog[2]+','+(fgc*0.5)+')');
+      lg.addColorStop(0.50,'rgba('+fog[0]+','+fog[1]+','+fog[2]+','+fgc+')');
+      lg.addColorStop(0.64,'rgba('+fog[0]+','+fog[1]+','+fog[2]+','+(fgc*0.5)+')');
+      lg.addColorStop(1,'rgba('+fog[0]+','+fog[1]+','+fog[2]+',0)');
+      hg.fillStyle=lg; hg.fillRect(0,0,hw,hh);
+      // 主色光晕（宽扁椭圆）
+      const ui=_rgbOf(SC.ui||SC.cross,0);
+      hg.save(); hg.translate(hw*0.5, hy); hg.scale(1,0.16);
+      const rg=hg.createRadialGradient(0,0,0, 0,0, Math.max(hw*0.42, hh*1.4));
+      rg.addColorStop(0,'rgba('+ui[0]+','+ui[1]+','+ui[2]+','+(SC.dark?0.30:0.20)+')');
+      rg.addColorStop(0.45,'rgba('+ui[0]+','+ui[1]+','+ui[2]+','+(SC.dark?0.09:0.06)+')');
+      rg.addColorStop(1,'rgba('+ui[0]+','+ui[1]+','+ui[2]+',0)');
+      hg.fillStyle=rg; hg.fillRect(-hw, -hh*4, hw*2, hh*8);
+      hg.restore();
+      // 地平线亮线
+      hg.globalAlpha=SC.dark?0.14:0.16;
+      hg.strokeStyle='rgb('+ui[0]+','+ui[1]+','+ui[2]+')';
+      hg.lineWidth=1; hg.beginPath(); hg.moveTo(0,hy); hg.lineTo(hw,hy); hg.stroke();
+      hg.globalAlpha=1;
+    } else {
+      // —— 浅色场景：暗色压边（不加亮），否则浅底上会糊成一片白 ——
+      // 1) 远景剪影：比底色略深
+      const silD=_rgbOf(SC.bg,-26);
+      hg.fillStyle='rgb('+silD[0]+','+silD[1]+','+silD[2]+')';
+      hg.globalAlpha=0.42;
+      hg.beginPath(); hg.moveTo(0, hy+2);
+      for(let x=0;x<=hw;x+=3){
+        const h1=(0.5+0.5*Math.sin(x*0.012+1.7))*hh*0.050;
+        const h2=(0.5+0.5*Math.sin(x*0.029+4.1))*hh*0.032;
+        hg.lineTo(x, hy-(h1+h2));
+      }
+      hg.lineTo(hw, hy+2); hg.closePath(); hg.fill();
+      hg.globalAlpha=1;
+      // 2) 暗色压边：地平线附近一条柔和的暗带（不是加亮）
+      const dk=_rgbOf(SC.bg,-48);
+      const dkc='rgba('+dk[0]+','+dk[1]+','+dk[2]+',';
+      const lg=hg.createLinearGradient(0,0,0,hh);
+      lg.addColorStop(0, dkc+'0)');
+      lg.addColorStop(0.30, dkc+'0.16)');
+      lg.addColorStop(0.50, dkc+'0.50)');
+      lg.addColorStop(0.70, dkc+'0.16)');
+      lg.addColorStop(1, dkc+'0)');
+      hg.fillStyle=lg; hg.fillRect(0,0,hw,hh);
+      // 3) 地平线：一道暗细线 + 极轻主色线，压出边界
+      const ui2=_rgbOf(SC.ui||SC.cross,0);
+      hg.globalAlpha=0.34;
+      hg.strokeStyle='rgb('+dk[0]+','+dk[1]+','+dk[2]+')';
+      hg.lineWidth=1.2; hg.beginPath(); hg.moveTo(0,hy); hg.lineTo(hw,hy); hg.stroke();
+      hg.globalAlpha=0.10;
+      hg.strokeStyle='rgb('+ui2[0]+','+ui2[1]+','+ui2[2]+')';
+      hg.lineWidth=1; hg.beginPath(); hg.moveTo(0,hy-1); hg.lineTo(hw,hy-1); hg.stroke();
+      hg.globalAlpha=1;
     }
-    hg.lineTo(hw, hy+2); hg.closePath(); hg.fill();
-    hg.globalAlpha=1;
-    // 渐变雾：用 SC.bg 的雾把远处刻度洗进远景
-    const fog=_rgbOf(SC.bg,0), fgc=SC.dark?0.55:0.60;
-    const lg=hg.createLinearGradient(0,0,0,hh);
-    lg.addColorStop(0,'rgba('+fog[0]+','+fog[1]+','+fog[2]+',0)');
-    lg.addColorStop(0.36,'rgba('+fog[0]+','+fog[1]+','+fog[2]+','+(fgc*0.5)+')');
-    lg.addColorStop(0.50,'rgba('+fog[0]+','+fog[1]+','+fog[2]+','+fgc+')');
-    lg.addColorStop(0.64,'rgba('+fog[0]+','+fog[1]+','+fog[2]+','+(fgc*0.5)+')');
-    lg.addColorStop(1,'rgba('+fog[0]+','+fog[1]+','+fog[2]+',0)');
-    hg.fillStyle=lg; hg.fillRect(0,0,hw,hh);
-    // 主色光晕（宽扁椭圆）
-    const ui=_rgbOf(SC.ui||SC.cross,0);
-    hg.save(); hg.translate(hw*0.5, hy); hg.scale(1,0.16);
-    const rg=hg.createRadialGradient(0,0,0, 0,0, Math.max(hw*0.42, hh*1.4));
-    rg.addColorStop(0,'rgba('+ui[0]+','+ui[1]+','+ui[2]+','+(SC.dark?0.30:0.20)+')');
-    rg.addColorStop(0.45,'rgba('+ui[0]+','+ui[1]+','+ui[2]+','+(SC.dark?0.09:0.06)+')');
-    rg.addColorStop(1,'rgba('+ui[0]+','+ui[1]+','+ui[2]+',0)');
-    hg.fillStyle=rg; hg.fillRect(-hw, -hh*4, hw*2, hh*8);
-    hg.restore();
-    // 地平线亮线
-    hg.globalAlpha=SC.dark?0.14:0.16;
-    hg.strokeStyle='rgb('+ui[0]+','+ui[1]+','+ui[2]+')';
-    hg.lineWidth=1; hg.beginPath(); hg.moveTo(0,hy); hg.lineTo(hw,hy); hg.stroke();
-    hg.globalAlpha=1;
   }
   // —— 暗角 + 边缘颗粒（烘焙成一张半分辨率图，每帧一次 drawImage） ——
   const vw=Math.max(2, Math.floor(W*0.5)), vh=Math.max(2, Math.floor(H*0.5));
@@ -546,8 +597,8 @@ function arenaEnsureCache(){
   const vg=arVigCv.getContext('2d');
   if(vg){
     const img=vg.createImageData(vw,vh), px=img.data;
-    const base=_rgbOf(SC.dark? '#000000' : SC.bg, SC.dark?0:-24);
-    const maxA=SC.dark?ARENA.vigA:0.16, grain=ARENA.grain;
+    const base=_rgbOf(SC.dark? '#000000' : SC.bg, SC.dark?0:-10);
+    const maxA=SC.dark?ARENA.vigA:0.055, grain=SC.dark?ARENA.grain:0.16;
     const cx=(vw-1)*0.5, cy=(vh-1)*0.5, inv=1/Math.sqrt(cx*cx+cy*cy);
     for(let y=0;y<vh;y++){
       const dy=(y-cy)*inv;
@@ -672,7 +723,7 @@ function applyPageTheme(){
   r.setProperty('--txt',t.txt); r.setProperty('--dim',t.dim); r.setProperty('--acc',t.acc);
   r.setProperty('--on-acc','#ffffff');
   const dark=(t.txt.indexOf('#e')===0||t.txt.indexOf('#f')===0);
-  r.setProperty('--overlay',dark?'rgba(10,14,18,.40)':'rgba(248,250,252,.55)');
+  r.setProperty('--overlay',dark?'rgba(10,14,18,.40)':'rgba(248,250,252,.34)');
   document.body.style.background=t.bg;
 }
 
@@ -702,6 +753,7 @@ try{
 function grid(){
   const perf = (function(){ try{ return localStorage.getItem('cs2at.perf')==='1'; }catch(e){ return false; } })();
   arenaCamSetup();
+  _arTune();
   if(!perf) arenaCeiling();
   arenaFloor();
   if(!perf) arenaLabels();

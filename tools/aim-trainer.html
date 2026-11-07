@@ -31,6 +31,8 @@
   #hud b{color:var(--acc)}
   .overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;
     text-align:center;font-size:16px;line-height:2;color:var(--txt);background:var(--overlay);overflow:auto;padding:24px}
+  /* 结果页内容比视口高时，居中会裁掉顶部且滚不上去；safe center 在溢出时退回 start */
+  .overlay{align-items:safe center;justify-content:safe center}
   .overlay.show{display:flex}
   #back{position:fixed;left:16px;top:14px;z-index:40;display:none;
     font-size:13px;color:var(--dim);text-decoration:none;padding:7px 12px;border-radius:9px;
@@ -81,6 +83,7 @@
 <div id="msg" class="overlay show">
   <div id="titleTop" style="font-size:26px;color:var(--txt);font-weight:700;letter-spacing:2px">甩枪训练</div>
   <div style="margin-top:8px;color:var(--dim);font-size:14px">看到球 → 甩过去 → 手停 → 点击</div>
+  <div id="modeNote" style="margin-top:6px;color:var(--dim);font-size:13px;max-width:580px;line-height:1.7;display:none"></div>
   <div style="margin-top:26px;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap">
     <button id="go" class="btn" style="margin-top:0;padding:16px 64px;font-size:18px;letter-spacing:2px">开 始</button>
     <button id="fsBtn" type="button" style="padding:14px 22px;font-size:14px;border-radius:9px;border:1px solid var(--line);background:transparent;color:var(--dim);cursor:pointer;font-family:inherit">全屏 ⛶</button>
@@ -100,6 +103,8 @@
           <option value="wide">大角度甩枪</option>
           <option value="track">微调训练</option>
           <option value="check">六维检查（90秒）</option>
+          <option value="staircase">阶梯精度</option>
+          <option value="distance">随机距离</option>
         </select>
       </label>
       <label class="fld" id="fldEnd">结束方式
@@ -208,7 +213,25 @@ let waiting=false, cdUntil=0, cdTimer=null, endStarted=false;
 let padMode='off';
 let device='mouse';   // 输入设备：设置页配置，mouse / pad / pen
 let crossType='cross', crossLen=16, crossWid=2, crossGap=4, crossDot=true, crossOutl=true, crossAlpha=1;
+/* 准星样式/尺寸：设置页写在 localStorage，训练器只读。
+   以前只在 start() 里读，导致开始页预览永远是默认准星——现在抽成函数，加载即生效。 */
+function applyCrosshairSettings(){
+  try{
+    const g=function(k,d){ const v=localStorage.getItem(k); return v===null? d : v; };
+    crossType = g('cs2at.crossType','cross');
+    crossLen  = Math.max(1, Math.min(40, parseFloat(g('cs2at.crossLen','1'))||1));
+    crossWid  = Math.max(1, Math.min(16, parseFloat(g('cs2at.crossWid','1'))||1));
+    crossGap  = Math.max(0, Math.min(20, parseFloat(g('cs2at.crossGap','4'))||0));
+    crossAlpha= Math.max(0.2, Math.min(1, parseFloat(g('cs2at.crossAlpha','1'))||1));
+    crossDot  = g('cs2at.crossDot','1')==='1';
+    crossOutl = g('cs2at.crossOutline','1')==='1';
+    dotSize   = g('cs2at.dotSize','small');
+    dotOutl   = g('cs2at.dotOutline','1')==='1';
+    crossDyn  = g('cs2at.crossDyn','static');
+  }catch(e){}
+}
 let dotSize='small', dotOutl=true, crossDyn='static';
+applyCrosshairSettings();   // 开始页预览：一加载就套用设置里的准星（必须在 dotSize 等声明之后，否则 TDZ）
 let dynAmt=0, dynLast=0;
 let padActive=false, padFirePrev=false, lastPadT=0;
 let penActive=false;
@@ -223,6 +246,11 @@ const CHECK_WARMUP=6;   // 前 6 球热身，不计分
 let checkIdx=0, checkCur=null, checkData=[], checkSpeed=0;
 let trackSpeed=10, tsYaw=0, tsPitch=0, tvYaw=0, tvPitch=0, tDur=2;
 let blockAnchorYaw=0, blockAnchorPitch=0, blockAmp=0, blockSide=1, blockAxis=[1,0], blockAxisIdx=0;
+// 阶梯精度：变换阶梯（transformed staircase）。k-down/1-up，k 由目标命中率决定
+// p=0.85 → k=round(p/(1-p))=6 → 收敛在 1/(1+1/k)=85.7%
+let stRadius=1.5, stStep=0.30, stRun=0, stDir=0, stRev=[], stK=6;
+// 随机距离：按实际角度分箱记录（度）
+let dzDist=[], dzHit=[], dzMt=[];
 let fpsCap=0, fpsShow=true, lastDraw=0, fpsFrames=0, fpsLast=0, fpsVal=0;
 
 const wrapPi=a=>{ while(a>Math.PI)a-=2*Math.PI; while(a<-Math.PI)a+=2*Math.PI; return a; };
@@ -386,6 +414,27 @@ function applyRes(){
   FOVH=90;   // 默认 4:3，和以前一样
 }
 
+/* 模式默认参数：从下拉框读出 mode，再按模式设半径/限时/状态。
+   抽成函数是为了两件事：测试可以直接驱动，且不再依赖 start() 的执行上下文。 */
+function applyModeDefaults(){
+  mode=(document.getElementById('mode')||{value:'random'}).value||'random';
+  if(mode==='precision'){ radius=0.7; limitChk.checked=false; }
+  else if(mode==='block'){ radius=R0; limitChk.checked=false; blockLeft=0; }
+  else if(mode==='wide'){ radius=Math.max(0.8, R0*0.8); limitChk.checked=false; }
+  else if(mode==='track'){ radius=R0; limitChk.checked=false; trackSpeed=10; }
+  else if(mode==='check'){ radius=0.7; limitChk.checked=false; checkIdx=0; checkData=[]; endMode='time'; endTime=90; }
+  else if(mode==='staircase'){
+    // 阶梯：从 1.5° 起步，步长 0.30°，每反转一次减半
+    limitChk.checked=false; stRadius=1.5; stStep=0.30; stRun=0; stDir=0; stRev=[]; radius=stRadius;
+  }
+  else if(mode==='distance'){ radius=R0; limitChk.checked=false; dzDist=[]; dzHit=[]; dzMt=[]; }
+  try{ if(mode!=='check'){ localStorage.setItem('cs2at.endMode',endMode); localStorage.setItem('cs2at.endTime',String(endTime)); } }catch(e){}
+  try{
+    var sz=parseFloat(document.getElementById('sizeOv').value);
+    if(mode!=='staircase' && !isNaN(sz)&&sz>=0.35&&sz<=3) radius=sz;   // 自定义球大小覆盖各模式默认值（阶梯模式除外：尺寸是它的因变量）
+  }catch(e){}
+}
+
 function start(){
   endMode=document.getElementById('endMode').value||'count';
   endTime=Math.max(15, parseInt(document.getElementById('endTime').value)||120);
@@ -435,20 +484,7 @@ function start(){
       if(ce) SC.edge='#'+String(ce).replace('#','');
     }
   }catch(e){}
-  try{
-    // 准星样式/尺寸（设置页配置，本地存储直接读）
-    const g=function(k,d){ const v=localStorage.getItem(k); return v===null? d : v; };
-    crossType = g('cs2at.crossType','cross');
-    crossLen  = Math.max(1, Math.min(40, parseFloat(g('cs2at.crossLen','1'))||1));
-    crossWid  = Math.max(1, Math.min(16, parseFloat(g('cs2at.crossWid','1'))||1));
-    crossGap  = Math.max(0, Math.min(20, parseFloat(g('cs2at.crossGap','4'))||0));
-    crossAlpha= Math.max(0.2, Math.min(1, parseFloat(g('cs2at.crossAlpha','1'))||1));
-    crossDot  = g('cs2at.crossDot','1')==='1';
-    crossOutl = g('cs2at.crossOutline','1')==='1';
-    dotSize   = g('cs2at.dotSize','small');
-    dotOutl   = g('cs2at.dotOutline','1')==='1';
-    crossDyn  = g('cs2at.crossDyn','static');
-  }catch(e){}
+  applyCrosshairSettings();   // 开始页预览也要用设置里的准星
   try{
     // 检查模式默认「只有中心点」的小准星：0.7° 小球会被十字线整个盖住。
     // 用户自己设置过准星样式就尊重他。
@@ -456,17 +492,7 @@ function start(){
       crossType='dot'; dotSize='small'; dotOutl=true; crossDyn='static';
     }
   }catch(e){}
-  mode=(document.getElementById('mode')||{value:'random'}).value||'random';
-  if(mode==='precision'){ radius=0.7; limitChk.checked=false; }
-  else if(mode==='block'){ radius=R0; limitChk.checked=false; blockLeft=0; }
-  else if(mode==='wide'){ radius=Math.max(0.8, R0*0.8); limitChk.checked=false; }
-  else if(mode==='track'){ radius=R0; limitChk.checked=false; trackSpeed=10; }
-  else if(mode==='check'){ radius=0.7; limitChk.checked=false; checkIdx=0; checkData=[]; endMode='time'; endTime=90; }
-  try{ if(mode!=='check'){ localStorage.setItem('cs2at.endMode',endMode); localStorage.setItem('cs2at.endTime',String(endTime)); } }catch(e){}
-  try{
-    var sz=parseFloat(document.getElementById('sizeOv').value);
-    if(!isNaN(sz)&&sz>=0.35&&sz<=3) radius=sz;   // 自定义球大小覆盖各模式默认值
-  }catch(e){}
+  applyModeDefaults();
   // 设置只有一个真源：设置页写 localStorage，训练器只读不写（防反向覆盖）
   applyRes(); resize();   // 训练内视角按分辨率设置
   msg.classList.remove('show'); res.classList.remove('show');
@@ -513,6 +539,24 @@ function beginSession(){
   yaw=0; pitch=0; alive=false; endStarted=false;
   nextAt=performance.now()+300;
   endAt = performance.now() + endTime*1000;   // 整场计时从首球出生起（spawn 里重设）
+}
+
+/* ===== 阶梯精度：变换阶梯（transformed staircase）=====
+   k-down/1-up：连续 k 次命中降一档（变难），一次未中就升一档（变易）。
+   k 由目标命中率反推：k = p/(1-p)，p=0.85 → k=6，收敛在 1/(1+1/6)=85.7%。
+   每次方向反转就把步长减半（变换阶梯），阈值 = 收敛后反转点半径的均值。 */
+function stUpdate(hit){
+  if(hit){ stRun++; if(stRun>=stK){ stRun=0; stGo(-1); } }
+  else { stRun=0; stGo(+1); }
+}
+function stGo(dir){
+  if(stDir!==0 && dir!==stDir){        // 方向反转：记下当前半径，步长减半
+    stStep=Math.max(0.05, stStep/2);
+    stRev.push(radius);
+  }
+  stDir=dir;
+  stRadius=Math.max(RMIN, Math.min(RMAX, radius + dir*stStep));
+  radius=stRadius;
 }
 
 function spawn(){
@@ -566,6 +610,22 @@ function spawn(){
       tYaw=yaw+a; tPitch=pitch+b; radius=1.0;
     }
     checkCur={kind:k, moved:false, firstMove:null, firstStop:false, firstErr:0, lastFast:0};
+  } else if(mode==='staircase'){
+    // 距离固定 18°（±2° 抖动）：难度只由球的尺寸决定，阈值才有意义
+    const a=(Math.random()<0.5?-1:1)*(18+Math.random()*2)*D2R;
+    const b=(Math.random()*2-1)*4*D2R;
+    tYaw=yaw+a; tPitch=pitch+b;
+    radius=stRadius;
+  } else if(mode==='distance'){
+    // 距离 5–45°、方向随机：情境干扰（contextual interference），逼你适应不同幅度
+    const distDeg=5+Math.random()*40;              // 目标角距离，单位度
+    const ang=Math.random()*Math.PI*2;
+    let dyDeg=Math.sin(ang)*distDeg*0.5;
+    dyDeg=Math.max(-10, Math.min(10, dyDeg));      // 纵向别撞 ±12° 夹子
+    const dxDeg=Math.sqrt(Math.max(0, distDeg*distDeg - dyDeg*dyDeg));
+    const sx=(Math.cos(ang)<0? -1 : 1);
+    tYaw=yaw+sx*dxDeg*D2R; tPitch=pitch+dyDeg*D2R;
+    radius=R0;
   } else {
     const a=(Math.random()<0.5?-1:1)*(12+Math.random()*16)*D2R;
     const b=(Math.random()*2-1)*8*D2R;
@@ -599,6 +659,14 @@ function judge(){
   blockTimes.push(mt);
   if(hit){ hits++; streak++; blockHits++; if(streak>bestStreak) bestStreak=streak; }
   else streak=0;
+
+  // 阶梯：这一步决定下一球的尺寸（命中够多就变小）
+  if(mode==='staircase') stUpdate(hit);
+  // 随机距离：按本球的真实角距离分箱（用出生点到目标的实际角度，不含夹子误差）
+  if(mode==='distance'){
+    const dDeg=Math.hypot(wrapPi(tYaw-sYaw), wrapPi(tPitch-sPitch))*R2D;
+    dzDist.push(dDeg); dzHit.push(hit); dzMt.push(mt);
+  }
 
   // 每 8 个按 85% 原则调整难度（同一时间只调一个变量）
   if(trial%8===0){
@@ -798,6 +866,63 @@ function drawCheckScatter(){
   }catch(e){}
 }
 
+/* ===== 两个新模式的报告 ===== */
+function staircaseReportHtml(){
+  const rev=stRev.slice(2);                       // 前两次反转是热身，不计入阈值
+  const thr=rev.length? med(rev) : (radius||R0);  // 半径，单位度
+  const dia=thr*2;
+  let sd=0;
+  if(rev.length>1){
+    const m=rev.reduce((a,b)=>a+b,0)/rev.length;
+    sd=Math.sqrt(rev.reduce((a,b)=>a+(b-m)*(b-m),0)/(rev.length-1));
+  }
+  const ci=rev.length>1? 1.96*sd/Math.sqrt(rev.length) : 0;
+  const hitRate=trial? Math.round(hits/trial*100) : 0;
+  const mt=med(times.filter((v,i)=>hitFlags[i]));
+  const T=(zh,en)=>EN_UI?en:zh;
+  let advice;
+  if(!rev.length) advice=T("反转次数不够，阈值还定不下来——再跑一组（至少 30 球）。","Not enough reversals yet — run another set (30+ shots).");
+  else if(dia>2.4) advice=T("阈值偏大（>2.4°）：先用「小球精度」把静态准度练稳，再来测阶梯。","Large threshold (>2.4°): steady your static accuracy with Precision first.");
+  else if(dia>1.2) advice=T("中等阈值：继续这条阶梯，盯住「反转点是否在变小」。","Mid threshold: keep running it and watch whether the reversal points shrink.");
+  else advice=T("阈值很小（≤1.2°）：你在 85% 命中率下已经能稳定打小目标，可以加时间压力。","Tiny threshold (≤1.2°): you hold 85% on small targets — add time pressure.");
+  const revTxt=rev.map(v=>v.toFixed(2)).join(" · ")||"—";
+  return '<div class="bigNum">'+dia.toFixed(2)+'<i>°</i></div>'+
+    '<div class="bigSub">'+T("85% 命中率下的最小目标直径","smallest target diameter held at 85%")+' &nbsp;·&nbsp; ±'+ci.toFixed(2)+'° &nbsp;·&nbsp; '+
+    (rev.length? T("反转 ","reversals ")+stRev.length+T(" 次（前 2 次热身）"," (first 2 warm-up)") : T("反转次数不足","not enough reversals"))+' &nbsp;·&nbsp; '+hitRate+'% &nbsp;·&nbsp; '+Math.round(mt)+' ms</div>'+
+    '<div style="margin-top:14px;color:var(--acc);font-size:15px;line-height:1.7">'+advice+'</div>'+
+    '<details class="more"><summary>'+T("反转点","Reversals")+'</summary>'+
+      '<div style="padding:8px 2px;color:var(--dim);font-size:13px;line-height:1.9">'+revTxt+' °（'+T("半径","radius")+'）</div>'+
+      '<div class="moreFoot">'+T("阶梯规则：连续 6 次命中变小一档，一次未中变大一档；每反转一次步长减半。","Staircase: 6 hits shrink the target one step, one miss grows it; the step halves at every reversal.")+'</div>'+
+    '</details>';
+}
+
+function distanceReportHtml(){
+  const T=(zh,en)=>EN_UI?en:zh;
+  const BINS=[[5,15,"5–15°"],[15,25,"15–25°"],[25,35,"25–35°"],[35,45,"35–45°"]];
+  let rows="";
+  for(const b of BINS){
+    const idx=[];
+    for(let i=0;i<dzDist.length;i++) if(dzDist[i]>=b[0] && dzDist[i]<b[1]) idx.push(i);
+    if(!idx.length){ rows+='<tr><td>'+b[2]+'</td><td>—</td><td>—</td><td>0</td></tr>'; continue; }
+    const hr=Math.round(idx.filter(i=>dzHit[i]).length/idx.length*100);
+    const mtm=Math.round(med(idx.filter(i=>dzHit[i]).map(i=>dzMt[i])));
+    const hasHit=idx.filter(i=>dzHit[i]).length>0;
+    rows+='<tr><td>'+b[2]+'</td><td>'+hr+'%</td><td>'+(hasHit? mtm+' ms' : '—')+'</td><td>'+idx.length+'</td></tr>';
+  }
+  const hitRate=trial? Math.round(hits/trial*100):0;
+  const mt=med(times.filter((v,i)=>hitFlags[i]));
+  let advice;
+  if(trial<20) advice=T("球数偏少，分箱还不可比——至少 30 球再看。","Few shots — bins are noisy; run 30+ before comparing.");
+  else if(hitRate<60) advice=T("整体命中率偏低：先把球放大一档，或缩短距离区间。","Overall hit rate is low — enlarge the target or narrow the distance range.");
+  else advice=T("看四个箱子的命中率差：差距越大，说明你越依赖某一个距离。","Compare the four bins — the bigger the spread, the more you rely on one distance.");
+  return '<div class="bigNum">'+hitRate+'<i>%</i></div>'+
+    '<div class="bigSub">'+T("中位用时 ","median ")+Math.round(mt)+' ms &nbsp;·&nbsp; '+trial+T(" 球"," shots")+' &nbsp;·&nbsp; '+T("距离 5–45° 随机","5–45° random")+'</div>'+
+    '<div style="margin-top:14px;color:var(--acc);font-size:15px;line-height:1.7">'+advice+'</div>'+
+    '<details class="more" open><summary>'+T("按距离分箱","By distance")+'</summary>'+
+      '<table><tr><th>'+T("距离","Distance")+'</th><th>'+T("命中率","Hit rate")+'</th><th>'+T("用时","Time")+'</th><th>'+T("球数","Shots")+'</th></tr>'+rows+'</table>'+
+      '<div class="moreFoot">'+T("每个箱子只统计该距离区间内实际打过的球；用时只算命中球。","Each bin counts the shots actually fired at that distance; time uses hits only.")+'</div>'+
+    '</details>';
+}
 function finish(){
   running=false; alive=false;
   if(document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(function(){});
@@ -811,6 +936,8 @@ function finish(){
   // 直觉优先：先给一个数，细节收起来；再给一句人话建议
   var advice='';
   if(mode==='block'){ advice='热身不追分——手热了就进主练。'; }
+  else if(mode==='staircase'){ advice='阶梯在找一个尺寸——看反转点，不看单球。'; }
+  else if(mode==='distance'){ advice='四个距离箱子的差距，就是你要补的地方。'; }
   else if(mode==='precision'){
     advice = overallHit<0.25 ? '0.7° 很难，目标先定 25%，稳住手腕。'
       : overallHit<0.35 ? '接近目标区了——继续练一次定位的精度。'
@@ -873,6 +1000,8 @@ function finish(){
   }catch(e){}
 
   if(mode==='check') resBody.innerHTML=checkReportHtml();
+  else if(mode==='staircase') resBody.innerHTML=staircaseReportHtml();
+  else if(mode==='distance') resBody.innerHTML=distanceReportHtml();
   res.classList.add('show');
   if(mode==='check') setTimeout(drawCheckScatter, 30);
 }
@@ -1424,6 +1553,9 @@ requestAnimationFrame(loop);
     '手柄瞄准':'Gamepad aim','速度式':'Velocity','绝对式':'Absolute','原始输入':'Raw input',
     '← 返回':'← Back','自动':'auto','游戏灵敏度':'Game sensitivity','目标大小':'Dot size','球大小':'Dot size','再来一组':'Again','复制本组数据':'Copy this set','关闭':'Close','继续':'Continue','回计划':'Back to plan','回训练中心':'Back to hub',
     '准备好':'Get ready',
+    '阶梯精度':'Staircase precision','随机距离':'Random distance',
+    '固定 18° 距离，球会按命中率自动变大变小；收敛后的尺寸 = 你在 85% 命中率下能稳定打中的最小目标。':'Fixed 18° distance; the target shrinks or grows with your hit rate. The converged size is the smallest you hold at 85%.',
+    '距离 5–45° 随机、方向随机；练「换距离」时的适应力，结果按距离分箱对比。':'Distance 5–45° random, direction random. Trains adaptation across distances; results are binned by distance.',
     '自适应随机':'Adaptive random','定角重复':'Fixed angle','小球精度':'Precision',
     '大角度甩枪':'Wide flick','移动跟枪':'Moving target','微调训练':'Micro-adjust','六维检查（90秒）':'Check-up (90 s)','目标大小°':'Target size °',
     '场景':'Scene','自动（跟随设置）':'Auto (follow settings)','自定义场景':'Custom scene','自定义':'Custom',
@@ -1609,6 +1741,16 @@ requestAnimationFrame(loop);
       // 标题跟着所选模式走（选项文案本身已按语言翻译）
       var tt=document.getElementById('titleTop');
       if(tt && ms.options && ms.selectedIndex>=0) tt.textContent=ms.options[ms.selectedIndex].textContent;
+      // 每个模式一行说明：这个模式练什么、指标是什么
+      var mn=document.getElementById('modeNote');
+      if(mn){
+        var notes={
+          staircase:'固定 18° 距离，球会按命中率自动变大变小；收敛后的尺寸 = 你在 85% 命中率下能稳定打中的最小目标。',
+          distance:'距离 5–45° 随机、方向随机；练「换距离」时的适应力，结果按距离分箱对比。'
+        };
+        mn.textContent = notes[ms.value] || '';
+        mn.style.display = notes[ms.value] ? '' : 'none';
+      }
       if(window.__updSensHint) window.__updSensHint();
       // 检查模式下死控件直接隐藏，换成一行只读说明
       var fe=document.getElementById('fldEnd'), fc=document.getElementById('fldCnt'), ft=document.getElementById('fldEndTime'), cn=document.getElementById('checkNote'), cr=document.getElementById('chkRow');

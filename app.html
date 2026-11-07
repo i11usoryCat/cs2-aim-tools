@@ -583,106 +583,109 @@ try{
     section{animation:none}
   }
 
+  
   /* ============================================================
-     材质层（material-spec v1）：只叠光与影，不改任何颜色变量
-     光从上打下来 · 凸起面 = 顶部高光 + 底部接触阴影
+     平面与数学（art-direction-flat.md）
+     只用三样东西：1px 线、纯色块、留白。无阴影、无渐变、无圆角。
      ============================================================ */
   :root{
-    --mat-hl:rgba(255,255,255,.45);
-    --mat-hl-strong:rgba(255,255,255,.70);
-    --mat-contact:rgba(0,0,0,.16);
-    --ease-mat:cubic-bezier(.2,.8,.2,1);
-  }
-  /* 深色主题：高光更刺眼、接触阴影要更重，按 §6.5 调低/调高 */
-  html[data-theme="forest"],html[data-theme="night"],html[data-theme="jade"],html[data-theme="ink"]{
-    --mat-hl:rgba(255,255,255,.18);
-    --mat-hl-strong:rgba(255,255,255,.26);
-    --mat-contact:rgba(0,0,0,.55);
+    --line-hair:1px;
+    --row:24px;                 /* 行高取 8 的倍数 */
+    --gutter:26px;              /* 全站统一的左边缘 */
   }
 
-  /* —— 1) 主按钮：顶部高光 + 底部接触阴影，按下陷 1px —— */
-  button.main,.btn,#go,.start{
-    background-image:linear-gradient(180deg,
-      color-mix(in srgb,var(--acc) 88%, #fff) 0%,
-      var(--acc) 52%,
-      color-mix(in srgb,var(--acc) 90%, #000) 100%);
-    box-shadow:
-      inset 0 1px 0 var(--mat-hl),
-      inset 0 -2px 6px var(--mat-contact),
-      0 2px 0 color-mix(in srgb,var(--acc) 72%, #000),
-      0 10px 24px -12px rgba(0,0,0,.45);
-    transition:transform 140ms var(--ease-mat), box-shadow 140ms var(--ease-mat);
+  /* —— 删除全部立体 —— */
+  .card,a.tile,button,select,input,textarea,.grp,#set .tile,.lang span,.gear,.home{
+    border-radius:0 !important;
+    background-image:none !important;
+    box-shadow:none !important;
   }
-  button.main:hover,.btn:hover,#go:hover,.start:hover{
-    box-shadow:
-      inset 0 1px 0 var(--mat-hl),
-      inset 0 -2px 6px var(--mat-contact),
-      0 2px 0 color-mix(in srgb,var(--acc) 72%, #000),
-      0 14px 28px -12px rgba(0,0,0,.5);
-  }
-  button.main:active,.btn:active,#go:active,.start:active{
-    transform:translateY(1px);
-    box-shadow:
-      inset 0 1px 2px rgba(0,0,0,.22),
-      0 1px 0 color-mix(in srgb,var(--acc) 72%, #000),
-      0 4px 10px -8px rgba(0,0,0,.5);
-  }
+  button:active,a.tile:active,.start:active{transform:none !important}
 
-  /* —— 2) 次按钮 / 幽灵按钮 —— */
+  /* —— 一屏一处填色：只有主操作用强调色 —— */
+  button.main{
+    background:var(--acc) !important;
+    border:1px solid var(--acc) !important;
+    color:var(--on-acc,#fff) !important;
+    font-weight:600;
+    transition:filter 120ms linear;
+  }
+  button.main:hover{filter:brightness(.94)}     /* 降 6% 明度 */
+  button.main:active{filter:brightness(.90)}    /* 再降 10% */
+
+  /* —— 次级按钮：透明 + 1px 线 + 中性文字 —— */
   button:not(.main):not(.delRun):not(#mtClose){
-    background-image:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,0));
-    box-shadow:inset 0 1px 0 var(--mat-hl-strong), 0 1px 0 rgba(0,0,0,.05);
-    transition:background-image 140ms var(--ease-mat), box-shadow 140ms var(--ease-mat);
+    background:transparent !important;
+    border:1px solid var(--line) !important;
+    color:var(--dim) !important;
+    transition:background 120ms linear, color 120ms linear, border-color 120ms linear;
   }
   button:not(.main):not(.delRun):not(#mtClose):hover{
-    background-image:linear-gradient(180deg,rgba(255,255,255,.75),rgba(255,255,255,.05));
+    background:color-mix(in srgb,var(--txt) 4%, transparent);
+    color:var(--txt);
+    border-color:var(--line2);
   }
   button:not(.main):not(.delRun):not(#mtClose):active{
-    transform:translateY(1px);
-    box-shadow:inset 0 1px 2px rgba(0,0,0,.18), 0 1px 0 rgba(0,0,0,.04);
+    background:color-mix(in srgb,var(--txt) 8%, transparent);
   }
 
-  /* —— 3) 卡片：一点顶光 + 环境阴影；hover 抬 2px、阴影变实 —— */
-  a.tile,.card{
-    background-image:linear-gradient(180deg,rgba(255,255,255,.55),rgba(255,255,255,0) 42%);
-    box-shadow:
-      inset 0 1px 0 var(--mat-hl-strong),
-      0 1px 0 rgba(0,0,0,.04),
-      0 14px 30px -24px rgba(0,0,0,.5);
-    transition:transform 140ms var(--ease-mat), box-shadow 140ms var(--ease-mat),
-               border-color 120ms ease-out;
+  /* —— 卡片：只有 1px 线 —— */
+  .card,a.tile{
+    border:1px solid var(--line) !important;
+    background:transparent !important;
+    transition:border-color 120ms linear, background 120ms linear;
+    transform:none !important;
   }
-  a.tile:hover{
-    transform:translateY(-2px);
-    box-shadow:
-      inset 0 1px 0 var(--mat-hl-strong),
-      0 1px 0 rgba(0,0,0,.04),
-      0 14px 30px -16px rgba(0,0,0,.55);   /* -24px → -16px：阴影收拢、变实 */
-  }
+  a.tile:hover{border-color:var(--line2); background:color-mix(in srgb,var(--txt) 2%, transparent)}
+  a.tile::before{display:none}                 /* 上一版的刻度装饰去掉 */
 
-  /* —— 4) 输入框 / 下拉：内阴影 + focus 环（3px / 20% 强调色） —— */
-  #set input[type="number"],#set input[type="text"],#set select,
-  #set textarea,#logBox,input.fld,select.fld,.fld input,.fld select{
-    box-shadow:inset 0 1px 2px rgba(0,0,0,.07), 0 1px 0 var(--mat-hl);
+  /* —— 输入框：1px 线，focus 用双线而不是光晕 —— */
+  #set input[type="number"],#set input[type="text"],#set select,#set textarea,input.fld,select.fld,.fld input,.fld select{
+    border:1px solid var(--line) !important;
+    background:transparent !important;
+    box-shadow:none !important;
   }
   #set input:focus-visible,#set select:focus-visible,#set textarea:focus-visible,
   input.fld:focus-visible,select.fld:focus-visible,.fld input:focus-visible,.fld select:focus-visible{
-    outline:none;
-    box-shadow:
-      inset 0 1px 2px rgba(0,0,0,.07),
-      0 0 0 3px color-mix(in srgb,var(--acc) 20%, transparent);
+    outline:1px solid var(--acc);
+    outline-offset:2px;                        /* 元素 1px 边 + 2px 外 1px 线 = 双线 */
   }
 
-  /* —— 5) 导航选中态：加厚内下划线，不发光 —— */
-  nav a.on{ box-shadow:inset 0 -2px 0 var(--acc); border-radius:8px 8px 0 0 }
-  nav a.on::after{ display:none }        /* 原来的 2px 伪元素折线并入内描边 */
+  /* —— 对齐：所有元素左边缘落在同一条竖线上 —— */
+  main{padding-left:var(--gutter); padding-right:var(--gutter)}
+  h2{display:block; padding-left:0; margin:0 0 8px; line-height:32px}
+  h2::before{display:none}                     /* 去掉左侧刻度条，文字与卡片同一条左边缘 */
+  h2::after{display:none}
+  .hint,.grp,section,.card,a.tile{margin-left:0}
+  .grp{margin-left:0; padding-left:0}
 
-  /* —— 6) reduced-motion：只保留静态阴影 —— */
-  @media (prefers-reduced-motion:reduce){
-    button.main,.btn,#go,.start,button:not(.main),a.tile,.card{transition:none}
-    button.main:active,.btn:active,#go:active,.start:active,button:not(.main):active{transform:none}
-    a.tile:hover{transform:none}
+  /* —— 章节编号 01 / 02 / 03 —— */
+  #drillGrid{counter-reset:grp}
+  .grp{counter-increment:grp; gap:10px}
+  .grp::before{
+    content:counter(grp,decimal-leading-zero);
+    width:auto; height:auto; background:none !important;
+    font-variant-numeric:tabular-nums; letter-spacing:.08em; color:var(--dim2);
   }
+  #set{counter-reset:card}
+  #set .card{counter-increment:card}
+  #set .card>.t::before{
+    content:counter(card,decimal-leading-zero) "  ";
+    color:var(--dim2); font-variant-numeric:tabular-nums; letter-spacing:.08em;
+  }
+
+  /* —— 行高取 8 的倍数 —— */
+  body{line-height:var(--row)}
+  .d,.hint{line-height:24px}
+
+  /* —— 交互：只变色，不位移 —— */
+  nav a{transition:color 120ms linear, background 120ms linear; border-radius:0 !important}
+  nav a:hover{background:color-mix(in srgb,var(--txt) 4%, transparent)}
+  nav a.on{background:color-mix(in srgb,var(--txt) 7%, transparent); color:var(--acc)}
+  /* 语言开关属于"状态"，不填色——否则和主按钮并列就是两个填色块 */
+  .lang span.on{background:transparent !important; color:var(--acc) !important; box-shadow:inset 0 -1px 0 var(--acc)}
+  .lang span{color:var(--dim)}
+  nav a.on::after{display:none}
 </style>
 </head>
 <body>

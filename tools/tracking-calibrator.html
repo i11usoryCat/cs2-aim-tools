@@ -35,6 +35,13 @@
   .overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;
     text-align:center;font-size:16px;line-height:2;color:var(--txt);background:var(--overlay)}
   .overlay.show{display:flex}
+  /* 开始/暂停页：文案区局部 scrim（与训练器同款；只盖中间带，不整体加遮罩，保住天空与地面的纵深） */
+  #msg::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
+    background:radial-gradient(ellipse 62% 26% at 50% 47%,
+      rgba(var(--scrim-rgb,11,15,20), var(--scrim-a,.35)) 0%,
+      rgba(var(--scrim-rgb,11,15,20), var(--scrim-a,.35)) 30%,
+      rgba(var(--scrim-rgb,11,15,20), 0) 100%)}
+  #msg>*{position:relative;z-index:1}
   #back{position:fixed;left:16px;top:14px;z-index:40;display:none;font-size:13px;color:var(--dim);
     text-decoration:none;padding:7px 12px;border-radius:9px;border:1px solid transparent;transition:.15s}
   #back:hover{color:var(--acc);border-color:var(--line);background:var(--panel)}

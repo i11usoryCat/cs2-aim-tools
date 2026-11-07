@@ -17,6 +17,7 @@
   h1{font-size:30px;border-bottom:3px solid #c2410c;padding-bottom:12px}
   h2{font-size:22px;margin-top:34px;color:#c2410c}
   h3{font-size:18px;margin-top:24px}
+  h4{font-size:16.5px;margin-top:22px;margin-bottom:6px}
   pre{background:#efe7d7;padding:14px;border-radius:8px;overflow-x:auto;font-size:13.5px}
   blockquote{border-left:3px solid #c2410c;margin:14px 0;padding:2px 16px;color:#7b6a54}
   li{margin:6px 0}
@@ -36,11 +37,27 @@
     <span class="on" aria-current="page">EN</span>
   </nav>
 </div>
-<h1>Methodology and Pitfalls</h1>
+<h1>Methodology</h1>
 
-<p>This document records how the calibration method was designed, which approaches failed, and why the current one was kept.</p>
+<p>This document records how each measurement was designed, what evidence backs it, and which approaches were rejected. Every claim carries a way to check it — a measured number, or a citation.</p>
+
+
+<h2>What this page answers</h2>
+
+<p>Thirty seconds gets you the conclusions; everything after is the evidence.</p>
+
+<ol>
+<li><strong>Between 16 and 32 cm/360, sensitivity has no measurable effect on performance.</strong> Five conditions, thirty trials each — spread 5.8%, inside the noise. Stop tuning it.</li>
+<li><strong>Closed-loop tasks cannot measure a gain error.</strong> You correct before clicking, and the correction erases the error — the landing distribution stays centred. It took us four versions of the overshoot method to accept that.</li>
+<li><strong>A step task can.</strong> For the first ~100–150 ms after a target jump there is no correction yet, so the response amplitude is proportional to the gain; injecting 0.85 / 1.00 / 1.15 reads back 84% / 99% / 114%.</li>
+<li><strong>So we report only what can be measured:</strong> landing bias, first-stop coverage, and which stage is slow (T1/T2). &ldquo;Your ideal cm/360&rdquo; is deliberately not offered, because it cannot be measured.</li>
+</ol>
+
+<p>Each section below opens with its conclusion in bold, then the evidence. The failed attempts are collected in the appendix at the end — skip them if you just want the method.</p>
 
 <h2>Does sensitivity actually matter?</h2>
+
+<p><strong>Conclusion: within this range sensitivity has no measurable effect on hit speed — the gain from tuning it is smaller than the measurement noise.</strong></p>
 
 <h3>Controlled experiment</h3>
 
@@ -57,125 +74,9 @@ cm/360   median ball-to-ball interval   median re-entries
 
 <p>The spread is 5.8%, which is inside statistical noise. <strong>Within this range sensitivity has no measurable effect on hit speed.</strong> This also explains why players can tweak sensitivity for hours without feeling a difference: the effect is smaller than the noise.</p>
 
-<h2>Four iterations of the overshoot method</h2>
-
-<h3>v1 — record the click position</h3>
-
-<pre><code>
-f       = (landing - target) / target
-cm_new  = cm * (1 + f)
-</code></pre>
-
-<p>Problem: players visually correct before clicking, so the recorded position is already the corrected one. Each round suggested only a 3-8% change and never converged.</p>
-
-<h3>v2 — record the settled position (speed &lt; 25°/s for 70 ms)</h3>
-
-<p>Best convergence observed:</p>
-
-<pre><code>
-cm/360   overshoot
-23.2     +7.4%
-24.9     +4.8%
-26.1     +2.9%
-26.9     +2.9%
-27.7     +2.3%
-</code></pre>
-
-<p>Monotonic decrease; the last two rounds differed by 0.7%.</p>
-
-<h3>v3 — record the ballistic endpoint (speed dropping below 40°/s)</h3>
-
-<p><strong>Failed.</strong> This captures a point mid-deceleration. Scatter was about ±15% while the bias being measured was about 5%, so the signal-to-noise ratio was too low:</p>
-
-<pre><code>
-cm/360   overshoot   overshoots : undershoots
-23.2     +8.7%       20 : 13
-25.2     +16.0%      20 : 14
-29.2     +3.3%       22 : 7
-51.5     -0.7%       15 : 16
-</code></pre>
-
-<p>The sign flipped between rounds.</p>
-
-<h3>v4 — click position, hits excluded, pooled samples</h3>
-
-<li>Use the click position (zero latency, matches what the player feels)</li>
-<li><strong>Exclude hits</strong> (angular error within ball radius) from the bias estimate: a hit means "control was sufficient", not "there was a bias"</li>
-<li>Pool every trial across runs, convert each to the cm/360 it implies, take the global median</li>
-
-<p>Result: 480 samples converged to 27.2 cm/360 with a final bias of -0.1%.</p>
-
-<h2>Pitfalls encountered</h2>
-
-<h3>1. Auto-fill drift</h3>
-
-<p>"Run again" filled the suggested value automatically. With noisy data each round suggested a small change, and the sequence drifted to an absurd value (23.2 to 8.0, i.e. 8 cm per full turn).</p>
-
-<p>Fix: refuse to auto-fill when the change exceeds 35%; add a "clear pool" button.</p>
-
-<h3>2. Death spiral in the time limit</h3>
-
-<pre><code>
-allowed time = 0.9 * median of HIT times
--&gt; only fast attempts count as hits
--&gt; the median falls
--&gt; the allowed time falls
--&gt; more timeouts, the surviving hits are faster still
-</code></pre>
-
-<p>Measured hit rate fell 60% -&gt; 30% -&gt; 25% while the ball radius grew, because two controllers were fighting.</p>
-
-<p>Fix:</p>
-
-<pre><code>
-time-limit mode on  -&gt; ball fixed, only the time limit adapts
-                       hit rate &gt;= 85%: tighten 6%
-                       hit rate &lt;  70%: relax 7%
-time-limit mode off -&gt; time fixed, only the ball adapts
-</code></pre>
-
-<h3>3. Visual size did not match the hit test</h3>
-
-<p>The ball was drawn at a 1.5° radius while the hit test used 3% of flick distance (about 0.6°). Players saw the crosshair inside the ball and still registered a miss.</p>
-
-<p>Fix: the hit test compares angular error directly against the drawn radius.</p>
-
-<h3>4. Angles were not wrapped</h3>
-
-<pre><code>
-// wrong
-Math.abs(tYaw - yaw);      // target 179°, current -179° -&gt; 358°
-
-// correct
-wrapPi(tYaw - yaw);        // -&gt; 2°
-</code></pre>
-
-<p>Symptom: "after I turn one direction I can no longer hit anything". Once accumulated rotation passed ±180° the test could never pass.</p>
-
-<h3>5. `tan()` flips at 90°</h3>
-
-<p>Target world position was computed as `x = D * tan(yaw)`, which flips sign past ±90°, drawing the ball at a mirrored position.</p>
-
-<p>Correct spherical placement:</p>
-
-<pre><code>
-const x = D * Math.cos(pitch) * Math.sin(yaw);
-const y = D * Math.sin(pitch);
-const z = D * Math.cos(pitch) * Math.cos(yaw);
-</code></pre>
-
-<h3>6. Synchronous disk writes merge input reports</h3>
-
-<p>A raw-input logger that calls `WriteLine` + `AutoFlush` per HID report blocks the message loop, and Windows begins coalescing `WM_INPUT`:</p>
-
-<pre><code>
-synchronous writes   -&gt; measured 124 Hz
-memory buffering     -&gt; measured 4207 Hz
-</code></pre>
-
-<p>A 34x difference on the same 8K mouse. Always rule this out before measuring polling rate.</p>
-
 <h2>The open-loop detour: three models, one honest reframe</h2>
+
+<p><strong>Conclusion: reading &ldquo;where you think the target is&rdquo; out of the ballistic path does not work — all three models failed the same way, with the fitted amplitude swallowing the shape of the movement.</strong></p>
 
 <p>If the first 250&nbsp;ms of a flick is still ballistic, its endpoint ought to encode the
 <em>setting</em> rather than the <em>correction</em>. Three models were built. All failed
@@ -230,6 +131,8 @@ each run was multiplying cm/360 by about 0.7.</p>
 gains and reports whether the chain still holds in the current browser.</p>
 
 <h2>Axis-staged positioning</h2>
+
+<p><strong>Conclusion: splitting a 2-D flick into transport and vertical micro-adjustment makes it possible to measure which stage is slow — and halving the effective distance saves roughly one bit of movement time.</strong></p>
 
 <p>Goal: split a 2-D flick into its two stages so each can be measured separately.</p>
 
@@ -294,6 +197,8 @@ T2 > 260 ms      still correcting after arrival   stop on entry, adjust vertical
 
 <h2>The sensitivity probe</h2>
 
+<p><strong>Conclusion: closed-loop tasks cannot see a gain error, step tasks can, and one session resolves at best about 5%.</strong></p>
+
 <h3>Why a closed-loop task cannot measure a gain error</h3>
 
 <p>In closed-loop pointing the visual feedback nulls the error: whatever the gain, the player
@@ -342,6 +247,8 @@ indistinguishable from noise in one session.</p>
 
 <h2>There is no such thing as a &ldquo;true&rdquo; sensitivity</h2>
 
+<p><strong>Conclusion: an &ldquo;ideal sensitivity&rdquo; is not an objective number — it is a function of the mapping and the distances you face, which is why the site does not offer one.</strong></p>
+
 <p><strong>1. Sensitivity is a property of the mapping, not of the player.</strong> The optimum
 is defined relative to the display gain and to the distances you happen to face; change either
 and the optimum moves. Our five-condition experiment found no measurable difference from 16 to
@@ -364,6 +271,8 @@ which stage of the flick is slow?         yes           T1 / T2 / vertical error
 what is my ideal cm/360?                  NO            deliberately not offered</code></pre>
 
 <h2>The other measurement tools</h2>
+
+<p><strong>Conclusion: each tool reports only what it can prove, and stays silent about the rest.</strong></p>
 
 <p>Same principle: each tool reports only what it can prove.</p>
 
@@ -400,3 +309,124 @@ two variables moving at once would make neither number interpretable.</p>
 
 </body>
 </html>
+
+<h2>Appendix: how we got here</h2>
+
+<blockquote>This section records the process, not the conclusions. If you only want the method, skip it.</blockquote>
+<h3>Four iterations of the overshoot method</h3>
+
+<h4>v1 — record the click position</h4>
+
+<pre><code>
+f       = (landing - target) / target
+cm_new  = cm * (1 + f)
+</code></pre>
+
+<p>Problem: players visually correct before clicking, so the recorded position is already the corrected one. Each round suggested only a 3-8% change and never converged.</p>
+
+<h4>v2 — record the settled position (speed &lt; 25°/s for 70 ms)</h4>
+
+<p>Best convergence observed:</p>
+
+<pre><code>
+cm/360   overshoot
+23.2     +7.4%
+24.9     +4.8%
+26.1     +2.9%
+26.9     +2.9%
+27.7     +2.3%
+</code></pre>
+
+<p>Monotonic decrease; the last two rounds differed by 0.7%.</p>
+
+<h4>v3 — record the ballistic endpoint (speed dropping below 40°/s)</h4>
+
+<p><strong>Failed.</strong> This captures a point mid-deceleration. Scatter was about ±15% while the bias being measured was about 5%, so the signal-to-noise ratio was too low:</p>
+
+<pre><code>
+cm/360   overshoot   overshoots : undershoots
+23.2     +8.7%       20 : 13
+25.2     +16.0%      20 : 14
+29.2     +3.3%       22 : 7
+51.5     -0.7%       15 : 16
+</code></pre>
+
+<p>The sign flipped between rounds.</p>
+
+<h4>v4 — click position, hits excluded, pooled samples</h4>
+
+<li>Use the click position (zero latency, matches what the player feels)</li>
+<li><strong>Exclude hits</strong> (angular error within ball radius) from the bias estimate: a hit means "control was sufficient", not "there was a bias"</li>
+<li>Pool every trial across runs, convert each to the cm/360 it implies, take the global median</li>
+
+<p>Result: 480 samples converged to 27.2 cm/360 with a final bias of -0.1%.</p>
+
+<h3>Pitfalls encountered</h3>
+
+<h4>1. Auto-fill drift</h4>
+
+<p>"Run again" filled the suggested value automatically. With noisy data each round suggested a small change, and the sequence drifted to an absurd value (23.2 to 8.0, i.e. 8 cm per full turn).</p>
+
+<p>Fix: refuse to auto-fill when the change exceeds 35%; add a "clear pool" button.</p>
+
+<h4>2. Death spiral in the time limit</h4>
+
+<pre><code>
+allowed time = 0.9 * median of HIT times
+-&gt; only fast attempts count as hits
+-&gt; the median falls
+-&gt; the allowed time falls
+-&gt; more timeouts, the surviving hits are faster still
+</code></pre>
+
+<p>Measured hit rate fell 60% -&gt; 30% -&gt; 25% while the ball radius grew, because two controllers were fighting.</p>
+
+<p>Fix:</p>
+
+<pre><code>
+time-limit mode on  -&gt; ball fixed, only the time limit adapts
+                       hit rate &gt;= 85%: tighten 6%
+                       hit rate &lt;  70%: relax 7%
+time-limit mode off -&gt; time fixed, only the ball adapts
+</code></pre>
+
+<h4>3. Visual size did not match the hit test</h4>
+
+<p>The ball was drawn at a 1.5° radius while the hit test used 3% of flick distance (about 0.6°). Players saw the crosshair inside the ball and still registered a miss.</p>
+
+<p>Fix: the hit test compares angular error directly against the drawn radius.</p>
+
+<h4>4. Angles were not wrapped</h4>
+
+<pre><code>
+// wrong
+Math.abs(tYaw - yaw);      // target 179°, current -179° -&gt; 358°
+
+// correct
+wrapPi(tYaw - yaw);        // -&gt; 2°
+</code></pre>
+
+<p>Symptom: "after I turn one direction I can no longer hit anything". Once accumulated rotation passed ±180° the test could never pass.</p>
+
+<h4>5. `tan()` flips at 90°</h4>
+
+<p>Target world position was computed as `x = D * tan(yaw)`, which flips sign past ±90°, drawing the ball at a mirrored position.</p>
+
+<p>Correct spherical placement:</p>
+
+<pre><code>
+const x = D * Math.cos(pitch) * Math.sin(yaw);
+const y = D * Math.sin(pitch);
+const z = D * Math.cos(pitch) * Math.cos(yaw);
+</code></pre>
+
+<h4>6. Synchronous disk writes merge input reports</h4>
+
+<p>A raw-input logger that calls `WriteLine` + `AutoFlush` per HID report blocks the message loop, and Windows begins coalescing `WM_INPUT`:</p>
+
+<pre><code>
+synchronous writes   -&gt; measured 124 Hz
+memory buffering     -&gt; measured 4207 Hz
+</code></pre>
+
+<p>A 34x difference on the same 8K mouse. Always rule this out before measuring polling rate.</p>

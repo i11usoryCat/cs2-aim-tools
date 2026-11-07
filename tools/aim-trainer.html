@@ -765,7 +765,9 @@ const ATMOS={
   fogYOffL:0.16,               // 浅色雾带整体下移（×H，更低）
   crossR:120,                  // 准星微光半径（CSS px）
   crossA:0.055, crossAL:0.060, // 准星微光强度（暗=提亮 / 浅=加深）
-  hitMs:120,                   // 命中光爆淡出时长
+  hitMs:96,                    // 命中光爆总时长（<100ms）
+  hitCenterQ:0.25,             // 正中判定：偏差 < 0.25 球半径
+  tickMs:70,                   // 点击位置十字刻点时长（60–80ms）
   gridStep:6, gridR:48, gridSeg:8,   // 地面纹理网格：间距 / 半径 / 分段
   gridA:[0.46,0.280,0.130],    // 地面纹理透明度（暗色，近→远）
   gridAL:[0.40,0.250,0.110],   // 地面纹理透明度（浅色）
@@ -776,7 +778,7 @@ let atmKey=null, atmW=0, atmH=0;
 let atmSkyCv=null, atmSkyHD=0;
 let atmFogCv=null, atmFogHD=0;
 const atmRidgeCv=[null,null,null], atmRidgeWD=[0,0,0], atmRidgeHD=[0,0,0];
-let atmCrossCv=null, atmHitCv=null, atmCoreCv=null;
+let atmCrossCv=null, atmHitCv=null, atmHitWarmCv=null, atmCoreCv=null;
 
 function _atmMix(a,b,t){ return [a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, a[2]+(b[2]-a[2])*t]; }
 function _atmCSS(c,a){ return 'rgba('+Math.round(c[0])+','+Math.round(c[1])+','+Math.round(c[2])+','+(Math.round(a*1000)/1000)+')'; }
@@ -938,8 +940,10 @@ function atmEnsureCache(){
   // 准星微光：暗色场景用亮 sprite（加性提亮），浅色场景用暗 sprite（加深）
   atmCrossCv=dark? _atmSprite(256, _atmMix(ui, white, 0.75), 0.9)
                  : _atmSprite(256, _atmMix(_rgbOf(SC.bg,-70), [0,0,0], 0.45), 0.9);
-  // 命中光爆 sprite + 极短白核 sprite
-  atmHitCv=_atmSprite(256, _atmMix(_rgbOf(SC.tgt,0), white, 0.35), 1);
+  // 命中反馈 sprite：偏白的确认光晕 / 擦边暖光 / 极短白核
+  const tgt=_rgbOf(SC.tgt,0);
+  atmHitCv=_atmSprite(256, _atmMix(white, tgt, 0.30), 1);
+  atmHitWarmCv=_atmSprite(256, _atmMix(tgt, white, 0.15), 1);
   atmCoreCv=_atmSprite(64, [255,255,255], 1);
 }
 function drawAtmosphereBackdrop(){
@@ -982,32 +986,81 @@ function drawCrossGlow(){
   ctx.drawImage(atmCrossCv, W*0.5-r, H*0.5-r, d, d);
   ctx.restore();
 }
+function _hitFxElapsed(now){
+  if(!hitFx || !hitFx.fxUntil) return -1;
+  const e=ATMOS.hitMs-(hitFx.fxUntil-now);
+  return (e<0||e>ATMOS.hitMs)?-1:e;
+}
+// 目标残影：先把球完整画出来（保持扁平样式），后面再叠光晕 → 轮廓不被遮盖
+function drawHitGhost(now){
+  if(!hitFx || hitFxMode==='off') return;
+  const elapsed=_hitFxElapsed(now);
+  if(elapsed<0) return;
+  const fade = elapsed<36 ? 1 : 1-(elapsed-36)/(ATMOS.hitMs-36);
+  if(fade<=0) return;
+  const cp=Math.cos(hitFx.tp);
+  if(!_pt(DIST*cp*Math.sin(hitFx.ty), DIST*Math.sin(hitFx.tp), DIST*cp*Math.cos(hitFx.ty))) return;
+  const rad=Math.max(4, f*Math.tan((hitFx.r||1.5)*D2R));
+  ctx.save();
+  ctx.globalAlpha=fade;
+  ctx.beginPath(); ctx.arc(_px,_py,rad,0,Math.PI*2);
+  ctx.fillStyle=SC.tgtFill; ctx.fill();
+  ctx.strokeStyle=SC.ring||SC.tgt; ctx.lineWidth=2.5; ctx.stroke();
+  ctx.beginPath(); ctx.arc(_px,_py,rad*0.25,0,Math.PI*2);
+  ctx.fillStyle=SC.tgt; ctx.fill();
+  ctx.restore();
+}
+// 精度编码的光晕：正中 = 紧凑白核 + 小半径偏白光晕；擦边 = 半径 ×1.6、亮度 -40%、偏暖
 function drawHitBurst(now){
   if(!hitFx || !atmHitCv || hitFxMode==='off') return;
-  const leftMs=hitFx.until-now;
-  if(!(leftMs>250-ATMOS.hitMs)) return;         // 只在命中后 ~120ms 内
-  const k=1-(250-leftMs)/ATMOS.hitMs;           // 1 → 0
-  if(k<=0) return;
+  const elapsed=_hitFxElapsed(now);
+  if(elapsed<0) return;
+  const k=1-elapsed/ATMOS.hitMs;                       // 1 → 0
+  const q=Math.max(0, Math.min(1, hitFx.q||0));        // 0 正中 → 1 擦边
+  const qn=Math.max(0, Math.min(1, (q-ATMOS.hitCenterQ)/(1-ATMOS.hitCenterQ)));
   const cp=Math.cos(hitFx.tp);
   if(!_pt(DIST*cp*Math.sin(hitFx.ty), DIST*Math.sin(hitFx.tp), DIST*cp*Math.cos(hitFx.ty))) return;
   const dpr=devicePixelRatio||1;
-  const elapsed=250-leftMs;                 // 命中后经过的毫秒数
-  // 脆感来源：极短白核（40–60ms，半径 6–8px）
-  if(elapsed<52 && atmCoreCv){
-    const ck=1-elapsed/52;
-    const cr=(6+(1-ck)*2)*dpr;
-    ctx.save();
-    ctx.globalCompositeOperation='lighter';
-    ctx.globalAlpha=0.95*ck;
-    ctx.drawImage(atmCoreCv, _px-cr, _py-cr, cr*2, cr*2);
-    ctx.restore();
-  }
-  // 软光晕：白核之后立刻接管
-  const r=(44+(1-k)*44)*dpr;
+  const glowR=(26+16*qn)*dpr;                          // 擦边半径 ×1.6
+  const glowA=(SC.dark?0.95:0.60)*(1-0.40*qn)*k;      // 擦边亮度 -40%
   ctx.save();
   ctx.globalCompositeOperation='lighter';
-  ctx.globalAlpha=(SC.dark?0.85:0.55)*k;
-  ctx.drawImage(atmHitCv, _px-r, _py-r, r*2, r*2);
+  if(glowA>0.002){
+    // 确认光晕（偏白，正中为主）
+    ctx.globalAlpha=glowA*(1-qn*0.85);
+    const r=glowR*0.92;
+    ctx.drawImage(atmHitCv, _px-r, _py-r, r*2, r*2);
+    // 擦边：更大、偏暖、更淡
+    if(qn>0.02 && atmHitWarmCv){
+      ctx.globalAlpha=glowA*Math.min(1,qn*1.15);
+      ctx.drawImage(atmHitWarmCv, _px-glowR, _py-glowR, glowR*2, glowR*2);
+    }
+  }
+  // 极短白核：正中更紧更亮，擦边更小更弱
+  if(elapsed<45 && atmCoreCv){
+    const ck=1-elapsed/45;
+    const cr=(6.5-1.6*qn)*dpr;
+    ctx.globalAlpha=(0.95-0.55*qn)*ck;
+    ctx.drawImage(atmCoreCv, _px-cr, _py-cr, cr*2, cr*2);
+  }
+  ctx.restore();
+}
+// 点击位置（准星中心）的 2px 十字刻点：让你看见自己打在哪
+function drawClickTick(now){
+  if(!hitFx || hitFxMode==='off' || !hitFx.tickUntil) return;
+  const left=hitFx.tickUntil-now;
+  if(!(left>0 && left<=ATMOS.tickMs)) return;
+  const a=left/ATMOS.tickMs;                           // 1 → 0
+  const dpr=devicePixelRatio||1, cx=W*0.5, cy=H*0.5, arm=7*dpr;
+  ctx.save();
+  ctx.globalAlpha=Math.min(1,a*1.25);
+  ctx.beginPath();
+  ctx.moveTo(cx-arm,cy); ctx.lineTo(cx+arm,cy);
+  ctx.moveTo(cx,cy-arm); ctx.lineTo(cx,cy+arm);
+  // 先暗描边、再亮刻点：白色核 / 白球上也能看见
+  ctx.strokeStyle='rgba(0,0,0,.55)'; ctx.lineWidth=4*dpr; ctx.stroke();
+  ctx.strokeStyle=SC.dark? 'rgba(255,255,255,.95)' : 'rgba(17,24,39,.95)';
+  ctx.lineWidth=2*dpr; ctx.stroke();
   ctx.restore();
 }
 
@@ -1352,6 +1405,8 @@ function judge(){
   if(!running||paused||!alive) return;
   const now=performance.now();
   const err=Math.hypot(wrapPi(tYaw-yaw), wrapPi(tPitch-pitch))*R2D;
+  const hitQ=Math.max(0, Math.min(1, err/Math.max(0.01,radius)));   // 反馈用：偏差 / 球半径（0=正中，1=擦边）
+  const hitRad=radius;                                              // 反馈用：命中时的球半径（之后难度可能改它）
   const mt=now-tSpawn;
   const overtime = (limitChk.checked && mt>allowed) || (mode==='track' && mt>=tDur*1000-1);
   const hit = (err<=radius) && !overtime;
@@ -1412,7 +1467,9 @@ function judge(){
   alive=false;
   feedback={ err:err, hit:hit, mt:mt, over:overtime, until:now+600 };
   if(hit){
-    hitFx={ty:tYaw, tp:tPitch, until:now+250}; hitCrossUntil=now+200;   // 命中：球位置特效 + 准星闪一下
+    hitFx={ty:tYaw, tp:tPitch, until:now+250, q:hitQ, r:hitRad,
+           fxUntil:now+ATMOS.hitMs, tickUntil:now+ATMOS.tickMs};   // 反馈：精度编码 + 目标位置 + 点击刻点
+    hitCrossUntil=now+200;   // 命中：准星闪一下
     if(hitFxMode==='shatter' || (hitFxMode==='both' && hitFxMix.charAt(1)==='1')){
       // 碎裂：10 片碎屑随机方向飞散
       const parts=[];
@@ -2092,8 +2149,8 @@ function drawFrame(now){
   }
   ctx.restore();
 
-  // 命中特效：闪光 / 碎裂（在球被点中的位置）
-  if(hitFx && now<hitFx.until+200){
+  // 旧命中特效：闪光 / 碎裂（仅回滚模式保留；默认路径用精度编码反馈）
+  if(ARENA_DECOR && hitFx && now<hitFx.until+200){
     const cp=Math.cos(hitFx.tp);
     const tp=project(DIST*cp*Math.sin(hitFx.ty), DIST*Math.sin(hitFx.tp), DIST*cp*Math.cos(hitFx.ty));
     if(tp){
@@ -2121,8 +2178,9 @@ function drawFrame(now){
     }
   }
 
-  // 命中：极短的加性径向光爆（~120ms）；旧几何圆环刻线仅回滚开关打开时保留
-  if(ARENA_DECOR) drawHitFeedback(now); else drawHitBurst(now);
+  // 命中反馈（精度编码）：先画目标残影保住轮廓，再叠光晕，最后点自己打中的位置
+  if(ARENA_DECOR){ drawHitFeedback(now); }
+  else { drawHitGhost(now); drawHitBurst(now); drawClickTick(now); }
 
   if(feedback && now<feedback.until){
     ctx.textAlign='center';

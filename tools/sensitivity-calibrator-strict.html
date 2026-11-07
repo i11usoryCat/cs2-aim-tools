@@ -30,13 +30,7 @@
   .overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;
     text-align:center;font-size:16px;line-height:2;color:var(--txt);background:var(--overlay)}
   .overlay.show{display:flex}
-  /* 开始/暂停页：文案区局部 scrim（与训练器同款；只盖中间带，不整体加遮罩，保住天空与地面的纵深） */
-  #msg::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
-    background:radial-gradient(ellipse 62% 26% at 50% 47%,
-      rgba(var(--scrim-rgb,11,15,20), var(--scrim-a,.35)) 0%,
-      rgba(var(--scrim-rgb,11,15,20), var(--scrim-a,.35)) 30%,
-      rgba(var(--scrim-rgb,11,15,20), 0) 100%)}
-  #msg>*{position:relative;z-index:1}
+
   #back{position:fixed;left:16px;top:14px;z-index:40;display:none;font-size:13px;color:var(--dim);
     text-decoration:none;padding:7px 12px;border-radius:9px;border:1px solid transparent;transition:.15s}
   #back:hover{color:var(--acc);border-color:var(--line);background:var(--panel)}
@@ -76,18 +70,19 @@
 <div id="ui"></div>
 
 <div id="msg" class="overlay show">
-  <div id="calTitle" style="font-size:26px;color:var(--txt);font-weight:700;letter-spacing:2px">灵敏度标定</div>
+  <div id="calTitle" style="font-size:26px;color:var(--txt);font-weight:700;letter-spacing:2px"><span class="ff-num">01</span>灵敏度标定</div>
   <div style="margin-top:8px;font-size:14px;color:var(--dim)">每次只出现一个球。看到球后<b>最快速度甩过去并点击</b>。<br>
   程序记录你甩完的落点，算出你<b>冲过头还是没到</b>。<br><span style="color:var(--acc)">全样本：命中与未命中同样计入</span></div>
-  <div style="margin-top:26px;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap">
+  <div style="margin-top:24px;display:flex;gap:12px;align-items:center;justify-content:flex-start;flex-wrap:wrap">
     <button id="go" class="btn">开始</button>
     <button id="fsBtn" type="button" class="btn ghost">全屏 ⛶</button>
   </div>
-  <div id="sensHint" style="margin-top:14px;font-size:13px;color:var(--dim)"></div>
-  <div id="bw" style="margin-top:10px;font-size:13px;line-height:1.8;color:#d29922"></div>
+  <div id="sensHint" style="margin-top:16px;font-size:13px;line-height:16px;color:var(--dim)"></div>
+  <div id="bw" style="margin-top:8px;font-size:13px;line-height:24px;color:#d29922"></div>
+  <div class="ff-sec">02 / PARAMETERS</div>
   <button id="more" class="more">参数 ▾</button>
-  <div class="pauseHide" style="margin-top:22px;width:100%;max-width:560px">
-    <div style="display:flex;flex-wrap:wrap;gap:14px 18px;justify-content:center">
+  <div class="pauseHide" style="margin-top:16px;width:100%;max-width:640px">
+    <div style="display:flex;flex-wrap:wrap;gap:16px 24px;justify-content:flex-start">
       <label class="fld">鼠标 DPI<input id="dpi" type="number" step="100" value="800" style="width:90px"></label>
       <label class="fld">m_yaw<input id="yaw" type="number" step="0.0001" value="0.022" style="width:100px"></label>
       <label class="fld">cm/360<input id="cm" type="number" step="0.1" value="27.1" style="width:90px"></label>
@@ -102,17 +97,17 @@
       </select></label>
     </div>
   </div>
-  <div id="rawWarn" style="display:none;position:fixed;left:50%;top:70px;transform:translateX(-50%);z-index:9999;background:rgba(20,16,8,.92);border:1px solid #d29922;color:#f5d78a;padding:9px 16px;border-radius:10px;font-size:13px;line-height:1.6;max-width:min(560px,calc(100vw - 32px));pointer-events:auto;text-align:left">⚠️ 原始输入锁定失败：本次测量经过系统加速，建议值不可比，不允许「应用到设置」。</div>
+  <div id="rawWarn" style="display:none;position:fixed;left:50%;top:70px;transform:translateX(-50%);z-index:9999;background:rgba(20,16,8,.92);border:1px solid #d29922;color:#f5d78a;padding:9px 16px;border-radius:0;font-size:13px;line-height:1.6;max-width:min(560px,calc(100vw - 32px));pointer-events:auto;text-align:left">⚠️ 原始输入锁定失败：本次测量经过系统加速，建议值不可比，不允许「应用到设置」。</div>
 </div>
 
-<div id="res" class="overlay"><div id="resBody"></div>
+<div id="res" class="overlay"><div class="ff-sec" style="margin-top:0">03 / RESULT</div><div id="resBody"></div>
   <button id="again" class="btn">再测一轮</button>
-  <div style="margin-top:12px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+  <div style="margin-top:16px;display:flex;gap:12px;justify-content:flex-start;flex-wrap:wrap">
     <button id="copyRes" class="btn ghost btn-sm">复制结果</button>
     <button id="applyRes" class="btn ghost btn-sm">应用到设置</button>
   </div>
   <div id="applyHint" style="margin-top:8px;font-size:13px;color:var(--acc)"></div>
-  <button id="clr" class="btn btn-plain" style="margin-top:10px;background:#21262d;border-color:#30363d;font-size:14px;padding:9px 26px">清空累计（输入值保留）</button></div>
+  <button id="clr" class="btn ghost btn-sm" style="margin-top:16px">清空累计（输入值保留）</button></div>
 
 <script src="../assets/scenes.js"></script>
 <script src="../assets/arena.js"></script>
@@ -134,7 +129,7 @@ const SC=SCENES[pickScene()]||SCENES.classic;
 // 快速标定：固定 3 轮出建议（新手快速找灵敏度），不做收敛判据
 const FAST=(function(){ try{ return new URLSearchParams(location.search).get('fast')==='1'; }catch(e){ return false; } })();
 try{ if(FAST){
-  var ct=document.getElementById('calTitle'); if(ct) ct.textContent=(window.__IS_EN?'Sensitivity calibration · Fast':'灵敏度标定 · 快速');
+  var ct=document.getElementById('calTitle'); if(ct) ct.innerHTML='<span class="ff-num">01</span>'+(window.__IS_EN?'Sensitivity calibration · Fast':'灵敏度标定 · 快速');
   var nEl=document.getElementById('n'); if(nEl) nEl.value='20';
 } }catch(e){}
 // 页面主题跟随站点（不再是独立皮）

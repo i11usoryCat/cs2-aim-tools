@@ -120,10 +120,43 @@
   .more table{margin-top:14px}
   .moreFoot{margin-top:10px;font-size:13px;color:var(--dim);text-align:center}
 
-  /* ===== 动效（art-direction §3）：出现 220ms 淡入+8px，hover 140ms，按下 90ms；reduced-motion 无位移 ===== */
+  /* ===== 动效（motion-spec v2）：入场 260ms / 交错 24ms / 数字滚动 600ms / 目标出现 160ms ===== */
   @keyframes art-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes res-row-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes status-out{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-4px)}}
+  @keyframes status-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
   @media (prefers-reduced-motion: no-preference){
-    .overlay.show>*{animation:art-in 220ms cubic-bezier(.2,.8,.2,1) backwards}
+    .overlay.show>*{animation:art-in 260ms cubic-bezier(.2,.8,.2,1) backwards}
+    /* 开始页交错入场：标题 → 说明 → 按钮行 → 状态行 → 参数开关；按钮行只做 120ms 整体淡入，第 0 帧可点 */
+    #msg>#msgCol{animation:none!important}
+    #msgCol>#titleTop{animation:art-in 260ms cubic-bezier(.2,.8,.2,1) backwards}
+    #msgCol>#subNote{animation:art-in 260ms cubic-bezier(.2,.8,.2,1) 24ms backwards}
+    #msgCol>#btnRow{animation:art-in 120ms cubic-bezier(.2,.8,.2,1) backwards}
+    #msgCol>#sensHint{animation:art-in 260ms cubic-bezier(.2,.8,.2,1) 72ms backwards}
+    #msgCol>#more{animation:art-in 260ms cubic-bezier(.2,.8,.2,1) 96ms backwards}
+    /* C 档：开始按钮 hover 内部 1px 线从左扫到右；按下边框 1px→2px + 内容下沉 1px */
+    #go{position:relative;overflow:hidden}
+    #go::after{content:"";position:absolute;left:14px;right:14px;bottom:9px;height:1px;background:var(--on-acc);
+      opacity:.75;transform:scaleX(0);transform-origin:left center;transition:transform 140ms linear}
+    #go:hover::after{transform:scaleX(1)}
+    #go:active{border-width:2px;padding:14px 55px}
+    #go .btn-label{display:inline-block;pointer-events:none;transition:transform 90ms linear}
+    #go:active .btn-label{transform:translateY(1px)}
+    /* C 档：状态行数值切换（旧值上浮淡出、新值从下淡入） */
+    #sensHint .st-old{display:inline-block;animation:status-out 90ms linear forwards}
+    #sensHint .st-new{display:inline-block;animation:status-in 90ms linear both}
+    /* C 档：结果页表格行 hover 左侧 1px 竖线长出 14px（120ms） */
+    #res .res-table td:first-child{position:relative}
+    #res .res-table td:first-child::before{content:"";position:absolute;left:0;top:50%;width:1px;height:0;
+      background:var(--txt);transform:translateY(-50%);transition:height 120ms linear}
+    #res .res-table tr:hover td:first-child::before{height:14px}
+    /* C 档：参数展开/收起 220ms clip-path */
+    #msg .pauseHide{display:block;max-height:0;margin-top:0!important;overflow:hidden;
+      clip-path:inset(0 0 100% 0);
+      transition:max-height 220ms cubic-bezier(.2,.8,.2,1),clip-path 220ms cubic-bezier(.2,.8,.2,1)}
+    #msg.showParams .pauseHide{max-height:2200px;margin-top:26px!important;clip-path:inset(0)}
+    /* 结果页表格逐行入场（JS 设置 animation-delay） */
+    #resBody.table-anim .res-table tr{animation:res-row-in 180ms cubic-bezier(.2,.8,.2,1) both}
     .btn,.btn.alt{transition:transform 140ms cubic-bezier(.2,.8,.2,1),background-color 140ms ease,color 140ms ease,border-color 140ms ease}
     .btn:hover,.btn.alt:hover{transform:translateY(-2px)}
     .btn:active,.btn.alt:active{transform:scale(.98)}
@@ -133,10 +166,15 @@
   }
   @media (prefers-reduced-motion: reduce){
     .overlay.show>*{animation:none!important}
+    #msgCol>*,#sensHint .st-old,#sensHint .st-new{animation:none!important}
+    #resBody.table-anim .res-table tr{animation:none!important;opacity:1!important;transform:none!important}
+    #res .res-table td:first-child::before{transition:none!important}
+    #msg .pauseHide{transition:none!important}
+    #msg .pauseHide,#msg.showParams .pauseHide{max-height:none!important;clip-path:none!important;margin-top:26px!important}
+    #res .res-table td:first-child::before{transition:none!important}
     .btn:hover,.btn.alt:hover,.btn:active,.btn.alt:active,#more:hover,#more:active,
     #fsBtn:hover,#fsBtn:active,#resSubActions .btn:hover,#resSubActions .btn:active{transform:none!important}
     .btn,.btn.alt,#more,#fsBtn,#resSubActions .btn,#go,#again{transition:opacity .01s linear!important}
-    #res .res-table tbody tr{transition:none!important}
   }
 
   /* ===== 平面（art-direction-flat）：只有 1px 线 + 纯色块 + 留白 ===== */
@@ -214,10 +252,10 @@
 
 <div id="msg" class="overlay show"><div id="msgCol">
   <div id="titleTop" style="font-size:26px;color:var(--txt);font-weight:700;letter-spacing:2px;line-height:32px">甩枪训练</div>
-  <div style="margin-top:12px;color:var(--dim);font-size:14px;line-height:1.75">看到球 → 甩过去 → 手停 → 点击</div>
+  <div id="subNote" style="margin-top:12px;color:var(--dim);font-size:14px;line-height:1.75">看到球 → 甩过去 → 手停 → 点击</div>
   <div id="modeNote" style="margin-top:8px;color:var(--dim);font-size:13px;max-width:520px;line-height:24px;display:none;text-wrap:pretty;line-break:strict;word-break:normal"></div>
-  <div style="margin-top:32px;display:flex;flex-direction:row;align-items:flex-start;gap:12px;flex-wrap:wrap">
-    <button id="go" class="btn" style="margin-top:0;padding:15px 56px;font-size:16px;letter-spacing:2px">开 始</button>
+  <div id="btnRow" style="margin-top:32px;display:flex;flex-direction:row;align-items:flex-start;gap:12px;flex-wrap:wrap">
+    <button id="go" class="btn" style="margin-top:0;padding:15px 56px;font-size:16px;letter-spacing:2px"><span class="btn-label">开 始</span></button>
     <button id="fsBtn" type="button" style="padding:12px 20px;font-size:14px;cursor:pointer;font-family:inherit;min-height:52px;display:inline-flex;align-items:center;justify-content:center">全屏 ⛶</button>
   </div>
   <div id="sensHint" style="margin-top:18px;font-size:13px;color:var(--dim);cursor:pointer;font-variant-numeric:tabular-nums"
@@ -422,6 +460,13 @@ function axisNextTier(){
   return (axisTierIdx++)%3;
 }
 let fpsCap=0, fpsShow=true, lastDraw=0, fpsFrames=0, fpsLast=0, fpsVal=0;
+let reducedMotion=false;
+try{
+  const mq=matchMedia('(prefers-reduced-motion: reduce)');
+  reducedMotion=mq.matches;
+  const onRM=function(e){ reducedMotion=e.matches; };
+  if(mq.addEventListener) mq.addEventListener('change',onRM); else if(mq.addListener) mq.addListener(onRM);
+}catch(e){}
 
 const wrapPi=a=>{ while(a>Math.PI)a-=2*Math.PI; while(a<-Math.PI)a+=2*Math.PI; return a; };
 const med=a=>{ if(!a.length)return 0; const s=[...a].sort((x,y)=>x-y); return s[s.length>>1]; };
@@ -490,7 +535,7 @@ const ARENA={
   ceilSeg:[32,40,46],
   labelR:29, labelA:0.66,
   axisA:0.78,
-  dustN:54,
+  dustN:18,
   vigA:0.46, grain:0.42,
   hazeH:0.55,
   idleMs:33
@@ -629,8 +674,8 @@ const AR_DUST=(function(){
   for(let i=0;i<n;i++){
     const o=i*6;
     d[o]=Math.random(); d[o+1]=Math.random();
-    d[o+2]=(Math.random()*2-1)*0.010;
-    d[o+3]=-0.004-Math.random()*0.012;
+    d[o+2]=(Math.random()*2-1)*0.003;
+    d[o+3]=-0.001-Math.random()*0.003;
     d[o+4]=0.30+Math.random()*0.70;
     d[o+5]=Math.random()*6.2832;
   }
@@ -652,7 +697,7 @@ function drawArenaDust(now, dtMs){
     const depth=d[o+4], par=0.045+0.150*(1-depth);
     let sx=(x-dy*par)*W, sy=(y+dp*par)*H;
     if(sx<-24) sx+=W+48; else if(sx>W+24) sx-=W+48;
-    const r=(0.6+1.6*depth)*(0.82+0.28*Math.sin(tsec*0.7+d[o+5]))*dpr;
+    const r=(0.6+1.6*depth)*0.94*dpr;
     if(r<=0.1) continue;
     ctx.moveTo(sx+r, sy);
     ctx.arc(sx, sy, r, 0, 6.2831853);
@@ -967,6 +1012,7 @@ let atmSkyCv=null, atmSkyHD=0;
 let atmFogCv=null, atmFogHD=0;
 const atmRidgeCv=[null,null,null], atmRidgeWD=[0,0,0], atmRidgeHD=[0,0,0];
 let atmCrossCv=null, atmHitCv=null, atmHitWarmCv=null, atmCoreCv=null;
+let atmBgLum=0.5, axisDarkCv=null;   // 背景亮度（给目标描边定强度）/ 目标周围暗斑缓存
 
 function _atmMix(a,b,t){ return [a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, a[2]+(b[2]-a[2])*t]; }
 function _atmCSS(c,a){ return 'rgba('+Math.round(c[0])+','+Math.round(c[1])+','+Math.round(c[2])+','+(Math.round(a*1000)/1000)+')'; }
@@ -1193,6 +1239,8 @@ function atmEnsureCache(){
   atmFogCv=_mkCv(fw,fh); if(atmFogCv) atmBuildFog(atmFogCv, fw, fh);
   // 2–3 层远景剪影
   for(let i=0;i<3;i++) atmBuildRidge(i);
+  // 背景亮度：目标描边强度按场地亮度自适应（背景越亮越需要深描边）
+  (function(){ const b=_rgbOf(SC.bg,0); atmBgLum=(0.299*b[0]+0.587*b[1]+0.114*b[2])/255; })();
   // 准星微光：暗色场景用亮 sprite（加性提亮），浅色场景用暗 sprite（加深）
   atmCrossCv=dark? _atmSprite(256, _atmMix(ui, white, 0.75), 0.9)
                  : _atmSprite(256, _atmMix(_rgbOf(SC.bg,-70), [0,0,0], 0.45), 0.9);
@@ -1314,6 +1362,19 @@ function drawHitBurst(now){
     ctx.drawImage(atmCoreCv, _px-cr, _py-cr, cr*2, cr*2);
   }
   ctx.restore();
+  // 命中外环：60ms 扩散，只描边不遮挡（reduced-motion 关闭）
+  if(!reducedMotion && hitFx && hitFx.until){
+    const age=now-(hitFx.until-250);
+    if(age>=0 && age<=60){
+      const rr=(Math.max(4,f*Math.tan((hitFx.r||1.5)*D2R)))*(1.15+0.55*(age/60));
+      ctx.save();
+      ctx.globalAlpha=(1-age/60)*0.55;
+      ctx.strokeStyle=SC.ring||SC.tgt;
+      ctx.lineWidth=1.5*(devicePixelRatio||1);
+      ctx.beginPath(); ctx.arc(_px,_py,rr,0,Math.PI*2); ctx.stroke();
+      ctx.restore();
+    }
+  }
 }
 // 点击位置（准星中心）的 2px 十字刻点：让你看见自己打在哪
 function drawClickTick(now){
@@ -1555,7 +1616,7 @@ function start(){
   if(cdTimer){ clearInterval(cdTimer); cdTimer=null; }
   var cd0=document.getElementById('cd'); if(cd0) cd0.classList.remove('show');
   // 笔/手柄设备不用锁光标：直接开始倒计时
-  if(device==='pen' || device==='pad'){ setTimeout(beginCountdownOrSession, 60); }
+  if(device==='pen' || device==='pad'){ setTimeout(beginCountdownOrSession, 16); }
 }
 
 function beginCountdownOrSession(){
@@ -1589,7 +1650,7 @@ function beginSession(){
   if(mode==='check'){ checkIdx=0; checkData=[]; checkCur=null; checkSpeed=0; }
   if(mode==='axis'){ axisBalls=[]; axisTierIdx=0; axisEntered=false; axisEntryAt=0; axisT1=null; axisGreen=false; axisPulseUntil=0; axisLoad(); }
   yaw=0; pitch=0; alive=false; endStarted=false;
-  nextAt=performance.now()+300;
+  nextAt=performance.now();   // 首球立即出现：点开始不等待
   endAt = performance.now() + endTime*1000;   // 整场计时从首球出生起（spawn 里重设）
 }
 
@@ -2100,6 +2161,19 @@ function axisReportHtml(){
     '<table class="res-table"><tr><th>档位</th><th>T1</th><th>T2</th><th>纵向误差</th><th>命中率</th><th>球数</th></tr>'+tierRows+'</table>'+
     '<div class="res-foot">渐隐：连续 5 次进带升级；进带失败或连续 2 次未命中降级（当前 '+levelTxt+'）</div>';
 }
+let resTableAnimTimer=0;
+function animateResultTable(){
+  try{
+    if(!resBody) return;
+    resBody.classList.remove('table-anim');
+    if(reducedMotion) return;
+    const rows=resBody.querySelectorAll('.res-table tr');
+    if(!rows.length) return;
+    rows.forEach(function(tr,i){ tr.style.animationDelay=(i*20)+'ms'; });
+    void resBody.offsetWidth;
+    resBody.classList.add('table-anim');
+  }catch(e){}
+}
 function finish(){
   running=false; alive=false;
   if(document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(function(){});
@@ -2189,6 +2263,7 @@ function finish(){
   else if(mode==='distance') resBody.innerHTML=distanceReportHtml();
   else if(mode==='axis') resBody.innerHTML=axisReportHtml();
   res.classList.add('show');
+  animateResultTable();
   if(mode==='check') setTimeout(drawCheckScatter, 30);
 }
 
@@ -2479,29 +2554,65 @@ function drawAxisGuides(now, p){
   const a=axisGuideAlpha(now); if(a<=0.02) return;
   const bh=axisBandHalfDeg()*D2R;
   const dpr=devicePixelRatio||1;
-  const horizonY=H*0.5+f*Math.tan(pitch);
-  const topY=Math.max(horizonY, p? p.sy : horizonY);   // 顶部与目标中心同高截断；不穿过天空
-  const x1=W*0.5+f*Math.tan(wrapPi(tYaw-bh-yaw));
-  const x2=W*0.5+f*Math.tan(wrapPi(tYaw+bh-yaw));
+  // 引导线必须永远可见：允许穿过天空，顶端与目标中心同高；目标在屏幕上方之外时取 0。
+  // （旧写法 topY=max(horizonY, targetY) 在抬头时 horizonY 可能 >H，整条线被推到画面外）
+  let topY = p ? Math.min(p.sy, H) : 0;
+  if(topY<0) topY=0;
+  if(topY>H) topY=H;
+  const yTop=Math.round(topY);
+  // 1px 线对齐像素网格（x+0.5），避免抗锯齿把线摊成两列半透明
+  const snapX=function(v){ return Math.round(v)+0.5; };
+  const x1=snapX(W*0.5+f*Math.tan(wrapPi(tYaw-bh-yaw)));
+  const x2=snapX(W*0.5+f*Math.tan(wrapPi(tYaw+bh-yaw)));
+  const xc=snapX(W*0.5+f*Math.tan(wrapPi(tYaw-yaw)));
   const aa=a*axisEnterAlpha(now);
   window.__axisGuideAlpha=Math.round(aa*100)/100;
   window.__axisGuideEntered=axisEntered;
+  window.__axisGuideDebug={topY:Math.round(topY*10)/10, yTop:yTop, targetY:(p?Math.round(p.sy*10)/10:null), H:H, xs:[x1,xc,x2], color:(axisGreen?'green':'red')};
   ctx.save();
+  ctx.lineCap='butt';
   ctx.globalAlpha=aa;
   ctx.strokeStyle=axisGreen? '#4ade80' : '#E0407F';
   ctx.lineWidth=1*dpr;
   if(axisLevel===2) ctx.setLineDash([6*dpr,6*dpr]);
   ctx.beginPath();
-  ctx.moveTo(x1, topY); ctx.lineTo(x1, H);
-  ctx.moveTo(x2, topY); ctx.lineTo(x2, H);
+  ctx.moveTo(x1, yTop); ctx.lineTo(x1, H);
+  ctx.moveTo(x2, yTop); ctx.lineTo(x2, H);
   ctx.stroke();
+  // 中心参考线（左/中/右三条竖线都完整可见；中心线保持可辨识，但仍随 A3 一起淡出）
+  ctx.globalAlpha=Math.max(aa,0.9*a);
+  ctx.beginPath(); ctx.moveTo(xc, yTop); ctx.lineTo(xc, H); ctx.stroke();
   if(axisGreen && now<axisPulseUntil){   // 变绿瞬间 80ms 亮度脉冲
     ctx.globalAlpha=aa*0.55;
     ctx.strokeStyle='#b7ffd0';
     ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.moveTo(x1, yTop); ctx.lineTo(x1, H);
+    ctx.moveTo(x2, yTop); ctx.lineTo(x2, H);
+    ctx.moveTo(xc, yTop); ctx.lineTo(xc, H);
     ctx.stroke();
   }
   ctx.restore();
+}
+
+// 目标周围 ±80px 的柔和暗斑：让目标从雾里跳出来（跟随目标，非光晕）
+function axisDarkSprite(){
+  if(axisDarkCv) return axisDarkCv;
+  const size=256, cv=_mkCv(size,size); if(!cv) return null;
+  const g=cv.getContext('2d'); if(!g) return null;
+  const grd=g.createRadialGradient(size*0.5,size*0.5,0, size*0.5,size*0.5,size*0.5);
+  grd.addColorStop(0,'rgba(0,0,0,0.17)');       // 中心压暗，±80px 区域平均约 8%
+  grd.addColorStop(0.60,'rgba(0,0,0,0.16)');
+  grd.addColorStop(0.82,'rgba(0,0,0,0.075)');
+  grd.addColorStop(1,'rgba(0,0,0,0)');
+  g.fillStyle=grd; g.fillRect(0,0,size,size);
+  axisDarkCv=cv; return cv;
+}
+function drawAxisTargetDim(p){
+  if(!p || window.__axisNoDim) return;
+  const cv=axisDarkSprite(); if(!cv) return;
+  const dpr=devicePixelRatio||1, r=80*dpr;
+  ctx.drawImage(cv, p.sx-r, p.sy-r, r*2, r*2);
 }
 
 // 渲染与输入分离：输入只改角度，绘制全走 rAF 主循环
@@ -2516,8 +2627,17 @@ function drawFrame(now){
     const tw=DIST*cp*Math.sin(tYaw), th=DIST*Math.sin(tPitch), td=DIST*cp*Math.cos(tYaw);
     const p=project(tw,th,td);
     if(p){
-      if(mode==='axis') drawAxisGuides(now,p);
-      const rad=Math.max(4, f*Math.tan(radius*D2R));
+      const spawnP=reducedMotion?1:Math.min(1,(now-tSpawn)/160);
+      const spawnEase=spawnP>=1?1:(1-Math.pow(1-spawnP,3));
+      const spawnScale=reducedMotion?1:(0.6+0.4*spawnEase);
+      const rad=Math.max(4, f*Math.tan(radius*D2R))*spawnScale;
+      // 分轴定位：1.5px 贴边深色描边（不要大面积背景压暗）
+      if(mode==='axis'){
+        const dprO=devicePixelRatio||1, oa=0.55;
+        ctx.beginPath(); ctx.arc(p.sx,p.sy,rad+0.75*dprO,0,Math.PI*2);
+        ctx.strokeStyle='rgba(0,0,0,'+oa+')'; ctx.lineWidth=1.5*dprO; ctx.stroke();
+        window.__axisTargetDebug={sx:Math.round(p.sx),sy:Math.round(p.sy),r:Math.round(rad),outlineAlpha:oa};
+      }
       // 统一球体（与标定页/跟枪页同款）：tgtFill 填充 + tgt 描边 + 中心点
       // 单一平面渲染：不加高光、不加阴影——2D 里偏移的高光会跟着球跑，像脏点
       ctx.beginPath(); ctx.arc(p.sx,p.sy,rad,0,Math.PI*2);
@@ -2535,6 +2655,8 @@ function drawFrame(now){
           ctx.lineWidth=1.5*devicePixelRatio; ctx.stroke();
         }
       }
+      // 引导线画在目标之上：顶端从目标中心行开始，不被球/描边遮住
+      if(mode==='axis') drawAxisGuides(now,p);
     }
     // 画面外的球：屏幕边缘画指向箭头，180° 也能立刻知道往哪转
     {
@@ -2725,7 +2847,17 @@ requestAnimationFrame(loop);
     else { info=(EN_UI?' · ':' · ')+Math.max(20,parseInt(document.getElementById('cnt').value)||40)+(EN_UI?' shots':' 球'); }
     var txt=mName+info+(EN_UI?' · ':' · ')+c.toFixed(1)+' cm/360';
     if(y>0) txt += (EN_UI?' · sens ':' · 灵敏度 ')+'<b style="color:var(--txt);font-weight:600">'+s.toFixed(2)+'</b>';
-    hint.innerHTML = txt;
+    if(hint.innerHTML===txt) return;
+    if(reducedMotion){ hint.innerHTML=txt; return; }
+    if(!hint.__swapped){ hint.__swapped=true; hint.innerHTML=txt; return; }   // 首帧直接到位
+    if(hint.__swapTimer){ clearTimeout(hint.__swapTimer); clearTimeout(hint.__swapTimer2); }
+    var oldHtml=hint.innerHTML;
+    if(!oldHtml){ hint.innerHTML=txt; return; }
+    hint.innerHTML='<span class="st-old">'+oldHtml+'</span>';
+    hint.__swapTimer=setTimeout(function(){
+      hint.innerHTML='<span class="st-new">'+txt+'</span>';
+      hint.__swapTimer2=setTimeout(function(){ hint.innerHTML=txt; }, 80);
+    }, 80);
   }
   ['dpi','yaw','cm','cnt','endTime'].forEach(function(id){
     var el=document.getElementById(id);

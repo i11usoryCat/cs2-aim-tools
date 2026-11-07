@@ -84,9 +84,17 @@ const I18N = "(function(){ if(typeof EN!=='object') return 'skip'; try{ if(typeo
       const links = JSON.parse(await ev(LINK_CHECK) || '[]');
       const dups = JSON.parse(await ev(ID_DUP) || '[]');
       const overflow = await ev(OVERFLOW);
+      // 窄屏复查：900px 下是否被撑破（手机 / 分屏）
+      let overflowNarrow = 0;
+      try {
+        await send('Emulation.setDeviceMetricsOverride', { width: 900, height: 800, deviceScaleFactor: 1, mobile: false });
+        await sleep(350);
+        overflowNarrow = await ev(OVERFLOW) || 0;
+        await send('Emulation.clearDeviceMetricsOverride');
+      } catch (e) {}
       const i18n = await ev(I18N);
       const finalHref = await ev('location.href');
-      return { errs: errs, links: links, dups: dups, overflow: overflow, i18n: i18n, finalHref: finalHref };
+      return { errs: errs, links: links, dups: dups, overflow: overflow, overflowNarrow: overflowNarrow, i18n: i18n, finalHref: finalHref };
     });
     if (!r.error) r.deadLinks = checkLinks(rel, r.links || [], r.finalHref);
     results.push(Object.assign({ page: rel }, r));
@@ -99,14 +107,15 @@ const I18N = "(function(){ if(typeof EN!=='object') return 'skip'; try{ if(typeo
     if (r.error) { bad.push({ page: r.page, kind: 'load', detail: r.error }); continue; }
     if (r.errs && r.errs.length) bad.push({ page: r.page, kind: 'console', detail: r.errs.slice(0, 3).join(' | ') });
     if (r.dups && r.dups.length) bad.push({ page: r.page, kind: 'duplicate-id', detail: r.dups.join(', ') });
-    if (r.overflow > 2) bad.push({ page: r.page, kind: 'overflow', detail: 'scrollWidth - clientWidth = ' + r.overflow });
+    if (r.overflow > 2) bad.push({ page: r.page, kind: 'overflow@1280', detail: 'scrollWidth - clientWidth = ' + r.overflow });
+    if (r.overflowNarrow > 4) bad.push({ page: r.page, kind: 'overflow@900', detail: 'scrollWidth - clientWidth = ' + r.overflowNarrow });
     if (r.deadLinks && r.deadLinks.length) bad.push({ page: r.page, kind: 'dead-link', detail: r.deadLinks.join(', ') });
     if (r.i18n && r.i18n !== 'skip') { const j = JSON.parse(r.i18n); if (j.missing.length) bad.push({ page: r.page, kind: 'i18n', detail: j.missing.join(' | ') }); }
   }
-  const lines = ['# Vernier QA 报告', '', '生成时间：' + new Date().toISOString(), '', '| 页面 | console | 重复 id | 溢出 | 死链 | 未翻译串 |', '|---|---|---|---|---|---|'];
+  const lines = ['# Vernier QA 报告', '', '生成时间：' + new Date().toISOString(), '', '| 页面 | console | 重复 id | 溢出@1280 | 溢出@900 | 死链 | 未翻译串 |', '|---|---|---|---|---|---|---|'];
   for (const r of results) {
     let miss = '-'; if (r.i18n && r.i18n !== 'skip') { const j = JSON.parse(r.i18n); miss = String(j.missing.length); }
-    lines.push('| ' + r.page + ' | ' + (r.error ? 'FAIL' : (r.errs || []).length) + ' | ' + ((r.dups || []).length) + ' | ' + (r.overflow || 0) + ' | ' + ((r.deadLinks || []).length) + ' | ' + miss + ' |');
+    lines.push('| ' + r.page + ' | ' + (r.error ? 'FAIL' : (r.errs || []).length) + ' | ' + ((r.dups || []).length) + ' | ' + (r.overflow || 0) + ' | ' + (r.overflowNarrow || 0) + ' | ' + ((r.deadLinks || []).length) + ' | ' + miss + ' |');
   }
   lines.push('', '## 问题清单', '');
   if (!bad.length) lines.push('无。');

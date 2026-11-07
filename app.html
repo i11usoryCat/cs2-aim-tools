@@ -728,6 +728,74 @@ try{
     #drillGrid .grp i::after{ animation:none !important; transform:none !important }
   }
 
+  /* ——— C 档微交互（≤180ms，只动 transform/opacity/边框） ——— */
+  /* 1) 列表项 hover：箭头 2→8px，左侧 1px 竖线 0→14px */
+  #drillGrid .item{position:relative}
+  #drillGrid .item::before{
+    content:""; position:absolute; left:0; top:50%; width:1px; height:0;
+    background:var(--acc); transform:translateY(-50%);
+    transition:height 120ms cubic-bezier(.2,.8,.2,1);
+  }
+  #drillGrid .item:hover::before{height:14px}
+  #drillGrid .item .ar{transition:transform 120ms cubic-bezier(.2,.8,.2,1), color 120ms linear}
+  #drillGrid .item:hover .ar{transform:translateX(8px); color:var(--acc)}
+
+  /* 2) 主按钮 hover：内部 1px 线从左扫到右 */
+  button.main{position:relative; overflow:hidden}
+  button.main::after{
+    content:""; position:absolute; left:0; bottom:0; right:0; height:1px;
+    background:currentColor; opacity:.55; transform:scaleX(0); transform-origin:left center;
+    transition:transform 160ms linear;
+  }
+  button.main:hover::after{transform:scaleX(1)}
+
+  /* 3) 按下：边框 1px→2px（用 outline，不占布局），内容下沉 1px */
+  button:active,a.tile:active,.today:active,#drillGrid .item:active,.start:active{
+    outline:1px solid currentColor; outline-offset:-1px;
+    transform:translateY(1px) !important;
+    transition:transform 90ms ease-out, outline-color 90ms linear;
+  }
+
+  /* 5) 输入框 focus：双线环从中心展开 */
+  /* 双线环：控件自身 1px 边 + 向外 2px 的第二道 1px 线，由贴合向外展开 */
+  @keyframes ringIn{
+    from{ outline-offset:-1px }
+    to{ outline-offset:2px }
+  }
+  #set input:focus-visible,#set select:focus-visible,#set textarea:focus-visible,
+  input.fld:focus-visible,select.fld:focus-visible,.fld input:focus-visible,.fld select:focus-visible{
+    outline:1px solid var(--acc) !important;
+    animation:ringIn 180ms cubic-bezier(.2,.8,.2,1) both;
+  }
+
+  /* 4) tab 选中：下划线由旧位置滑到新位置（220ms），内容当帧切换 */
+  nav{position:relative}
+  .nav-ink{
+    position:absolute; left:0; bottom:0; height:2px; width:0;
+    background:var(--acc); transform-origin:left center; pointer-events:none;
+    transition:transform 220ms cubic-bezier(.2,.8,.2,1), width 220ms cubic-bezier(.2,.8,.2,1);
+  }
+  nav a.on{background:none}
+  nav a.on::after{display:none}          /* 旧静态下划线退场，改由 .nav-ink 滑动 */
+
+  /* 6) 数字变化：旧值上浮淡出、新值从下淡入（160ms） */
+  @keyframes numOut{ from{opacity:1; transform:translateY(0)} to{opacity:0; transform:translateY(-8px)} }
+  @keyframes numIn{ from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:translateY(0)} }
+  .num-ghost{
+    position:absolute; left:0; top:0; pointer-events:none;
+    animation:numOut 160ms cubic-bezier(.2,.8,.2,1) forwards;
+    font-variant-numeric:tabular-nums;
+  }
+  .statsbar .num{position:relative}
+  .statsbar .num.flip{animation:numIn 160ms cubic-bezier(.2,.8,.2,1) both}
+
+  @media (prefers-reduced-motion:reduce){
+    #drillGrid .item::before,#drillGrid .item .ar,button.main::after,.nav-ink{transition:none !important}
+    #set input:focus-visible,#set select:focus-visible,#set textarea:focus-visible{animation:none !important; box-shadow:0 0 0 1px var(--acc)}
+    button:active,a.tile:active,.today:active,#drillGrid .item:active,.start:active{transform:none !important}
+    .statsbar .num.flip,.num-ghost{animation:none !important}
+  }
+
   /* ——— 训练目录：五列横排，首屏零滚动 ——— */
   .today{
     display:flex; align-items:center; justify-content:space-between;
@@ -758,7 +826,7 @@ try{
   #drillGrid .item:last-child{margin-bottom:0}
   #drillGrid .item:hover{background:color-mix(in srgb,var(--txt) 4%, transparent)}
   #drillGrid .item .ar{color:var(--dim2); transition:transform 120ms linear, color 120ms linear}
-  #drillGrid .item:hover .ar{transform:translateX(2px); color:var(--acc)}
+  #drillGrid .item:hover .ar{transform:translateX(8px); color:var(--acc)}
   /* 目录下方的紧凑状态条：11px 标签 / 24px 数字 / 1px 分隔线 */
   .statsbar{
     display:grid; grid-template-columns:repeat(3,1fr); gap:0 28px;
@@ -792,6 +860,7 @@ try{
     <a href="#data" data-t="data">个人数据</a>
     <a href="#play" data-t="play">训练</a>
     <a href="#plan" data-t="plan">计划训练</a>
+    <span class="nav-ink" id="navInk"></span>
     </nav>
   <div class="sp"></div>
   <div class="lang" id="langSw">
@@ -1240,6 +1309,9 @@ const EN={
   '墨玉':'Jade','墨鱼':'Ink','湖泊':'Lake','明亮':'Light','暖砂':'Sand','森林':'Forest','极简灰':'Mono','赛博':'Cyber','深蓝':'Night',
   '经典':'Classic','浅灰':'Light grey','暗蓝':'Night blue','纯黑':'Mono black','沙色':'Sand',
   '训练场景':'Training scene','背景、网格、准星的颜色。':'Background, grid and crosshair colours in the trainer.','只影响网页界面，不影响训练场景。':'Affects the UI only, not the training scene.',
+  '最近':'Last','六维':'Six-skill','本周':'This week','天':'days','未设置':'not set',
+  '球':'balls','第':'No.','天 · 已完成':' days · done','天 · 连续':' days · streak',
+  '一':'M','二':'T','三':'W','四':'T','五':'F','六':'S','日':'S',
   '定位':'Positioning','速度':'Speed','转向':'Turning','稳定':'Stability','体检':'Assessment',
   '今天练什么':'What to train today','先从六维检查开始 →':'Start with the six-skill check →',
   '自动（跟随时间）':'Auto (by time)','明亮':'Light','深色':'Dark',
@@ -1314,6 +1386,8 @@ const TX_RULES=[
   [/^(\d+) 球$/, m=>m[1]+' balls'],
   [/^(\d+) balls$/, m=>m[1]+' 球'],
   [/^第 (\d+) 球$/, m=>'Ball '+m[1]],
+  [/^(\d{4}) 年 (\d+) 月 — (\d+) 月$/, m=>m[2]+' — '+m[3]+', '+m[1]],
+  [/^(\d{4}) 年 (\d+) 月$/, m=>m[2]+', '+m[1]],
   [/^Ball (\d+)$/, m=>'第 '+m[1]+' 球'],
 ];
 function translateRoot(root, lang){
@@ -1362,10 +1436,18 @@ function applyLang(l){
     });
   }catch(e){}
   // 计算出来的文案也要跟着语言走
+  // ⚠ 重入保护：下面的 render 回调里可能再次调用 applyLang（render→applyLang→render 会死循环）
+  window.__langBusy = true;
   try{ if(window.__updateCalc) window.__updateCalc(); }catch(e){}
   try{ if(window.__vRender) window.__vRender(); }catch(e){}
   try{ if(window.__planCalRender) window.__planCalRender(); }catch(e){}
   try{ if(window.__renderStatsBar) window.__renderStatsBar(); }catch(e){}
+  // 计划页的行是渲染时用 L() 拼出来的：先重画一遍，再对全树补一次翻译，
+  // 否则切完语言会留下「80 球」这种渲染期生成的残句。
+  try{ if(window.__planRender) window.__planRender(); }catch(e){}
+  try{ if(window.__planRowsRender) window.__planRowsRender(); }catch(e){}
+  window.__langBusy = false;
+  try{ translateRoot(document.body, l); }catch(e){}
 }
 function setLang(l){ LANG=l; try{ localStorage.setItem(K_LANG,l); }catch(e){} }
 
@@ -1474,11 +1556,28 @@ document.querySelectorAll('#themeMode .tmbtn').forEach(function(b){
   });
 });
 
+// tab 下划线滑动：只动 transform/width，内容不动
+function moveInk(){
+  try{
+    const ink=document.getElementById('navInk');
+    const nav=document.querySelector('nav');
+    const on=document.querySelector('nav a.on');
+    if(!ink||!nav||!on) return;
+    const nr=nav.getBoundingClientRect(), ar=on.getBoundingClientRect();
+    ink.style.width=ar.width+'px';
+    ink.style.transform='translateX('+(ar.left-nr.left)+'px)';
+  }catch(e){}
+}
+addEventListener('resize', moveInk);
+
 function show(t){
   // 无效 hash 回落到数据页，不要白屏
   if(!document.getElementById(t)) t='data';
   document.querySelectorAll('section').forEach(s=>s.classList.toggle('on', s.id===t));
   document.querySelectorAll('nav a').forEach(a=>a.classList.toggle('on', a.dataset.t===t));
+  moveInk();
+  // 计划页的行是渲染时用 L() 拼的，切到该页后补一次翻译，避免残留「80 球」
+  if(t==='plan'){ try{ translateRoot(document.body, (typeof LANG!=='undefined'&&LANG==='en')?'en':'zh-CN'); }catch(e){} }
   if(t==='data') renderData();
   if(t==='play') renderDrills();
   if(t==='set')  fillSettings();
@@ -1521,6 +1620,14 @@ let switching=false, watchdog=null;
 
 function rippleSwitch(lang, cx, cy){
   if(switching) return;
+  // reduced-motion：不做波纹，直接切
+  try{
+    if(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches){
+      LANG=lang; setLang(lang); applyLang();
+      try{ show((location.hash||'#data').slice(1)); }catch(e){}
+      return;
+    }
+  }catch(e){}
   switching=true;
 
   clearTimeout(watchdog);
@@ -1618,24 +1725,38 @@ function rippleSwitch(lang, cx, cy){
 
   var ACC=parseColor(getComputedStyle(htmlEl).getPropertyValue('--acc'))||'15,118,110';
 
-  var maxD=Math.hypot(Math.max(cx,innerWidth-cx),Math.max(cy,innerHeight-cy))+70;
-  var DUR=2600, t0=null;
-
-  function ring(R,w,a){
-    if(R<=0) return;
-    ctx2.beginPath(); ctx2.arc(cx*dpr,cy*dpr,R*dpr,0,Math.PI*2);
-    ctx2.strokeStyle='rgba('+ACC+','+a+')'; ctx2.lineWidth=w*dpr; ctx2.stroke();
+  // 雨滴涟漪：以点击位置为圆心，主波 + 3 圈拖尾同心扩散（620ms，ease-out）
+  var DUR=620, t0=null;
+  var maxD=Math.hypot(Math.max(cx,innerWidth-cx),Math.max(cy,innerHeight-cy))+60;
+  var NEUTRAL=(function(){ var c=getComputedStyle(htmlEl).getPropertyValue('--dim').trim(); return c||'#8b949e'; })();
+  var NEUTRAL_RGB=parseColor(NEUTRAL)||'139,148,158';
+  window.__lastRipple={cx:cx, cy:cy};
+  function easeOut(t){ return 1-Math.pow(1-t,2); }      // 前快后慢（二次比三次慢一点，波纹更耐看）
+  function stroke(R, w, color, alpha){
+    if(R<=0||alpha<=0) return;
+    ctx2.beginPath(); ctx2.arc(cx*dpr, cy*dpr, R*dpr, 0, Math.PI*2);
+    ctx2.strokeStyle='rgba('+color+','+alpha.toFixed(3)+')';
+    ctx2.lineWidth=w*dpr; ctx2.stroke();
   }
+  // 拖尾：延迟 120 / 240 / 360ms，扩散速度 ×0.86，透明度递减
+  var TAILS=[[110,0.88,0.30],[210,0.82,0.20],[320,0.76,0.12]];
 
   function step(now){
     if(t0===null) t0=now;
     var t=Math.min(1,(now-t0)/DUR);
-    var e=t<0.5? 4*t*t*t : 1-Math.pow(-2*t+2,3)/2;
-    var R=maxD*e;
+    var R=maxD*easeOut(t);
     layer.style.clipPath='circle('+R+'px at '+cx+'px '+cy+'px)';
     ctx2.clearRect(0,0,cv.width,cv.height);
-    var fade=Math.max(0,1-Math.pow(t,1.6));
-    ring(R,2.2,0.75*fade); ring(R*0.93,1.4,0.40*fade); ring(R*1.05,1.0,0.22*fade);
+    // 主波：强调色 1px
+    stroke(R, 1.2, ACC, Math.min(0.75, 0.75*(1-t)+0.12));
+    // 拖尾：中性色 1px，一圈圈推开
+    for(var i=0;i<TAILS.length;i++){
+      var d=TAILS[i][0], k=TAILS[i][1], a=TAILS[i][2];
+      var tt=Math.max(0,(t*DUR-d)/DUR);
+      if(tt<=0) continue;
+      var Rt=maxD*easeOut(tt)*k;
+      stroke(Rt, 1, NEUTRAL_RGB, a*(1-tt));
+    }
     if(t<1){ requestAnimationFrame(step); return; }
 
     // ④ 遮罩盖满之后，真实页面才切语言
@@ -1647,7 +1768,7 @@ function rippleSwitch(lang, cx, cy){
       if(lsF) lsF.querySelectorAll('span[data-lang]').forEach(function(el){ el.classList.toggle('on', el.dataset.lang===lang); });
     }catch(e){}
 
-    layer.style.clipPath='circle(300vmax at '+cx+'px '+cy+'px)';
+    layer.style.clipPath='inset(0 0 0 0)';
     cv.width=0; cv.height=0; cv.remove();
     requestAnimationFrame(function(){
       layer.remove(); blocker.remove();
@@ -1801,10 +1922,13 @@ function renderStatsBar(){
   // 灵敏度：当前 cm/360
   let cm='未设置';
   try{ const c=+cfg.cm; if(isFinite(c)&&c>0) cm=c.toFixed(1)+' cm/360'; }catch(e){}
-  const en = document.documentElement.getAttribute('lang')==='en';
+  const en = (typeof LANG!=='undefined') ? LANG==='en' : document.documentElement.getAttribute('lang')==='en';
   const T = en
     ? { last:'Last', week:'This week', sens:'Sensitivity', six:'Six-skill', day:' days', unset:'not set' }
     : { last:'最近', week:'本周', sens:'灵敏度', six:'六维', day:' 天', unset:'未设置' };
+  // 记录旧值，稍后做「上浮淡出 / 下淡入」
+  const prev={};
+  el.querySelectorAll('.num').forEach(function(n,i){ prev[i]=n.textContent; });
   const cmNum = (cm!=='未设置')? (+cfg.cm) : null;
   el.innerHTML=
     '<div class="sb"><span class="sb-k">'+T.last+'</span><span class="sb-v'+(six==='—'?' dim':'')+'">'+T.six+' <span class="num" data-to="'+(six==='—'?'':'')+'">'+six+'</span></span></div>'+
@@ -1812,6 +1936,18 @@ function renderStatsBar(){
     '<div class="sb"><span class="sb-k">'+T.sens+'</span><span class="sb-v'+(cm==='未设置'?' dim':'')+'">'+(cm==='未设置'?T.unset:'<span class="num" data-to="'+(cmNum||0)+'" data-dec="1">'+cmNum.toFixed(1)+'</span> cm/360')+'</span></div>';
   // C. 数字滚动：先量终值宽度锁住，再从 0 滚上去（只改文字，不动布局）
   const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  // 数字变了：旧值上浮淡出，新值从下淡入（160ms，tabular-nums，不动布局）
+  if(!reduce){
+    el.querySelectorAll('.num').forEach(function(node,i){
+      const before=prev[i];
+      if(before===undefined || before===node.textContent) return;
+      const ghost=document.createElement('span');
+      ghost.className='num-ghost'; ghost.textContent=before;
+      node.appendChild(ghost);
+      node.classList.add('flip');
+      setTimeout(function(){ ghost.remove(); node.classList.remove('flip'); }, 200);
+    });
+  }
   el.querySelectorAll('.num[data-to]').forEach(function(node){
     const to = parseFloat(node.dataset.to);
     if(!isFinite(to)) return;
@@ -2765,6 +2901,7 @@ try{
   const dispRow=function(n){ return isEN() && ROW_ZH[n] ? ROW_ZH[n] : n; };
 
   function render(){
+    try{ window.__planRowsRender=render; }catch(e){}   // 切语言后要能重画行
     const st=load();
     const box=document.getElementById('planRows');
     const chips=document.getElementById('planPresets');
@@ -2976,7 +3113,7 @@ try{
         if(inp){ inp.focus(); inp.select(); }
       });
     });
-    if(typeof applyLang==='function') applyLang();   // 新插入的文字也要翻译
+    if(typeof applyLang==='function' && !window.__langBusy) applyLang();   // 新插入的文字也要翻译（避免与 applyLang 互递归）
 
     const sh=ops.querySelector('[data-share]');
     if(sh && !sh.classList.contains('off')) sh.onclick=showShare;

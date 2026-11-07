@@ -170,6 +170,63 @@ try{
     #mobileTip{bottom:12px;padding:9px 12px 9px 16px;font-size:12.5px;gap:10px}
     #mobileTip button{padding:6px 12px;font-size:12px}
   }
+
+  /* ============================================================
+     纸面手册 · Paper manual（落地页层）
+     只动样式：不改 id / 事件 / 存储键
+     ============================================================ */
+  body{font-variant-numeric:tabular-nums}
+
+  /* 品牌行下方压一条游标刻度，作为整页的身份标记 */
+  /* 注意：基础规则里写死了 height:16px，这里必须放开，否则 padding 会被 height 吃掉、刻度压到字上 */
+  .brandline{position:relative;padding-bottom:18px;height:auto}
+  .brandline::after{
+    content:""; position:absolute; left:50%; transform:translateX(-50%); bottom:2px;
+    width:132px; height:6px; opacity:.85;
+    background:
+      repeating-linear-gradient(to right, color-mix(in srgb,var(--acc) 60%,transparent) 0 1px, transparent 1px 7px) 0 0/100% 4px no-repeat,
+      linear-gradient(to right, transparent, color-mix(in srgb,var(--acc) 45%,transparent), transparent) 0 5px/100% 1px no-repeat;
+  }
+  h1{letter-spacing:3px}
+  .sub{max-width:620px; line-height:1.85}
+
+  /* 页脚那条公式：做成"量具读数"——上下各一道刻度线 */
+  .foot code{
+    display:inline-block; position:relative; padding:9px 16px; margin:6px 0;
+    font-family:ui-monospace,"Cascadia Code",Consolas,monospace;
+    font-size:12.5px; letter-spacing:.5px;
+    background:color-mix(in srgb,var(--txt) 6%,transparent);
+    border-radius:8px;
+  }
+  .foot code::before,.foot code::after{
+    content:""; position:absolute; left:6px; right:6px; height:5px;
+    background:repeating-linear-gradient(to right, color-mix(in srgb,var(--acc) 45%,transparent) 0 1px, transparent 1px 7px);
+    opacity:.55; pointer-events:none;
+  }
+  .foot code::before{top:-8px}
+  .foot code::after{bottom:-8px}
+  /* 页脚链接：下划线用细刻度，hover 才出现 */
+  .foot a{position:relative; text-decoration:none}
+  .foot a::after{
+    content:""; position:absolute; left:0; right:0; bottom:-3px; height:1px;
+    background:var(--acc); transform:scaleX(0); transform-origin:left;
+    transition:transform 170ms cubic-bezier(.2,.8,.2,1);
+  }
+  .foot a:hover::after{transform:scaleX(1)}
+
+  .start{transition:transform 170ms cubic-bezier(.2,.8,.2,1), box-shadow 170ms cubic-bezier(.2,.8,.2,1)}
+
+  /* 窄屏：单列、留白收紧 */
+  @media (max-width:900px){
+    h1{letter-spacing:2px}
+    #stage .hero{padding:32px 16px}
+    .start{margin-top:32px}
+    .foot code{font-size:11.5px; padding:8px 12px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    a.item::before{transition:none}
+    a.item:hover{transform:none}
+  }
 </style>
 </head>
 <body>

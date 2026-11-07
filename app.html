@@ -1767,7 +1767,7 @@ function chkSave(id,key){ const el=document.getElementById(id); if(!el) return;
   el.addEventListener('change',()=>{ try{ localStorage.setItem(key, el.checked? '1':'0'); }catch(e){} }); }
 function valSave(id,key){ const el=document.getElementById(id); if(!el) return;
   el.addEventListener('change',()=>{ try{ localStorage.setItem(key, el.value); }catch(e){} }); }
-chkSave('iPerf',K_PERF); chkSave('iFpsShow',K_FPSSHOW); chkSave('iBallTex','cs2at.ballTex');
+chkSave('iPerf',K_PERF); chkSave('iFpsShow',K_FPSSHOW);
 valSave('iFps',K_FPS); valSave('iRes','cs2at.res');
 function saveDelay(){
   const el=$('iDelay'); const v=parseInt(el.value);
@@ -1786,7 +1786,7 @@ $('defBtn').addEventListener('click',()=>{
   cfg={dpi:800,yaw:0.022,sens:1.92,cm:27.1}; save(K_CFG,cfg);
   localStorage.removeItem(K_THEME); applyTheme(defaultTheme());
   localStorage.setItem(K_SCENE,'classic');
-  ['cs2at.scene','cs2at.sceneUser','cs2at.game',K_PERF,K_FPS,K_FPSSHOW,'cs2at.ballTex','cs2at.delay',
+  ['cs2at.scene','cs2at.sceneUser','cs2at.game',K_PERF,K_FPS,K_FPSSHOW,'cs2at.delay',
    'cs2at.res','cs2at.resW','cs2at.resH','cs2at.device','cs2at.padMode',
    'cs2at.crossType','cs2at.crossDyn','cs2at.crossMode','cs2at.crossColor','cs2at.crossEdge',
    'cs2at.crossLen','cs2at.crossWid','cs2at.crossGap','cs2at.crossAlpha','cs2at.crossDot','cs2at.crossOutline',

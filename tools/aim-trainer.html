@@ -598,7 +598,7 @@ function arenaEnsureCache(){
   if(vg){
     const img=vg.createImageData(vw,vh), px=img.data;
     const base=_rgbOf(SC.dark? '#000000' : SC.bg, SC.dark?0:-10);
-    const maxA=SC.dark?ARENA.vigA:0.055, grain=SC.dark?ARENA.grain:0.16;
+    const maxA=SC.dark?ATMOS.vigDark:ATMOS.vigLight, grain=SC.dark?ATMOS.grainDark:ATMOS.grainLight;
     const cx=(vw-1)*0.5, cy=(vh-1)*0.5, inv=1/Math.sqrt(cx*cx+cy*cy);
     for(let y=0;y<vh;y++){
       const dy=(y-cy)*inv;
@@ -639,15 +639,11 @@ function arenaRuler(){
 function drawArenaOverlay(){
   arenaEnsureCache();
   if(arVigCv) ctx.drawImage(arVigCv, 0, 0, W, H);
-  arenaRuler();
+  if(ARENA_DECOR) arenaRuler();   // 旧水印/卡尺刻度：仅回滚开关打开时才画
 }
 let idleLast=0, fpsRunOn=false;
 function drawArenaIdle(now, dtMs){
-  ctx.fillStyle=SC.bg; ctx.fillRect(0,0,W,H);
-  drawArenaHaze();
-  grid();
-  drawArenaDust(now, dtMs);
-  drawArenaOverlay();
+  drawSceneBase(now, dtMs, false);   // 与游戏内同一套绘制，只是不画球/准星
 }
 
 // —— 命中读数：扩散圆环 + 12 条径向刻线（像卡尺读数跳动；120–180ms 淡出） ——
@@ -750,13 +746,289 @@ try{
 }catch(e){}
 
 
+
+/* ===== 氛围场地 B：电影感（“一个有光的空间”） =====
+   方向：不是图纸，是空间。保留地平线 / 地面网格纹理 / 暗角，删除全部角度数字、刻度、
+   量角器同心圈、双描边外圈、底部卡尺与 VERNIER 水印、天顶网格。
+   重建：上方偏中间的柔光（方向光）、地面近亮远暗入雾、与场景同族的雾带、
+   2–3 层低对比远景剪影（带轻微视差）、准星微光、命中加性光爆、很淡的颗粒暗角。
+   性能：所有形状烘焙进离屏缓存，绘制循环零 new 对象；每帧约 6 次 drawImage。
+   旧「量角卡尺」装饰层保留在 ARENA_DECOR 开关后面，便于回滚。 */
+const ARENA_DECOR=false;   // ← 旧装饰层开关：true = 回滚旧刻度/圆环/水印/几何命中环
+const ATMOS={
+  margin:0.22,                 // 天幕缓存上下留白（pitch 平移余量，覆盖 ±12°）
+  par:[0.36,0.24,0.15],        // 三层剪影的视差（×W×yaw，单位 px/rad）
+  ridgeH:[0.10,0.13,0.16],     // 三层剪影高度（×H）
+  ridgeA:[0.26,0.36,0.46],     // 三层剪影不透明度（暗色场景）
+  ridgeAL:[0.46,0.56,0.66],    // 三层剪影不透明度（浅色场景）
+  fogH:0.42,                   // 雾带高度（×H）
+  crossR:120,                  // 准星微光半径（CSS px）
+  crossA:0.055, crossAL:0.035, // 准星微光强度（暗 / 浅）
+  hitMs:120,                   // 命中光爆淡出时长
+  gridStep:6, gridR:48, gridSeg:8,   // 地面纹理网格：间距 / 半径 / 分段
+  gridA:[0.46,0.280,0.130],    // 地面纹理透明度（暗色，近→远）
+  gridAL:[0.40,0.250,0.110],   // 地面纹理透明度（浅色）
+  vigDark:0.38, vigLight:0.100,// 暗角强度
+  grainDark:0.22, grainLight:0.10  // 颗粒强度
+};
+let atmKey=null, atmW=0, atmH=0;
+let atmSkyCv=null, atmSkyHD=0;
+let atmFogCv=null, atmFogHD=0;
+const atmRidgeCv=[null,null,null], atmRidgeWD=[0,0,0], atmRidgeHD=[0,0,0];
+let atmCrossCv=null, atmHitCv=null;
+
+function _atmMix(a,b,t){ return [a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, a[2]+(b[2]-a[2])*t]; }
+function _atmCSS(c,a){ return 'rgba('+Math.round(c[0])+','+Math.round(c[1])+','+Math.round(c[2])+','+(Math.round(a*1000)/1000)+')'; }
+function _atmSprite(size, rgb, peak){
+  const cv=_mkCv(size,size), g=cv.getContext('2d');
+  if(!g) return null;
+  const grd=g.createRadialGradient(size*0.5,size*0.5,0, size*0.5,size*0.5,size*0.5);
+  grd.addColorStop(0,_atmCSS(rgb,peak));
+  grd.addColorStop(0.40,_atmCSS(rgb,peak*0.42));
+  grd.addColorStop(0.74,_atmCSS(rgb,peak*0.12));
+  grd.addColorStop(1,_atmCSS(rgb,0));
+  g.fillStyle=grd; g.fillRect(0,0,size,size);
+  return cv;
+}
+function atmBuildSky(cv, hw, hh){
+  const g=cv.getContext('2d'); if(!g) return;
+  const dark=!!SC.dark, white=[255,255,255];
+  const ui=_rgbOf(SC.ui||SC.cross,0);
+  const hy=hh*0.5;
+  // 地平线雾色：天空与地面在地平线处收敛到同一个颜色 → 不再有硬接缝
+  const haze=dark? _atmMix(_rgbOf(SC.bg,26), ui, 0.28) : _atmMix(_rgbOf(SC.bg,-62), ui, 0.14);
+  // 天幕：顶部暗，向地平线过渡到雾色
+  const skyTop=dark? _rgbOf(SC.bg,-14) : _rgbOf(SC.bg,-18);
+  const gs=g.createLinearGradient(0,0,0,hy);
+  gs.addColorStop(0,_atmCSS(skyTop,1));
+  gs.addColorStop(0.45,_atmCSS(_atmMix(skyTop,haze,0.42),1));
+  gs.addColorStop(0.80,_atmCSS(_atmMix(skyTop,haze,0.82),1));
+  gs.addColorStop(1,_atmCSS(haze,1));
+  g.fillStyle=gs; g.fillRect(0,0,hw,hy);
+  // 方向光：从画面上方偏中间压下来的一束柔光
+  const beamR=Math.max(hw*0.58, 70), beamCol=_atmMix(ui, white, 0.60);
+  g.save(); g.translate(hw*0.5, hy-hh*0.52); g.scale(1,1.75);
+  const beam=g.createRadialGradient(0,0,0, 0,0, beamR);
+  beam.addColorStop(0,_atmCSS(beamCol, dark?0.34:0.28));
+  beam.addColorStop(0.30,_atmCSS(beamCol, dark?0.14:0.08));
+  beam.addColorStop(0.62,_atmCSS(beamCol, dark?0.05:0.03));
+  beam.addColorStop(1,_atmCSS(beamCol,0));
+  g.fillStyle=beam; g.fillRect(-beamR,-beamR*1.75,beamR*2,beamR*3.5);
+  g.restore();
+  // 3 道很柔的光柱：让「光从上面中间落下来」更明确（支持 canvas filter 才画）
+  if(typeof g.filter==='string'){
+    g.save();
+    g.filter='blur('+Math.max(8,Math.round(hh*0.035))+'px)';
+    const shaft=g.createLinearGradient(0,-hh*0.06,0,hy);
+    shaft.addColorStop(0,_atmCSS(beamCol, dark?0.78:0.55));
+    shaft.addColorStop(0.7,_atmCSS(beamCol, dark?0.22:0.16));
+    shaft.addColorStop(1,_atmCSS(beamCol,0));
+    g.globalAlpha=dark?0.15:0.11; g.fillStyle=shaft;
+    for(let s=0;s<3;s++){
+      const w0=hw*(0.018+s*0.010), w1=hw*(0.15+s*0.055), x0=hw*(0.5+(s-1)*0.018);
+      g.beginPath();
+      g.moveTo(x0-w0, -hh*0.06); g.lineTo(x0+w0, -hh*0.06);
+      g.lineTo(x0+w1, hy); g.lineTo(x0-w1, hy);
+      g.closePath(); g.fill();
+    }
+    g.restore();
+  }
+  // 地面：远处没入雾色，近处被方向光照亮
+  const nearC=dark? _rgbOf(SC.bg,30) : _rgbOf(SC.bg,12);
+  const gg=g.createLinearGradient(0,hy,0,hh);
+  gg.addColorStop(0,_atmCSS(haze,1));
+  gg.addColorStop(0.28,_atmCSS(_atmMix(haze,nearC,0.35),1));
+  gg.addColorStop(0.68,_atmCSS(_atmMix(haze,nearC,0.80),1));
+  gg.addColorStop(1,_atmCSS(nearC,1));
+  g.fillStyle=gg; g.fillRect(0,hy,hw,hh-hy);
+  // 方向光落在地面上的一池柔光（画面中间偏下）
+  const poolR=Math.max(hw*0.66,70), poolCol=_atmMix(ui, white, dark?0.50:0.30);
+  g.save(); g.translate(hw*0.5, hy+(hh-hy)*0.52); g.scale(1,0.55);
+  const pg=g.createRadialGradient(0,0,0, 0,0, poolR);
+  pg.addColorStop(0,_atmCSS(poolCol, dark?0.30:0.24));
+  pg.addColorStop(0.42,_atmCSS(poolCol, dark?0.11:0.08));
+  pg.addColorStop(1,_atmCSS(poolCol,0));
+  g.fillStyle=pg; g.fillRect(-poolR,-poolR/0.55,poolR*2,poolR*2/0.55);
+  g.restore();
+}
+function atmBuildFog(cv, fw, fh){
+  const g=cv.getContext('2d'); if(!g) return;
+  const dark=!!SC.dark, ui=_rgbOf(SC.ui||SC.cross,0);
+  const fogC=dark? _atmMix(_rgbOf(SC.bg,34), ui, 0.30) : _atmMix(_rgbOf(SC.bg,-62), ui, 0.14);
+  const grd=g.createLinearGradient(0,0,0,fh);
+  grd.addColorStop(0,_atmCSS(fogC,0));
+  grd.addColorStop(0.18,_atmCSS(fogC, dark?0.14:0.18));
+  grd.addColorStop(0.38,_atmCSS(fogC, dark?0.34:0.40));
+  grd.addColorStop(0.50,_atmCSS(fogC, dark?0.44:0.52));
+  grd.addColorStop(0.62,_atmCSS(fogC, dark?0.34:0.40));
+  grd.addColorStop(0.82,_atmCSS(fogC, dark?0.14:0.18));
+  grd.addColorStop(1,_atmCSS(fogC,0));
+  g.fillStyle=grd; g.fillRect(0,0,fw,fh);
+}
+function atmBuildRidge(i){
+  const dark=!!SC.dark, HD=Math.max(24, Math.floor(H*ATMOS.ridgeH[i]));
+  const CWd=Math.floor(W + 2*ATMOS.par[i]*W*Math.PI);
+  atmRidgeHD[i]=HD; atmRidgeWD[i]=CWd;
+  atmRidgeCv[i]=_mkCv(CWd*0.5, HD*0.5);
+  const g=atmRidgeCv[i].getContext('2d'); if(!g) return;
+  const w2=atmRidgeCv[i].width, h2=atmRidgeCv[i].height;
+  const col=dark? [0,0,0] : _rgbOf(SC.bg,-74);
+  const aTop=dark? ATMOS.ridgeA[i] : ATMOS.ridgeAL[i];
+  const grd=g.createLinearGradient(0,0,0,h2);
+  grd.addColorStop(0,_atmCSS(col,aTop));
+  grd.addColorStop(0.55,_atmCSS(col,aTop*0.62));
+  grd.addColorStop(1,_atmCSS(col,0));
+  g.fillStyle=grd;
+  const f1=1.7*(i+1)+0.8, f2=4.3*(i+1)+1.7, f3=9.7*(i+1)+0.4;
+  const p1=i*2.1+0.6, p2=i*3.7+1.2, p3=i*1.3+2.4;
+  const base=0.55+0.13*i;
+  g.beginPath(); g.moveTo(0,h2);
+  for(let x=0;x<=w2;x+=2){
+    const t=x/w2*Math.PI*2;
+    const v=0.56+0.25*Math.sin(t*f1+p1)+0.13*Math.sin(t*f2+p2)+0.06*Math.sin(t*f3+p3);
+    g.lineTo(x, h2 - h2*Math.max(0.10, v*base));
+  }
+  g.lineTo(w2,h2); g.closePath(); g.fill();
+}
+function atmEnsureCache(){
+  if(atmKey===SC && atmW===W && atmH===H) return;
+  atmKey=SC; atmW=W; atmH=H;
+  const dark=!!SC.dark, white=[255,255,255];
+  const ui=_rgbOf(SC.ui||SC.cross,0);
+  // 天幕 + 地面（缓存比屏幕高，pitch 移动时用源裁剪，不露出边缘）
+  const M=Math.floor(H*ATMOS.margin);
+  atmSkyHD=H+2*M;
+  const sw=Math.max(2,Math.floor(W*0.5)), sh=Math.max(2,Math.floor(atmSkyHD*0.5));
+  atmSkyCv=_mkCv(sw,sh); if(atmSkyCv) atmBuildSky(atmSkyCv, sw, sh);
+  // 地平线雾带
+  atmFogHD=Math.max(64, Math.floor(H*ATMOS.fogH));
+  const fw=Math.max(2,Math.floor(W*0.5)), fh=Math.max(2,Math.floor(atmFogHD*0.5));
+  atmFogCv=_mkCv(fw,fh); if(atmFogCv) atmBuildFog(atmFogCv, fw, fh);
+  // 2–3 层远景剪影
+  for(let i=0;i<3;i++) atmBuildRidge(i);
+  // 准星微光 / 命中光爆（加性 sprite）
+  atmCrossCv=_atmSprite(256, _atmMix(ui, white, 0.75), dark?0.9:0.72);
+  atmHitCv=_atmSprite(256, _atmMix(_rgbOf(SC.tgt,0), white, 0.35), 1);
+}
+function drawAtmosphereBackdrop(){
+  atmEnsureCache();
+  if(!atmSkyCv) return;
+  const hy=H*0.5+f*Math.tan(pitch);
+  const y0=hy-atmSkyHD*0.5;
+  const visTop=Math.max(0,y0), visBot=Math.min(H,y0+atmSkyHD);
+  const dh=visBot-visTop; if(dh<=0) return;
+  ctx.drawImage(atmSkyCv, 0, (visTop-y0)*0.5, W*0.5, dh*0.5, 0, visTop, W, dh);
+}
+function drawAtmosphereRidges(){
+  atmEnsureCache();
+  const hy=H*0.5+f*Math.tan(pitch);
+  for(let i=0;i<3;i++){
+    const cv=atmRidgeCv[i]; if(!cv) continue;
+    const CWd=atmRidgeWD[i], HD=atmRidgeHD[i];
+    const par=ATMOS.par[i]*W;
+    const destX=W*0.5 - yaw*par - CWd*0.5;
+    let sx=-destX;
+    const maxSx=CWd-W;
+    if(maxSx<=0) sx=0; else { if(sx<0) sx=0; else if(sx>maxSx) sx=maxSx; }
+    ctx.drawImage(cv, sx*0.5, 0, W*0.5, cv.height, 0, hy-HD, W, HD);
+  }
+}
+function drawAtmosphereFog(){
+  atmEnsureCache();
+  if(!atmFogCv) return;
+  const hy=H*0.5+f*Math.tan(pitch);
+  ctx.drawImage(atmFogCv, 0, hy-atmFogHD*0.5, W, atmFogHD);
+}
+function drawCrossGlow(){
+  if(!atmCrossCv) return;
+  const dpr=devicePixelRatio||1, r=ATMOS.crossR*dpr, d=r*2;
+  ctx.save();
+  ctx.globalCompositeOperation='lighter';
+  ctx.globalAlpha=SC.dark?ATMOS.crossA:ATMOS.crossAL;
+  ctx.drawImage(atmCrossCv, W*0.5-r, H*0.5-r, d, d);
+  ctx.restore();
+}
+function drawHitBurst(now){
+  if(!hitFx || !atmHitCv || hitFxMode==='off') return;
+  const leftMs=hitFx.until-now;
+  if(!(leftMs>250-ATMOS.hitMs)) return;         // 只在命中后 ~120ms 内
+  const k=1-(250-leftMs)/ATMOS.hitMs;           // 1 → 0
+  if(k<=0) return;
+  const cp=Math.cos(hitFx.tp);
+  if(!_pt(DIST*cp*Math.sin(hitFx.ty), DIST*Math.sin(hitFx.tp), DIST*cp*Math.cos(hitFx.ty))) return;
+  const dpr=devicePixelRatio||1, r=(44+(1-k)*44)*dpr;
+  ctx.save();
+  ctx.globalCompositeOperation='lighter';
+  ctx.globalAlpha=(SC.dark?0.85:0.55)*k;
+  ctx.drawImage(atmHitCv, _px-r, _py-r, r*2, r*2);
+  ctx.restore();
+}
+
+// 地面纹理：预生成的常量网格段（近→远 3 档透明度），绘制循环零分配
+function _atmGrid(step,range,seg,r0,r1,r2){
+  const list=[], gY=-EYE;
+  function add(x1,z1,x2,z2){
+    const mx=(x1+x2)*0.5, mz=(z1+z2)*0.5, rr=Math.sqrt(mx*mx+mz*mz);
+    const band= rr<r0?0 : rr<r1?1 : rr<r2?2 : -1;
+    if(band<0) return;
+    list.push(x1,gY,z1,x2,gY,z2,band);
+  }
+  for(let v=-range;v<=range;v+=step){
+    for(let u=-range;u<range;u+=seg){ add(v,u, v,u+seg); add(u,v, u+seg,v); }
+  }
+  return new Float32Array(list);
+}
+const ATM_GRID=_atmGrid(ATMOS.gridStep, ATMOS.gridR, ATMOS.gridSeg, 14, 28, 44);
+const ATM_GRID_FINE=_atmGrid(2, 16, 4, 8, 16, 17);
+function _atmGridPass(list, bands, alphaScale){
+  const dpr=devicePixelRatio||1;
+  for(let b=0;b<bands;b++){
+    ctx.beginPath();
+    let any=false;
+    for(let i=0;i<list.length;i+=7){
+      if(list[i+6]!==b) continue;
+      any=true;
+      _seg(list[i], list[i+1], list[i+2], list[i+3], list[i+4], list[i+5]);
+    }
+    if(!any) continue;
+    ctx.globalAlpha=ARENA_DECOR?(SC.dark?ATMOS.gridA[b]:ATMOS.gridAL[b]):(SC.dark?ATMOS.gridA[b]:ATMOS.gridAL[b])*alphaScale;
+    ctx.strokeStyle=SC.major; ctx.lineWidth=1*dpr; ctx.stroke();
+  }
+}
+function arenaGroundTexture(){
+  if(!ATM_GRID.length) return;
+  _atmGridPass(ATM_GRID, 3, 1);      // 大格：地面结构（很淡）
+  _atmGridPass(ATM_GRID_FINE, 2, 0.45);  // 小格：近处材质纹理
+  ctx.globalAlpha=1;
+}
+function drawSceneBase(now, dtMs, withGlow){
+  ctx.fillStyle=SC.bg; ctx.fillRect(0,0,W,H);
+  if(ARENA_DECOR){                       // 旧装饰层回滚路径
+    drawArenaHaze();
+    grid();
+    drawArenaDust(now, dtMs);
+    drawArenaOverlay();
+    return;
+  }
+  drawAtmosphereBackdrop();              // 天幕 + 地面光衰减（随 pitch 平移）
+  drawAtmosphereRidges();                // 2–3 层远景剪影（随 yaw 视差）
+  drawAtmosphereFog();                   // 地平线雾带
+  grid();                                // 地面纹理（极淡）
+  drawArenaDust(now, dtMs);              // 空气里的尘埃
+  if(withGlow) drawCrossGlow();          // 准星周围很轻微的提亮
+  drawArenaOverlay();                    // 很淡的暗角 + 颗粒
+}
+
 function grid(){
   const perf = (function(){ try{ return localStorage.getItem('cs2at.perf')==='1'; }catch(e){ return false; } })();
   arenaCamSetup();
   _arTune();
-  if(!perf) arenaCeiling();
-  arenaFloor();
-  if(!perf) arenaLabels();
+  arenaGroundTexture();
+  if(ARENA_DECOR){
+    if(!perf) arenaCeiling();
+    arenaFloor();
+    if(!perf) arenaLabels();
+  }
 }
 
 let rawLockFailed=false;
@@ -1656,11 +1928,7 @@ function drawFrame(now){
   const frameDt=Math.min(80, lastDraw? now-lastDraw : 16);
   lastDraw=now;
 
-  ctx.fillStyle=SC.bg; ctx.fillRect(0,0,W,H);
-  drawArenaHaze();      // 地平线：剪影 + 渐变雾 + 主色光晕
-  grid();               // 游标卡尺量角刻度（地面 + 天顶 + 角度标注）
-  drawArenaDust(now, frameDt);   // 空气感：漂移尘埃
-  drawArenaOverlay();   // 边缘暗角 + 颗粒 + 底部卡尺刻度
+  drawSceneBase(now, frameDt, true);
 
   if(alive){
     const cp=Math.cos(tPitch);
@@ -1800,8 +2068,8 @@ function drawFrame(now){
     }
   }
 
-  // 命中读数：扩散圆环 + 径向刻线（未命中不画）
-  drawHitFeedback(now);
+  // 命中：极短的加性径向光爆（~120ms）；旧几何圆环刻线仅回滚开关打开时保留
+  if(ARENA_DECOR) drawHitFeedback(now); else drawHitBurst(now);
 
   if(feedback && now<feedback.until){
     ctx.textAlign='center';

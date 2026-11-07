@@ -1813,6 +1813,8 @@ addEventListener('hashchange',()=>show((location.hash||'#data').slice(1)));
 
 function cfgQ(){
   const p=[];
+  // 英文界面进工具页必须带 lang=en，否则英文用户点进去会看到中文
+  try{ if(typeof LANG!=='undefined' && LANG==='en') p.push('lang=en'); }catch(e){}
   if(cfg.dpi) p.push('dpi='+cfg.dpi);
   if(cfg.cm)  p.push('cm='+cfg.cm);
   if(cfg.yaw) p.push('yaw='+cfg.yaw);

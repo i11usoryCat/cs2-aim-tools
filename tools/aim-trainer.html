@@ -30,7 +30,8 @@
   #hud{position:fixed;left:22px;top:16px;font-size:14px;line-height:1.9;pointer-events:none;text-shadow:0 0 6px #000}
   #hud b{color:var(--acc)}
   .overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;
-    text-align:center;font-size:16px;line-height:2;color:var(--txt);background:var(--overlay);overflow:auto;padding:24px}
+    text-align:center;font-size:16px;line-height:2;color:var(--txt);background:var(--overlay);overflow:auto;padding:24px;
+    -webkit-backdrop-filter:blur(2.5px);backdrop-filter:blur(2.5px)}
   /* 结果页内容比视口高时，居中会裁掉顶部且滚不上去；safe center 在溢出时退回 start */
   .overlay{align-items:safe center;justify-content:safe center}
   .overlay.show{display:flex}
@@ -293,6 +294,343 @@ function line3(x1,y1,z1,x2,y2,z2,col){
   ctx.strokeStyle=col; ctx.lineWidth=1;
   ctx.beginPath(); ctx.moveTo(pa.sx,pa.sy); ctx.lineTo(pb.sx,pb.sy); ctx.stroke();
 }
+
+/* ===== 游标卡尺竞技场 · 视觉层（只画，不改判定 / 统计 / 模式 / 设置） =====
+   概念：Vernier = 游标卡尺。整个场地做成一把看得见的量角卡尺：
+   - 地面 5° 短刻度 + 15° 长刻度，远端标注角度，同心刻度圈像游标主尺；
+   - 天顶同构刻度（更疏更淡），形成封闭的量测盒；
+   - 地平线：远景剪影 + 渐变雾 + 主色光晕 + 地球线，营造纵深；
+   - 空气感：缓慢漂移的尘埃（54 颗，数量常量）；
+   - 命中：扩散圆环 + 12 条径向刻线，180ms 内淡出（未命中不画）；
+   - 边缘：烘焙暗角 + 极淡颗粒；底部一条卡尺刻度 + VERNIER 读数标识。
+   性能：所有数组/刻度坐标在初始化时生成；绘制循环内不 new 对象；
+   雾带 / 暗角 / 颗粒全部烘焙进离屏画布，每帧只多两次 drawImage。颜色一律取自 SC。 */
+const ARENA={
+  step:5*D2R, major:15*D2R,
+  r0:2.4, rOut:44,
+  bandR:[2.4,10,19,29,44],
+  minorA:[1.00,0.72,0.46,0.22],
+  majorA:[1.00,0.90,0.68,0.38],
+  ringR:[6,12,18,24,30,36,42],
+  ringA:[0.55,0.45,0.36,0.28,0.21,0.15,0.10],
+  ringSeg:[24,28,32,36,40,44,48],
+  ceilBand:[2.4,15,29,44],
+  ceilA:[0.62,0.38,0.20],
+  ceilR:[20,32,42],
+  ceilRA:[0.20,0.12,0.07],
+  ceilSeg:[32,40,46],
+  labelR:29, labelA:0.66,
+  axisA:0.78,
+  dustN:54,
+  vigA:0.46, grain:0.42,
+  hazeH:0.55,
+  idleMs:33
+};
+const AR_SIN=new Float32Array(72), AR_COS=new Float32Array(72);
+for(let i=0;i<72;i++){ const a=i*ARENA.step; AR_SIN[i]=Math.sin(a); AR_COS[i]=Math.cos(a); }
+const AR_LABELS=(function(){ const o=[]; for(let i=0;i<24;i++) o.push((i*15)+'°'); return o; })();
+const AR_RINGS=(function(){
+  const list=[];
+  for(let k=0;k<ARENA.ringR.length;k++){
+    const rad=ARENA.ringR[k], seg=ARENA.ringSeg[k], pts=new Float32Array((seg+1)*2);
+    for(let j=0;j<=seg;j++){ const a=j/seg*Math.PI*2; pts[j*2]=Math.sin(a)*rad; pts[j*2+1]=Math.cos(a)*rad; }
+    list.push({seg:seg, pts:pts});
+  }
+  return list;
+})();
+const AR_CEIL_RINGS=(function(){
+  const list=[];
+  for(let k=0;k<ARENA.ceilR.length;k++){
+    const rad=ARENA.ceilR[k], seg=ARENA.ceilSeg[k], pts=new Float32Array((seg+1)*2);
+    for(let j=0;j<=seg;j++){ const a=j/seg*Math.PI*2; pts[j*2]=Math.sin(a)*rad; pts[j*2+1]=Math.cos(a)*rad; }
+    list.push({seg:seg, pts:pts});
+  }
+  return list;
+})();
+const AR_TICK_COS=new Float32Array(12), AR_TICK_SIN=new Float32Array(12);
+for(let i=0;i<12;i++){ const a=i*Math.PI/6; AR_TICK_COS[i]=Math.cos(a); AR_TICK_SIN[i]=Math.sin(a); }
+
+// 相机三角：每帧算一次，给本轮所有投影复用（避免每点重复 cos/sin，也避免建对象）
+let _ay=1,_as=0,_ap=1,_asp=0;
+function arenaCamSetup(){ _ay=Math.cos(yaw); _as=Math.sin(yaw); _ap=Math.cos(pitch); _asp=Math.sin(pitch); }
+let _ax=0,_ayy=0,_az=0,_bx=0,_by=0,_bz=0,_px=0,_py=0,_pz=0;
+function _camA(x,y,z){ const x1=x*_ay-z*_as, z1=x*_as+z*_ay; _ax=x1; _ayy=y*_ap-z1*_asp; _az=y*_asp+z1*_ap; }
+function _camB(x,y,z){ const x1=x*_ay-z*_as, z1=x*_as+z*_ay; _bx=x1; _by=y*_ap-z1*_asp; _bz=y*_asp+z1*_ap; }
+function _pt(x,y,z){ _camA(x,y,z); if(_az<=NEAR) return false; _pz=_az; _px=W/2+(_ax/_az)*f; _py=H/2-(_ayy/_az)*f; return true; }
+function _seg(x1,y1,z1,x2,y2,z2){
+  _camA(x1,y1,z1); _camB(x2,y2,z2);
+  let ax=_ax, ay=_ayy, az=_az, bx=_bx, by=_by, bz=_bz;
+  if(az<=NEAR){
+    if(bz<=NEAR) return;
+    const t=(NEAR-az)/(bz-az); ax+=(bx-ax)*t; ay+=(by-ay)*t; az=NEAR;
+  } else if(bz<=NEAR){
+    const t=(NEAR-bz)/(az-bz); bx+=(ax-bx)*t; by+=(ay-by)*t; bz=NEAR;
+  }
+  ctx.moveTo(W/2+(ax/az)*f, H/2-(ay/az)*f);
+  ctx.lineTo(W/2+(bx/bz)*f, H/2-(by/bz)*f);
+}
+
+const _AR_CY=4.2;   // 天顶高度（沿用旧网格）
+function arenaCeiling(){
+  const dpr=devicePixelRatio||1;
+  for(let b=0;b<3;b++){
+    ctx.beginPath();
+    for(let i=0;i<72;i+=3){
+      const s=AR_SIN[i], c=AR_COS[i];
+      _seg(ARENA.ceilBand[b]*s, _AR_CY, ARENA.ceilBand[b]*c, ARENA.ceilBand[b+1]*s, _AR_CY, ARENA.ceilBand[b+1]*c);
+    }
+    ctx.globalAlpha=ARENA.ceilA[b]; ctx.strokeStyle=SC.ceil; ctx.lineWidth=1*dpr; ctx.stroke();
+  }
+  for(let k=0;k<AR_CEIL_RINGS.length;k++){
+    const R=AR_CEIL_RINGS[k], pts=R.pts;
+    ctx.beginPath();
+    for(let j=0;j<R.seg;j++) _seg(pts[j*2], _AR_CY, pts[j*2+1], pts[j*2+2], _AR_CY, pts[j*2+3]);
+    ctx.globalAlpha=ARENA.ceilRA[k]; ctx.strokeStyle=SC.ceil; ctx.lineWidth=1*dpr; ctx.stroke();
+  }
+  ctx.globalAlpha=1;
+}
+function arenaFloor(){
+  const gY=-EYE, dpr=devicePixelRatio||1;
+  // 5° 短刻度：4 段近实远淡，远端停在外圈内侧
+  for(let b=0;b<4;b++){
+    ctx.beginPath();
+    for(let i=0;i<72;i++){
+      if(i%3===0) continue;
+      const s=AR_SIN[i], c=AR_COS[i], r1=ARENA.bandR[b], r2=(b<3?ARENA.bandR[b+1]:ARENA.rOut-2.6);
+      _seg(r1*s, gY, r1*c, r2*s, gY, r2*c);
+    }
+    ctx.globalAlpha=ARENA.minorA[b]; ctx.strokeStyle=SC.minor; ctx.lineWidth=(b<2?1.1:0.9)*dpr; ctx.stroke();
+  }
+  // 15° 长刻度：贯通半径，远端越出外圈一点（卡尺主刻度）
+  for(let b=0;b<4;b++){
+    ctx.beginPath();
+    for(let i=0;i<72;i+=3){
+      const s=AR_SIN[i], c=AR_COS[i], r1=ARENA.bandR[b], r2=(b<3?ARENA.bandR[b+1]:ARENA.rOut+1.4);
+      _seg(r1*s, gY, r1*c, r2*s, gY, r2*c);
+    }
+    ctx.globalAlpha=ARENA.majorA[b]; ctx.strokeStyle=SC.major; ctx.lineWidth=(b<2?1.8:1.3)*dpr; ctx.stroke();
+  }
+  // 0° 主轴：基准线
+  ctx.beginPath(); _seg(ARENA.r0, gY, 0, ARENA.rOut, gY, 0);
+  ctx.globalAlpha=ARENA.axisA; ctx.strokeStyle=SC.ui; ctx.lineWidth=2*dpr; ctx.stroke();
+  // 地面同心刻度圈
+  for(let k=0;k<AR_RINGS.length;k++){
+    const R=AR_RINGS[k], pts=R.pts;
+    ctx.beginPath();
+    for(let j=0;j<R.seg;j++) _seg(pts[j*2], gY, pts[j*2+1], pts[j*2+2], gY, pts[j*2+3]);
+    ctx.globalAlpha=ARENA.ringA[k]; ctx.strokeStyle=SC.minor; ctx.lineWidth=1*dpr; ctx.stroke();
+  }
+  // 量角器外缘（主色刻度框）
+  const OR=AR_RINGS[AR_RINGS.length-1], opts=OR.pts;
+  ctx.beginPath();
+  for(let j=0;j<OR.seg;j++) _seg(opts[j*2], gY, opts[j*2+1], opts[j*2+2], gY, opts[j*2+3]);
+  ctx.globalAlpha=0.32; ctx.strokeStyle=SC.major; ctx.lineWidth=1.4*dpr; ctx.stroke();
+  ctx.globalAlpha=0.30; ctx.strokeStyle=SC.ui; ctx.lineWidth=2.4*dpr; ctx.stroke();
+  ctx.globalAlpha=1;
+}
+function arenaLabels(){
+  const dpr=devicePixelRatio||1, gY=-EYE+0.02;
+  ctx.font='600 '+(11*dpr)+'px "Microsoft YaHei UI","Microsoft YaHei",sans-serif';
+  ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillStyle=SC.ui;
+  for(let i=0;i<24;i++){
+    const idx=i*3, s=AR_SIN[idx], c=AR_COS[idx];
+    if(!_pt(ARENA.labelR*s, gY, ARENA.labelR*c)) continue;
+    if(_px<-26||_px>W+26||_py<-10||_py>H+10) continue;
+    const edge=Math.min(_px, W-_px)/(W*0.16);
+    ctx.globalAlpha=ARENA.labelA*Math.min(1, Math.max(0.16, edge));
+    ctx.fillText(AR_LABELS[i], _px, _py);
+  }
+  ctx.globalAlpha=1; ctx.textAlign='left'; ctx.textBaseline='alphabetic';
+}
+
+// —— 尘埃：54 颗常量粒子，屏幕比例坐标 + 深度视差，绘制循环内零分配 ——
+const AR_DUST=(function(){
+  const n=ARENA.dustN, d=new Float32Array(n*6);
+  for(let i=0;i<n;i++){
+    const o=i*6;
+    d[o]=Math.random(); d[o+1]=Math.random();
+    d[o+2]=(Math.random()*2-1)*0.010;
+    d[o+3]=-0.004-Math.random()*0.012;
+    d[o+4]=0.30+Math.random()*0.70;
+    d[o+5]=Math.random()*6.2832;
+  }
+  return d;
+})();
+let _dustYaw=0,_dustPitch=0,_dustOk=false;
+function drawArenaDust(now, dtMs){
+  const dpr=devicePixelRatio||1, n=ARENA.dustN, d=AR_DUST, sec=Math.min(0.08, (dtMs||16)/1000);
+  if(!_dustOk){ _dustYaw=yaw; _dustPitch=pitch; _dustOk=true; }
+  const dy=wrapPi(yaw-_dustYaw), dp=pitch-_dustPitch; _dustYaw=yaw; _dustPitch=pitch;
+  const tsec=now*0.001;
+  ctx.beginPath();
+  for(let i=0;i<n;i++){
+    const o=i*6;
+    let x=d[o]+d[o+2]*sec, y=d[o+1]+d[o+3]*sec;
+    if(x<0) x+=1; else if(x>1) x-=1;
+    if(y<0) y+=1; else if(y>1) y-=1;
+    d[o]=x; d[o+1]=y;
+    const depth=d[o+4], par=0.045+0.150*(1-depth);
+    let sx=(x-dy*par)*W, sy=(y+dp*par)*H;
+    if(sx<-24) sx+=W+48; else if(sx>W+24) sx-=W+48;
+    const r=(0.6+1.6*depth)*(0.82+0.28*Math.sin(tsec*0.7+d[o+5]))*dpr;
+    if(r<=0.1) continue;
+    ctx.moveTo(sx+r, sy);
+    ctx.arc(sx, sy, r, 0, 6.2831853);
+  }
+  ctx.globalAlpha=SC.dark?0.20:0.24; ctx.fillStyle=SC.ui; ctx.fill(); ctx.globalAlpha=1;
+}
+
+// —— 离屏缓存：地平线雾带 / 暗角 + 边缘颗粒（场景或分辨率变化才重建） ——
+let arKey=null, arW=0, arH=0, arHazeCv=null, arHazeH=0, arVigCv=null;
+function _mkCv(w,h){ const c=document.createElement('canvas'); c.width=Math.max(1, Math.floor(w)); c.height=Math.max(1, Math.floor(h)); return c; }
+function _rgbOf(hex, amt){
+  const h=String(hex||'').replace('#','');
+  if(!/^[0-9a-fA-F]{6}$/.test(h)) return [0,0,0];
+  const n=parseInt(h,16), a=amt||0;
+  return [Math.max(0,Math.min(255,((n>>16)&255)+a)), Math.max(0,Math.min(255,((n>>8)&255)+a)), Math.max(0,Math.min(255,(n&255)+a))];
+}
+function arenaOverlayTint(){
+  try{ document.documentElement.style.setProperty('--overlay', hexA(SC.bg, SC.dark?0.40:0.55)); }catch(e){}
+}
+function arenaEnsureCache(){
+  if(arKey===SC && arW===W && arH===H) return;
+  arKey=SC; arW=W; arH=H;
+  arenaOverlayTint();
+  const hw=Math.max(2, Math.floor(W*0.5));
+  // —— 地平线雾带（宽扁光晕 + 剪影 + 雾） ——
+  const bandH=Math.max(160, Math.floor(H*ARENA.hazeH));
+  arHazeH=bandH;
+  const hh=Math.max(2, Math.floor(bandH*0.5));
+  arHazeCv=_mkCv(hw,hh);
+  const hg=arHazeCv.getContext('2d');
+  if(hg){
+    const hy=hh*0.5;
+    const sil=_rgbOf(SC.bg, SC.dark?16:-18);
+    hg.fillStyle='rgb('+sil[0]+','+sil[1]+','+sil[2]+')';
+    hg.globalAlpha=SC.dark?0.50:0.34;
+    hg.beginPath(); hg.moveTo(0, hy+2);
+    for(let x=0;x<=hw;x+=3){
+      const h1=(0.5+0.5*Math.sin(x*0.012+1.7))*hh*0.045;
+      const h2=(0.5+0.5*Math.sin(x*0.029+4.1))*hh*0.028;
+      hg.lineTo(x, hy-(h1+h2));
+    }
+    hg.lineTo(hw, hy+2); hg.closePath(); hg.fill();
+    hg.globalAlpha=1;
+    // 渐变雾：用 SC.bg 的雾把远处刻度洗进远景
+    const fog=_rgbOf(SC.bg,0), fgc=SC.dark?0.55:0.60;
+    const lg=hg.createLinearGradient(0,0,0,hh);
+    lg.addColorStop(0,'rgba('+fog[0]+','+fog[1]+','+fog[2]+',0)');
+    lg.addColorStop(0.36,'rgba('+fog[0]+','+fog[1]+','+fog[2]+','+(fgc*0.5)+')');
+    lg.addColorStop(0.50,'rgba('+fog[0]+','+fog[1]+','+fog[2]+','+fgc+')');
+    lg.addColorStop(0.64,'rgba('+fog[0]+','+fog[1]+','+fog[2]+','+(fgc*0.5)+')');
+    lg.addColorStop(1,'rgba('+fog[0]+','+fog[1]+','+fog[2]+',0)');
+    hg.fillStyle=lg; hg.fillRect(0,0,hw,hh);
+    // 主色光晕（宽扁椭圆）
+    const ui=_rgbOf(SC.ui||SC.cross,0);
+    hg.save(); hg.translate(hw*0.5, hy); hg.scale(1,0.16);
+    const rg=hg.createRadialGradient(0,0,0, 0,0, Math.max(hw*0.42, hh*1.4));
+    rg.addColorStop(0,'rgba('+ui[0]+','+ui[1]+','+ui[2]+','+(SC.dark?0.30:0.20)+')');
+    rg.addColorStop(0.45,'rgba('+ui[0]+','+ui[1]+','+ui[2]+','+(SC.dark?0.09:0.06)+')');
+    rg.addColorStop(1,'rgba('+ui[0]+','+ui[1]+','+ui[2]+',0)');
+    hg.fillStyle=rg; hg.fillRect(-hw, -hh*4, hw*2, hh*8);
+    hg.restore();
+    // 地平线亮线
+    hg.globalAlpha=SC.dark?0.14:0.16;
+    hg.strokeStyle='rgb('+ui[0]+','+ui[1]+','+ui[2]+')';
+    hg.lineWidth=1; hg.beginPath(); hg.moveTo(0,hy); hg.lineTo(hw,hy); hg.stroke();
+    hg.globalAlpha=1;
+  }
+  // —— 暗角 + 边缘颗粒（烘焙成一张半分辨率图，每帧一次 drawImage） ——
+  const vw=Math.max(2, Math.floor(W*0.5)), vh=Math.max(2, Math.floor(H*0.5));
+  arVigCv=_mkCv(vw,vh);
+  const vg=arVigCv.getContext('2d');
+  if(vg){
+    const img=vg.createImageData(vw,vh), px=img.data;
+    const base=_rgbOf(SC.dark? '#000000' : SC.bg, SC.dark?0:-24);
+    const maxA=SC.dark?ARENA.vigA:0.16, grain=ARENA.grain;
+    const cx=(vw-1)*0.5, cy=(vh-1)*0.5, inv=1/Math.sqrt(cx*cx+cy*cy);
+    for(let y=0;y<vh;y++){
+      const dy=(y-cy)*inv;
+      for(let x=0;x<vw;x++){
+        const dx=(x-cx)*inv;
+        let t=(Math.sqrt(dx*dx+dy*dy)-0.34)/0.66; if(t<0) t=0;
+        let a=t*t*maxA+(Math.random()-0.5)*grain*t;
+        if(a<0) a=0; else if(a>1) a=1;
+        const o=(y*vw+x)*4;
+        px[o]=base[0]; px[o+1]=base[1]; px[o+2]=base[2]; px[o+3]=(a*255)|0;
+      }
+    }
+    vg.putImageData(img,0,0);
+  }
+}
+function drawArenaHaze(){
+  arenaEnsureCache();
+  if(!arHazeCv) return;
+  const hy=H*0.5+f*Math.tan(pitch);
+  ctx.drawImage(arHazeCv, 0, hy-arHazeH*0.5, W, arHazeH);
+}
+function arenaRuler(){
+  const dpr=devicePixelRatio||1, step=14*dpr, y=H-2*dpr;
+  ctx.strokeStyle=SC.ui; ctx.lineWidth=1*dpr;
+  ctx.globalAlpha=SC.dark?0.15:0.13;
+  ctx.beginPath();
+  for(let i=0, x=0; x<=W; x+=step, i++){
+    const len=(i%5===0? 11:5)*dpr;
+    ctx.moveTo(x, y); ctx.lineTo(x, y-len);
+  }
+  ctx.stroke();
+  ctx.globalAlpha=SC.dark?0.30:0.22;
+  ctx.font='600 '+(10*dpr)+'px "Microsoft YaHei UI","Microsoft YaHei",sans-serif';
+  ctx.textAlign='right'; ctx.textBaseline='alphabetic'; ctx.fillStyle=SC.ui;
+  ctx.fillText('VERNIER · 0.02 mm', W-14*dpr, H-17*dpr);
+  ctx.globalAlpha=1; ctx.textAlign='left';
+}
+function drawArenaOverlay(){
+  arenaEnsureCache();
+  if(arVigCv) ctx.drawImage(arVigCv, 0, 0, W, H);
+  arenaRuler();
+}
+let idleLast=0, fpsRunOn=false;
+function drawArenaIdle(now, dtMs){
+  ctx.fillStyle=SC.bg; ctx.fillRect(0,0,W,H);
+  drawArenaHaze();
+  grid();
+  drawArenaDust(now, dtMs);
+  drawArenaOverlay();
+}
+
+// —— 命中读数：扩散圆环 + 12 条径向刻线（像卡尺读数跳动；120–180ms 淡出） ——
+function drawHitFeedback(now){
+  if(!hitFx || hitFxMode==='off') return;
+  const leftMs=hitFx.until-now;
+  if(!(leftMs>70)) return;
+  const cp=Math.cos(hitFx.tp);
+  if(!_pt(DIST*cp*Math.sin(hitFx.ty), DIST*Math.sin(hitFx.tp), DIST*cp*Math.cos(hitFx.ty))) return;
+  const hx=_px, hy=_py;
+  const k=Math.min(1,(leftMs-70)/180);
+  const dpr=devicePixelRatio||1;
+  const ringR=(10+(1-k)*46)*dpr;
+  ctx.save();
+  ctx.globalAlpha=k*1.1;
+  ctx.strokeStyle=SC.ring||SC.tgt; ctx.lineWidth=3*dpr;
+  ctx.beginPath(); ctx.arc(hx, hy, ringR, 0, 6.2831853); ctx.stroke();
+  ctx.globalAlpha=k*0.95;
+  ctx.strokeStyle=SC.tgt; ctx.lineWidth=1.6*dpr;
+  ctx.beginPath();
+  for(let i=0;i<12;i++){
+    const ca=AR_TICK_COS[i], sa=AR_TICK_SIN[i];
+    const r1=ringR*1.05, r2=r1+7*dpr;
+    ctx.moveTo(hx+ca*r1, hy+sa*r1);
+    ctx.lineTo(hx+ca*r2, hy+sa*r2);
+  }
+  ctx.stroke();
+  // 内圈：读数"跳动"的第二道刻线（更短更急）
+  ctx.globalAlpha=k*0.55;
+  ctx.lineWidth=1*dpr;
+  ctx.beginPath(); ctx.arc(hx, hy, ringR*0.62, 0, 6.2831853); ctx.stroke();
+  ctx.restore();
+}
+
 const SCENES=window.GAME_SCENES;
 // 站点主题 → 游戏场景（主站切什么，游戏就跟什么；?scene= 可单独覆盖）
 const THEME2SCENE=window.THEME2SCENE;
@@ -334,7 +672,7 @@ function applyPageTheme(){
   r.setProperty('--txt',t.txt); r.setProperty('--dim',t.dim); r.setProperty('--acc',t.acc);
   r.setProperty('--on-acc','#ffffff');
   const dark=(t.txt.indexOf('#e')===0||t.txt.indexOf('#f')===0);
-  r.setProperty('--overlay',dark?'rgba(10,14,18,.96)':'rgba(248,250,252,.97)');
+  r.setProperty('--overlay',dark?'rgba(10,14,18,.40)':'rgba(248,250,252,.55)');
   document.body.style.background=t.bg;
 }
 
@@ -363,13 +701,10 @@ try{
 
 function grid(){
   const perf = (function(){ try{ return localStorage.getItem('cs2at.perf')==='1'; }catch(e){ return false; } })();
-  const R=44, step = perf? 8 : 3;
-  for(let v=-R;v<=R;v+=step){
-    line3(v,-EYE,-R,v,-EYE,R,(v===0)? SC.major : SC.minor);
-    line3(-R,-EYE,v,R,-EYE,v,(v===0)? SC.major : SC.minor);
-    if(!perf){ line3(v,4.2,-R,v,4.2,R,SC.ceil);
-               line3(-R,4.2,v,R,4.2,v,SC.ceil); }
-  }
+  arenaCamSetup();
+  if(!perf) arenaCeiling();
+  arenaFloor();
+  if(!perf) arenaLabels();
 }
 
 let rawLockFailed=false;
@@ -1211,7 +1546,20 @@ function loop(){
   const now=performance.now();
   const dt=Math.min(0.1, lastPadT? (now-lastPadT)/1000 : 0.016); lastPadT=now;
   padPoll(dt);   // 等待期也轮询：手柄可触发"锁定完成 → 倒计时"
-  if(!running||paused) return;
+  // 未开始（开始页 / 等待锁定 / 结果页）：只渲染静态竞技场背景，不画球和准星，限 30fps 省电；
+  // 开始后走同一套绘制函数（drawFrame），无缝过渡。
+  if(!running){
+    fpsRunOn=false;
+    if(now-(idleLast||0)>=ARENA.idleMs){
+      const idt=Math.min(140, idleLast? now-idleLast : 33);
+      idleLast=now;
+      drawArenaIdle(now, idt);
+    }
+    return;
+  }
+  if(paused) return;
+  // FPS 窗口从真正开跑那一刻起算（点击「开始」到开跑之间的等待空窗不算掉帧）
+  if(!fpsRunOn){ fpsRunOn=true; fpsFrames=0; fpsLast=now; }
 
   if(alive && limitChk.checked && mode!=='track' && now-tSpawn>allowed){ judge(); }
   // 六维检查：停点兜底——鼠标不动 200ms 即视为第一段甩动结束
@@ -1253,10 +1601,14 @@ function dynamicFactor(now){
 
 // 渲染与输入分离：输入只改角度，绘制全走 rAF 主循环
 function drawFrame(now){
+  const frameDt=Math.min(80, lastDraw? now-lastDraw : 16);
   lastDraw=now;
 
   ctx.fillStyle=SC.bg; ctx.fillRect(0,0,W,H);
-  grid();
+  drawArenaHaze();      // 地平线：剪影 + 渐变雾 + 主色光晕
+  grid();               // 游标卡尺量角刻度（地面 + 天顶 + 角度标注）
+  drawArenaDust(now, frameDt);   // 空气感：漂移尘埃
+  drawArenaOverlay();   // 边缘暗角 + 颗粒 + 底部卡尺刻度
 
   if(alive){
     const cp=Math.cos(tPitch);
@@ -1395,6 +1747,9 @@ function drawFrame(now){
       }
     }
   }
+
+  // 命中读数：扩散圆环 + 径向刻线（未命中不画）
+  drawHitFeedback(now);
 
   if(feedback && now<feedback.until){
     ctx.textAlign='center';

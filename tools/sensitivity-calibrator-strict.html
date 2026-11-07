@@ -739,11 +739,12 @@ requestAnimationFrame(loop);
   window.__IS_EN=EN;
   try{ var __fb=document.getElementById('fsBtn'); if(__fb) __fb.textContent = EN ? 'Fullscreen ⛶' : '全屏 ⛶'; }catch(e){}
   try{ if(EN) document.title="Sensitivity calibration · Vernier"; }catch(e){}   // 英文模式下标题也要跟着走
+  try{ document.documentElement.setAttribute('lang', EN?'en':'zh-CN'); }catch(e){}
+  if(!EN) return;
   try{
     var rw=document.getElementById('rawWarn');
     if(rw) rw.textContent='⚠️ Raw input lock failed: this measurement is system-accelerated — the suggestion is not comparable and cannot be applied to settings.';
   }catch(e){}
-  if(!EN) return;
   var D={
     '灵敏度标定 · 过冲法':'Sensitivity calibration · overshoot',
     '灵敏度标定 · 过冲法（全样本）':'Sensitivity calibration · overshoot (all samples)',
@@ -762,7 +763,8 @@ requestAnimationFrame(loop);
     '← 返回':'← Back','自动':'auto',
     '中位偏移':'Median offset','偏慢':'too slow','偏快':'too fast',
     '建议灵敏度':'Suggested sensitivity','当前灵敏度':'Current sensitivity','误差':'error',
-    '复制结果':'Copy result','关闭':'Close','继续':'Continue',
+    '再测一轮':'Run again','复制结果':'Copy result','关闭':'Close','继续':'Continue',
+    '清空累计（输入值保留）':'Clear cumulative (keeps values)',
     '过冲':'Overshoot','欠冲':'Undershoot','命中':'Hit','超时':'Timeout',
     '样本与置信':'Samples & confidence',
     '灵敏度标定':'Sensitivity calibration','全样本：命中与未命中同样计入':'All shots count — hits and misses alike.',

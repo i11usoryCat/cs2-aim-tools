@@ -686,6 +686,46 @@ try{
   .lang span.on{background:transparent !important; color:var(--acc) !important; box-shadow:inset 0 -1px 0 var(--acc)}
   .lang span{color:var(--dim)}
   nav a.on::after{display:none}
+  /* 外观三选 + 主题切换过渡 */
+  .tmbtn{
+    padding:7px 14px; border:1px solid var(--line); background:transparent;
+    color:var(--dim); font-size:13px; font-family:inherit; cursor:pointer;
+    border-radius:0; transition:color 120ms linear, border-color 120ms linear, background 120ms linear;
+  }
+  .tmbtn:hover{color:var(--txt); border-color:var(--line2)}
+  .tmbtn.on{color:var(--acc); border-color:var(--acc)}
+  html.theme-fade, html.theme-fade body{transition:background .3s, color .3s}
+  html.theme-fade body *{transition:background-color .3s, color .3s, border-color .3s}
+  /* ——— 训练目录：五列横排，首屏零滚动 ——— */
+  .today{
+    display:flex; align-items:center; justify-content:space-between;
+    height:44px; padding:0 12px; margin:0 0 20px;
+    border:1px solid var(--line); text-decoration:none; color:var(--txt);
+    font-size:14px; transition:background 120ms linear, border-color 120ms linear;
+  }
+  .today:hover{background:color-mix(in srgb,var(--txt) 4%, transparent); border-color:var(--line2)}
+  .today .td-r{color:var(--dim); font-size:13px; font-variant-numeric:tabular-nums}
+
+  #drillGrid{display:block !important}          /* 容器不再是卡片网格，改成目录 */
+  #drillGrid .cols{display:grid; grid-template-columns:repeat(5,1fr); gap:0 28px}
+  #drillGrid .grp{
+    margin:0 0 4px; padding:0; display:flex; gap:8px; align-items:baseline;
+    font-size:11px; letter-spacing:.18em; color:var(--dim); text-transform:none;
+  }
+  #drillGrid .grp i{font-style:normal; color:var(--dim2); font-variant-numeric:tabular-nums; letter-spacing:.08em}
+  #drillGrid .grp::before,#drillGrid .grp::after{display:none}
+  #drillGrid .item{
+    display:flex; align-items:center; justify-content:space-between;
+    height:44px; padding:0 4px; border-bottom:1px solid var(--line);
+    text-decoration:none; color:var(--txt); font-size:14px;
+    transition:background 120ms linear;
+  }
+  #drillGrid .item:hover{background:color-mix(in srgb,var(--txt) 4%, transparent)}
+  #drillGrid .item .ar{color:var(--dim2); transition:transform 120ms linear, color 120ms linear}
+  #drillGrid .item:hover .ar{transform:translateX(2px); color:var(--acc)}
+  @media (max-width:900px){
+    #drillGrid .cols{grid-template-columns:repeat(2,1fr); gap:0 18px}
+  }
 </style>
 </head>
 <body>
@@ -909,6 +949,12 @@ try{
       <div class="t">界面主题</div>
       <div class="hint" style="margin:6px 0 16px">只影响网页界面，不影响训练场景。</div>
 
+      <div class="row" id="themeMode" style="gap:8px;margin:0 0 16px;flex-wrap:wrap">
+        <button type="button" class="tmbtn" data-mode="auto">自动（跟随时间）</button>
+        <button type="button" class="tmbtn" data-mode="light">明亮</button>
+        <button type="button" class="tmbtn" data-mode="dark">深色</button>
+        <span class="hint" id="themeModeHint" style="margin:0;font-size:12px"></span>
+      </div>
       <div class="grp">作者推荐 <span class="gsub">— 大肥鱼常用的两套，日用与夜用</span></div>
       <div class="swatches" id="thRec"></div>
 
@@ -1057,7 +1103,7 @@ const K_CFG='cs2at.cfg', K_BEST='cs2at.best', K_RUNS='cs2at.runs', K_PERF='cs2at
 const $=id=>document.getElementById(id);
 const load=(k,d)=>{ try{ const v=localStorage.getItem(k); return v? JSON.parse(v): d; }catch(e){ return d; } };
 const save=(k,v)=>{ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} };
-const MODE_NAME={random:'自适应随机', block:'定角重复', precision:'小球精度', wide:'大角度甩枪', track:'微调训练', check:'六维检查'};
+const MODE_NAME={random:'自适应随机', block:'定角重复', axis:'分轴定位', precision:'小球精度', wide:'大角度甩枪', track:'微调训练', check:'六维检查'};
 
 const THEMES=[
   {id:'jade',  name:'墨玉', dot:'#7fbfa6', kind:'rec'},
@@ -1099,7 +1145,8 @@ const EN={
   '文件格式不对，没有改动任何数据。':'Invalid file — nothing was changed.',
   '全部 ▾':'All ▾','收起 ▴':'Collapse ▴',
   '模式':'Mode','最低限时':'Best limit','最高命中率':'Best hit','最快中位用时':'Fastest median','组数':'Sets',
-  '自适应随机':'Adaptive random','定角重复':'Fixed angle','小球精度':'Precision',
+  '自适应随机':'Adaptive random','定角重复':'Fixed angle','分轴定位':'Axis-staged','小球精度':'Precision','跟枪测试':'Tracking test',
+  "90 秒跟枪，输出跟踪误差 RMS、相位滞后、速度增益——检验跟枪手感。":"90-second tracking: error RMS, phase lag and speed gain — test your tracking feel.",
   '六维检查':'Check-up','90 秒一局测六样：反应、第一枪、反应确定、微调、拉枪、稳定。打完告诉你怎么练。':'One 90-second run scores six skills — reaction, first shot, confirm, micro-adjust, flick, steadiness — then tells you what to train.',
   '状态快测':'State check','20 球无时限，球大小按命中率自适应，快速看今天手感。':'20 dots, no time limit — size adapts to your hit rate. A quick feel check for today.',
   '大角度甩枪':'Wide flick','微调训练':'Micro-adjust',
@@ -1107,6 +1154,7 @@ const EN={
   '目标匀速漂移，跟着点。VAL / APEX / OW 的核心项目。':'Targets drift at a steady speed — click while tracking. Core skill for VAL / APEX / OW.',
   '球固定 1.5°，只调限时，按 85% 成功率走。主练用这个。':'Fixed 1.5° dots — only the time limit adjusts toward 85% success. For main practice.',
   '同一轴左右交替 8 球，形成运动程序，热身用。':'8 dots alternating left/right on one axis to build a motor program. For warm-up.',
+  "红色竖线标出目标的水平位置，准星横向进带即刻变绿，提示你已横移到位；随后只剩垂直微调，再点击。练的是把二维瞄准拆成两段一维动作。":"A red vertical line marks the horizontal position of the target; the crosshair turns green the moment you slide into the band — horizontal done. Then only the vertical nudge is left, then click. Two one-dimensional actions instead of one two-dimensional aim.",
   '0.7° 小球，无时限，练一次定位的精度。':'0.7° dots, no limit. For one-shot precision.',
   '评估':'Assessment','练习':'Practice',
   '日期':'Date','限时':'Limit','命中率':'Hit rate','中位用时':'Median',
@@ -1143,6 +1191,10 @@ const EN={
   '墨玉':'Jade','墨鱼':'Ink','湖泊':'Lake','明亮':'Light','暖砂':'Sand','森林':'Forest','极简灰':'Mono','赛博':'Cyber','深蓝':'Night',
   '经典':'Classic','浅灰':'Light grey','暗蓝':'Night blue','纯黑':'Mono black','沙色':'Sand',
   '训练场景':'Training scene','背景、网格、准星的颜色。':'Background, grid and crosshair colours in the trainer.','只影响网页界面，不影响训练场景。':'Affects the UI only, not the training scene.',
+  '定位':'Positioning','速度':'Speed','转向':'Turning','稳定':'Stability','体检':'Assessment',
+  '今天练什么':'What to train today','先从六维检查开始 →':'Start with the six-skill check →',
+  '自动（跟随时间）':'Auto (by time)','明亮':'Light','深色':'Dark',
+  '当前按本地时间自动切换（06:30–18:30 明亮）':'Following local time — light from 06:30 to 18:30',
   '作者推荐':'Author picks','— 大肥鱼常用的两套，日用与夜用':'— two themes the author actually uses, day and night',
   '浅色':'Light','深色':'Dark',
 
@@ -1282,9 +1334,11 @@ function computeOnAcc(){
     h.style.setProperty('--on-acc', lum>0.55? '#111820' : '#ffffff');
   }catch(e){}
 }
-function applyTheme(id){
+function applyTheme(id, opts){
+  // opts.persist === false 时只应用不落盘（自动模式的默认值不该被写进存储）
+  const persist = !(opts && opts.persist === false);
   document.documentElement.setAttribute('data-theme', id);
-  localStorage.setItem(K_THEME, id);
+  if(persist) localStorage.setItem(K_THEME, id);
   computeOnAcc();
   // 同步给计划页 iframe（它是独立文档，不会自己更新）
   try{
@@ -1296,12 +1350,79 @@ function applyTheme(id){
     if($('data') && $('data').classList.contains('on')) drawTrend(load(K_RUNS,[]));
   }catch(e){}
 }
-function defaultTheme(){
-  // 新访客默认主题：23:30–07:40 森林（夜间），其余暖砂；自己存过的设置永远优先
-  var d=new Date(), tm=d.getHours()*60+d.getMinutes();
-  return (tm>=1410||tm<460)?'forest':'sand';
+// —— 自动昼夜 ——
+// 本地时间 06:30–18:30 用暖砂，其余用森林。getHours() 本来就是本地时区，
+// 国外用户会按他自己的时间走，不需要额外换算。
+const THEME_DAY_START = 6 + 30/60, THEME_DAY_END = 18 + 30/60;
+function themeUserChosen(){ try{ return localStorage.getItem('cs2at.themeUser')==='1'; }catch(e){ return false; } }
+function computeAutoTheme(){
+  var d=new Date(), tm=d.getHours()+d.getMinutes()/60;
+  return (tm>=THEME_DAY_START && tm<THEME_DAY_END) ? 'sand' : 'forest';
 }
-applyTheme(localStorage.getItem(K_THEME)||defaultTheme());
+function defaultTheme(){ return computeAutoTheme(); }
+function resolveTheme(){
+  if(themeUserChosen()){
+    var stored=null; try{ stored=localStorage.getItem(K_THEME); }catch(e){}
+    return stored || computeAutoTheme();
+  }
+  return computeAutoTheme();          // 没有手动选择 → 每次按时间算，且不写 themeUser
+}
+applyTheme(resolveTheme(), {persist: themeUserChosen()});
+
+// 页面开着跨过时间点也要切：每 60 秒 + 回到前台时检查
+let __lastAuto = null;
+function autoTick(){
+  if(themeUserChosen()) return;
+  var want = computeAutoTheme();
+  if(want === document.documentElement.getAttribute('data-theme')) { __lastAuto = want; return; }
+  if(__lastAuto === want) return;
+  __lastAuto = want;
+  document.documentElement.classList.add('theme-fade');
+  applyTheme(want, {persist:false});
+  setTimeout(function(){ document.documentElement.classList.remove('theme-fade'); }, 320);
+}
+setInterval(autoTick, 60000);
+document.addEventListener('visibilitychange', function(){ if(!document.hidden) autoTick(); });
+
+// 外观三选：自动 / 明亮 / 深色
+function themeKindOf(id){
+  var t=THEMES.filter(function(x){ return x.id===id; })[0];
+  return t? t.kind : 'light';
+}
+function syncThemeMode(){
+  try{
+    var manual=themeUserChosen();
+    var cur=document.documentElement.getAttribute('data-theme');
+    var kind=themeKindOf(cur);
+    document.querySelectorAll('#themeMode .tmbtn').forEach(function(b){
+      var m=b.dataset.mode;
+      var on = (m==='auto') ? !manual
+             : (m==='light') ? (manual && kind!=='dark')
+             : (manual && kind==='dark');
+      b.classList.toggle('on', !!on);
+    });
+    var h=document.getElementById('themeModeHint');
+    if(h) h.textContent = manual ? '' : L('当前按本地时间自动切换（06:30–18:30 明亮）','Auto — switches by local time (light 06:30–18:30)');
+  }catch(e){}
+}
+document.querySelectorAll('#themeMode .tmbtn').forEach(function(b){
+  b.addEventListener('click', function(e){
+    e.stopPropagation();
+    var m=b.dataset.mode;
+    if(m==='auto'){
+      try{ localStorage.removeItem('cs2at.themeUser'); }catch(err){}
+      document.documentElement.classList.add('theme-fade');
+      applyTheme(computeAutoTheme(), {persist:false});
+      setTimeout(function(){ document.documentElement.classList.remove('theme-fade'); }, 320);
+    }else{
+      try{ localStorage.setItem('cs2at.themeUser','1'); }catch(err){}
+      document.documentElement.classList.add('theme-fade');
+      applyTheme(m==='dark'?'forest':'sand');
+      setTimeout(function(){ document.documentElement.classList.remove('theme-fade'); }, 320);
+    }
+    syncThemeMode(); try{ applyLang(LANG); }catch(err){}
+  });
+});
 
 function show(t){
   // 无效 hash 回落到数据页，不要白屏
@@ -1556,6 +1677,9 @@ function renderDrills(){
     {g:'练习', t:'定角重复',d:'同一轴左右交替 8 球，形成运动程序，热身用。',
      dEN:'8 dots alternating left/right on one axis to build a motor program. For warm-up.',
      u:'tools/aim-trainer.html?mode=block&count=40&limit=0'+q},
+    {g:'练习', t:'分轴定位',d:'红色竖线标出目标的水平位置，准星横向进带即刻变绿，提示你已横移到位；随后只剩垂直微调，再点击。练的是把二维瞄准拆成两段一维动作。',
+     dEN:'A red vertical line marks the horizontal position of the target; the crosshair turns green the moment you slide into the band — horizontal done. Then only the vertical nudge is left, then click. Two one-dimensional actions instead of one two-dimensional aim.',
+     u:'tools/aim-trainer.html?mode=axis&count=40&limit=0'+q},
     {g:'练习', t:'小球精度',d:'0.7° 小球，无时限，练一次定位的精度。',
      dEN:'0.7° dots, no limit. For one-shot precision.',
      u:'tools/aim-trainer.html?mode=precision&count=40&limit=0'+q},
@@ -1569,24 +1693,48 @@ function renderDrills(){
      dEN:'90-second tracking: error RMS, phase lag and speed gain — test your tracking feel.',
      u:'tools/tracking-calibrator.html?'+q.slice(1)}
   ];
-  const drillEN=false;   // 说明已进词典，渲染只出中文，翻译交给 translateRoot
-  const groups=[['评估','Assessment'],['练习','Practice']];
-  $('drillGrid').innerHTML=groups.map(function(g){
-    return '<div class="grp">'+
-      (document.documentElement.getAttribute('lang')==='en'? g[1] : g[0])+'</div>'+
-      items.filter(function(i){ return i.g===g[0]; }).map(function(i){
-        return '<a class="tile" href="'+i.u+'"><div class="t">'+i.t+'</div><div class="d">'+(drillEN?i.dEN:i.d)+'</div></a>';
-      }).join('');
-  }).join('');
+  // 目录式：按「练什么」分成 5 列，每项一行，首屏零滚动
+  const byName={}; items.forEach(function(i){ byName[i.t]=i; });
+  const GROUPS=[
+    ['定位','Positioning', ['分轴定位','小球精度','阶梯精度']],
+    ['速度','Speed',       ['自适应随机','随机距离','定角重复']],
+    ['转向','Turning',     ['大角度甩枪']],
+    ['稳定','Stability',   ['微调训练','跟枪测试']],
+    ['体检','Assessment',  ['六维检查','状态快测']]
+  ];
+  const zhPage = document.documentElement.getAttribute('lang')!=='en';
+  const today = byName['六维检查'];
+  let html='';
+  // 一律先渲染中文，英文交给 translateRoot（和其余文案同一套机制），避免中英混排
+  html+='<a class="today" href="'+(today? today.u : '#')+'">'+
+        '<span class="td-l">今天练什么</span>'+
+        '<span class="td-r">先从六维检查开始 →</span></a>';
+  html+='<div class="cols">';
+  GROUPS.forEach(function(g,gi){
+    const num=('0'+(gi+1)).slice(-2);
+    html+='<div class="col"><div class="grp"><i>'+num+'</i>'+g[0]+'</div>';
+    g[2].forEach(function(name){
+      const it=byName[name];
+      if(!it) return;
+      const tip = zhPage ? (' title="'+String(it.d||'').replace(/"/g,'&quot;')+'"') : '';
+      html+='<a class="item" href="'+it.u+'"'+tip+'>'+
+            '<span>'+it.t+'</span><span class="ar">→</span></a>';
+    });
+    html+='</div>';
+  });
+  html+='</div>';
+  $('drillGrid').innerHTML=html;
 }
 
 // 最佳 = 持久 best 与有效 runs 合并：历史最佳不丢，raw 不可比记录不参与
 // 状态快测与自适应随机在数据层分开：preset=state 的 run 归入 random|state
 const runKey=r=> (r.preset==='state')? 'random|state' : r.mode;
 const MODE_NAME2={};
+const MODE_NAME_EN={random:'Adaptive random', block:'Fixed angle', axis:'Axis-staged', precision:'Precision', wide:'Wide flick', track:'Micro-adjust', check:'Check-up'};
 function modeName(k){
   if(k==='random|state') return document.documentElement.getAttribute('lang')==='en'? 'State check' : '状态快测';
-  return MODE_NAME[k]||k;
+  const en = document.documentElement.getAttribute('lang')==='en';
+  return en ? (MODE_NAME_EN[k]||k) : (MODE_NAME[k]||k);
 }
 function mergeBest(runs){
   const stored=load(K_BEST,{});
@@ -1676,7 +1824,7 @@ function renderData(){
 }
 
 /* 趋势曲线：按模式分线（混在一起会骗人）——命中率（左轴 0-100%）+ 中位用时/限时（右轴 ms） */
-const MODE_EN={random:'Adaptive random', block:'Fixed angle', precision:'Precision', wide:'Wide flick', track:'Micro-adjust', check:'Check-up'};
+const MODE_EN={random:'Adaptive random', block:'Fixed angle', axis:'Axis-staged', precision:'Precision', wide:'Wide flick', track:'Micro-adjust', check:'Check-up'};
 let trendMode=null;
 let runShowAll=false;
 function drawTrend(runs){
@@ -1920,7 +2068,9 @@ function fillSettings(){
   $('thLight').innerHTML = swHTML(THEMES.filter(t=>t.kind==='light'));
   $('thDark').innerHTML  = swHTML(THEMES.filter(t=>t.kind==='dark'));
   document.querySelectorAll('.sw[data-th]').forEach(el=>el.addEventListener('click',()=>{
+    try{ localStorage.setItem('cs2at.themeUser','1'); }catch(e){}   // 手动选过就锁定
     applyTheme(el.dataset.th); fillSettings(); try{ applyLang(LANG); }catch(err){}
+    syncThemeMode();
   }));
 
   const scene=localStorage.getItem(K_SCENE)||'classic';
@@ -1934,6 +2084,7 @@ function fillSettings(){
   }));
 
   updateCalc();
+  try{ syncThemeMode(); }catch(e){}
 }
 function persistCfg(){
   const d=cv(num($('iDpi'),800),800), y=cv(num($('iYaw'),0.022),0.022);

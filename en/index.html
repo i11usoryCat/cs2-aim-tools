@@ -301,11 +301,13 @@ var EN={
   };
   var ZH={}; Object.keys(EN).forEach(function(k){ ZH[EN[k]]=k; });
   ZH['aim, measured']='瞄准，被度量';
+  // en/ 英文镜像页：默认英文；只有显式 ?lang=zh 才中文
+  // （旧逻辑按 navigator.language 判定，中文系统打开 en/index.html 会整页——含 <title>——翻成中文）
   var LANG='en';
   try{
-    var L0=localStorage.getItem('cs2at.lang');
-    if(L0){ LANG=L0; }
-    else{ var nn=(navigator.language||'en').toLowerCase(); LANG= nn.indexOf('zh')===0? 'zh':'en'; }
+    // 只有显式 ?lang=zh 才中文；其余一律英文（不看 navigator.language，也不看存储）
+    var Q1=new URLSearchParams(location.search).get('lang');
+    LANG = (Q1==='zh') ? 'zh' : 'en';
   }catch(e){}
 
   function translateRoot(root, lang){

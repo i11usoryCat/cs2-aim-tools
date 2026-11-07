@@ -719,17 +719,18 @@ try{
   #drillGrid .grp::before,#drillGrid .grp::after{display:none}
   #drillGrid .item{
     display:flex; align-items:center; justify-content:space-between;
-    height:44px; padding:0 4px; border-bottom:1px solid var(--line);
+    height:44px; padding:0 4px; margin:0 0 12px; border:0;   /* 不用线分隔：44px 行高 + 12px 间距 */
     text-decoration:none; color:var(--txt); font-size:14px;
     transition:background 120ms linear;
   }
+  #drillGrid .item:last-child{margin-bottom:0}
   #drillGrid .item:hover{background:color-mix(in srgb,var(--txt) 4%, transparent)}
   #drillGrid .item .ar{color:var(--dim2); transition:transform 120ms linear, color 120ms linear}
   #drillGrid .item:hover .ar{transform:translateX(2px); color:var(--acc)}
   /* 目录下方的紧凑状态条：11px 标签 / 24px 数字 / 1px 分隔线 */
   .statsbar{
     display:grid; grid-template-columns:repeat(3,1fr); gap:0 28px;
-    margin:26px 0 0; padding:16px 0 0; border-top:1px solid var(--line);
+    margin:24px 0 0; padding:0; border-top:0;   /* 用 24px 空白替代分隔线 */
     max-height:80px; box-sizing:border-box;
   }
   .statsbar .sb{display:flex; align-items:baseline; gap:10px; min-width:0}

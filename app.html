@@ -124,7 +124,7 @@ try{
   .brand{display:flex;align-items:center;gap:11px;margin-right:22px;text-decoration:none;color:inherit;flex-shrink:0}
   .brand .mark{width:46px;height:46px;color:var(--acc);flex-shrink:0}
   .brand-text{display:flex;flex-direction:column;line-height:1.15}
-  .brand-name{font-size:17px;font-weight:700;letter-spacing:1.2px;color:var(--txt)}
+  .brand-name{font-size:15px;font-weight:700;letter-spacing:1.2px;color:var(--txt)}
   .brand-sub{font-size:10px;letter-spacing:2px;color:color-mix(in srgb,var(--txt) 68%,var(--bg));margin-top:2px}
   .brand:hover .mark{color:var(--acc2)}
   .brand:hover .brand-name{color:var(--acc)}
@@ -468,8 +468,15 @@ try{
      纸面手册 · Paper manual（与训练器的「黑色仪器」刻意区分）
      只动样式：不改 id / 事件 / 存储键
      ============================================================ */
+  /* —— 纸面美术：默认沙色主题对齐 art-direction 第 1 节色板 —— */
+  html[data-theme="sand"]{
+    --bg:#f5f0e6; --bg2:#efe8da; --panel:#fffdf8; --panel2:#f3ece0;
+    --line:#d8cfbc; --line2:#cdc2ab;
+    --txt:#1b1a17; --dim:#57534b; --dim2:#8a7f6d;
+    --acc:#c2410c; --acc2:#9a3412; --ok:#4d7c0f; --warn:#a16207; --gold:#a8842f;
+  }
   :root{
-    --h-sec:21px; --h-card:15.5px;
+    --h-sec:25px; --h-card:15.5px;
     --card-pad-y:22px; --card-pad-x:24px; --card-gap:14px;
     --ease:cubic-bezier(.2,.8,.2,1); --t-fast:120ms; --t-mid:170ms;
     --rule-ink:color-mix(in srgb, var(--txt) 14%, transparent);
@@ -483,15 +490,15 @@ try{
   }
   h2::before{                      /* 游标刻度：左侧的竖条刻度 */
     content:""; width:8px; height:20px; flex:none; border-radius:1px;
-    background:repeating-linear-gradient(to bottom, var(--acc) 0 1px, transparent 1px 4px);
-    opacity:.7;
+    background:repeating-linear-gradient(to bottom, var(--gold) 0 1px, transparent 1px 4px);
+    opacity:.85;
   }
   h2::after{                       /* 细线向右渐隐，像手册的分节线 */
     content:""; position:static; flex:1; height:1px; width:auto; border-radius:0;
     background:linear-gradient(to right, var(--line2), transparent 72%);
   }
   .grp{                            /* 分组小标签：刻度 + 细线 */
-    grid-column:1/-1; margin:18px 0 2px; padding:0;
+    grid-column:1/-1; margin:28px 0 2px; padding:0;   /* 与上一组卡片留出 ≥ 卡片内边距×1.8 的间隔 */
     display:flex; align-items:center; gap:10px;
     font-size:12px; color:var(--dim); letter-spacing:2px;
   }
@@ -506,7 +513,7 @@ try{
   .card{ padding:var(--card-pad-y) var(--card-pad-x); margin-bottom:var(--card-gap) }
   a.tile::before{
     content:""; position:absolute; left:-1px; top:16px; bottom:16px; width:2px; border-radius:2px;
-    background:repeating-linear-gradient(to bottom, var(--acc) 0 1px, transparent 1px 6px);
+    background:repeating-linear-gradient(to bottom, var(--gold) 0 1px, transparent 1px 6px);
     opacity:0; transform:scaleY(.55); transform-origin:top;
     transition:opacity var(--t-mid) var(--ease), transform var(--t-mid) var(--ease);
   }
@@ -524,8 +531,13 @@ try{
   @keyframes paperIn{from{opacity:0}to{opacity:1}}
 
   /* —— 数字排版：所有读数等宽，跳动不再抖 —— */
-  body{font-variant-numeric:tabular-nums; -moz-font-feature-settings:"tnum" 1}
-  .v{font-size:27px; letter-spacing:-.4px}
+  body{font-size:14px; line-height:1.75; font-variant-numeric:tabular-nums; -moz-font-feature-settings:"tnum" 1}
+  .v{font-size:42px; line-height:1.1; letter-spacing:-.02em}   /* 数字是主角：比标题再大一档 */
+  /* 四联统计沿用同一档：数字必须比标题大，才能形成"数字是主角"的层级 */
+  /* 目录式：区块之间的留白必须大于卡片内边距（22px × 1.8 ≈ 40px） */
+  section{margin:0 0 44px}
+  /* 去掉卡片阴影堆叠：只用 1px 发丝线建立秩序 */
+  a.tile:hover,.card:hover{box-shadow:none}
   .k{letter-spacing:.4px}
   table td, table th{font-variant-numeric:tabular-nums}
   #calcHint{font-variant-numeric:tabular-nums; letter-spacing:.2px}
@@ -537,7 +549,7 @@ try{
     .row{gap:10px}
     header{padding:8px 14px; gap:4px}
     nav a{padding:7px 10px; font-size:13px}
-    h2{font-size:19px}
+    h2{font-size:var(--h-sec)}
     a.tile,.card{--card-pad-x:18px}
   }
   @media (prefers-reduced-motion:reduce){
@@ -585,10 +597,10 @@ try{
       <div class="t" style="margin-bottom:10px">现在怎么样</div>
       <div id="dataVerdict" style="font-size:17px;line-height:1.9;color:var(--txt)"></div>
       <div class="row" style="gap:28px;margin-top:14px">
-        <div><div class="k">本地组数</div><div class="v" id="sRuns" style="font-size:19px">0</div></div>
-        <div><div class="k">训练天数</div><div class="v" id="sDays" style="font-size:19px">0</div></div>
-        <div><div class="k">历史最低限时</div><div class="v" id="sLimit" style="font-size:19px">—</div></div>
-        <div><div class="k">历史最高命中率</div><div class="v" id="sHit" style="font-size:19px">—</div></div>
+        <div><div class="k">本地组数</div><div class="v" id="sRuns">0</div></div>
+        <div><div class="k">训练天数</div><div class="v" id="sDays">0</div></div>
+        <div><div class="k">历史最低限时</div><div class="v" id="sLimit">—</div></div>
+        <div><div class="k">历史最高命中率</div><div class="v" id="sHit">—</div></div>
       </div>
     </div>
     <div class="card">

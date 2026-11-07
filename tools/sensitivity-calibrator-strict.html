@@ -107,6 +107,7 @@
   <button id="clr" class="btn" style="margin-top:10px;background:#21262d;border-color:#30363d;font-size:14px;padding:9px 26px">清空累计（输入值保留）</button></div>
 
 <script src="../assets/scenes.js"></script>
+<script src="../assets/arena.js"></script>
 <script>
 const SCENES=window.GAME_SCENES;
 const THEME2SCENE=window.THEME2SCENE;
@@ -173,10 +174,14 @@ function wrapPi(a){ while(a> Math.PI) a-=2*Math.PI; while(a<-Math.PI) a+=2*Math.
 const sensOf = cm => 360/((cm/2.54)*DPI)/YAW;
 const kOf = cm => (360/((cm/2.54)*DPI))*D2R;
 
+/* ————— 共享竞技场背景（assets/arena.js）：只画背景，不碰球 / 准星 / 判定 / 统计 ————— */
+const arena=Arena.create(cv,{scene:SC});
+
 function resize(){
   W=cv.width=innerWidth*devicePixelRatio; H=cv.height=innerHeight*devicePixelRatio;
   cv.style.width=innerWidth+'px'; cv.style.height=innerHeight+'px';
   f=(W/2)/Math.tan(FOVH/2*D2R);
+  arena.resize();
 }
 addEventListener('resize',resize); resize();
 
@@ -188,15 +193,7 @@ function toCam(x,y,z){
 }
 function projCam(c){ return {sx:W/2+(c.x/c.z)*f, sy:H/2-(c.y/c.z)*f}; }
 function project(x,y,z){ const c=toCam(x,y,z); return c.z<=NEAR? null : projCam(c); }
-function line3(x1,y1,z1,x2,y2,z2,color){
-  let a=toCam(x1,y1,z1), b=toCam(x2,y2,z2);
-  if(a.z<NEAR && b.z<NEAR) return;
-  if(a.z<NEAR){ const t=(NEAR-a.z)/(b.z-a.z); a={x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t,z:NEAR}; }
-  else if(b.z<NEAR){ const t=(NEAR-b.z)/(a.z-b.z); b={x:b.x+(a.x-b.x)*t,y:b.y+(a.y-b.y)*t,z:NEAR}; }
-  const pa=projCam(a), pb=projCam(b);
-  ctx.strokeStyle=color; ctx.lineWidth=1;
-  ctx.beginPath(); ctx.moveTo(pa.sx,pa.sy); ctx.lineTo(pb.sx,pb.sy); ctx.stroke();
-}
+
 
 function newTarget(){
   // 固定水平甩动幅度 18~22°，纵向小幅随机
@@ -530,23 +527,17 @@ function moveEv(e){
 // 有原始输入用 rawupdate，没有（Firefox/Safari）退回 pointermove——能测，精度低一点
 addEventListener(('onpointerrawupdate' in window)?'pointerrawupdate':'pointermove', moveEv, true);
 
-function grid(){
-  const R=44, step=3;
-  for(let v=-R; v<=R; v+=step){
-    line3(v,-EYE,-R, v,-EYE,R, (v===0)?SC.major:SC.minor);
-    line3(-R,-EYE,v, R,-EYE,v, (v===0)?'rgba(88,166,255,.60)':SC.minor);
-    line3(v, 4.2,-R, v, 4.2,R, SC.ceil);
-    line3(-R, 4.2,v, R, 4.2,v, SC.ceil);
-  }
-  for(let i=0;i<8;i++){
-    const a=i*Math.PI/4, px=Math.sin(a)*18, pz=Math.cos(a)*18;
-    line3(px,-EYE,pz, px,4.2,pz, 'rgba(110,122,138,1)');
-  }
-}
 
+
+let idleLast=0;
 function loop(){
   requestAnimationFrame(loop);
-  if(!running||paused) return;
+  if(!running||paused){
+    // 未开始 / 暂停 / 结果页：仍渲染静态竞技场背景（~30fps 省电），让开始页背后有空间
+    const nowMs=performance.now();
+    if(nowMs-(idleLast||0)>=30){ idleLast=nowMs; arena.setView(yaw,pitch,f); arena.draw(nowMs); }
+    return;
+  }
 
   const nowT=performance.now();
   const dtS=Math.max(1, nowT-lastT);
@@ -555,8 +546,8 @@ function loop(){
   if(spd>200) fastSeen=true;
   if(fastSeen && !stopPos && spd<40) stopPos={yaw:yaw, pitch:pitch};
 
-  ctx.fillStyle=SC.bg; ctx.fillRect(0,0,W,H);
-  grid();
+  arena.setView(yaw,pitch,f);
+  arena.draw(nowT);
 
   const cp2=Math.cos(tPitch);
   const tx=DIST*cp2*Math.sin(tYaw), ty=DIST*Math.sin(tPitch), tz=DIST*cp2*Math.cos(tYaw);

@@ -14,6 +14,7 @@
 | **Home** | https://i11usorycat.github.io/cs2-aim-tools/ | Landing page and tool index |
 | **Hub** | https://i11usorycat.github.io/cs2-aim-tools/app.html | Stats, plan, drills, settings |
 | **Program** | https://i11usorycat.github.io/cs2-aim-tools/program.html | Four-week guided plan |
+| **Method** | https://i11usorycat.github.io/cs2-aim-tools/methodology.html | Nine sections: what was tested, what failed, what the numbers mean |
 
 Individual drills:
 
@@ -46,31 +47,27 @@ and it will report whether the measurement chain holds (±3% tolerance).
 
 ### Quality check (run before every push)
 
-```bash
-node scripts/qa.cjs            # 跑本地目录
-node scripts/qa.cjs --root .   # 指定根目录
-```
+Five scripts, all driven by headless Edge over CDP. Run them from the repository root.
 
-开一个 headless Edge，把 `index.html`、`app.html`、`program.html`、`tools/*`、`en/*` 逐页加载，检查：
-
-| 检查 | 说明 |
-|---|---|
-| console | 未捕获异常 + `console.error` |
-| 死链 | 页内 `href/src` 指向的本地文件是否存在 |
-| 重复 id | 同一页出现两次的 `id`（会打断 `getElementById`） |
-| 水平溢出 | `scrollWidth - clientWidth > 2px`（窄屏遮挡） |
-| 语言覆盖 | 切到英文后仍残留、且不在词典里的中文串 |
-
-结果写到 `qa-report.md` / `qa-report.json`，**问题数必须为 0 才提交**。
-
-再加一道**交互猴测试**（静态检查抓不到"点一下会不会炸"）：
+| Script | What it checks | Pass condition |
+| --- | --- | --- |
+| `scripts/qa.cjs` | Every page: uncaught exceptions, `console.error`, dead internal links, duplicate `id`s, horizontal overflow, untranslated strings after switching to English | `问题数: 0` |
+| `scripts/qa-monkey.cjs` | Every visible button, one reload per click: exceptions during the click | `异常条目: 0` |
+| `scripts/qa-settings.cjs` | Settings tab walkthrough: fields, derived values, persistence | no assertion failures |
+| `scripts/qa-settings-semantics.cjs` | Unit conversions (DPI / m_yaw / cm/360 / sensitivity) against known pairs | no mismatch |
+| `scripts/qa-shots.cjs` | Screenshot capture of the main screens for visual review | images written |
 
 ```bash
-node scripts/qa-monkey.cjs --max 10
+node scripts/qa.cjs --root .
+node scripts/qa-monkey.cjs --root . --max 10
+node scripts/qa-settings.cjs --root .
+node scripts/qa-settings-semantics.cjs --root .
+node scripts/qa-shots.cjs --root .
 ```
 
-逐个按钮：重载页面 → 点击 → 收集异常（每次调用 5s 超时，永不挂死）。
-结果写到 `qa-monkey.md`，**异常条目必须为 0**。
+`qa.cjs` writes `qa-report.md` / `qa-report.json`; `qa-monkey.cjs` writes `qa-monkey.md`.
+A page whose source contains `<meta http-equiv="refresh"` or `location.replace(` is treated as a
+redirect stub and skipped by `qa.cjs` — stubs are covered by the redirect check in `docs/qa-regression.md`.
 
 ### Sensitivity calibration
 
@@ -85,15 +82,30 @@ cm/360'   = cm/360 * (1 + median f)
 - The UI reports convergence when two consecutive rounds differ by less than 1%
 - Hits (angular error within the ball radius) are excluded from the bias estimate
 
-### Flick training
+### Eleven drills
 
-Three modes mapped to stages of motor learning:
+Four assessment items and seven practice items. Every item is launched from the hub with its own
+preset and records its own result.
 
-| Mode | Mechanic | Purpose |
+| Group | Item | Mechanic |
 | --- | --- | --- |
-| Adaptive random | Ball size and time limit auto-adjust toward an **85% success rate** | Main practice |
-| Fixed angle (blocked practice) | Same angle eight times, alternating across a centre anchor on four axes | Build the motor program, warm-up |
-| Micro-precision | Fixed 0.7° ball, no time limit | Landing precision |
+| Assessment | **Check-up** | One 90-second run scores six skills: reaction, first shot, confirmation, micro-adjust, flick, stability |
+| Assessment | **State check** | 20 balls, no time limit; ball size adapts to your hit rate — a quick "how am I today" |
+| Assessment | **Staircase precision** | Ball size staircases to the smallest target you hit at ~85% — a repeatable precision threshold |
+| Assessment | **Tracking test** | 90 s of tracking: RMS error, phase lag, velocity gain |
+| Practice | **Adaptive random** | Fixed 1.5° ball, only the time limit adapts toward 85% success — the main practice item |
+| Practice | **Random distance** | 5–45° random distance and direction; results grouped into four distance bands |
+| Practice | **Fixed angle** | The same angle eight times, alternating left/right — warm-up and motor-program building |
+| Practice | **Axis-staged** | Two 1 px vertical lines mark the horizontal band; entering it turns them green, leaving only vertical correction. Difficulty fades A0→A4 as you improve |
+| Practice | **Precision** | Fixed 0.7° ball, no time limit — landing precision |
+| Practice | **Wide flick** | 80–160° turns — the CS peeking scenario |
+| Practice | **Micro-adjust** | A target drifting at constant speed; click while following — the VAL / APEX / OW core skill |
+
+### What this is not
+
+- **No leaderboard, ever.** No ranking, no score submission, no account. Progress is a private record you keep against yourself.
+- **No uploads.** Everything is measured and stored in your browser's `localStorage`; there is no backend and no network request carries your data.
+- **No claim of "your true sensitivity".** The measurement pages report only what they can measure (click bias, first-move coverage) — see [method notes](docs/methodology.md).
 
 ### Four-week program
 
@@ -110,9 +122,11 @@ Everything is stored in `localStorage`; nothing is uploaded.
 | `cs2at.runs` | Recent runs (max 300) |
 | `cs2at.log` | Program-page training log |
 | `cs2at.theme` | UI theme |
+| `cs2at.themeUser` | Set to `1` once you pick a theme manually; while absent the theme follows local time (light 06:30–18:30) |
 | `cs2at.scene` | Training scene palette |
 | `cs2at.fps` | Frame-rate cap |
 | `cs2at.perf` | Performance mode |
+| `cs2at.axis` | Axis-staged fade level (A0–A4) |
 
 > `file://` and `https://` are separate storage origins. Records made from a local file are not visible on the hosted site and vice versa. Use **Export JSON** on the stats page to move data.
 
@@ -170,23 +184,31 @@ cs2-aim-tools/
 ├── index.html                              Landing page
 ├── app.html                                Hub: stats, plan, drills, settings  (?lang=en|zh)
 ├── program.html                            Four-week guided plan
+├── methodology.html                        Nine-section method page (Chinese)
 ├── tools/
 │   ├── sensitivity-calibrator-strict.html  Click-bias checker (all samples; ?fast=1)
 │   ├── openloop-calibrator.html            First-move coverage (?selftest=1 self-check)
-│   ├── tracking-calibrator.html            Tracking test (gain / phase / RMS)
-│   └── aim-trainer.html                    Flick trainer (mode presets via query)
-├── en/                                     English entry points — redirect to ../tools/<page>?lang=en
-├── assets/                                 Scenes palette, shared JS
+│   ├── tracking-calibrator.html            Tracking test + step-follow sensitivity probe
+│   └── aim-trainer.html                    Trainer: 11 items, mode presets via query
+├── en/                                     English entry points — redirect to ../<page>?lang=en
+├── assets/
+│   ├── scenes.js                           Scene palette
+│   ├── arena.js                            3-D scene + projection helpers
+│   └── ui-material.css                     Flat UI spec shared by the three tool pages (1 px lines, radius 0)
 ├── scripts/
 │   ├── qa.cjs                              Site-wide QA gate (console / links / ids / overflow / i18n)
-│   └── qa-monkey.cjs                       Interaction monkey test (click every button)
+│   ├── qa-monkey.cjs                       Interaction monkey test (click every button)
+│   ├── qa-settings.cjs                     Settings page walkthrough
+│   ├── qa-settings-semantics.cjs           Settings semantics (unit conversions, derived values)
+│   └── qa-shots.cjs                        Screenshot capture for visual review
 ├── windows/
 │   ├── RawLogger.cs                        Raw HID input recorder
 │   └── README.md
 ├── docs/
 │   ├── methodology.md                      Method notes, three failed models, validation
-│   └── training-plan.md                    Four-week training programme
-├── ui-contract.md                          Shared UI spec for the four tool pages
+│   ├── training-plan.md                    Four-week training programme
+│   └── qa-regression.md                    Regression checklist and known-fragile areas
+├── HANDOFF.md                              Current state, decisions, known limits
 └── LICENSE
 ```
 
@@ -232,8 +254,10 @@ Two consecutive rounds differed by 0.7%, so the run was marked converged. Final 
 
 ## Documentation
 
-- [Method notes and pitfalls](docs/methodology.md)
+- [Method notes and pitfalls](docs/methodology.md) — includes the three failed open-loop models and the end-to-end validation
 - [Four-week training programme](docs/training-plan.md)
+- [QA regression checklist](docs/qa-regression.md)
+- [Handoff: current state, decisions, known limits](HANDOFF.md)
 
 ---
 

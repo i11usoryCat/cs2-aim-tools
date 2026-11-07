@@ -100,20 +100,26 @@
       p.vigA     = 0.42;
       p.grain    = 0.10;
     } else {
-      p.skyTop   = mix(shade(bg, -34), ui, 0.18);
-      p.skyMid   = mix(shade(bg, -8), ui, 0.08);
-      p.horizon  = mix(bg, WHITE, 0.10);
-      p.fog      = mix(bg, WHITE, 0.44);
-      p.groundFar = shade(bg, -30);
-      p.groundNear = shade(bg, 8);
-      p.beam     = mix(WHITE, p.horizon, 0.35);
-      p.pool     = mix(WHITE, ui, 0.15);
-      p.ridge    = mix(bg, BLACK, 0.42);
-      p.grid     = mix(bg, BLACK, 0.55);
+      /* 「晨雾」：冷灰蓝天顶 → 暖白地平线带 → 压暗远地面 → 暖灰近地面，剪影是全画面最暗的一层。
+         亮度层级（简明均值 RGB/255）：天顶 ≈0.46–0.53、地平线 ≈0.86–0.88、
+         远地面 ≈0.61、近地面 ≈0.73–0.74、剪影 ≈0.39（渲染后行均值约 0.5）。 */
+      p.warm     = [Math.min(255, bg[0] + 8), Math.min(255, bg[1] + 4), Math.max(0, bg[2] - 16)];
+      p.skyTop   = mix(shade(bg, -128), ui, 0.30);            // 冷灰蓝
+      p.horizon  = mix(shade(p.warm, -40), WHITE, 0.53);      // 暖白（≈0.90，被雾带压到实测 0.84 左右）
+      p.skyMid   = mix(p.skyTop, p.horizon, 0.50);
+      p.fog      = mix(p.warm, WHITE, 0.30);                  // 暖白雾
+      p.groundFar = shade(p.warm, -85);                       // ≈0.61 压暗
+      p.groundNear = shade(p.warm, -47);                      // ≈0.76 暖灰（实测行均值 ≈0.73）
+      p.beam     = mix(WHITE, p.horizon, 0.30);
+      p.pool     = mix(WHITE, p.warm, 0.30);
+      p.ridge    = shade(p.warm, -158);                       // ≈0.32 全画面最暗的一层
+      p.grid     = mix(bg, BLACK, 0.60);
       p.vig      = mix(bg, BLACK, 0.62);
-      p.vigA     = 0.12;
-      p.grain    = 0.06;
+      p.vigA     = 0.08;                                      // 暗角 ≤0.10
+      p.grain    = 0.05;                                      // 颗粒 ≤0.10
     }
+    // 地平线高度（×H）：暗色保持 0.50；浅色抬到 0.44，让「亮地平线带」落 45% 附近、剪影落 30–44%
+    p.horFrac = dark ? 0.50 : 0.44;
     return p;
   }
 
@@ -122,15 +128,16 @@
     marginFrac: 0.42,                  // 天幕上下烘焙留白 ×H（pitch 平移余量）
     ridgeHFrac: [0.165, 0.115, 0.075], // 三层剪影高度 ×H（远 → 近）
     ridgeDarkA: [0.30, 0.38, 0.46],    // 暗色剪影顶部不透明度（远 → 近）
-    ridgeLightA: [0.62, 0.72, 0.82],   // 浅色剪影顶部不透明度（远处更深）
+    ridgeLightA: [0.86, 0.93, 0.98],   // 浅色剪影顶部不透明度（远处更深、更实）
+    ridgeHFracLight: [0.20, 0.14, 0.10], // 浅色剪影更高，保证 y=40% 行基本落在剪影里
     ridgePar: [0.018, 0.034, 0.055],   // 视差（×W / rad，远 → 近）
     maxYaw: 2.2,                       // 剪影烘焙预留的最大视差角（rad）
-    fogHFrac: [0.42, 0.46],            // 雾带高度 ×H（暗 / 浅）
-    fogYOffFrac: 0.16,                 // 浅色雾带整体下移 ×H
+    fogHFrac: [0.42, 0.40],            // 雾带高度 ×H（暗 / 浅）
+    fogYOffFrac: 0.04,                 // 浅色雾带相对地平线的下移 ×H
     poolR: [0.42, 0.24],               // 光池半径 ×W（暗 / 浅）
-    poolSY: [0.44, 0.34],              // 光池纵向压扁
-    poolY: [0.42, 0.55],               // 光池中心（地平线以下地面高度的比例）
-    poolA: [0.26, 0.14],               // 光池强度
+    poolSY: [0.44, 0.21],              // 光池纵向压扁（浅色更扁，压在下 40% 内）
+    poolY: [0.42, 0.62],               // 光池中心（地平线以下地面高度的比例；浅色 ≈0.79H）
+    poolA: [0.26, 0.13],               // 光池强度（浅色提亮 ≈3%，≤6%）
     fogLightA: 0.14                    // 浅色雾带峰值
   };
 
@@ -141,12 +148,21 @@
     var g = cv.getContext('2d');
     if (!g) return null;
 
-    // 1) 天幕：顶部 → 地平线
+    // 1) 天幕：顶部 → 地平线（暗色保持原配方；浅色「晨雾」用明显的亮度层级）
     var sky = g.createLinearGradient(0, 0, 0, hor);
-    sky.addColorStop(0, css(p.skyTop));
-    sky.addColorStop(0.40, css(mix(p.skyTop, p.skyMid, 0.80)));
-    sky.addColorStop(0.74, css(mix(p.skyMid, p.horizon, 0.60)));
-    sky.addColorStop(1, css(p.horizon));
+    if (p.dark) {
+      sky.addColorStop(0, css(p.skyTop));
+      sky.addColorStop(0.40, css(mix(p.skyTop, p.skyMid, 0.80)));
+      sky.addColorStop(0.74, css(mix(p.skyMid, p.horizon, 0.60)));
+      sky.addColorStop(1, css(p.horizon));
+    } else {
+      // 天顶冷灰蓝保持到 52%，最后 20% 快速拉到暖白地平线带
+      sky.addColorStop(0, css(p.skyTop));
+      sky.addColorStop(0.52, css(mix(p.skyTop, p.horizon, 0.02)));
+      sky.addColorStop(0.78, css(mix(p.skyTop, p.horizon, 0.30)));
+      sky.addColorStop(0.92, css(mix(p.skyTop, p.horizon, 0.72)));
+      sky.addColorStop(1, css(p.horizon));
+    }
     g.fillStyle = sky;
     g.fillRect(0, 0, Wb, hor + 1);
 
@@ -157,9 +173,9 @@
     g.translate(Wb * 0.5, hor - groundH * 0.62);
     g.scale(1, 1.8);
     var beam = g.createRadialGradient(0, 0, 0, 0, 0, beamR);
-    beam.addColorStop(0, css(p.beam, p.dark ? 0.18 : 0.11));
-    beam.addColorStop(0.35, css(p.beam, p.dark ? 0.072 : 0.045));
-    beam.addColorStop(0.70, css(p.beam, p.dark ? 0.024 : 0.015));
+    beam.addColorStop(0, css(p.beam, p.dark ? 0.18 : 0.05));
+    beam.addColorStop(0.35, css(p.beam, p.dark ? 0.072 : 0.022));
+    beam.addColorStop(0.70, css(p.beam, p.dark ? 0.024 : 0.009));
     beam.addColorStop(1, css(p.beam, 0));
     g.fillStyle = beam;
     g.fillRect(-beamR, -beamR, beamR * 2, beamR * 2);
@@ -167,10 +183,21 @@
 
     // 3) 地面：地平线 → 底部（远 → 近）
     var gg = g.createLinearGradient(0, hor, 0, Hb);
-    gg.addColorStop(0, css(p.dark ? mix(p.horizon, p.groundFar, 0.35) : mix(p.horizon, p.groundFar, 0.22)));
-    gg.addColorStop(p.dark ? 0.22 : 0.10, css(p.groundFar));
-    gg.addColorStop(0.62, css(mix(p.groundFar, p.groundNear, 0.75)));
-    gg.addColorStop(1, css(p.groundNear));
+    if (p.dark) {
+      gg.addColorStop(0, css(mix(p.horizon, p.groundFar, 0.35)));
+      gg.addColorStop(0.22, css(p.groundFar));
+      gg.addColorStop(0.62, css(mix(p.groundFar, p.groundNear, 0.75)));
+      gg.addColorStop(1, css(p.groundNear));
+    } else {
+      // 晨雾：梯度按「屏幕可见地面」铺（烘焙图上下留白不能算进可见高度）
+      var gf = clamp((st.H * st.S * (1 - st.horFrac)) / Math.max(1, groundH), 0, 1);
+      gg.addColorStop(0, css(mix(p.horizon, p.groundFar, 0.10)));
+      gg.addColorStop(0.06 * gf, css(mix(p.horizon, p.groundFar, 0.30)));
+      gg.addColorStop(0.25 * gf, css(p.groundFar));
+      gg.addColorStop(0.62 * gf, css(mix(p.groundFar, p.groundNear, 0.75)));
+      gg.addColorStop(gf, css(p.groundNear));
+      gg.addColorStop(1, css(p.groundNear));
+    }
     g.fillStyle = gg;
     g.fillRect(0, hor, Wb, groundH + 1);
 
@@ -183,7 +210,9 @@
     var idx = p.dark ? 0 : 1;
     var prx = Wb * GEO.poolR[idx];
     var pry = prx * GEO.poolSY[idx];
-    var pcy = hor + groundH * GEO.poolY[idx];
+    // 暗色沿用原式（像素级不变）；浅色按「屏幕可见地面」定位，保证光池只落在画面下 40%
+    var pcy = p.dark ? (hor + groundH * GEO.poolY[0])
+                     : (hor + st.H * st.S * (1 - st.horFrac) * GEO.poolY[1]);
     g.save();
     g.translate(Wb * 0.5, pcy);
     g.scale(1, pry / prx);
@@ -251,7 +280,8 @@
   /* ---------- 剪影层（多正弦；烘焙时预留视差余量） ---------- */
   function buildRidge(st, i) {
     var p = st.pal, dark = p.dark;
-    var HD = Math.max(18, Math.floor(st.H * GEO.ridgeHFrac[i]));
+    var hfArr = dark ? GEO.ridgeHFrac : GEO.ridgeHFracLight;
+    var HD = Math.max(18, Math.floor(st.H * hfArr[i]));
     var parPx = st.W * GEO.ridgePar[i];
     var marginPx = parPx * GEO.maxYaw;
     var CWd = Math.floor(st.W + 2 * marginPx);
@@ -263,8 +293,15 @@
     var aTop = dark ? GEO.ridgeDarkA[i] : GEO.ridgeLightA[i];
     var grd = g.createLinearGradient(0, 0, 0, h2);
     grd.addColorStop(0, css(p.ridge, aTop));
-    grd.addColorStop(0.55, css(p.ridge, aTop * 0.62));
-    grd.addColorStop(1, css(p.ridge, 0));
+    if (dark) {
+      grd.addColorStop(0.55, css(p.ridge, aTop * 0.62));
+      grd.addColorStop(1, css(p.ridge, 0));
+    } else {
+      // 晨雾：剪影不能到山脚就淡没，否则会被亮地平线冲淡——底部保留一点实度，交给雾带柔化
+      grd.addColorStop(0.60, css(p.ridge, aTop * 0.82));
+      grd.addColorStop(0.88, css(p.ridge, aTop * 0.46));
+      grd.addColorStop(1, css(p.ridge, aTop * 0.18));
+    }
     g.fillStyle = grd;
 
     var f1 = 1.6 * (i + 1) + 0.9, f2 = 4.1 * (i + 1) + 1.7;
@@ -385,7 +422,8 @@
         var M = st.marginD = H * GEO.marginFrac;      // 天幕上下留白
         st.Wb = Math.max(2, Math.floor(W * st.S));
         st.Hb = Math.max(2, Math.floor((H + 2 * M) * st.S));
-        st.horB = st.Hb * 0.5;                        // 烘焙图里的地平线
+        st.horFrac = st.pal.horFrac != null ? st.pal.horFrac : 0.5;
+        st.horB = (M + H * st.horFrac) * st.S;        // 烘焙图里的地平线
         st.skyCv = buildSky(st);
         st.ridges = [buildRidge(st, 0), buildRidge(st, 1), buildRidge(st, 2)];
         st.fogCv = buildFog(st);
@@ -425,7 +463,8 @@
           var f = st.f > 0 ? st.f : W * 0.5;
           var M = st.marginD;
           var off = clamp(f * Math.tan(clamp(st.pitch, -1.2, 1.2)), -M, M);
-          var hy = H * 0.5 + off;
+          var hf = st.horFrac != null ? st.horFrac : 0.5;
+          var hy = H * hf + off;
 
           c.save();
           c.imageSmoothingEnabled = true;
@@ -478,13 +517,21 @@
       /* 开始页：静态一帧（与 draw 同一套层，可自行降频调用） */
       drawStart: function (now) { return this.draw(now || 0); },
 
-      /* 把 --overlay 调成半透明，让开始页 / 暂停页背后透出竞技场（与训练器一致） */
+      /* 把 --overlay 调成半透明，让开始页 / 暂停页背后透出竞技场（与训练器一致）。
+         同时给出开始页局部 scrim 变量：只压中间文案带，不整体加暗（天空 / 地面保持通透）。 */
       tintOverlay: function (root) {
         try {
           var p = st.pal;
           var a = p.dark ? 0.40 : 0.34;
           var el = root || (typeof document !== 'undefined' ? document.documentElement : null);
-          if (el) el.style.setProperty('--overlay', css(p.bg, a));
+          if (!el) return;
+          el.style.setProperty('--overlay', css(p.bg, a));
+          // 开始页文案区局部 scrim（与 tools/aim-trainer.html 同款变量与配方）：
+          // 浅色 = SC.bg 暖白 0.55、暗色 = SC.bg 暗色 0.35；只盖中间带，天空/地面保持通透
+          var peak = p.dark ? 0.35 : 0.55;
+          el.style.setProperty('--scrim-rgb',
+            Math.round(p.bg[0]) + ',' + Math.round(p.bg[1]) + ',' + Math.round(p.bg[2]));
+          el.style.setProperty('--scrim-a', String(peak));
         } catch (e) {}
       },
 

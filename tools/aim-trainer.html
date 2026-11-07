@@ -760,10 +760,11 @@ const ATMOS={
   par:[0.36,0.24,0.15],        // 三层剪影的视差（×W×yaw，单位 px/rad）
   ridgeH:[0.10,0.13,0.16],     // 三层剪影高度（×H）
   ridgeA:[0.26,0.36,0.46],     // 三层剪影不透明度（暗色场景）
-  ridgeAL:[0.46,0.56,0.66],    // 三层剪影不透明度（浅色场景）
-  fogH:0.42,                   // 雾带高度（×H）
+  ridgeAL:[0.66,0.76,0.84],    // 三层剪影不透明度（浅色场景）
+  fogH:0.42, fogHL:0.46,       // 雾带高度（×H，暗 / 浅）
+  fogYOffL:0.16,               // 浅色雾带整体下移（×H，更低）
   crossR:120,                  // 准星微光半径（CSS px）
-  crossA:0.055, crossAL:0.035, // 准星微光强度（暗 / 浅）
+  crossA:0.055, crossAL:0.060, // 准星微光强度（暗=提亮 / 浅=加深）
   hitMs:120,                   // 命中光爆淡出时长
   gridStep:6, gridR:48, gridSeg:8,   // 地面纹理网格：间距 / 半径 / 分段
   gridA:[0.46,0.280,0.130],    // 地面纹理透明度（暗色，近→远）
@@ -775,7 +776,7 @@ let atmKey=null, atmW=0, atmH=0;
 let atmSkyCv=null, atmSkyHD=0;
 let atmFogCv=null, atmFogHD=0;
 const atmRidgeCv=[null,null,null], atmRidgeWD=[0,0,0], atmRidgeHD=[0,0,0];
-let atmCrossCv=null, atmHitCv=null;
+let atmCrossCv=null, atmHitCv=null, atmCoreCv=null;
 
 function _atmMix(a,b,t){ return [a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, a[2]+(b[2]-a[2])*t]; }
 function _atmCSS(c,a){ return 'rgba('+Math.round(c[0])+','+Math.round(c[1])+','+Math.round(c[2])+','+(Math.round(a*1000)/1000)+')'; }
@@ -795,74 +796,102 @@ function atmBuildSky(cv, hw, hh){
   const dark=!!SC.dark, white=[255,255,255];
   const ui=_rgbOf(SC.ui||SC.cross,0);
   const hy=hh*0.5;
-  // 地平线雾色：天空与地面在地平线处收敛到同一个颜色 → 不再有硬接缝
-  const haze=dark? _atmMix(_rgbOf(SC.bg,26), ui, 0.28) : _atmMix(_rgbOf(SC.bg,-62), ui, 0.14);
-  // 天幕：顶部暗，向地平线过渡到雾色
-  const skyTop=dark? _rgbOf(SC.bg,-14) : _rgbOf(SC.bg,-18);
+  const bgc=_rgbOf(SC.bg,0);
+  // 浅色场景的「晨雾」配色：地平线暖白 + 顶部冷灰蓝 + 暖白雾
+  const warm=[Math.min(255,bgc[0]+8), Math.min(255,bgc[1]+4), Math.max(0,bgc[2]-16)];
+  const coolTop=dark? _rgbOf(SC.bg,-14) : _atmMix(_rgbOf(SC.bg,-72), ui, 0.18);
+  const horizon=dark? _atmMix(_rgbOf(SC.bg,26), ui, 0.28) : warm;
+  const haze=dark? horizon : _atmMix(warm, bgc, 0.50);
   const gs=g.createLinearGradient(0,0,0,hy);
-  gs.addColorStop(0,_atmCSS(skyTop,1));
-  gs.addColorStop(0.45,_atmCSS(_atmMix(skyTop,haze,0.42),1));
-  gs.addColorStop(0.80,_atmCSS(_atmMix(skyTop,haze,0.82),1));
-  gs.addColorStop(1,_atmCSS(haze,1));
+  gs.addColorStop(0,_atmCSS(coolTop,1));
+  gs.addColorStop(0.35,_atmCSS(_atmMix(coolTop,horizon,0.45),1));
+  gs.addColorStop(0.72,_atmCSS(_atmMix(coolTop,horizon,0.82),1));
+  gs.addColorStop(1,_atmCSS(horizon,1));
   g.fillStyle=gs; g.fillRect(0,0,hw,hy);
-  // 方向光：从画面上方偏中间压下来的一束柔光
-  const beamR=Math.max(hw*0.58, 70), beamCol=_atmMix(ui, white, 0.60);
+  // 方向光：更弥散的「天光」——半径 ×1.6、强度 ×0.65
+  const beamCol=dark? _atmMix(ui, white, 0.60) : _atmMix(warm, white, 0.55);
+  const beamR=Math.max(hw*0.93, 110);
   g.save(); g.translate(hw*0.5, hy-hh*0.52); g.scale(1,1.75);
   const beam=g.createRadialGradient(0,0,0, 0,0, beamR);
-  beam.addColorStop(0,_atmCSS(beamCol, dark?0.34:0.28));
-  beam.addColorStop(0.30,_atmCSS(beamCol, dark?0.14:0.08));
-  beam.addColorStop(0.62,_atmCSS(beamCol, dark?0.05:0.03));
+  beam.addColorStop(0,_atmCSS(beamCol, dark?0.19:0.13));
+  beam.addColorStop(0.32,_atmCSS(beamCol, dark?0.078:0.050));
+  beam.addColorStop(0.64,_atmCSS(beamCol, dark?0.026:0.016));
   beam.addColorStop(1,_atmCSS(beamCol,0));
   g.fillStyle=beam; g.fillRect(-beamR,-beamR*1.75,beamR*2,beamR*3.5);
   g.restore();
-  // 3 道很柔的光柱：让「光从上面中间落下来」更明确（支持 canvas filter 才画）
+  // 天光柱：宽度 ×1.6、强度降低，两层不同模糊半径叠加以打散亮核（支持 canvas filter 才画）
   if(typeof g.filter==='string'){
-    g.save();
-    g.filter='blur('+Math.max(8,Math.round(hh*0.035))+'px)';
-    const shaft=g.createLinearGradient(0,-hh*0.06,0,hy);
-    shaft.addColorStop(0,_atmCSS(beamCol, dark?0.78:0.55));
-    shaft.addColorStop(0.7,_atmCSS(beamCol, dark?0.22:0.16));
+    const shaft=g.createLinearGradient(0,-hh*0.08,0,hy);
+    shaft.addColorStop(0,_atmCSS(beamCol,0.85));
+    shaft.addColorStop(0.65,_atmCSS(beamCol,0.28));
     shaft.addColorStop(1,_atmCSS(beamCol,0));
-    g.globalAlpha=dark?0.15:0.11; g.fillStyle=shaft;
-    for(let s=0;s<3;s++){
-      const w0=hw*(0.018+s*0.010), w1=hw*(0.15+s*0.055), x0=hw*(0.5+(s-1)*0.018);
-      g.beginPath();
-      g.moveTo(x0-w0, -hh*0.06); g.lineTo(x0+w0, -hh*0.06);
-      g.lineTo(x0+w1, hy); g.lineTo(x0-w1, hy);
-      g.closePath(); g.fill();
+    for(let p2=0;p2<2;p2++){
+      g.save();
+      g.filter='blur('+Math.max(10,Math.round(hh*(p2?0.062:0.020)))+'px)';
+      g.globalAlpha=(dark?0.066:0.040)*(p2?0.55:0.45);
+      g.fillStyle=shaft;
+      for(let s=0;s<3;s++){
+        const w0=hw*(0.030+s*0.016), w1=hw*(0.24+s*0.088), x0=hw*(0.5+(s-1)*0.018);
+        g.beginPath();
+        g.moveTo(x0-w0, -hh*0.08); g.lineTo(x0+w0, -hh*0.08);
+        g.lineTo(x0+w1, hy); g.lineTo(x0-w1, hy);
+        g.closePath(); g.fill();
+      }
+      g.restore();
     }
-    g.restore();
   }
-  // 地面：远处没入雾色，近处被方向光照亮
-  const nearC=dark? _rgbOf(SC.bg,30) : _rgbOf(SC.bg,12);
+  // 地面：暗色场景远处没入雾色；晨雾场景远处压暗、近处是一池晨光
+  const farC=dark? haze : _atmMix(_rgbOf(SC.bg,-44), ui, 0.12);
+  const nearC=dark? _rgbOf(SC.bg,30) : _atmMix(warm, bgc, 0.40);
   const gg=g.createLinearGradient(0,hy,0,hh);
-  gg.addColorStop(0,_atmCSS(haze,1));
-  gg.addColorStop(0.28,_atmCSS(_atmMix(haze,nearC,0.35),1));
-  gg.addColorStop(0.68,_atmCSS(_atmMix(haze,nearC,0.80),1));
+  if(dark){
+    gg.addColorStop(0,_atmCSS(farC,1));
+  } else {
+    // 晨雾：地平线先掺一点远处地面色，再在 6% 地面高度内柔化到压暗的远处地面（软白带，不刺眼）
+    gg.addColorStop(0,_atmCSS(_atmMix(horizon,farC,0.22),1));
+    gg.addColorStop(0.06,_atmCSS(farC,1));
+  }
+  gg.addColorStop(dark?0.28:0.30,_atmCSS(_atmMix(farC,nearC,dark?0.35:0.30),1));
+  gg.addColorStop(dark?0.68:0.72,_atmCSS(_atmMix(farC,nearC,dark?0.80:0.78),1));
   gg.addColorStop(1,_atmCSS(nearC,1));
   g.fillStyle=gg; g.fillRect(0,hy,hw,hh-hy);
-  // 方向光落在地面上的一池柔光（画面中间偏下）
-  const poolR=Math.max(hw*0.66,70), poolCol=_atmMix(ui, white, dark?0.50:0.30);
-  g.save(); g.translate(hw*0.5, hy+(hh-hy)*0.52); g.scale(1,0.55);
+  // 方向光落点：暗色场景宽、居中；晨雾场景收窄、更靠前
+  const poolR=Math.max(hw*(dark?0.66:0.34), 60);
+  const poolCol=dark? _atmMix(ui, white, 0.50) : white;
+  const poolSY=dark?0.55:0.42, poolY=hy+(hh-hy)*(dark?0.52:0.66);
+  g.save(); g.translate(hw*0.5, poolY); g.scale(1,poolSY);
   const pg=g.createRadialGradient(0,0,0, 0,0, poolR);
-  pg.addColorStop(0,_atmCSS(poolCol, dark?0.30:0.24));
-  pg.addColorStop(0.42,_atmCSS(poolCol, dark?0.11:0.08));
+  pg.addColorStop(0,_atmCSS(poolCol, dark?0.30:0.20));
+  pg.addColorStop(0.42,_atmCSS(poolCol, dark?0.11:0.075));
   pg.addColorStop(1,_atmCSS(poolCol,0));
-  g.fillStyle=pg; g.fillRect(-poolR,-poolR/0.55,poolR*2,poolR*2/0.55);
+  g.fillStyle=pg; g.fillRect(-poolR,-poolR/poolSY,poolR*2,poolR*2/poolSY);
   g.restore();
 }
 function atmBuildFog(cv, fw, fh){
   const g=cv.getContext('2d'); if(!g) return;
   const dark=!!SC.dark, ui=_rgbOf(SC.ui||SC.cross,0);
-  const fogC=dark? _atmMix(_rgbOf(SC.bg,34), ui, 0.30) : _atmMix(_rgbOf(SC.bg,-62), ui, 0.14);
+  const bgc=_rgbOf(SC.bg,0);
+  const warm=[Math.min(255,bgc[0]+14), Math.min(255,bgc[1]+8), Math.max(0,bgc[2]-8)];
+  // 暗色：同族微亮雾；晨雾：暖白雾（掺一点底色，避免过曝）
+  const fogC=dark? _atmMix(_rgbOf(SC.bg,34), ui, 0.30) : _atmMix(warm, bgc, 0.72);
   const grd=g.createLinearGradient(0,0,0,fh);
-  grd.addColorStop(0,_atmCSS(fogC,0));
-  grd.addColorStop(0.18,_atmCSS(fogC, dark?0.14:0.18));
-  grd.addColorStop(0.38,_atmCSS(fogC, dark?0.34:0.40));
-  grd.addColorStop(0.50,_atmCSS(fogC, dark?0.44:0.52));
-  grd.addColorStop(0.62,_atmCSS(fogC, dark?0.34:0.40));
-  grd.addColorStop(0.82,_atmCSS(fogC, dark?0.14:0.18));
-  grd.addColorStop(1,_atmCSS(fogC,0));
+  if(dark){
+    grd.addColorStop(0,_atmCSS(fogC,0));
+    grd.addColorStop(0.18,_atmCSS(fogC,0.14));
+    grd.addColorStop(0.38,_atmCSS(fogC,0.34));
+    grd.addColorStop(0.50,_atmCSS(fogC,0.44));
+    grd.addColorStop(0.62,_atmCSS(fogC,0.34));
+    grd.addColorStop(0.82,_atmCSS(fogC,0.14));
+    grd.addColorStop(1,_atmCSS(fogC,0));
+  } else {
+    // 晨雾：更厚、重心偏低、整体更淡（避免一条发光白带）
+    grd.addColorStop(0,_atmCSS(fogC,0));
+    grd.addColorStop(0.20,_atmCSS(fogC,0.05));
+    grd.addColorStop(0.42,_atmCSS(fogC,0.10));
+    grd.addColorStop(0.62,_atmCSS(fogC,0.14));
+    grd.addColorStop(0.82,_atmCSS(fogC,0.10));
+    grd.addColorStop(1,_atmCSS(fogC,0.02));
+  }
   g.fillStyle=grd; g.fillRect(0,0,fw,fh);
 }
 function atmBuildRidge(i){
@@ -872,7 +901,7 @@ function atmBuildRidge(i){
   atmRidgeCv[i]=_mkCv(CWd*0.5, HD*0.5);
   const g=atmRidgeCv[i].getContext('2d'); if(!g) return;
   const w2=atmRidgeCv[i].width, h2=atmRidgeCv[i].height;
-  const col=dark? [0,0,0] : _rgbOf(SC.bg,-74);
+  const col=dark? [0,0,0] : _rgbOf(SC.bg,-96);
   const aTop=dark? ATMOS.ridgeA[i] : ATMOS.ridgeAL[i];
   const grd=g.createLinearGradient(0,0,0,h2);
   grd.addColorStop(0,_atmCSS(col,aTop));
@@ -901,14 +930,17 @@ function atmEnsureCache(){
   const sw=Math.max(2,Math.floor(W*0.5)), sh=Math.max(2,Math.floor(atmSkyHD*0.5));
   atmSkyCv=_mkCv(sw,sh); if(atmSkyCv) atmBuildSky(atmSkyCv, sw, sh);
   // 地平线雾带
-  atmFogHD=Math.max(64, Math.floor(H*ATMOS.fogH));
+  atmFogHD=Math.max(64, Math.floor(H*(dark?ATMOS.fogH:ATMOS.fogHL)));
   const fw=Math.max(2,Math.floor(W*0.5)), fh=Math.max(2,Math.floor(atmFogHD*0.5));
   atmFogCv=_mkCv(fw,fh); if(atmFogCv) atmBuildFog(atmFogCv, fw, fh);
   // 2–3 层远景剪影
   for(let i=0;i<3;i++) atmBuildRidge(i);
-  // 准星微光 / 命中光爆（加性 sprite）
-  atmCrossCv=_atmSprite(256, _atmMix(ui, white, 0.75), dark?0.9:0.72);
+  // 准星微光：暗色场景用亮 sprite（加性提亮），浅色场景用暗 sprite（加深）
+  atmCrossCv=dark? _atmSprite(256, _atmMix(ui, white, 0.75), 0.9)
+                 : _atmSprite(256, _atmMix(_rgbOf(SC.bg,-70), [0,0,0], 0.45), 0.9);
+  // 命中光爆 sprite + 极短白核 sprite
   atmHitCv=_atmSprite(256, _atmMix(_rgbOf(SC.tgt,0), white, 0.35), 1);
+  atmCoreCv=_atmSprite(64, [255,255,255], 1);
 }
 function drawAtmosphereBackdrop(){
   atmEnsureCache();
@@ -937,13 +969,15 @@ function drawAtmosphereFog(){
   atmEnsureCache();
   if(!atmFogCv) return;
   const hy=H*0.5+f*Math.tan(pitch);
-  ctx.drawImage(atmFogCv, 0, hy-atmFogHD*0.5, W, atmFogHD);
+  const off=SC.dark?0:ATMOS.fogYOffL*H;   // 晨雾更低：压在地面附近而不是铺满全屏
+  ctx.drawImage(atmFogCv, 0, hy-atmFogHD*0.5+off, W, atmFogHD);
 }
 function drawCrossGlow(){
   if(!atmCrossCv) return;
   const dpr=devicePixelRatio||1, r=ATMOS.crossR*dpr, d=r*2;
   ctx.save();
-  ctx.globalCompositeOperation='lighter';
+  // 暗色场景：加性提亮；浅色场景：用暗 sprite 加深（浅底上提亮看不见）
+  ctx.globalCompositeOperation=SC.dark?'lighter':'source-over';
   ctx.globalAlpha=SC.dark?ATMOS.crossA:ATMOS.crossAL;
   ctx.drawImage(atmCrossCv, W*0.5-r, H*0.5-r, d, d);
   ctx.restore();
@@ -956,7 +990,20 @@ function drawHitBurst(now){
   if(k<=0) return;
   const cp=Math.cos(hitFx.tp);
   if(!_pt(DIST*cp*Math.sin(hitFx.ty), DIST*Math.sin(hitFx.tp), DIST*cp*Math.cos(hitFx.ty))) return;
-  const dpr=devicePixelRatio||1, r=(44+(1-k)*44)*dpr;
+  const dpr=devicePixelRatio||1;
+  const elapsed=250-leftMs;                 // 命中后经过的毫秒数
+  // 脆感来源：极短白核（40–60ms，半径 6–8px）
+  if(elapsed<52 && atmCoreCv){
+    const ck=1-elapsed/52;
+    const cr=(6+(1-ck)*2)*dpr;
+    ctx.save();
+    ctx.globalCompositeOperation='lighter';
+    ctx.globalAlpha=0.95*ck;
+    ctx.drawImage(atmCoreCv, _px-cr, _py-cr, cr*2, cr*2);
+    ctx.restore();
+  }
+  // 软光晕：白核之后立刻接管
+  const r=(44+(1-k)*44)*dpr;
   ctx.save();
   ctx.globalCompositeOperation='lighter';
   ctx.globalAlpha=(SC.dark?0.85:0.55)*k;
@@ -964,34 +1011,40 @@ function drawHitBurst(now){
   ctx.restore();
 }
 
-// 地面纹理：预生成的常量网格段（近→远 3 档透明度），绘制循环零分配
-function _atmGrid(step,range,seg,r0,r1,r2){
+// 地面纹理：预生成的常量网格段（近→远 3 档透明度）。
+// 中远景线段用固定种子预生成「随机断裂」标记（数组第 8 位），运行时只读，避免看出网格规律。
+function _atmGrid(step,range,seg,r0,r1,r2,breakMid,breakFar){
   const list=[], gY=-EYE;
+  let seed=0x9e3779b9;                                  // 固定种子：每次加载断裂位置一致
+  function rnd(){ seed=(seed*1664525+1013904223)>>>0; return seed/4294967296; }
   function add(x1,z1,x2,z2){
     const mx=(x1+x2)*0.5, mz=(z1+z2)*0.5, rr=Math.sqrt(mx*mx+mz*mz);
     const band= rr<r0?0 : rr<r1?1 : rr<r2?2 : -1;
     if(band<0) return;
-    list.push(x1,gY,z1,x2,gY,z2,band);
+    let keep=1;
+    if(band===1) keep = rnd()<breakMid?0:1;
+    else if(band===2) keep = rnd()<breakFar?0:1;
+    list.push(x1,gY,z1,x2,gY,z2,band,keep);
   }
   for(let v=-range;v<=range;v+=step){
     for(let u=-range;u<range;u+=seg){ add(v,u, v,u+seg); add(u,v, u+seg,v); }
   }
   return new Float32Array(list);
 }
-const ATM_GRID=_atmGrid(ATMOS.gridStep, ATMOS.gridR, ATMOS.gridSeg, 14, 28, 44);
-const ATM_GRID_FINE=_atmGrid(2, 16, 4, 8, 16, 17);
+const ATM_GRID=_atmGrid(ATMOS.gridStep, ATMOS.gridR, ATMOS.gridSeg, 14, 28, 44, 0.36, 0.56);
+const ATM_GRID_FINE=_atmGrid(2, 16, 4, 8, 16, 17, 0.16, 0.30);
 function _atmGridPass(list, bands, alphaScale){
   const dpr=devicePixelRatio||1;
   for(let b=0;b<bands;b++){
     ctx.beginPath();
     let any=false;
-    for(let i=0;i<list.length;i+=7){
-      if(list[i+6]!==b) continue;
+    for(let i=0;i<list.length;i+=8){
+      if(list[i+6]!==b || list[i+7]===0) continue;
       any=true;
       _seg(list[i], list[i+1], list[i+2], list[i+3], list[i+4], list[i+5]);
     }
     if(!any) continue;
-    ctx.globalAlpha=ARENA_DECOR?(SC.dark?ATMOS.gridA[b]:ATMOS.gridAL[b]):(SC.dark?ATMOS.gridA[b]:ATMOS.gridAL[b])*alphaScale;
+    ctx.globalAlpha=(SC.dark?ATMOS.gridA[b]:ATMOS.gridAL[b])*alphaScale;
     ctx.strokeStyle=SC.major; ctx.lineWidth=1*dpr; ctx.stroke();
   }
 }

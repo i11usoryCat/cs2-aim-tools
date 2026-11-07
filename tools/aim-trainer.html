@@ -30,8 +30,7 @@
   #hud{position:fixed;left:22px;top:16px;font-size:14px;line-height:1.9;pointer-events:none;text-shadow:0 0 6px #000}
   #hud b{color:var(--hud-acc,var(--acc))}
   .overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;
-    text-align:center;font-size:16px;line-height:2;color:var(--txt);background:var(--overlay);overflow:auto;padding:24px;
-    -webkit-backdrop-filter:blur(var(--ovblur,2.5px));backdrop-filter:blur(var(--ovblur,2.5px))}
+    text-align:center;font-size:16px;line-height:2;color:var(--txt);background:var(--overlay);overflow:auto;padding:24px}
   /* 结果页内容比视口高时，居中会裁掉顶部且滚不上去；safe center 在溢出时退回 start */
   .overlay{align-items:safe center;justify-content:safe center}
   .overlay.show{display:flex}
@@ -43,22 +42,20 @@
       rgba(var(--scrim-rgb,11,15,20), 0) 100%)}
   #msg>*{position:relative;z-index:1}
   /* 结果页：半透明面板承载内容（正文 ≥7:1 / 次要 ≥4.5:1），按钮按主/次分层 */
-  #resPanel{box-sizing:border-box;width:100%;max-width:640px;padding:30px 56px 30px 34px;border-radius:12px;text-align:left;line-height:1.7;
+  #resPanel{box-sizing:border-box;width:100%;max-width:640px;padding:32px 56px 32px 32px;border-radius:0;text-align:left;line-height:1.5;
     background:rgba(var(--scrim-rgb,11,15,20),var(--res-panel-a,.86));
-    border:1px solid color-mix(in srgb,var(--txt) 16%,transparent);
-    -webkit-backdrop-filter:blur(var(--ovblur,2.5px));backdrop-filter:blur(var(--ovblur,2.5px))}
+    border:1px solid var(--line)}
   #res .btn{background-color:transparent;border:1px solid color-mix(in srgb,var(--txt) 32%,transparent);color:var(--txt)}
   #res .btn:hover{background-color:transparent;border-color:var(--txt)}
   #res #again{background-color:var(--txt);border-color:var(--txt);color:var(--bg);font-weight:600}
   #res #again:hover{background-color:var(--txt);border-color:var(--txt)}
-  /* 动作行：主按钮在左、次按钮在右；<560px 竖排 */
-  #resActions{margin-top:28px;display:flex;gap:12px;align-items:center;justify-content:space-between}
-  #resSubActions{display:flex;gap:12px;align-items:center}
+  /* 动作行：同一竖线左对齐，竖排（主按钮在上，次按钮在下） */
+  #resActions{margin-top:32px;display:flex;flex-direction:column;align-items:flex-start;gap:8px}
+  .res-sec+:is(.res-advice,.res-table,.res-bars){margin-top:8px}
+  #resSubActions{display:flex;flex-direction:column;align-items:flex-start;gap:8px}
   #resActions .btn{margin:0}
   @media (max-width:560px){
-    #resPanel{padding:26px 8% 26px 20px}
-    #resActions,#resSubActions{flex-direction:column;align-items:stretch}
-    #resActions .btn{width:100%;margin-top:0}
+    #resPanel{padding:24px 20px}
   }
   #back{position:fixed;left:16px;top:14px;z-index:40;display:none;
     font-size:13px;color:var(--dim);text-decoration:none;padding:7px 12px;border-radius:9px;
@@ -66,8 +63,7 @@
   #back:hover{color:var(--acc);border-color:var(--line);background:var(--panel)}
   #back.on{display:inline-block}
   #grab{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;
-    background:rgba(0,0,0,.35);color:#fff;font-size:18px;letter-spacing:2px;cursor:pointer;
-    backdrop-filter:blur(2px)}
+    background:rgba(0,0,0,.35);color:#fff;font-size:18px;letter-spacing:2px;cursor:pointer}
   #grab.on{display:flex}
   #msg .pauseHide{display:none}
   #msg.showParams .pauseHide{display:block}
@@ -91,22 +87,23 @@
     box-shadow:inset 0 1px 2px rgba(0,0,0,.07)}
   summary::-webkit-details-marker{display:none}
   /* ===== 浮层排版（art-direction §2） ===== */
-  .art-kicker{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);line-height:1.6}
-  .res-num{font-size:clamp(28px,3.2vw,40px);font-weight:800;line-height:1.02;letter-spacing:-.01em;
-    color:var(--acc);font-variant-numeric:tabular-nums;margin-top:10px;text-align:left;
+  .art-kicker{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);line-height:16px}
+  .art-kicker b{font-weight:500;color:var(--dim)}
+  .res-num{font-size:clamp(28px,3.2vw,40px);font-weight:800;line-height:40px;letter-spacing:-.01em;
+    color:var(--acc);font-variant-numeric:tabular-nums;margin-top:8px;text-align:left;
     padding-bottom:16px;border-bottom:1px solid var(--line);position:relative}
-  .res-num::after{content:"";position:absolute;right:0;bottom:-1px;width:24px;height:3px;
-    background:var(--gold,#a8842f)}
+  .res-num::after{content:"";position:absolute;right:0;bottom:-1px;width:24px;height:1px;
+    background:var(--dim)}
   .res-num i{font-style:normal;font-size:.42em;font-weight:600;color:var(--dim);margin-left:4px;letter-spacing:0}
-  .res-note{margin-top:10px;font-size:13px;color:var(--dim);line-height:1.7;font-variant-numeric:tabular-nums}
-  .res-advice{margin:20px 0 0;font-size:13px;color:var(--dim);line-height:1.75}
-  .res-table{margin:20px 0 0;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums;width:100%}
+  .res-note{margin-top:8px;font-size:13px;color:var(--dim);line-height:24px;font-variant-numeric:tabular-nums}
+  .res-advice{margin:8px 0 0;font-size:13px;color:var(--dim);line-height:24px}
+  .res-table{margin:8px 0 0;border-collapse:collapse;font-size:13px;font-variant-numeric:tabular-nums;width:100%}
   .res-table th{font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:500;color:var(--dim)}
   .res-table td,.res-table th{box-sizing:border-box;height:28px;padding:0 12px;border-top:1px solid var(--line);border-bottom:none;
     text-align:right;vertical-align:middle}
   .res-table th{border-top-color:color-mix(in srgb,var(--txt) 24%,transparent)}
   .res-table td:first-child,.res-table th:first-child{text-align:left}
-  .res-foot{margin-top:14px;font-size:13px;color:var(--dim)}
+  .res-foot{margin-top:16px;font-size:13px;color:var(--dim);line-height:24px}
   #resBody{width:100%;max-width:640px}
   .res-bars{margin:20px 0 0;text-align:left}
   .res-bar{margin:11px 0}
@@ -142,62 +139,42 @@
     #res .res-table tbody tr{transition:none!important}
   }
 
-  /* ===== 材质（material-spec v1）：只叠光与影，不改色值；深色场地高光 .28 / 接触阴影 .55 ===== */
-  #go, #res #again{background-image:linear-gradient(180deg,
-      color-mix(in srgb,var(--acc) 88%,#fff) 0%,
-      var(--acc) 52%,
-      color-mix(in srgb,var(--acc) 90%,#000) 100%);
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,var(--mat-hi,.45)),
-      inset 0 -2px 6px rgba(0,0,0,.16),
-      0 2px 0 color-mix(in srgb,var(--acc) 72%,#000),
-      0 10px 24px -12px rgba(0,0,0,var(--mat-contact,.16));
-    transition:transform 140ms cubic-bezier(.2,.8,.2,1),box-shadow 140ms cubic-bezier(.2,.8,.2,1),filter 140ms ease}
-  #res #again{background-image:linear-gradient(180deg,
-      color-mix(in srgb,var(--txt) 88%,#fff) 0%,
-      var(--txt) 52%,
-      color-mix(in srgb,var(--txt) 90%,#000) 100%);
-    box-shadow:
-      inset 0 1px 0 rgba(255,255,255,var(--mat-hi,.45)),
-      inset 0 -2px 6px rgba(0,0,0,.16),
-      0 2px 0 color-mix(in srgb,var(--txt) 72%,#000),
-      0 10px 24px -12px rgba(0,0,0,var(--mat-contact,.16))}
-  #go:hover, #res #again:hover{filter:brightness(1.04)}
-  #go:active{transform:translateY(1px);
-    box-shadow:inset 0 1px 2px rgba(0,0,0,.22),
-      0 1px 0 color-mix(in srgb,var(--acc) 72%,#000),
-      0 4px 10px -8px rgba(0,0,0,.5)}
-  #res #again:active{transform:translateY(1px);
-    box-shadow:inset 0 1px 2px rgba(0,0,0,.22),
-      0 1px 0 color-mix(in srgb,var(--txt) 72%,#000),
-      0 4px 10px -8px rgba(0,0,0,.5)}
-  /* 次按钮 / 参数开关：平贴，无立体感——只有 1px 线框；立体感只留给主按钮 */
-  #fsBtn, #more, #resSubActions .btn{
-    background-color:var(--sec-bg,rgba(255,255,255,.03));
-    background-image:none;
-    border:1px solid var(--line);
-    box-shadow:none;
-    color:var(--dim);
+  /* ===== 平面（art-direction-flat）：只有 1px 线 + 纯色块 + 留白 ===== */
+  #go, #fsBtn, #more, #resSubActions .btn, .btn, .btn.alt,
+  #resPanel, .fld input, .fld select, #back{border-radius:0;box-shadow:none;background-image:none}
+  /* 主操作：一屏唯一的填色按钮 */
+  #go{background-color:var(--acc);border:1px solid var(--acc);color:var(--on-acc);
+    transition:background-color 140ms ease,border-color 140ms ease}
+  #go:hover{background-color:color-mix(in srgb,var(--acc) 94%,#000);border-color:color-mix(in srgb,var(--acc) 94%,#000);transform:none}
+  #go:active{background-color:color-mix(in srgb,var(--acc) 84%,#000);border-color:color-mix(in srgb,var(--acc) 84%,#000);transform:none}
+  #res #again{background-color:var(--txt);border:1px solid var(--txt);color:var(--bg);
+    transition:background-color 140ms ease,border-color 140ms ease}
+  #res #again:hover{background-color:color-mix(in srgb,var(--txt) 94%,#000);border-color:color-mix(in srgb,var(--txt) 94%,#000);transform:none}
+  #res #again:active{background-color:color-mix(in srgb,var(--txt) 84%,#000);border-color:color-mix(in srgb,var(--txt) 84%,#000);transform:none}
+  /* 次级按钮：不填色，透明底 + 1px 线 + 中性文字（hover 4% / 按下 8%） */
+  #fsBtn, #more, #resSubActions .btn{background-color:transparent;border:1px solid var(--line);color:var(--dim);
+    box-shadow:none;background-image:none;
     transition:background-color 140ms ease,color 140ms ease,border-color 140ms ease}
-  #fsBtn:hover, #more:hover, #resSubActions .btn:hover{
-    background-color:var(--sec-bg-hover,rgba(255,255,255,.07));
-    border-color:var(--line);
-    color:var(--txt);
-    transform:none}
-  /* 按下只压暗，不位移、不立体 */
-  #fsBtn:active, #more:active, #resSubActions .btn:active{
-    background-color:var(--sec-bg-active,rgba(0,0,0,.16));
-    border-color:var(--line);
-    color:var(--txt);
-    transform:none;box-shadow:none}
-  /* 结果面板：玻璃顶部高光 + 1px 亮边 + 接触阴影 */
-  #resPanel{border-color:rgba(255,255,255,var(--mat-edge,.55));
-    box-shadow:inset 0 1px 0 rgba(255,255,255,var(--mat-hi,.45)),
-      inset 0 24px 26px -24px rgba(255,255,255,var(--mat-sheen,.24)),
-      0 18px 30px -24px rgba(0,0,0,var(--mat-contact,.16))}
-  /* 表格行：轻微材质反馈（不改文字色） */
-  #res .res-table tbody tr{transition:background-color 140ms ease}
-  #res .res-table tbody tr:hover{background-color:color-mix(in srgb,var(--txt) 4%,transparent)}
+  #fsBtn:hover, #more:hover, #resSubActions .btn:hover{background-color:color-mix(in srgb,var(--txt) 4%,transparent);
+    border-color:var(--line);color:var(--txt);transform:none}
+  #fsBtn:active, #more:active, #resSubActions .btn:active{background-color:color-mix(in srgb,var(--txt) 8%,transparent);
+    border-color:var(--line);color:var(--txt);transform:none}
+  /* focus：1px 强调边 + 向外 2px 的第二道 1px 线（双线，不是光晕） */
+  #go:focus-visible, #res #again:focus-visible, #fsBtn:focus-visible, #more:focus-visible,
+  #resSubActions .btn:focus-visible, .btn:focus-visible, .btn.alt:focus-visible,
+  .fld input:focus-visible, .fld select:focus-visible, #back:focus-visible{
+    outline:1px solid var(--acc);outline-offset:2px;border-color:var(--acc)}
+  /* 结果面板：无玻璃、无阴影、直角 */
+  #resPanel{border:1px solid var(--line);border-radius:0;box-shadow:none;background-image:none;
+    -webkit-backdrop-filter:none;backdrop-filter:none}
+  /* 网格：左边缘对齐同一竖线；行高 8 的倍数 */
+  #msgCol{width:100%;max-width:560px;margin:0 auto;text-align:left;display:flex;flex-direction:column;align-items:flex-start}
+  #resActions{flex-direction:column;align-items:flex-start;gap:8px}
+  #resSubActions{flex-direction:column;align-items:flex-start;gap:8px}
+  #resActions .btn{transform:none}
+  .res-table td,.res-table th{height:32px}
+  .res-sec{margin-top:24px;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);line-height:16px}
+  .res-sec b{font-weight:500;color:var(--dim)}
 </style>
 </head>
 <body>
@@ -213,7 +190,7 @@
       function f(v){ v/=255; return v<=0.03928? v/12.92 : Math.pow((v+0.055)/1.055,2.4); }
       return 0.2126*f(rgb[0])+0.7152*f(rgb[1])+0.0722*f(rgb[2]);
     }
-    var m=/rgba?\((d+),\s*(d+),\s*(d+)/.exec(c); if(!m) return 0;
+    var m=/rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(c); if(!m) return 0;
     function f2(v){ v/=255; return v<=0.03928? v/12.92 : Math.pow((v+0.055)/1.055,2.4); }
     return 0.2126*f2(+m[1]) + 0.7152*f2(+m[2]) + 0.0722*f2(+m[3]);
   }
@@ -235,21 +212,21 @@
 <a id="back" href="../app.html#play">← 返回</a>
 <div id="hud"></div>
 
-<div id="msg" class="overlay show">
-  <div id="titleTop" style="font-size:26px;color:var(--txt);font-weight:700;letter-spacing:2px">甩枪训练</div>
+<div id="msg" class="overlay show"><div id="msgCol">
+  <div id="titleTop" style="font-size:26px;color:var(--txt);font-weight:700;letter-spacing:2px;line-height:32px">甩枪训练</div>
   <div style="margin-top:12px;color:var(--dim);font-size:14px;line-height:1.75">看到球 → 甩过去 → 手停 → 点击</div>
   <div id="modeNote" style="margin-top:8px;color:var(--dim);font-size:13px;max-width:580px;line-height:1.7;display:none"></div>
-  <div style="margin-top:30px;display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap">
+  <div style="margin-top:32px;display:flex;flex-direction:column;align-items:flex-start;gap:8px">
     <button id="go" class="btn" style="margin-top:0;padding:15px 56px;font-size:16px;letter-spacing:2px">开 始</button>
-    <button id="fsBtn" type="button" style="padding:14px 22px;font-size:14px;border-radius:9px;cursor:pointer;font-family:inherit">全屏 ⛶</button>
+    <button id="fsBtn" type="button" style="padding:12px 20px;font-size:14px;cursor:pointer;font-family:inherit">全屏 ⛶</button>
   </div>
   <div id="sensHint" style="margin-top:18px;font-size:13px;color:var(--dim);cursor:pointer;font-variant-numeric:tabular-nums"
        title="点击修改参数">…</div>
   <div id="bw" style="margin-top:10px;font-size:13px;color:var(--acc);font-variant-numeric:tabular-nums"></div>
 
-  <button id="more" type="button" style="margin-top:28px;padding:9px 18px;border-radius:9px;font-size:13px;font-family:inherit;cursor:pointer">参数 ▾</button>
+  <button id="more" type="button" style="margin-top:32px;padding:8px 16px;font-size:13px;font-family:inherit;cursor:pointer">参数 ▾</button>
   <div class="pauseHide" style="margin-top:26px;width:100%;max-width:560px">
-    <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center">
+    <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:flex-start">
       <label class="fld">模式
         <select id="mode">
           <option value="random">自适应随机</option>
@@ -294,22 +271,23 @@
     <div id="checkNote" style="display:none;margin-top:14px;font-size:13px;color:var(--dim)">
       90 秒 · 题目一样 · 方向随机&nbsp;&nbsp;<a href="#" id="switchMode" style="color:var(--acc);text-decoration:none">换模式</a>
     </div>
-    <div id="chkRow" style="margin-top:14px;display:flex;gap:18px;justify-content:center;font-size:13px;color:var(--dim)">
+    <div id="chkRow" style="margin-top:16px;display:flex;gap:16px;justify-content:flex-start;font-size:13px;color:var(--dim)">
       <label><input id="limit" type="checkbox" checked> 时间限制</label>
       <label><input id="shrink" type="checkbox"> 收缩模式（球越打越小）</label>
     </div>
     <!-- 输入设备（鼠标/手柄/绘画板）在设置页配置，这里只留训练参数 -->
-    <div style="margin-top:18px;text-align:center">
+    <div style="margin-top:16px;text-align:left">
       <a href="../app.html#set" style="font-size:13px;color:var(--dim);text-decoration:none;
         border-bottom:1px dashed var(--line);padding-bottom:2px">灵敏度 · 配色 · 更多参数 →</a>
     </div>
     <!-- 鼠标参数：由设置页带入，可在参数面板直接改 -->
-    <div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:12px;justify-content:center;font-size:13px;color:var(--dim)">
+    <div style="margin-top:16px;display:flex;flex-wrap:wrap;gap:12px;justify-content:flex-start;font-size:13px;color:var(--dim)">
       <label class="fld">鼠标 DPI<input id="dpi" type="number" step="50" value="800"></label>
       <label class="fld">m_yaw<input id="yaw" type="number" step="0.0001" value="0.022"></label>
       <label class="fld">cm/360<input id="cm" type="number" step="0.1" value="27.1"></label>
       <input id="sens" type="hidden" value="">
     </div>
+  </div>
   </div>
 </div>
 
@@ -657,26 +635,12 @@ function arenaOverlayTint(){
   try{
     const light=!SC.dark;
     document.documentElement.style.setProperty('--overlay', hexA(SC.bg, light?0.34:0.40));
-    document.documentElement.style.setProperty('--ovblur', light?'1.0px':'2.5px');
     // 文案区的局部 scrim：浅色场景用 SC.bg 的暖白（0.55），暗色用 SC.bg 的暗色（0.35）
     const c=_rgbOf(SC.bg,0);
     document.documentElement.style.setProperty('--scrim-rgb', c[0]+','+c[1]+','+c[2]);
     document.documentElement.style.setProperty('--scrim-a', light?'0.55':'0.35');
     // 结果页面板：正文/次要文字都要 ≥7:1 / ≥4.5:1
     document.documentElement.style.setProperty('--res-panel-a', light?'0.92':'0.86');
-    // 材质（material-spec §5）：深色场地浮层高光降到 .28、接触阴影提到 .55；浅色用默认档
-    const dark=!!SC.dark;
-    document.documentElement.style.setProperty('--mat-hi', dark?'.28':'.45');
-    document.documentElement.style.setProperty('--mat-soft', dark?'.28':'.55');
-    document.documentElement.style.setProperty('--mat-soft-h', dark?'.42':'.75');
-    document.documentElement.style.setProperty('--mat-contact', dark?'.55':'.16');
-    document.documentElement.style.setProperty('--mat-ink', dark?'.20':'.06');
-    document.documentElement.style.setProperty('--mat-sheen', dark?'.14':'.24');
-    document.documentElement.style.setProperty('--mat-edge', dark?'.28':'.55');
-    // 次按钮：平贴，只有线框（深色场地按规范：.03 / .07 / 按下压暗 .16）
-    document.documentElement.style.setProperty('--sec-bg', dark?'rgba(255,255,255,.03)':'rgba(0,0,0,.03)');
-    document.documentElement.style.setProperty('--sec-bg-hover', dark?'rgba(255,255,255,.07)':'rgba(0,0,0,.06)');
-    document.documentElement.style.setProperty('--sec-bg-active', dark?'rgba(0,0,0,.16)':'rgba(0,0,0,.10)');
   }catch(e){}
 }
 function arenaEnsureCache(){
@@ -1780,7 +1744,11 @@ function checkScores(){
 function resKicker(zhBase, enBase, zhExtra, enExtra){
   var base=EN_UI?enBase:zhBase;
   var extra=EN_UI?enExtra:zhExtra;
-  return '<div class="art-kicker">'+base+(extra? ' · '+extra : '')+'</div>';
+  var readout=EN_UI?'Readout':'读数';
+  return '<div class="art-kicker"><b>01</b> / '+readout+(base? ' · '+base : '')+(extra? ' · '+extra : '')+'</div>';
+}
+function resSec(no, zh, en){
+  return '<div class="res-sec"><b>'+no+'</b> / '+(EN_UI?en:zh)+'</div>';
 }
 function resParamExtra(){
   var zh, en;
@@ -1877,8 +1845,10 @@ function checkReportHtml(){
     (avg!==null? '<div class="res-num">'+avg+'<i>/100</i></div>' : '')+
     '<div class="res-note">'+trial+' '+(EN_UI?'balls':'球')+' · '+(EN_UI?'six skills · same questions':'六项 · 题目一样')+'</div>'+
     vsHint+
+    resSec('02','六维','Skills')+
     '<div class="res-bars">'+bars+'</div>'+
-    '<div style="margin-top:18px"><canvas id="checkScatter" style="width:100%;max-width:300px;aspect-ratio:1/1;display:block;margin:0 auto"></canvas>'+
+    resSec('03','落点','Landing')+
+    '<div style="margin-top:16px"><canvas id="checkScatter" style="width:100%;max-width:300px;aspect-ratio:1/1;display:block;margin:0 auto"></canvas>'+
     '<div style="font-size:13px;color:var(--dim);margin-top:8px">'+(EN_UI?'Landing points · green = hit, amber = miss':'落点 · 绿 = 命中，琥珀 = 未中')+'</div></div>'+
     noteLine+
     rxHtml;
@@ -1940,7 +1910,9 @@ function staircaseReportHtml(){
     '<div class="res-num">'+dia.toFixed(2)+'<i>°</i></div>'+
     '<div class="res-note">'+T("85% 命中率下的最小目标直径","smallest target diameter held at 85%")+' · ±'+ci.toFixed(2)+'° · '+
       (rev.length? T("反转 ","reversals ")+stRev.length+T(" 次（前 2 次热身）"," (first 2 warm-up)") : T("反转次数不足","not enough reversals"))+' · '+hitRate+'% · '+Math.round(mt)+' ms</div>'+
+    resSec('02','判断','Verdict')+
     '<div class="res-advice">'+advice+'</div>'+
+    (revTbl? resSec('03','反转','Reversals') : '')+
     revTbl+
     '<div class="res-foot">'+T("阶梯规则：连续 6 次命中变小一档，一次未中变大一档；每反转一次步长减半。","Staircase: 6 hits shrink the target one step, one miss grows it; the step halves at every reversal.")+'</div>';
 }
@@ -1969,7 +1941,9 @@ function distanceReportHtml(){
     T("距离 5–45° 随机","5–45° random")+' · '+kp2[0], T("距离 5–45° 随机","5–45° random")+' · '+kp2[1])+
     '<div class="res-num">'+hitRate+'<i>%</i></div>'+
     '<div class="res-note">'+T("中位用时 ","median ")+Math.round(mt)+' ms · '+trial+T(" 球"," shots")+' · '+T("距离 5–45° 随机","5–45° random")+'</div>'+
+    resSec('02','判断','Verdict')+
     '<div class="res-advice">'+advice+'</div>'+
+    resSec('03','分箱','Bins')+
     '<table class="res-table"><tr><th>'+T("距离","Distance")+'</th><th>'+T("命中率","Hit rate")+'</th><th>'+T("用时","Time")+'</th><th>'+T("球数","Shots")+'</th></tr>'+rows+'</table>'+
     '<div class="res-foot">'+T("每个箱子只统计该距离区间内实际打过的球；用时只算命中球。","Each bin counts the shots actually fired at that distance; time uses hits only.")+'</div>';
 }
@@ -2014,7 +1988,9 @@ function finish(){
     resKicker(modeTxt, MODE_EN[mode]||mode, kp[0], kp[1])+
     '<div class="res-num">'+Math.round(overallHit*100)+'<i>%</i></div>'+
     '<div class="res-note">中位用时 '+overallMT.toFixed(0)+' ms · '+trial+' 球 · 最长连击 '+bestStreak+'</div>'+
+    resSec('02','判断','Verdict')+
     '<div class="res-advice">'+advice+'</div>'+
+    (tbl? resSec('03','分段','Stages') : '')+
     tbl+
     '<div class="res-foot">超时 '+timeouts+' 次</div>';
   const d=new Date(), pad=n=>String(n).padStart(2,'0');

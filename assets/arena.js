@@ -118,8 +118,9 @@
       p.vigA     = 0.08;                                      // 暗角 ≤0.10
       p.grain    = 0.05;                                      // 颗粒 ≤0.10
     }
-    // 地平线高度（×H）：暗色保持 0.50；浅色抬到 0.44，让「亮地平线带」落 45% 附近、剪影落 30–44%
-    p.horFrac = dark ? 0.50 : 0.44;
+    // 地平线高度（×H）：固定 0.500 —— pitch=0 时视线水平，地平线必须落在画面正中（否则隐含常驻俯仰角）。
+    // 暗色 / 浅色一致；浅色只调剪影高度，不动地平线。
+    p.horFrac = 0.50;
     return p;
   }
 
@@ -201,10 +202,11 @@
     g.fillStyle = gg;
     g.fillRect(0, hor, Wb, groundH + 1);
 
-    // 3.5) 地平线：一道极淡的压暗线，把天与地的边界留住（会被雾带柔化）
+    // 3.5) 地平线：一道极淡的压暗线，画在地平线上侧 1px（行 449 于 900 高）——
+    // 地面从 450 行开始，保证「地平线行 = 450」的几何不被 2px 线带宽模糊
     var lw = Math.max(1, Math.round(st.S));
-    g.fillStyle = css(mix(p.horizon, BLACK, 0.60), p.dark ? 0.22 : 0.14);
-    g.fillRect(0, hor - lw, Wb, lw * 2);
+    g.fillStyle = css(mix(p.horizon, BLACK, 0.60), p.dark ? 0.30 : 0.16);
+    g.fillRect(0, hor - lw, Wb, lw);
 
     // 4) 地面光池（暗色宽、居中；浅色收窄、更靠前）
     var idx = p.dark ? 0 : 1;
@@ -238,8 +240,8 @@
     g.lineWidth = 1;
     g.lineCap = 'butt';
 
-    // 纵向：从底边汇聚到消失点
-    var cols = 16;
+    // 纵向：从底边汇聚到消失点。cols 必须为偶数，消失点才正好落在 W/2（中心竖轴 = 准星列）
+    var cols = 16;                        // 偶数
     var segN = 11;
     for (var i = 0; i <= cols; i++) {
       var bx = Wb * (i / cols);
@@ -256,6 +258,15 @@
         px = nx; py = ny;
       }
     }
+
+    // 中心竖轴：从底边到消失点的竖直线，必须穿过准星（x = 0.5W）。
+    // 单独绘制且永不断裂；+0.5 落到像素中心，1px 线正好占 x=W/2 那一列。
+    var cxAxis = Math.floor(Wb * 0.5) + 0.5;
+    g.strokeStyle = css(p.grid, Math.min(1, nearA * 1.15));
+    g.beginPath();
+    g.moveTo(cxAxis, Hb);
+    g.lineTo(cxAxis, Math.min(hor + 1, Hb - 1));
+    g.stroke();
 
     // 横向：越靠近地平线越密；中远景随机断裂
     var rows = 9;

@@ -635,6 +635,7 @@ addEventListener('keydown',function(e){
     return n.indexOf('zh')!==0;
   }catch(e){ return true; } })();
   window.__IS_EN=EN;
+  try{ var __fb=document.getElementById('fsBtn'); if(__fb) __fb.textContent = EN ? 'Fullscreen ⛶' : '全屏 ⛶'; }catch(e){}
   try{ if(EN) document.title="First-move coverage · Vernier"; }catch(e){}   // 英文模式下标题也要跟着走
   try{ document.documentElement.setAttribute('lang', EN?'en':'zh-CN'); }catch(e){}
   if(!EN) return;

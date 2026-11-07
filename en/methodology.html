@@ -21,10 +21,21 @@
   blockquote{border-left:3px solid #c2410c;margin:14px 0;padding:2px 16px;color:#7b6a54}
   li{margin:6px 0}
   a{color:#c2410c}
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:16px}
+  .topbar .back{text-decoration:none}
+  .langsw{display:inline-flex;border:1px solid #efe7d7;border-radius:8px;overflow:hidden;font-size:14px}
+  .langsw a,.langsw span{padding:5px 12px;text-decoration:none;color:#7b6a54}
+  .langsw .on{background:#c2410c;color:#fff}
 </style>
 </head>
 <body>
-<a href="../">← Vernier</a>
+<div class="topbar">
+  <a class="back" href="../">← Vernier</a>
+  <nav class="langsw" aria-label="Language / 语言">
+    <a href="../methodology.html" hreflang="zh-CN">中</a>
+    <span class="on" aria-current="page">EN</span>
+  </nav>
+</div>
 <h1>Methodology and Pitfalls</h1>
 
 <p>This document records how the calibration method was designed, which approaches failed, and why the current one was kept.</p>
@@ -44,7 +55,7 @@ cm/360   median ball-to-ball interval   median re-entries
 32       531 ms                         0.0
 </code></pre>
 
-<p>The spread is 5.8%, which is inside statistical noise. **Within this range sensitivity has no measurable effect on hit speed.** This also explains why players can tweak sensitivity for hours without feeling a difference: the effect is smaller than the noise.</p>
+<p>The spread is 5.8%, which is inside statistical noise. <strong>Within this range sensitivity has no measurable effect on hit speed.</strong> This also explains why players can tweak sensitivity for hours without feeling a difference: the effect is smaller than the noise.</p>
 
 <h2>Four iterations of the overshoot method</h2>
 
@@ -74,7 +85,7 @@ cm/360   overshoot
 
 <h3>v3 — record the ballistic endpoint (speed dropping below 40°/s)</h3>
 
-<p>**Failed.** This captures a point mid-deceleration. Scatter was about ±15% while the bias being measured was about 5%, so the signal-to-noise ratio was too low:</p>
+<p><strong>Failed.</strong> This captures a point mid-deceleration. Scatter was about ±15% while the bias being measured was about 5%, so the signal-to-noise ratio was too low:</p>
 
 <pre><code>
 cm/360   overshoot   overshoots : undershoots
@@ -89,7 +100,7 @@ cm/360   overshoot   overshoots : undershoots
 <h3>v4 — click position, hits excluded, pooled samples</h3>
 
 <li>Use the click position (zero latency, matches what the player feels)</li>
-<li>**Exclude hits** (angular error within ball radius) from the bias estimate: a hit means "control was sufficient", not "there was a bias"</li>
+<li><strong>Exclude hits</strong> (angular error within ball radius) from the bias estimate: a hit means "control was sufficient", not "there was a bias"</li>
 <li>Pool every trial across runs, convert each to the cm/360 it implies, take the global median</li>
 
 <p>Result: 480 samples converged to 27.2 cm/360 with a final bias of -0.1%.</p>
@@ -218,11 +229,170 @@ each run was multiplying cm/360 by about 0.7.</p>
 <p>Self-check: append <code>?selftest=1</code> to the page URL. It injects three known
 gains and reports whether the chain still holds in the current browser.</p>
 
+<h2>Axis-staged positioning</h2>
+
+<p>Goal: split a 2-D flick into its two stages so each can be measured separately.</p>
+
+<h3>1. A two-component movement, forced to serialize</h3>
+
+<p>Woodworth (1899) described aiming as an initial ballistic impulse followed by a corrective
+secondary movement. In a diagonal 2-D flick both components happen at once, so a single
+&ldquo;time to hit&rdquo; cannot say which one was slow.</p>
+
+<p>Axis-staged forces the order: a horizontal band is drawn first (transport,
+<strong>T1</strong>), and once the crosshair is inside the band it turns green and only a
+vertical fine adjustment remains (<strong>T2</strong>).</p>
+
+<blockquote>Verifiable: the result page reports T1 and T2 as separate medians. The random /
+precision drills report one total time and one error — the same slow run could be either
+stage.</blockquote>
+
+<h3>2. Why halving the ID matters</h3>
+
+<p>Fitts (1954): <code>MT = a + b &middot; ID</code>, with <code>ID = log2(2A / W)</code>.</p>
+
+<p>If the transport only has to reach the band, the effective distance <code>A</code> halves,
+so the ID drops by <strong>exactly one bit</strong>, and movement time falls by <code>b</code>.
+MacKenzie (1992) puts the slope <code>b</code> at roughly 100–150 ms/bit in the classic 1-D
+studies.</p>
+
+<blockquote>Verifiable: in our runs T1 (gross sweep) sits well above T2 (fine adjust), which
+is what a lower-ID second stage predicts.</blockquote>
+
+<h3>3. Fading the guide is necessary, not cosmetic</h3>
+
+<p>The guidance hypothesis (Salmoni, Schmidt &amp; Walter 1984): augmented feedback speeds up
+acquisition but creates a dependency, and performance falls away once it is removed. The band
+is exactly that guidance, so it is faded on a ladder instead of being kept forever:</p>
+
+<pre><code>A0  band = 2.0 x radius, solid
+A1  band = 1.6 x radius, solid
+A2  band = 1.3 x radius, dashed
+A3  thin line, fades 0.4 s after the target appears
+A4  no band at all - plain 2-D aiming</code></pre>
+
+<p>Rule: five consecutive band entries upgrade a level; a failed entry, or two consecutive
+misses, downgrades one.</p>
+
+<blockquote>Verifiable: the level lives in <code>localStorage["cs2at.axisFade"]</code> as
+<code>{level, enter, miss}</code>, and <code>?axisLevel=0..4</code> pins it for an A/B.</blockquote>
+
+<h3>4. T1/T2 triage — what the older drills cannot do</h3>
+
+<p>The older drills answer &ldquo;how fast and how accurate&rdquo;; they cannot answer
+&ldquo;which stage costs you the time&rdquo;. Two players with the same total time can have
+opposite bottlenecks: one sweeps slowly and lands cleanly, the other sweeps fast and then
+hovers. Axis separates them:</p>
+
+<pre><code>symptom          reading                          advice
+T1 > 800 ms      the gross sweep is slow          move faster first, then settle
+T2 > 260 ms      still correcting after arrival   stop on entry, adjust vertically only
+|dy| > 0.6 deg   vertical control is the weak link lock vertical before clicking</code></pre>
+
+<blockquote>Verifiable: <code>window.__axisReport</code> exposes
+<code>{t1, t2, dy, hit, level, n}</code> after every run.</blockquote>
+
+<h2>The sensitivity probe</h2>
+
+<h3>Why a closed-loop task cannot measure a gain error</h3>
+
+<p>In closed-loop pointing the visual feedback nulls the error: whatever the gain, the player
+keeps correcting until the crosshair is on the target. The endpoint distribution is centred at
+zero no matter what the setting is (Powers 1973; Elliott et al. 2010).</p>
+
+<p>Our own controlled run — five sensitivities, thirty trials each, block order
+counterbalanced:</p>
+
+<pre><code>cm/360   median ball-to-ball interval
+16       538 ms
+20       551 ms
+23.2     538 ms
+27       521 ms
+32       531 ms</code></pre>
+
+<p>The spread is 5.8%, inside the noise of the measurement. The same experiment run as a
+first-move estimate gives <strong>71% at 20&deg; and 71% at 40&deg;</strong> — distance-invariant,
+which means it is reading the movement strategy, not the setting.</p>
+
+<h3>Why a step task can</h3>
+
+<p>A step (the target jumps) triggers an initial open-loop response. For the first
+~100–150 ms visual feedback cannot act, so the response amplitude is proportional to the
+control gain. Regressing displacement on the step size recovers that gain directly, with no
+model to fit (Woodworth 1899; Fitts &amp; Peterson 1964; Argelaguet &amp; Andujar 2013 for the
+transfer-function review).</p>
+
+<blockquote>Verifiable: the first-move page self-checks with <code>?selftest=1</code>,
+injecting known gains of 0.85 / 1.00 / 1.15 through the real pointer path — it reads back
+84% / 99% / 114%, so a 15% gain step is resolved to &plusmn;1%.</blockquote>
+
+<h3>Limits of interleaved A/B</h3>
+
+<p>Interleaving two gains invites dual adaptation (Martin, Keating &amp; Goodkin 1996): the
+two internal models compete, the measured difference shrinks, and washout after each switch
+biases the first trials of a block. The practical consequence is a power limit:</p>
+
+<pre><code>n per condition ~= 2 (1.96 + 0.84)^2 (sigma / delta)^2,  sigma ~ 10%
+delta 5%  ->  ~63 trials
+delta 2%  ->  ~390 trials
+delta 1%  ->  ~1570 trials</code></pre>
+
+<p>So a 60-ball A/B can resolve about 5%, a 30-ball block about 7%, and anything smaller is
+indistinguishable from noise in one session.</p>
+
+<h2>There is no such thing as a &ldquo;true&rdquo; sensitivity</h2>
+
+<p><strong>1. Sensitivity is a property of the mapping, not of the player.</strong> The optimum
+is defined relative to the display gain and to the distances you happen to face; change either
+and the optimum moves. Our five-condition experiment found no measurable difference from 16 to
+32 cm/360 (spread 5.8%, inside noise).</p>
+
+<p><strong>2. The measurable signal is dominated by strategy.</strong> First-move coverage is
+71% at 20&deg; and 71% at 40&deg; — distance-invariant, and unchanged when the setting changes.
+A real gain error would track the setting; this number does not.</p>
+
+<p><strong>3. Any residual effect is below the resolution of a session.</strong> Detecting 1%
+needs about 1570 trials per condition; the entire five-condition experiment (5 &times; 30 = 150
+trials) can only resolve about 10%.</p>
+
+<p>What can be measured, and what the site therefore reports instead:</p>
+
+<pre><code>question                                  measurable?   what we report
+is my landing systematically off-centre?  yes           click bias + CI (click-bias checker)
+where does my first movement stop?        yes           first-move coverage (?selftest=1)
+which stage of the flick is slow?         yes           T1 / T2 / vertical error (axis-staged)
+what is my ideal cm/360?                  NO            deliberately not offered</code></pre>
+
+<h2>The other measurement tools</h2>
+
+<p>Same principle: each tool reports only what it can prove.</p>
+
+<pre><code>tool             what it measures                    key parameters / criteria
+Check-up         reaction, first shot, confirmation,  fixed 90 s recipe (micro / wide / mid cycle),
+                 micro-adjust, wide flick, stability  the first 6 shots are warm-up and not scored
+Staircase        smallest target held at 85% hits    6-down/1-up (converges at 1/(1+1/6) = 85.7%),
+                                                     step halves at every reversal, threshold = median
+                                                     of the reversal points
+Random distance  adaptation across distances         5–45° random, random direction, 1.5° fixed,
+                                                     binned 5–15 / 15–25 / 25–35 / 35–45°
+Tracking         tracking error                      RMS, phase lag, velocity gain (closed loop)
+Axis-staged      time of each stage                  T1 transport / T2 micro-adjust / vertical error</code></pre>
+
+<p>The six check-up dimensions map to: reaction (time to first movement), first shot (where the first
+sub-movement lands), confirmation (interval from the first stop to the shot), micro-adjust (hit rate
+on small angles), wide flick (hit rate and time on large angles), stability (hit-rate difference
+between the first and the second half of the run).</p>
+
+<p>Staircase and random distance reuse the same <code>spawn / judge / finish</code> pipeline as every
+other mode; only the recorded fields differ. Staircase pins the distance at 18° so that size is the
+only variable, and random distance pins the size at 1.5° so that distance is the only variable —
+two variables moving at once would make neither number interpretable.</p>
+
 <h2>Conclusions</h2>
 
-<li>**Sensitivity between 16 and 32 cm/360 has no significant effect** on measured performance; do not over-invest in tuning it.</li>
-<li>If you calibrate, use the overshoot method, but **pool samples, exclude hits, and guard against drift**.</li>
-<li>Use a **single difficulty controller** and an **85% success target**, otherwise the feedback loop diverges.</li>
+<li><strong>Sensitivity between 16 and 32 cm/360 has no significant effect</strong> on measured performance; do not over-invest in tuning it.</li>
+<li>If you calibrate, use the overshoot method, but <strong>pool samples, exclude hits, and guard against drift</strong>.</li>
+<li>Use a <strong>single difficulty controller</strong> and an <strong>85% success target</strong>, otherwise the feedback loop diverges.</li>
 <li>Most of the felt difference after a hardware or engine change comes from rebuilding motor memory, which only repetition can fix.</li>
 <li><strong>Pointing tasks cannot measure gain error.</strong> Closed-loop correction erases it; opening the loop removes the information the movement is planned from. What remains measurable is <em>where the first movement stops</em> (first-move coverage) and <em>whether the landing is systematically off-centre</em> (click bias).</li>
 <li>Verify the measuring chain before trusting a number: the open-loop page self-checks at <code>?selftest=1</code>.</li>

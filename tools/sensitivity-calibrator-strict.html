@@ -713,6 +713,7 @@ requestAnimationFrame(loop);
     return n.indexOf('zh')!==0;
   }catch(e){ return true; } })();   // 按浏览器语言自动选：中文浏览器看中文，其余默认英文
   window.__IS_EN=EN;
+  try{ var __fb=document.getElementById('fsBtn'); if(__fb) __fb.textContent = EN ? 'Fullscreen ⛶' : '全屏 ⛶'; }catch(e){}
   try{ if(EN) document.title="Sensitivity calibration · Vernier"; }catch(e){}   // 英文模式下标题也要跟着走
   try{
     var rw=document.getElementById('rawWarn');

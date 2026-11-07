@@ -27,9 +27,14 @@
 <script>
 /* 首屏预置：主题与语言先于 CSS 生效，防闪烁 */
 try{
-  var t=localStorage.getItem('cs2at.theme');
-  var d=new Date(),tm=d.getHours()*60+d.getMinutes();
-  if(!t) t=(tm>=1410||tm<460)?'forest':'sand';
+  // 自动昼夜：手动选过（themeUser=1）就用存储值；否则按本地时间算，且不写存储
+  var manual=localStorage.getItem('cs2at.themeUser')==='1';
+  var t=null;
+  if(manual) t=localStorage.getItem('cs2at.theme');
+  if(!t){
+    var d=new Date(), tm=d.getHours()+d.getMinutes()/60;
+    t=(tm>=6.5 && tm<18.5)?'sand':'forest';     // 06:30–18:30 明亮，其余夜间
+  }
   document.documentElement.setAttribute('data-theme',t);
   var l=localStorage.getItem('cs2at.lang');
   if(l) document.documentElement.setAttribute('lang',l==='en'?'en':'zh-CN');
@@ -59,6 +64,23 @@ try{
   apply();
   try{ new MutationObserver(apply).observe(document.documentElement,{attributes:true,attributeFilter:['class','data-theme','style']}); }catch(e){}
   try{ addEventListener('load',apply); }catch(e){}
+})();
+</script>
+<script>
+/* 自动昼夜：页面开着跨过 06:30 / 18:30 也要换，每 60 秒查一次 */
+(function(){
+  function auto(){
+    try{
+      if(localStorage.getItem('cs2at.themeUser')==='1') return;   // 手动选的永远优先
+      var d=new Date(), tm=d.getHours()+d.getMinutes()/60;
+      var want=(tm>=6.5 && tm<18.5)?'sand':'forest';
+      var cur=document.documentElement.getAttribute('data-theme');
+      if(want!==cur) document.documentElement.setAttribute('data-theme',want);
+    }catch(e){}
+  }
+  auto();
+  setInterval(auto, 60000);
+  document.addEventListener('visibilitychange',function(){ if(!document.hidden) auto(); });
 })();
 </script>
 <meta name="description" content="Vernier — aim, measured. Browser-based aim lab: sensitivity calibration, 90-second six-skill check, four-week plan. No install, no account, all local.">
@@ -327,7 +349,7 @@ try{
 <div class="foot">
   <code id="eggFormula" title="">cm/360 = 360 / (sensitivity × m_yaw) / DPI × 2.54</code><br>
   <a href="https://github.com/i11usoryCat/cs2-aim-tools">GitHub</a> ·
-  <a href="https://github.com/i11usoryCat/cs2-aim-tools/blob/main/docs/methodology.md">方法论</a> ·
+  <a href="methodology.html">方法论</a> ·
   <a href="https://github.com/i11usoryCat/cs2-aim-tools/blob/main/docs/training-plan.md">训练方案</a> ·
   <a href="app.html#plan">训练计划</a> ·
   <a href="https://github.com/i11usoryCat/cs2-aim-tools/issues" target="_blank" rel="noopener" id="fbLink">反馈</a>

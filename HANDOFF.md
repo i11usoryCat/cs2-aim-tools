@@ -134,6 +134,21 @@ Measurement checks that do not need a human:
 ## 5. Loose files outside the repository
 
 The working copy on the author's machine contains files that are **not** in the repository and
-were left alone deliberately: `app.backup.html`, `index.backup.html`, `_fb.html`, eleven
-`logo-*.html` experiments, `crystal-preview.html`, `结果页预览.html`, `对话记录.md`, and the
-generated `qa-*.json` / `qa-*.md` reports. None of them are linked from the site.
+were left alone deliberately. None of them is linked from any page:
+
+| File | Size | Note |
+| --- | --- | --- |
+| `app.backup.html` | 65,491 B | Pre-flat-UI copy of the hub |
+| `index.backup.html` | 25,993 B | Pre-flat-UI copy of the landing page |
+| `_fb.html` | 25,516 B | Early landing-page experiment |
+| `logo-*.html` (12 files) | 3–15 KB each | Logo exploration pages |
+| `crystal-preview.html` | 6,219 B | Design preview |
+| `结果页预览.html` | 2,217 B | Result-screen preview |
+| `对话记录.md` | 739,482 B | Raw conversation log |
+| `对话记录-公开节选.html` | 9,093 B | Curated public excerpt |
+| `qa-regression.md` (repository root) | 11,768 B | Stray duplicate of `docs/qa-regression.md` — the docs/ copy is the one to keep |
+| `qa-report.json/.md`, `qa-monkey.json/.md`, `qa-settings*.json/.md` | — | Generated QA output |
+| `shots/` | — | Screenshots used during verification |
+
+`ui-contract.md` is also absent from the repository: it was a working spec between the Lead and the
+UI teammates. The README no longer lists it. Publish it if the spec should stay public.

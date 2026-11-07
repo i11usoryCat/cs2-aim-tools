@@ -696,6 +696,38 @@ try{
   .tmbtn.on{color:var(--acc); border-color:var(--acc)}
   html.theme-fade, html.theme-fade body{transition:background .3s, color .3s}
   html.theme-fade body *{transition:background-color .3s, color .3s, border-color .3s}
+  /* ——— 动效（motion-spec v2）：像绘图仪在工作 ——— */
+  @keyframes plotRise{ from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:translateY(0)} }
+  @keyframes plotDraw{ from{transform:scaleX(0)} to{transform:scaleX(1)} }
+  @keyframes plotTab{ from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:translateY(0)} }
+
+  /* A. 交错入场：11 项每项 +24ms */
+  #drillGrid .item{ opacity:0; animation:plotRise 260ms cubic-bezier(.2,.8,.2,1) forwards; animation-delay:calc(var(--i,0) * 24ms) }
+  /* 主行动不排队：第 0 帧就可点，整体 120ms 淡入（motion-spec §0.2） */
+  .today{ opacity:0; animation:plotRise 120ms linear forwards; animation-delay:0ms }
+  #drillGrid .grp{ opacity:0; animation:plotRise 260ms cubic-bezier(.2,.8,.2,1) forwards; animation-delay:calc(var(--gi,0) * 24ms) }
+
+  /* B. 线条绘制：分组编号后的短刻度，从左匀速拉出 */
+  #drillGrid .grp i::after{
+    content:""; display:inline-block; vertical-align:middle;
+    width:18px; height:1px; margin-left:8px; background:var(--dim2);
+    transform-origin:left center; animation:plotDraw 420ms linear both;
+    animation-delay:calc(120ms + var(--gi,0) * 24ms);
+  }
+
+  /* C. 状态条数字：tabular-nums，宽度先锁定再滚，动画期间布局不变 */
+  .statsbar .sb-v .num{ display:inline-block; font-variant-numeric:tabular-nums }
+
+  /* D. 导航切换：fade + 8px，200ms */
+  /* 切 tab：新内容当帧就位（不从头淡入），只补一个 8px 的落位动作，160ms */
+  @keyframes plotTab{ from{transform:translateY(8px)} to{transform:translateY(0)} }
+  section.on{ animation:plotTab 160ms cubic-bezier(.2,.8,.2,1) both }
+
+  @media (prefers-reduced-motion:reduce){
+    #drillGrid .item,.today,#drillGrid .grp,section.on{ animation:none !important; opacity:1 !important; transform:none !important }
+    #drillGrid .grp i::after{ animation:none !important; transform:none !important }
+  }
+
   /* ——— 训练目录：五列横排，首屏零滚动 ——— */
   .today{
     display:flex; align-items:center; justify-content:space-between;
@@ -1728,14 +1760,15 @@ function renderDrills(){
         '<span class="td-l">今天练什么</span>'+
         '<span class="td-r">先从六维检查开始 →</span></a>';
   html+='<div class="cols">';
+  let seq=0;                                   // 交错入场序号（跨列连续，按视觉顺序）
   GROUPS.forEach(function(g,gi){
     const num=('0'+(gi+1)).slice(-2);
-    html+='<div class="col"><div class="grp"><i>'+num+'</i>'+g[0]+'</div>';
+    html+='<div class="col"><div class="grp" style="--gi:'+gi+'"><i>'+num+'</i>'+g[0]+'</div>';
     g[2].forEach(function(name){
       const it=byName[name];
       if(!it) return;
       const tip = zhPage ? (' title="'+String(it.d||'').replace(/"/g,'&quot;')+'"') : '';
-      html+='<a class="item" href="'+it.u+'"'+tip+'>'+
+      html+='<a class="item" href="'+it.u+'"'+tip+' style="--i:'+(seq++)+'">'+
             '<span>'+it.t+'</span><span class="ar">→</span></a>';
     });
     html+='</div>';
@@ -1772,10 +1805,28 @@ function renderStatsBar(){
   const T = en
     ? { last:'Last', week:'This week', sens:'Sensitivity', six:'Six-skill', day:' days', unset:'not set' }
     : { last:'最近', week:'本周', sens:'灵敏度', six:'六维', day:' 天', unset:'未设置' };
+  const cmNum = (cm!=='未设置')? (+cfg.cm) : null;
   el.innerHTML=
-    '<div class="sb"><span class="sb-k">'+T.last+'</span><span class="sb-v'+(six==='—'?' dim':'')+'">'+T.six+' '+six+'</span></div>'+
-    '<div class="sb"><span class="sb-k">'+T.week+'</span><span class="sb-v'+(days?'':' dim')+'">'+days+T.day+'</span></div>'+
-    '<div class="sb"><span class="sb-k">'+T.sens+'</span><span class="sb-v'+(cm==='未设置'?' dim':'')+'">'+(cm==='未设置'?T.unset:cm)+'</span></div>';
+    '<div class="sb"><span class="sb-k">'+T.last+'</span><span class="sb-v'+(six==='—'?' dim':'')+'">'+T.six+' <span class="num" data-to="'+(six==='—'?'':'')+'">'+six+'</span></span></div>'+
+    '<div class="sb"><span class="sb-k">'+T.week+'</span><span class="sb-v'+(days?'':' dim')+'"><span class="num" data-to="'+days+'">'+days+'</span>'+T.day+'</span></div>'+
+    '<div class="sb"><span class="sb-k">'+T.sens+'</span><span class="sb-v'+(cm==='未设置'?' dim':'')+'">'+(cm==='未设置'?T.unset:'<span class="num" data-to="'+(cmNum||0)+'" data-dec="1">'+cmNum.toFixed(1)+'</span> cm/360')+'</span></div>';
+  // C. 数字滚动：先量终值宽度锁住，再从 0 滚上去（只改文字，不动布局）
+  const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  el.querySelectorAll('.num[data-to]').forEach(function(node){
+    const to = parseFloat(node.dataset.to);
+    if(!isFinite(to)) return;
+    const dec = +(node.dataset.dec||0);
+    const fmt = function(v){ return dec? v.toFixed(dec) : String(Math.round(v)); };
+    if(reduce){ node.textContent = fmt(to); return; }
+    node.style.minWidth = Math.ceil(node.getBoundingClientRect().width) + 'px';
+    const t0 = performance.now();
+    (function step(now){
+      const k = Math.min(1, (now - t0) / 600);
+      const e = 1 - Math.pow(1 - k, 3);            // easeOutCubic
+      node.textContent = fmt(to * e);
+      if(k < 1) requestAnimationFrame(step); else node.textContent = fmt(to);
+    })(t0);
+  });
 }
 window.__renderStatsBar = renderStatsBar;
 

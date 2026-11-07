@@ -66,6 +66,12 @@
        title="点击修改参数">…</div>
   <div id="bw" style="margin-top:10px;font-size:13px;color:var(--acc)"></div>
 
+  <div id="newModeNotes" style="margin-top:14px;max-width:620px;text-align:left;font-size:13px;line-height:1.75;color:var(--dim)">
+    <div>阶梯精度：球会按命中率自动变大变小，收敛后的尺寸 = 85% 命中率下能稳定打中的最小目标。</div>
+    <div>随机距离：目标距离 5–45° 随机，练换距离时的适应力，结果按距离分箱。</div>
+    <div>分轴定位：目标出现后，两条红竖线标出目标的水平位置；准星横向进入带内立即变绿，随后只剩垂直微调，点击。记录 T1 横移用时 / T2 微调用时 / 纵向误差；渐隐 A0–A4 五级，连续 5 次进带升级。</div>
+  </div>
+
   <button id="pauseMore" style="margin-top:16px;padding:9px 18px;border-radius:9px;border:1px solid var(--line);background:transparent;color:var(--dim);font-size:13px;font-family:inherit;cursor:pointer">参数 ▾</button>
   <div class="pauseHide" style="margin-top:26px;width:100%;max-width:560px">
     <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:center">
@@ -77,6 +83,9 @@
           <option value="wide">大角度甩枪</option>
           <option value="track">微调训练</option>
           <option value="check">六维检查（90秒）</option>
+          <option value="staircase">阶梯精度</option>
+          <option value="distance">随机距离</option>
+          <option value="axis">分轴定位</option>
         </select>
       </label>
       <label class="fld" id="fldEnd">结束方式
@@ -1402,6 +1411,10 @@ requestAnimationFrame(loop);
     '准备好':'Get ready',
     '自适应随机':'Adaptive random','定角重复':'Fixed angle','小球精度':'Precision',
     '大角度甩枪':'Wide flick','移动跟枪':'Moving target','微调训练':'Micro-adjust','六维检查（90秒）':'Check-up (90 s)','目标大小°':'Target size °',
+    '阶梯精度':'Staircase precision','随机距离':'Random distance','分轴定位':'Axis-staged',
+    '阶梯精度：球会按命中率自动变大变小，收敛后的尺寸 = 85% 命中率下能稳定打中的最小目标。':'Staircase precision: the dot grows or shrinks with your hit rate; the converged size is the smallest target you can hold at 85%.',
+    '随机距离：目标距离 5–45° 随机，练换距离时的适应力，结果按距离分箱。':'Random distance: targets appear at a random 5–45° distance; trains adaptation when the distance changes, and results are binned by distance.',
+    '分轴定位：目标出现后，两条红竖线标出目标的水平位置；准星横向进入带内立即变绿，随后只剩垂直微调，点击。记录 T1 横移用时 / T2 微调用时 / 纵向误差；渐隐 A0–A4 五级，连续 5 次进带升级。':'Axis-staged: two red vertical lines mark the target\'s horizontal position; when the crosshair enters the band it turns green instantly (no dwell), then only vertical fine-adjust remains — click. Records T1 sweep time / T2 micro-adjust time / vertical error; fading levels A0–A4, upgraded after 5 consecutive band entries.',
     '场景':'Scene','自动（跟随设置）':'Auto (follow settings)','自定义场景':'Custom scene','自定义':'Custom',
     '经典':'Classic','墨玉':'Jade','墨鱼':'Ink','浅灰':'Light grey','暗蓝':'Night blue','纯黑':'Pure black','沙色':'Sandstone',
     '中位用时':'Median','分段数据':'Per-segment','阶段':'Set','用时':'Time','命中率':'Hit rate',

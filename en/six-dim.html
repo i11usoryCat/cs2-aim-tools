@@ -177,8 +177,8 @@ const hitFxMode=(function(){ try{ var m=localStorage.getItem('cs2at.hitFx'); if(
 const hitCrossMode=(function(){ try{ var m=localStorage.getItem('cs2at.hitCross'); if(m==='0') m='off'; if(!m||m==='1') m='auto'; return m; }catch(e){ return 'auto'; } })();
 const hitCrossColor=(function(){ try{ return localStorage.getItem('cs2at.hitCrossColor')||''; }catch(e){ return ''; } })();
 const hitFxMix=(function(){ try{ return localStorage.getItem('cs2at.hitFxMix')||'11'; }catch(e){ return '11'; } })();
-// 球的质感（高光/阴影）：设置页开关，默认开
-const ballTex=(function(){ try{ return localStorage.getItem('cs2at.ballTex')!=='0'; }catch(e){ return true; } })();
+// 球统一扁平渲染：高光/阴影在 2D 下像移动的污点，与训练器/标定页保持一致
+const ballTex=false;
 let running=false, paused=false, pauseAt=0, endMode='count', endTime=120, endAt=0;
 let statePreset=false;   // 状态快测入口：数据层与自适应随机分开
 let waiting=false, cdUntil=0, cdTimer=null, endStarted=false;

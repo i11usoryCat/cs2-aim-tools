@@ -1,0 +1,155 @@
+/* assets/ui-material.css — Vernier 浮层控件材质（三个标定页共用 · 唯一数值源）
+   依据 material-spec.md v1：只加光与影，不改任何颜色变量 / 文字色值。
+   光永远从上方来：凸起面 = 顶部 1px 高光 + 底部接触阴影；凹陷面 = 顶部内阴影 + 底部反光。
+   深色场地（<html data-arena-dark="1">）：高光 .28、接触阴影 .55（深色上高光更刺眼）。
+   使用方：tools/tracking-calibrator.html · openloop-calibrator.html · sensitivity-calibrator-strict.html
+   —— 三页共享同一份数值，禁止在页面里另写一版。 */
+
+:root{
+  --mat-hi:.45;               /* 主按钮顶部高光 */
+  --mat-contact:.16;          /* 主按钮底部接触阴影 */
+  --mat-contact-soft:.07;     /* 保留原色按钮的接触阴影 */
+  --mat-ghost-hi:.70;         /* 次按钮顶部微高光 */
+  --mat-ghost-hi-hover:.78;   /* 次按钮 hover 顶部高光（spec §2: 提亮到 .75） */
+  --mat-ghost-contact:.05;    /* 次按钮底部接触阴影 */
+  --mat-input-in:.07;         /* 输入框顶部内阴影 */
+  --mat-ease:cubic-bezier(.2,.8,.2,1);
+}
+html[data-arena-dark="1"]{
+  --mat-hi:.28;
+  --mat-contact:.55;
+  --mat-contact-soft:.25;
+  --mat-ghost-hi:.28;
+  --mat-ghost-hi-hover:.34;
+  --mat-ghost-contact:.22;
+  --mat-input-in:.28;
+}
+
+/* ===== 主按钮：开始 / 再测一轮 =====
+   顶部白混用 92%（spec §1 示例为 88%）：88% 会把浅强调色主题（sand/lake/ink）的
+   白字对比度从 5.2–5.5 拉到 4.26–4.33，违反 spec §6.2「对比度不得下降」；
+   92% 时白字仍 ≥4.5，且顶部高光仍然可见。 */
+.btn{
+  background-color:var(--acc);
+  background-image:linear-gradient(180deg,
+    color-mix(in srgb, var(--acc) 92%, #fff) 0%,
+    var(--acc) 52%,
+    color-mix(in srgb, var(--acc) 90%, #000) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,var(--mat-hi)),
+    inset 0 -2px 6px rgba(0,0,0,var(--mat-contact)),
+    0 2px 0 color-mix(in srgb, var(--acc) 72%, #000),
+    0 10px 24px -12px rgba(0,0,0,.45);
+  transition:transform 140ms var(--mat-ease), box-shadow 140ms var(--mat-ease), background-image 140ms var(--mat-ease);
+}
+/* hover 只加光不换色：渐变与常态完全一致（避免提亮顶部再次压低白字对比度），
+   仅把环境阴影略收紧；显式重复 background-image 以盖过页面旧的 .btn:hover{background:var(--acc)} */
+.btn:hover{
+  background-image:linear-gradient(180deg,
+    color-mix(in srgb, var(--acc) 92%, #fff) 0%,
+    var(--acc) 52%,
+    color-mix(in srgb, var(--acc) 90%, #000) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,var(--mat-hi)),
+    inset 0 -2px 6px rgba(0,0,0,var(--mat-contact)),
+    0 2px 0 color-mix(in srgb, var(--acc) 72%, #000),
+    0 12px 26px -10px rgba(0,0,0,.5);
+}
+.btn:active{
+  transform:translateY(1px);
+  box-shadow:
+    inset 0 1px 2px rgba(0,0,0,.22),
+    0 1px 0 color-mix(in srgb, var(--acc) 72%, #000),
+    0 4px 10px -8px rgba(0,0,0,.5);
+}
+.btn:focus-visible{outline:2px solid color-mix(in srgb, var(--acc) 55%, transparent);outline-offset:2px}
+
+/* ===== 次按钮 / 参数开关：1px 线框 + 顶部微高光 ===== */
+.btn.ghost, .more{
+  background-color:transparent;
+  background-image:linear-gradient(180deg, rgba(255,255,255,var(--mat-ghost-hi)) 0%, rgba(255,255,255,0) 100%);
+  border-color:var(--line);
+  color:var(--dim);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,var(--mat-ghost-hi)), 0 1px 0 rgba(0,0,0,var(--mat-ghost-contact));
+  transition:transform 140ms var(--mat-ease), box-shadow 140ms var(--mat-ease), background-image 140ms var(--mat-ease);
+}
+.btn.ghost:hover, .more:hover{
+  background-image:linear-gradient(180deg, rgba(255,255,255,var(--mat-ghost-hi-hover)) 0%, rgba(255,255,255,0) 100%);
+}
+.btn.ghost:active, .more:active{
+  transform:translateY(1px);
+  box-shadow:
+    inset 0 1px 2px rgba(0,0,0,.18),
+    inset 0 1px 0 rgba(255,255,255,var(--mat-ghost-hi)),
+    0 1px 0 rgba(0,0,0,var(--mat-ghost-contact));
+}
+.btn.ghost:focus-visible, .more:focus-visible{outline:2px solid color-mix(in srgb, var(--acc) 55%, transparent);outline-offset:2px}
+
+/* ===== 深色场地：立体感只保留在主按钮一层 =====
+   次按钮 / 参数开关在深色场地一律「无立体感、只有线框」：
+   不要 inset 高光、不要底部硬边、不要外阴影；按下只压暗、不位移，避免像系统默认控件。 */
+html[data-arena-dark="1"] .btn.ghost,
+html[data-arena-dark="1"] .more{
+  background-color:rgba(255,255,255,.03);
+  background-image:none;
+  border:1px solid var(--line);
+  box-shadow:none;
+  color:var(--dim);
+  transition:background-color 140ms var(--mat-ease), color 140ms var(--mat-ease);
+}
+html[data-arena-dark="1"] .btn.ghost:hover,
+html[data-arena-dark="1"] .more:hover{
+  background-color:rgba(255,255,255,.07);
+  border-color:var(--line);
+  color:var(--txt);
+  box-shadow:none;
+}
+html[data-arena-dark="1"] .btn.ghost:active,
+html[data-arena-dark="1"] .more:active{
+  background-color:rgba(0,0,0,.16);
+  color:var(--txt);
+  transform:none;
+  box-shadow:none;
+}
+html[data-arena-dark="1"] .btn.ghost:focus-visible,
+html[data-arena-dark="1"] .more:focus-visible{
+  outline:2px solid color-mix(in srgb, var(--acc) 55%, transparent);
+  outline-offset:2px;
+}
+
+/* ===== 尺寸（与 ui-contract 一致的唯一来源） ===== */
+#go{margin-top:0;padding:16px 64px;font-size:18px;letter-spacing:2px}
+#fsBtn{margin-top:0;padding:14px 22px;font-size:14px;border-radius:9px}
+.btn-sm{padding:8px 16px;font-size:13px}
+
+/* ===== 保留自身色值的按钮（结果页「清空累计」）：只叠材质，不动颜色 ===== */
+.btn-plain{
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,var(--mat-ghost-hi)),
+    inset 0 -2px 6px rgba(0,0,0,var(--mat-contact-soft)),
+    0 1px 0 rgba(0,0,0,var(--mat-ghost-contact));
+  transition:transform 140ms var(--mat-ease), box-shadow 140ms var(--mat-ease);
+}
+.btn-plain:active{
+  transform:translateY(1px);
+  box-shadow:inset 0 1px 2px rgba(0,0,0,.22), 0 1px 0 rgba(0,0,0,var(--mat-ghost-contact));
+}
+.btn-plain:focus-visible{outline:2px solid color-mix(in srgb, var(--acc) 55%, transparent);outline-offset:2px}
+
+/* ===== 输入框 / 下拉：内阴影 + focus 环（不留底部 1px 反光，避免看起来凸起） ===== */
+.fld input, .fld select{
+  box-shadow:inset 0 1px 2px rgba(0,0,0,var(--mat-input-in));
+  transition:box-shadow 140ms var(--mat-ease);
+}
+.fld input:focus, .fld select:focus, .fld input:focus-visible, .fld select:focus-visible{
+  outline:none;
+  box-shadow:
+    inset 0 1px 2px rgba(0,0,0,var(--mat-input-in)),
+    0 0 0 3px color-mix(in srgb, var(--acc) 20%, transparent);
+}
+
+/* ===== 减少动态效果：取消位移与过渡，只留静态阴影 ===== */
+@media (prefers-reduced-motion: reduce){
+  .btn, .btn.ghost, .more, .btn-plain, .fld input, .fld select{transition:none}
+  .btn:active, .btn.ghost:active, .more:active, .btn-plain:active{transform:none}
+}

@@ -121,8 +121,11 @@ Everything is stored in `localStorage`; nothing is uploaded.
 ## Quick start
 
 1. Open the hub, go to **Settings**, and enter your DPI, m_yaw, and current in-game sensitivity.
-2. Run the **Sensitivity calibrator** once and note the suggested value.
-3. Update the sensitivity in Settings.
+2. Run the **Click-bias checker** once and read the bias together with its CI. If the bias is
+   inside the noise (±3% with 40 balls), **do not change anything** — that is the normal result,
+   and the controlled experiment found no measurable difference between 16 and 32 cm/360.
+3. If you do change the sensitivity, move it by ≤10%, then play 10 minutes before judging —
+   the first minutes after a change only measure re-adaptation.
 4. Open **Plan** and follow today's tasks.
 5. After each set, press **Copy set data** in the drill and paste it into the plan page log.
 
@@ -164,19 +167,26 @@ Reducing `W` (ball radius) or increasing `D` (travel distance) raises difficulty
 
 ```text
 cs2-aim-tools/
-├── index.html                            Landing page
-├── app.html                              Hub: stats, plan, drills, settings
-├── program.html                          Four-week guided plan
+├── index.html                              Landing page
+├── app.html                                Hub: stats, plan, drills, settings  (?lang=en|zh)
+├── program.html                            Four-week guided plan
 ├── tools/
-│   ├── sensitivity-calibrator.html       Calibration, all samples
-│   ├── sensitivity-calibrator-strict.html Calibration, misses only
-│   └── aim-trainer.html                  Flick trainer, three modes
+│   ├── sensitivity-calibrator-strict.html  Click-bias checker (all samples; ?fast=1)
+│   ├── openloop-calibrator.html            First-move coverage (?selftest=1 self-check)
+│   ├── tracking-calibrator.html            Tracking test (gain / phase / RMS)
+│   └── aim-trainer.html                    Flick trainer (mode presets via query)
+├── en/                                     English entry points — redirect to ../tools/<page>?lang=en
+├── assets/                                 Scenes palette, shared JS
+├── scripts/
+│   ├── qa.cjs                              Site-wide QA gate (console / links / ids / overflow / i18n)
+│   └── qa-monkey.cjs                       Interaction monkey test (click every button)
 ├── windows/
-│   ├── RawLogger.cs                      Raw HID input recorder
+│   ├── RawLogger.cs                        Raw HID input recorder
 │   └── README.md
 ├── docs/
-│   ├── methodology.md                    Method notes and pitfalls
-│   └── training-plan.md                  Four-week training programme
+│   ├── methodology.md                      Method notes, three failed models, validation
+│   └── training-plan.md                    Four-week training programme
+├── ui-contract.md                          Shared UI spec for the four tool pages
 └── LICENSE
 ```
 

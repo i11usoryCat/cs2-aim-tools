@@ -1403,9 +1403,17 @@ function translateRoot(root, lang){
       if(!t) continue;
       let out = map[t] ? orig.replace(t, map[t]) : orig;
       if(out===orig){
+        const hasCJK=/[\u4e00-\u9fff]/.test(t);
         for(let i=0;i<TX_RULES.length;i++){
           const m=t.match(TX_RULES[i][0]);
-          if(m){ out=TX_RULES[i][1](m); break; }
+          if(!m) continue;
+          const cand=TX_RULES[i][1](m);
+          // 方向必须和 lang 一致：翻成英文不能产出中文，反之亦然
+          // （否则同一条规则来回翻，第二次 pass 会把刚翻好的又翻回去）
+          if(lang==='en' && /[\u4e00-\u9fff]/.test(cand)) continue;
+          if(lang==='zh' && !/[\u4e00-\u9fff]/.test(cand) && hasCJK) continue;
+          if(lang==='zh' && /[\u4e00-\u9fff]/.test(cand) && !hasCJK) { out=cand; break; }
+          out=cand; break;
         }
       }
       n.nodeValue = out;

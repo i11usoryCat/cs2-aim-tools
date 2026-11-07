@@ -91,7 +91,7 @@ try{
   *{box-sizing:border-box}
   html,body{margin:0;height:100%}
   body{display:flex;align-items:center;justify-content:center;overflow:hidden}
-  #stage{width:900px;height:660px;display:flex;flex-direction:column;
+  #stage{position:relative;width:900px;height:660px;display:flex;flex-direction:column;
     align-items:center;justify-content:center;transform-origin:center center;
     will-change:transform}
   html{scrollbar-width:none}          /* Firefox */
@@ -144,8 +144,8 @@ try{
     box-shadow:0 14px 30px -12px color-mix(in srgb,var(--txt) 18%,transparent)}
   .it{font-size:15px;font-weight:600;margin-bottom:6px}
   .id{font-size:13px;color:var(--dim);line-height:1.65}
-  .foot{position:relative;z-index:2;text-align:center;color:var(--dim);
-    font-size:12.5px;padding:0 22px 26px;line-height:1.9}
+  .foot{position:absolute;z-index:2;left:0;right:0;bottom:14px;text-align:center;color:var(--dim);
+    font-size:11px;padding:0 22px;line-height:1.9;letter-spacing:.04em}
   .foot a{color:var(--acc);text-decoration:none}
   .foot code{background:color-mix(in srgb,var(--txt) 8%,transparent);padding:2px 7px;border-radius:6px;font-size:12px;color:var(--acc)}
   .langTop{position:fixed;top:18px;right:22px;z-index:9600;display:flex;
@@ -180,15 +180,30 @@ try{
   /* 品牌行下方压一条游标刻度，作为整页的身份标记 */
   /* 注意：基础规则里写死了 height:16px，这里必须放开，否则 padding 会被 height 吃掉、刻度压到字上 */
   .brandline{position:relative;padding-bottom:18px;height:auto}
-  .brandline::after{
-    content:""; position:absolute; left:50%; transform:translateX(-50%); bottom:2px;
-    width:132px; height:6px; opacity:.85;
+  /* 只保留品牌块下方那一条刻度尺（.sub::before），这里不再叠第二条 */
+  /* —— 海报构图：一个重量中心 → 刻度尺 → 单行 CTA —— */
+  #stage .hero{padding:0 72px 104px; justify-content:center}   /* 底部预留版权行的位置，避免压字 */
+  .logo-mark{width:88px;height:88px;margin-bottom:20px;color:var(--txt)}   /* 品牌块用墨色，把唯一的 --acc 留给 CTA */
+  .brandline{font-size:11px;letter-spacing:.18em;margin-bottom:16px;color:var(--dim)}
+  h1{font-size:clamp(44px,7vw,84px); font-weight:800; line-height:1.02; letter-spacing:-.01em; color:var(--txt)}
+  .sub{margin:26px 0 0; font-size:14px; line-height:1.75; color:var(--dim); max-width:520px}
+  .sub::before{                       /* 品牌块与正文之间的细刻度尺 */
+    content:""; display:block; width:220px; height:7px; margin:0 auto 20px;
     background:
-      repeating-linear-gradient(to right, color-mix(in srgb,var(--acc) 60%,transparent) 0 1px, transparent 1px 7px) 0 0/100% 4px no-repeat,
-      linear-gradient(to right, transparent, color-mix(in srgb,var(--acc) 45%,transparent), transparent) 0 5px/100% 1px no-repeat;
+      repeating-linear-gradient(to right, var(--gold,#a8842f) 0 1px, transparent 1px 10px) 0 0/100% 5px no-repeat,
+      linear-gradient(to right, transparent, var(--gold,#a8842f), transparent) 0 6px/100% 1px no-repeat;
+    opacity:.9;
   }
-  h1{letter-spacing:3px}
-  .sub{max-width:620px; line-height:1.85}
+  .by{margin-top:22px; font-size:11px; letter-spacing:.18em; color:var(--dim)}
+  .start{
+    margin-top:44px; padding:16px 46px; min-width:0; border:none; border-radius:8px;
+    background:var(--acc); color:#fff; font-size:14px; font-weight:600; letter-spacing:.12em;
+    box-shadow:none;
+  }
+  .start:hover{transform:translateY(-1px); box-shadow:none; filter:none; background:var(--acc2,#9a3412)}
+  .start:active{transform:scale(.98)}
+  .tip{margin-top:16px; font-size:11px; letter-spacing:.06em; color:var(--dim)}
+  .foot a{color:var(--dim2,#8a7f6d)}
 
   /* 页脚那条公式：做成"量具读数"——上下各一道刻度线 */
   .foot code{
@@ -218,10 +233,17 @@ try{
 
   /* 窄屏：单列、留白收紧 */
   @media (max-width:900px){
-    h1{letter-spacing:2px}
-    #stage .hero{padding:32px 16px}
-    .start{margin-top:32px}
-    .foot code{font-size:11.5px; padding:8px 12px}
+    h1{letter-spacing:-.01em}
+    #stage .hero{padding:0 40px 128px}
+    .logo-mark{width:72px;height:72px;margin-bottom:14px}
+    .brandline{margin-bottom:12px}
+    .sub{margin-top:18px}
+    .sub::before{margin-bottom:14px}
+    .by{margin-top:16px}
+    .start{margin-top:30px;padding:14px 38px}
+    .tip{margin-top:12px}
+    .foot{font-size:10.5px;bottom:10px}
+    .foot code{font-size:11px; padding:7px 11px}
   }
   @media (prefers-reduced-motion:reduce){
     a.item::before{transition:none}

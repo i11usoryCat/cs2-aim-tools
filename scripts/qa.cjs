@@ -91,7 +91,9 @@ const EN_UI_EXPR = '(function(){try{' +
   'if(typeof applyLang==="function")applyLang("en");' +
   'var w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT),n,arr=[];var SKIP={SCRIPT:1,STYLE:1,NOSCRIPT:1};' +
   'var isCjk=function(t){for(var k=0;k<t.length;k++){var c=t.charCodeAt(k);if(c>=19968&&c<=40869)return true;}return false;};' +
-  'while((n=w.nextNode())){var p=n.parentElement;if(p&&SKIP[p.tagName])continue;var t=(n.nodeValue||"").trim();if(!t)continue;' +
+  'while((n=w.nextNode())){var p=n.parentElement;if(p&&SKIP[p.tagName])continue;' +
+  'if(p&&p.closest&&p.closest("[hidden]"))continue;' +   // 双语同页：隐藏的那一半不算残留
+  'var t=(n.nodeValue||"").trim();if(!t)continue;' +
   'if(!isCjk(t))continue;if(t==="中"||t==="中文")continue;arr.push(t.slice(0,24));}' +
   'return JSON.stringify({n:arr.length,sample:arr.slice(0,8),lang:document.documentElement.lang,title:document.title});' +
   '}catch(e){return JSON.stringify({err:String(e&&e.message)});}})()';
@@ -102,7 +104,7 @@ function listPages() {
     for (const f of fs.readdirSync(dir, { withFileTypes: true })) {
       const rel = prefix ? prefix + '/' + f.name : f.name;
       if (f.isDirectory()) { if (['node_modules','.git','assets','docs','scripts','windows'].includes(f.name)) continue; walk(path.join(dir, f.name), rel); }
-      else if (f.name.endsWith('.html') && !/(backup|_fb|logo-|结果页预览)/.test(f.name)) {
+      else if (f.name.endsWith('.html') && !/(backup|_fb|logo-|结果页预览|crystal-preview)/.test(f.name)) {
         // 跳转 stub 会在检查前就 location.replace 走，导致把目标页的链接算到它头上——单独跳过，
         // 由发布流程里的「跳转验收」负责检查它们。
         const src = fs.readFileSync(path.join(dir, f.name), 'utf8');
@@ -112,6 +114,7 @@ function listPages() {
     }
   };
   walk(ROOT, '');
+  // program.html 是 iframe 内嵌的老页面，加载较重；放到最前面检查，避免跑到第 20 个时被系统资源拖死
   return out.sort();
 }
 function checkLinks(pageRel, links, finalHref) {
@@ -133,17 +136,30 @@ function checkLinks(pageRel, links, finalHref) {
   }
   return bad;
 }
-async function withPage(rel, port, fn) {
+async function withPage(rel, port, fn, attempt = 0) {
   const want = urlFor(rel);
-  const child = spawn(EDGE, ['--headless=new','--no-sandbox','--disable-gpu','--no-first-run','--disable-sync','--allow-file-access-from-files','--remote-debugging-port=' + port,'--user-data-dir=' + path.join(process.env.TEMP || '/tmp', 'vernierqa' + port),'--window-size=1280,900', want], { stdio: 'ignore' });
+  const child = spawn(EDGE, ['--headless=new','--no-sandbox','--disable-gpu','--no-first-run','--disable-sync','--allow-file-access-from-files','--remote-debugging-port=' + port,'--user-data-dir=' + path.join(process.env.TEMP || '/tmp', 'vernierqa' + port + '-' + process.pid + '-' + Date.now()),'--window-size=1280,900', want], { stdio: 'ignore' });
   try {
     let list = [];
-    for (let i = 0; i < 40; i++) { try { list = await (await fetch('http://127.0.0.1:' + port + '/json/list')).json(); if (list.some(t => t.type === 'page' && (t.url === want || t.url.indexOf(want) === 0 || t.url.indexOf(encodeURI(want)) === 0))) break; } catch (e) {} await sleep(250); }
-    const page = list.find(t => t.type === 'page' && (t.url === want || t.url.indexOf(want) === 0 || t.url.indexOf(encodeURI(want)) === 0));
-    if (!page) return { error: 'target not found: ' + want };
+    for (let i = 0; i < 90; i++) { try { list = await (await fetch('http://127.0.0.1:' + port + '/json/list')).json(); if (list.some(t => t.type === 'page' && (t.url === want || t.url.indexOf(want) === 0 || t.url.indexOf(encodeURI(want)) === 0))) break; } catch (e) {} await sleep(250); }
+    // 兜底：每个页面都独占一个浏览器实例，只有一个 page target；
+    // URL 匹配在个别页面（如 program.html）会因 URL 规范化差异失败，此时直接取唯一 page，避免误报 target not found
+    const page = list.find(t => t.type === 'page' && (t.url === want || t.url.indexOf(want) === 0 || t.url.indexOf(encodeURI(want)) === 0))
+      || list.find(t => t.type === 'page' && /^file:/.test(t.url || ''));
+    if (!page) {
+      // 偶发：浏览器实例没起来（端口/资源竞争）→ 退避后换端口重试，最多 2 次
+      try { child.kill(); } catch (e) {}
+      if (attempt < 2) {
+        await new Promise(r => setTimeout(r, 1200 + attempt * 800));
+        return withPage(rel, port + 997, fn, attempt + 1);
+      }
+      return { error: 'target not found: ' + want };
+    }
     const conn = new WebSocket(page.webSocketDebuggerUrl);
     let id = 0; const pend = new Map(); const errs = [];
-    const send = (m, p = {}) => new Promise(res => { const i = ++id; pend.set(i, res); conn.send(JSON.stringify({ id: i, method: m, params: p })); });
+    const rawSend = (m, p = {}) => new Promise(res => { const i = ++id; pend.set(i, res); conn.send(JSON.stringify({ id: i, method: m, params: p })); });
+    // 页面主线程卡死（同步死循环）时 Runtime.evaluate 会永不返回：加超时，让 QA 报「页面挂起」而不是挂住整套 QA
+    const send = (m, p = {}) => Promise.race([rawSend(m, p), new Promise((_, rej) => setTimeout(() => rej(new Error('cdp-timeout:' + m)), (m === 'Page.navigate' ? 25000 : 15000)))]);
     conn.onmessage = e => { const m = JSON.parse(e.data);
       if (m.method === 'Runtime.exceptionThrown') errs.push(String((m.params.exceptionDetails.exception || {}).description || m.params.exceptionDetails.text || '').split('\n')[0]);
       if (m.method === 'Runtime.consoleAPICalled' && m.params.type === 'error') errs.push('console.error: ' + m.params.args.map(a => a.value || a.description || '').join(' ').slice(0, 120));
@@ -162,12 +178,15 @@ const ID_DUP = "(function(){var m={},dup=[];document.querySelectorAll('[id]').fo
 const OVERFLOW = "document.documentElement.scrollWidth - document.documentElement.clientWidth";
 const I18N = "(function(){ if(typeof EN!=='object') return 'skip'; try{ if(typeof applyLang==='function') applyLang('en'); }catch(e){} var w=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT),n,miss={},total=0;var SKIP={SCRIPT:1,STYLE:1,NOSCRIPT:1};while((n=w.nextNode())){var p=n.parentElement;if(p&&SKIP[p.tagName])continue;var t=(n.nodeValue||'').trim();if(!t)continue;if(!/[\\u4e00-\\u9fa5]/.test(t))continue;if(t==='中'||t==='中文')continue;total++;if(!EN[t]){var hit=false;if(typeof TX_RULES!=='undefined'){for(var i=0;i<TX_RULES.length;i++){if(TX_RULES[i][0].test(t)){hit=true;break;}}}if(!hit)miss[t]=1;}}return JSON.stringify({cjk:total,missing:Object.keys(miss).slice(0,12)});})()";
 (async () => {
-  const pages = listPages().concat(EXTRA_PAGES);
+  const pages = listPages().concat(EXTRA_PAGES).filter(p => !process.env.QA_ONLY || p.indexOf(process.env.QA_ONLY) >= 0);
   const results = [];
   let port = 9400;
   for (const rel of pages) {
     port++;
-    const r = await withPage(rel, port, async ({ ev, errs }) => {
+    await new Promise(r => setTimeout(r, 300));   // 让上一个浏览器实例完全退出，避免端口/资源堆积
+    let r;
+    try {
+      r = await withPage(rel, port, async ({ ev, errs, send }) => {
       const links = JSON.parse(await ev(LINK_CHECK) || '[]');
       const dups = JSON.parse(await ev(ID_DUP) || '[]');
       const overflow = await ev(OVERFLOW);
@@ -188,6 +207,9 @@ const I18N = "(function(){ if(typeof EN!=='object') return 'skip'; try{ if(typeo
       const finalHref = await ev('location.href');
       return { errs: errs, links: links, dups: dups, overflow: overflow, overflowNarrow: overflowNarrow, i18n: i18n, finalHref: finalHref, enUi: enUi };
     });
+    } catch (e) {
+      r = { error: '页面挂起/超时: ' + String(e && e.message) };
+    }
     if (!r.error) r.deadLinks = checkLinks(rel, r.links || [], r.finalHref);
     results.push(Object.assign({ page: rel }, r));
     process.stdout.write('.');
@@ -199,7 +221,9 @@ const I18N = "(function(){ if(typeof EN!=='object') return 'skip'; try{ if(typeo
   let mport = port + 120;
   for (const m of MODES) {
     const relM = 'tools/aim-trainer.html?mode=' + m + '&delay=0';
-    const mr = await withPage(relM, ++mport, async ({ ev, errs }) => {
+    let mr;
+    try {
+      mr = await withPage(relM, ++mport, async ({ ev, errs }) => {
       for (let i = 0; i < 80; i++) {
         const ready = await ev("document.readyState==='complete' && typeof window.finish==='function' && typeof window.applyModeDefaults==='function'");
         if (ready) break;
@@ -210,7 +234,10 @@ const I18N = "(function(){ if(typeof EN!=='object') return 'skip'; try{ if(typeo
       try { out = JSON.parse(await ev(DRIVE_EXPR(40)) || '{}'); } catch (e) { out = { parseError: String(e && e.message) }; }
       out.errors = errs.slice(0, 5);
       return out;
-    });
+      });
+    } catch (e) {
+      mr = { parseError: '页面挂起/超时: ' + String(e && e.message) };
+    }
     const entry = Object.assign({ mode: m, page: relM }, mr || { error: 'no result' });
     entry.problems = judgeModeResult(m, entry);
     modeResults.push(entry);
@@ -254,6 +281,122 @@ const I18N = "(function(){ if(typeof EN!=='object') return 'skip'; try{ if(typeo
   function parseEnUi(r){
     try { return r && r.enUi ? JSON.parse(r.enUi) : null; } catch (e) { return null; }
   }
+
+  // ——— 新增：运行时语言切换检查（初始加载正确 ≠ 运行时切换正确） ———
+  const LANG_SWITCH_CJK_ALLOW = ['中', '中文'];
+  const LANG_SWITCH_LATIN_ALLOW = ['Vernier','Chrome','Edge','GitHub','Valorant','Apex','Legends','Overwatch','Rainbow','Siege','MODE','PARAMETERS','RESULT','READOUT'];
+  function langScanExpr(want, allow){
+    return '(function(){' +
+      'var ALLOW=' + JSON.stringify(allow) + ';var allow={};ALLOW.forEach(function(x){allow[x]=1;});' +
+      'var walker=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT),node,items=[];' +
+      'var SKIP={SCRIPT:1,STYLE:1,NOSCRIPT:1,TEXTAREA:1};' +
+      'var isCjk=function(t){for(var k=0;k<t.length;k++){var c=t.charCodeAt(k);if(c>=19968&&c<=40869)return true;}return false;};' +
+      'var isVisible=function(el){var cur=el;while(cur&&cur.nodeType===1){var cs=getComputedStyle(cur);if(cs.display==="none"||cs.visibility==="hidden")return false;cur=cur.parentElement;}return true;};' +
+      'var ctxOf=function(el){if(!el)return "";var s=el.id?("#"+el.id):"";var cl=String(el.className||"").split(" ")[0];if(cl)s+="."+cl;return s||el.tagName;};' +
+      'while((node=walker.nextNode())){' +
+        'var p=node.parentElement;if(p&&SKIP[p.tagName])continue;' +
+        'var t=(node.nodeValue||"").trim();if(!t)continue;' +
+        'if(' + JSON.stringify(want) + '==="cjk"){' +
+          'if(!isCjk(t))continue;if(allow[t])continue;' +
+          'items.push({text:t.slice(0,60),ctx:ctxOf(p),visible:isVisible(p)});' +
+        '}else{' +
+          'if(isCjk(t))continue;' +
+          "var m=t.match(/[A-Za-z][A-Za-z'-]{3,}/g);if(!m)continue;" +
+          'var hits=[];for(var i=0;i<m.length;i++){if(!allow[m[i]])hits.push(m[i]);}if(!hits.length)continue;' +
+          'items.push({text:t.slice(0,60),ctx:ctxOf(p),visible:isVisible(p),words:hits.slice(0,8)});' +
+        '}' +
+      '}' +
+      'return JSON.stringify({n:items.length,items:items.slice(0,25),htmlLang:document.documentElement.lang,pageLang:(typeof LANG!=="undefined"?LANG:null),isEn:(typeof window.__IS_EN==="boolean"?window.__IS_EN:null),title:document.title});' +
+    '})()';
+  }
+  function langClickExpr(sel){
+    return '(function(){var e=document.querySelector(' + JSON.stringify(sel) + ');if(!e)return null;var r=e.getBoundingClientRect();var hit=false;try{var el=document.elementFromPoint(r.left+r.width/2,r.top+r.height/2);hit=!!el&&(el===e||e.contains(el));}catch(x){}return {x:r.left+r.width/2,y:r.top+r.height/2,hit:hit,w:r.width,h:r.height};})()';
+  }
+  async function langClick(send, ev, sel){
+    const r = await ev(langClickExpr(sel));
+    if (!r || !r.hit || !r.w) return false;
+    await send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: r.x, y: r.y, button: 'none', clickCount: 0 });
+    await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: r.x, y: r.y, button: 'left', buttons: 1, clickCount: 1 });
+    await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: r.x, y: r.y, button: 'left', buttons: 0, clickCount: 1 });
+    return true;
+  }
+  function langCollectIssues(r){
+    const issues = [];
+    if (!r) return ['无返回'];
+    if (r.fatal) return [String(r.fatal)];
+    if (r.zhBefore && typeof r.zhBefore.n === 'number' && r.zhBefore.n === 0) issues.push('前置失败：初始中文态未渲染出中文文案');
+    if (r.en && r.en.n > 0) issues.push('中文→EN 后仍有 ' + r.en.n + ' 处中文残留：' + (r.en.items || []).slice(0, 3).map(function(i){ return '「' + i.text + '」' + (i.visible ? '' : '(隐藏)') + '@' + i.ctx; }).join('、'));
+    if (r.zh && r.zh.n > 0) issues.push('EN→中 后仍有 ' + r.zh.n + ' 处英文残留：' + (r.zh.items || []).slice(0, 3).map(function(i){ return '「' + i.text + '」' + (i.visible ? '' : '(隐藏)') + '@' + i.ctx; }).join('、'));
+    if (r.en && r.en.htmlLang && r.en.htmlLang !== 'en') issues.push('EN 态 html lang=' + r.en.htmlLang);
+    if (r.zh && r.zh.htmlLang && r.zh.htmlLang.indexOf('zh') !== 0) issues.push('中文态 html lang=' + r.zh.htmlLang);
+    return issues;
+  }
+  const langResults = [];
+  let lport = port + 200;
+  // ① app.html：真实点击语言开关（中文 → EN → 中文）
+  try {
+    const ar = await withPage('app.html?lang=zh', ++lport, async ({ ev, errs, send }) => {
+      const out = { page: 'app.html', method: '点击 #langSw 真实切换', errors: (errs || []).slice(0, 5) };
+      for (let i = 0; i < 60; i++) {
+        if (await ev("document.readyState==='complete' && !!document.getElementById('langSw')")) break;
+        await sleep(100);
+      }
+      await sleep(1200);
+      for (const t of ['data', 'play', 'plan', 'set']) { await langClick(send, ev, 'nav a[data-t="' + t + '"]'); await sleep(350); }
+      await langClick(send, ev, 'nav a[data-t="play"]'); await sleep(400);
+      out.zhBefore = JSON.parse(await ev(langScanExpr('cjk', LANG_SWITCH_CJK_ALLOW)) || '{}');
+      out.statsBarZh = String(await ev("(document.getElementById('statsBar')||{}).innerText"));
+      out.clickEn = await langClick(send, ev, '#langSw span[data-lang="en"]');
+      await sleep(1100);
+      out.en = JSON.parse(await ev(langScanExpr('cjk', LANG_SWITCH_CJK_ALLOW)) || '{}');
+      out.statsBarEn = String(await ev("(document.getElementById('statsBar')||{}).innerText"));
+      out.langStateEn = JSON.parse(await ev("JSON.stringify({htmlLang:document.documentElement.lang,LANG:(typeof LANG!=='undefined'?LANG:null)})") || '{}');
+      out.clickZh = await langClick(send, ev, '#langSw span[data-lang="zh"]');
+      await sleep(1100);
+      out.zh = JSON.parse(await ev(langScanExpr('latin', LANG_SWITCH_LATIN_ALLOW)) || '{}');
+      out.statsBarZh2 = String(await ev("(document.getElementById('statsBar')||{}).innerText"));
+      out.langStateZh = JSON.parse(await ev("JSON.stringify({htmlLang:document.documentElement.lang,LANG:(typeof LANG!=='undefined'?LANG:null)})") || '{}');
+      out.problems = langCollectIssues(out);
+      if (out.statsBarEn && /[一-龥]/.test(out.statsBarEn)) out.problems.push('EN 态状态条仍为中文：' + out.statsBarEn);
+      return out;
+    });
+    langResults.push(ar);
+    process.stdout.write('l');
+  } catch (e) {
+    langResults.push({ page: 'app.html', fatal: String(e && e.message) });
+  }
+  // ② 三个工具页：页面内没有语言切换控件 → ?lang=en / ?lang=zh 双态加载扫描（等价的静/动态文案覆盖）
+  for (const relL of ['tools/tracking-calibrator.html', 'tools/openloop-calibrator.html', 'tools/sensitivity-calibrator-strict.html']) {
+    try {
+      const tr = await withPage(relL + '?lang=en', ++lport, async ({ ev, errs, send }) => {
+        const out = { page: relL, method: '页面内无切换控件 → ?lang= 双态扫描', errors: (errs || []).slice(0, 5) };
+        for (let i = 0; i < 60; i++) {
+          if (await ev("document.readyState==='complete' && !!document.getElementById('msg')")) break;
+          await sleep(100);
+        }
+        await sleep(1000);
+        out.toggleCount = await ev("document.querySelectorAll('[data-lang]').length") || 0;
+        out.en = JSON.parse(await ev(langScanExpr('cjk', LANG_SWITCH_CJK_ALLOW)) || '{}');
+        try { await send('Page.enable'); } catch (e) {}
+        const zhUrl = 'file:///' + path.join(ROOT, relL).replace(/\\/g, '/') + '?lang=zh';
+        await send('Page.navigate', { url: zhUrl });
+        await sleep(1500);
+        for (let i = 0; i < 60; i++) {
+          if (await ev("document.readyState==='complete' && !!document.getElementById('msg')")) break;
+          await sleep(100);
+        }
+        await sleep(800);
+        out.zh = JSON.parse(await ev(langScanExpr('latin', LANG_SWITCH_LATIN_ALLOW)) || '{}');
+        out.problems = langCollectIssues(out);
+        return out;
+      });
+      langResults.push(tr);
+      process.stdout.write('l');
+    } catch (e) {
+      langResults.push({ page: relL, fatal: String(e && e.message) });
+    }
+  }
+  console.log('');
   fs.writeFileSync(path.join(ROOT, 'qa-report.json'), JSON.stringify(results, null, 2));
   const bad = [];
   for (const r of results) {
@@ -280,6 +423,12 @@ const I18N = "(function(){ if(typeof EN!=='object') return 'skip'; try{ if(typeo
   }
   if (mirrorDiff && (mirrorDiff.missingModes.length || mirrorDiff.missingText.length)) {
     bad.push({ page: 'en/six-dim.html', kind: 'en-missing-copy', detail: '缺 mode: ' + mirrorDiff.missingModes.join(', ') + ' ; 缺文案: ' + mirrorDiff.missingText.join(', ') });
+  }
+
+  // 运行时语言切换问题进问题清单
+  for (const r of langResults) {
+    if (r.fatal) bad.push({ page: r.page, kind: 'runtime-i18n', detail: '加载失败: ' + r.fatal });
+    else if (r.problems && r.problems.length) bad.push({ page: r.page, kind: 'runtime-i18n', detail: r.problems.join(' | ') });
   }
   const lines = ['# Vernier QA 报告', '', '生成时间：' + new Date().toISOString(), '', '| 页面 | console | 重复 id | 溢出@1280 | 溢出@900 | 死链 | 未翻译串 |', '|---|---|---|---|---|---|---|'];
   for (const r of results) {
@@ -314,6 +463,27 @@ const I18N = "(function(){ if(typeof EN!=='object') return 'skip'; try{ if(typeo
     lines.push('- en/six-dim.html 缺 mode 选项：' + (mirrorDiff.missingModes.length ? mirrorDiff.missingModes.join(', ') : '无'));
     lines.push('- en/six-dim.html 缺新文案：' + (mirrorDiff.missingText.length ? mirrorDiff.missingText.join(', ') : '无'));
     lines.push('- en/six-dim.html 源码中文字符数：' + mirrorDiff.cjk + '（运行时按 navigator.language 判定语言）');
+  }
+
+  // 运行时语言切换汇总
+  lines.push('', '## 运行时语言切换（初始加载正确 ≠ 运行时切换正确）', '');
+  lines.push('| 页面 | 切换方式 | 中文→EN 后 CJK 残留 | EN→中 后拉丁长词残留 | 语言状态 | 结论 |');
+  lines.push('|---|---|---|---|---|---|');
+  for (const r of langResults) {
+    if (r.fatal) { lines.push('| ' + r.page + ' | - | - | - | - | ❌ ' + r.fatal + ' |'); continue; }
+    const en = r.en || {}; const zh = r.zh || {};
+    const enTxt = en.n ? ('❌ ' + en.n + ' 条：' + (en.items || []).slice(0, 3).map(function(i){ return '「' + i.text + '」' + (i.visible ? '' : '(隐藏)'); }).join('、')) : '✅ 0';
+    const zhTxt = zh.n ? ('❌ ' + zh.n + ' 条：' + (zh.items || []).slice(0, 3).map(function(i){ return '「' + i.text + '」' + (i.visible ? '' : '(隐藏)'); }).join('、')) : '✅ 0';
+    let langState = 'EN: html=' + (en.htmlLang || '-');
+    if (r.langStateEn) langState += ' / LANG=' + JSON.stringify(r.langStateEn.LANG);
+    langState += '；中: html=' + (zh.htmlLang || '-');
+    if (r.langStateZh) langState += ' / LANG=' + JSON.stringify(r.langStateZh.LANG);
+    lines.push('| ' + r.page + ' | ' + r.method + ' | ' + enTxt + ' | ' + zhTxt + ' | ' + langState + ' | ' + ((r.problems && r.problems.length) ? '❌' : '✅') + ' |');
+  }
+  for (const r of langResults) {
+    if (r.page === 'app.html' && !r.fatal) {
+      lines.push('', '> app.html 回归点（lead 报的状态条）：EN 态 #statsBar = 「' + String(r.statsBarEn || '').split('\n').join(' / ') + '」；中文态 = 「' + String(r.statsBarZh2 || '').split('\n').join(' / ') + '」。');
+    }
   }
   lines.push('', '## 问题清单', '');
   if (!bad.length) lines.push('无。');

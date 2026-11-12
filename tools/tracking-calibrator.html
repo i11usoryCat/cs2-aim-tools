@@ -229,6 +229,38 @@ function toCam(x,y,z){
 function projCam(c){ return {sx:W/2+(c.x/c.z)*f, sy:H/2-(c.y/c.z)*f}; }
 function project(x,y,z){ const c=toCam(x,y,z); return c.z<=NEAR? null : projCam(c); }
 
+/* ————— 运行诊断：输入采样率 / 帧间隔 P99 —————
+   不再报告「输入→显示延迟」这类绝对毫秒数（对输入链路无意义且不可比）；
+   改为可复现的两个量：输入事件采样率 Hz、渲染帧间隔 P99。 */
+let inEvtT=[], frameT=[], lastFrameNow=0;
+function resetDiag(){ inEvtT=[]; frameT=[]; lastFrameNow=0; }
+function _med(a){
+  if(!a.length) return NaN;
+  const s=a.slice().sort(function(x,y){return x-y;});
+  const m=s.length>>1;
+  return s.length%2? s[m] : (s[m-1]+s[m])/2;
+}
+function diagStats(){
+  let hz=NaN, p99=NaN;
+  if(inEvtT.length>=2){
+    const iv=[];
+    for(let i=1;i<inEvtT.length;i++){ const d=inEvtT[i]-inEvtT[i-1]; if(d>0 && d<1000) iv.push(d); }
+    const md=_med(iv);
+    if(md>0) hz=1000/md;
+  }
+  if(frameT.length>=20){
+    const s=frameT.slice().sort(function(a,b){return a-b;});
+    p99=s[Math.min(s.length-1, Math.floor(s.length*0.99))];
+  }
+  return {hz:hz, p99:p99};
+}
+function diagLineHtml(){
+  const d=diagStats();
+  return '<div style="margin-top:10px;font-size:12.5px;line-height:16px;color:var(--dim)">'+
+    L2('输入采样率 ','Input sampling rate ')+(isFinite(d.hz)? Math.round(d.hz)+' Hz' : '—')+
+    ' · '+L2('帧间隔 P99 ','Frame interval P99 ')+(isFinite(d.p99)? d.p99.toFixed(1)+' ms' : '—')+
+    '</div>';
+}
 
 /* ————— 参数读取（URL 优先，其次 cs2at.cfg） ————— */
 const dpiEl=document.getElementById('dpi'), yawEl=document.getElementById('yaw'),
@@ -339,6 +371,7 @@ function doLock(){
 }
 function moveEv(e){
   if(!running||paused) return;
+  if(inEvtT.length<6000) inEvtT.push(performance.now());
   // 步进探针：B 块把「鼠标→角度」灵敏度乘 ×1.15（A = 当前灵敏度，B = 更高一档）
   const k=kOf(CM)*((mode==='step'&&SP)?SP.kMul:1);
   yaw  += (e.movementX||0)*k;
@@ -362,6 +395,7 @@ document.addEventListener('pointerlockerror',()=>{
 /* ————— 任务 ————— */
 function start(){
   if(mode==='step'){ startProbe(); return; }
+  resetDiag();
   DPI=parseFloat(dpiEl.value)||800;
   YAW=parseFloat(yawEl.value)||0.022;
   CM=parseFloat(cmEl.value)||27.1;
@@ -392,6 +426,7 @@ function resume(){
   if(!paused) return;
   const d=performance.now()-pauseAt; t0+=d;
   if(SP){ SP.startAt+=d; if(SP.trial) SP.trial.t0+=d; }
+  lastFrameNow=0;
   paused=false; msg.classList.remove('show'); if(!plainMode) doLock();
   /* 全屏不再是开跑流程的一部分 */
 }
@@ -471,6 +506,7 @@ function startProbe(){
   cmEl.value=CM.toFixed(1);
   yaw=0; pitch=0;
   rawLockFailed=false; plainMode=false;
+  resetDiag();
   try{ var rw=document.getElementById('rawWarn'); if(rw) rw.style.display='none'; }catch(e){}
   SP={
     startAt:performance.now()+PROBE.countdownMs,
@@ -592,6 +628,142 @@ function loopStep(now){
                   'Step follow · '+left+'s · block '+b+' · interval '+Math.round(P.interval)+'ms · hit '+sr+'%');
 }
 
+/* ————— 步进探针历史：趋势图 + 存图 —————
+   同一探针最近 10 次方向判断结果（dOv，带符号）画成折线；数据存 localStorage cs2at.probeRuns（最多 30 条）。 */
+const PROBE_STORE_KEY='cs2at.probeRuns';
+function loadProbeRuns(){
+  try{
+    const a=JSON.parse(localStorage.getItem(PROBE_STORE_KEY)||'[]');
+    if(!Array.isArray(a)) return [];
+    return a.filter(function(x){ return x && isFinite(x.dOv); }).slice(-30);
+  }catch(e){ return []; }
+}
+function saveProbeRuns(list){
+  const cut=list.filter(function(x){ return x && isFinite(x.dOv); }).slice(-30);
+  try{ localStorage.setItem(PROBE_STORE_KEY, JSON.stringify(cut)); }catch(e){}
+  return cut;
+}
+function _probeColors(){
+  const cs=getComputedStyle(document.documentElement);
+  const v=function(n,f){ const x=cs.getPropertyValue(n).trim(); return x||f; };
+  return {dim:v('--dim','#8aa697'), line:v('--line','#2a4433'), txt:v('--txt','#e8f2ea'), acc:v('--acc','#4ade80'), bg:v('--bg','#0f1a14')};
+}
+function probeTrendStats(runs){
+  const last=runs.slice(-10);
+  const vals=last.map(function(r){return r.dOv;});
+  let med=NaN;
+  if(vals.length){ const s=vals.slice().sort(function(a,b){return a-b;}); const m=s.length>>1; med=s.length%2? s[m] : (s[m-1]+s[m])/2; }
+  let same=0;
+  if(last.length){
+    const cur=last[last.length-1];
+    const sg=cur.dOv>0?1:(cur.dOv<0?-1:0);
+    last.forEach(function(r){ const x=r.dOv>0?1:(r.dOv<0?-1:0); if(x===sg) same++; });
+  }
+  return {n:last.length, med:med, same:same, list:last};
+}
+function drawProbeTrend(g, cssW, cssH, runs, opt){
+  opt=opt||{};
+  const C=_probeColors();
+  const st=probeTrendStats(runs);
+  const list=st.list;
+  const padL=opt.padL||34, padR=opt.padR||8, padT=opt.padT||10, padB=opt.padB||16;
+  const fontPx=opt.fontPx||9, dotR=opt.dotR||3;
+  const w=cssW-padL-padR, hh=cssH-padT-padB;
+  if(w<=0||hh<=0) return st;
+  let maxAbs=5;
+  list.forEach(function(r){ const a=Math.abs(r.dOv*100); if(a>maxAbs) maxAbs=a; });
+  maxAbs=Math.ceil(maxAbs*1.15/5)*5;
+  const x0=padL, y0=padT, cy=y0+hh/2;
+  const X=function(i){ return list.length<=1? x0+w/2 : x0 + w*i/(list.length-1); };
+  const Y=function(pct){ return cy - (pct/maxAbs)*(hh/2); };
+  g.clearRect(0,0,cssW,cssH);
+  g.save();
+  // 0 线：中性色虚线（1px）
+  g.strokeStyle=C.dim; g.globalAlpha=0.85; g.lineWidth=1; g.setLineDash([4,3]);
+  g.beginPath(); g.moveTo(x0, Math.round(cy)+0.5); g.lineTo(x0+w, Math.round(cy)+0.5); g.stroke();
+  g.setLineDash([]); g.globalAlpha=1;
+  // 纵轴刻度：上下限 + 0
+  g.fillStyle=C.dim; g.font=fontPx+'px "Microsoft YaHei UI","Microsoft YaHei",sans-serif';
+  g.textAlign='right'; g.textBaseline='middle';
+  g.fillText('+'+maxAbs.toFixed(0)+'%', x0-6, Y(maxAbs)+1);
+  g.fillText('0', x0-6, cy+1);
+  g.fillText('-'+maxAbs.toFixed(0)+'%', x0-6, Y(-maxAbs)-1);
+  // 横轴：次数（首尾刻度）
+  g.textBaseline='alphabetic';
+  if(list.length>1){
+    g.textAlign='left'; g.fillText('1', x0, cssH-4);
+    g.textAlign='right'; g.fillText(String(list.length), x0+w, cssH-4);
+  } else if(list.length){
+    g.textAlign='center'; g.fillText('1', x0+w/2, cssH-4);
+  }
+  // 趋势线：1px 折线，无填充
+  if(list.length){
+    g.strokeStyle=C.txt; g.lineWidth=1; g.globalAlpha=0.92;
+    g.beginPath();
+    list.forEach(function(r,i){ const x=X(i), y=Math.round(Y(r.dOv*100))+0.5; if(i) g.lineTo(x,y); else g.moveTo(x,y); });
+    g.stroke(); g.globalAlpha=1;
+    // 本次：强调色点
+    const iCur=list.length-1;
+    g.fillStyle=C.acc;
+    g.beginPath(); g.arc(X(iCur), Math.round(Y(list[iCur].dOv*100))+0.5, dotR, 0, Math.PI*2); g.fill();
+  }
+  g.restore();
+  return st;
+}
+function probeStatText(st){
+  if(!st||!st.n) return L2('暂无历史数据','No history yet');
+  const med=isFinite(st.med)? ((st.med>=0?'+':'')+(st.med*100).toFixed(1)+'%') : '—';
+  return L2('最近 '+st.n+' 次 · 中位 '+med+' · 方向稳定度 '+st.same+'/'+st.n+' 同向',
+            'Last '+st.n+' · median '+med+' · direction stability '+st.same+'/'+st.n+' same');
+}
+function renderProbeTrend(runs){
+  const cv=document.getElementById('probeTrend');
+  if(!cv) return;
+  const dpr=window.devicePixelRatio||1;
+  const cssW=360, cssH=120;
+  cv.width=Math.round(cssW*dpr); cv.height=Math.round(cssH*dpr);
+  cv.style.width=cssW+'px'; cv.style.height=cssH+'px';
+  const g=cv.getContext('2d');
+  if(!g) return;
+  g.setTransform(dpr,0,0,dpr,0,0);
+  const st=drawProbeTrend(g, cssW, cssH, runs, {});
+  const el=document.getElementById('probeTrendStat');
+  if(el) el.textContent=probeStatText(st);
+  const btn=document.getElementById('probeTrendSave');
+  if(btn) btn.addEventListener('click', function(e){ e.stopPropagation(); exportProbeTrend(runs); });
+}
+function exportProbeTrend(runs){
+  try{
+    const C=_probeColors();
+    const cssW=720, cssH=300;
+    const cv=document.createElement('canvas');
+    cv.width=cssW; cv.height=cssH;
+    const g=cv.getContext('2d'); if(!g) return;
+    g.fillStyle=C.bg; g.fillRect(0,0,cssW,cssH);
+    g.fillStyle=C.txt; g.textAlign='left'; g.textBaseline='top';
+    g.font='600 22px "Microsoft YaHei UI","Microsoft YaHei",sans-serif';
+    g.fillText(L2('Vernier · 步进跟随方向趋势','Vernier · step-follow direction trend'), 24, 20);
+    g.fillStyle=C.dim; g.font='13px "Microsoft YaHei UI","Microsoft YaHei",sans-serif';
+    let when=''; try{ when=new Date().toLocaleString(); }catch(e){ when=''; }
+    g.fillText(when, 24, 52);
+    g.save(); g.translate(24, 78);
+    const st=drawProbeTrend(g, cssW-48, 140, runs, {padL:44,padR:16,padT:8,padB:20,fontPx:12,dotR:5});
+    g.restore();
+    g.fillStyle=C.txt; g.font='15px "Microsoft YaHei UI","Microsoft YaHei",sans-serif'; g.textAlign='left'; g.textBaseline='top';
+    g.fillText(probeStatText(st), 24, 228);
+    g.fillStyle=C.dim; g.font='12px "Microsoft YaHei UI","Microsoft YaHei",sans-serif';
+    g.fillText(L2('0 线 = A/B 过冲差为 0；正值 = 过冲随灵敏度上升。仅供参考。','0 line = A/B overshoot difference; positive = overshoot rises with sensitivity. Reference only.'), 24, 258);
+    const data=cv.toDataURL('image/png');
+    const d=new Date(); const p2=function(n){ return (n<10?'0':'')+n; };
+    const name='vernier-probe-'+d.getFullYear()+p2(d.getMonth()+1)+p2(d.getDate())+'.png';
+    window.__lastProbeExport={filename:name, dataUrl:data, w:cssW, h:cssH};
+    const a=document.createElement('a');
+    a.href=data; a.download=name; a.style.display='none';
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ try{ a.remove(); }catch(e){} }, 50);
+  }catch(e){}
+}
+
 function finishProbe(){
   running=false;
   try{ ui.innerHTML=''; }catch(e){}
@@ -618,6 +790,17 @@ function finishProbe(){
     arrAvg:arrN? arrSum/arrN : NaN, ovAvg:n? ovSum/n:NaN, jitAvg:n? jitSum/n:NaN,
     ovA:ovA, ovB:ovB, dOv:dOv, dirKey:dirKey, A:A, B:B, raw:rawLockFailed
   };
+  // 历史趋势：只存方向数值有效的 run，最多 30 条
+  let probeRuns=[];
+  try{
+    if(isFinite(dOv)){
+      const list=loadProbeRuns();
+      list.push({ts:Date.now(), dOv:dOv, ovA:ovA, ovB:ovB, arrAvg:result.arrAvg, jitAvg:result.jitAvg, succAll:result.succAll, n:n, cm:CM, dirKey:dirKey});
+      probeRuns=saveProbeRuns(list);
+    } else {
+      probeRuns=loadProbeRuns();
+    }
+  }catch(e){ probeRuns=[]; }
   const row=function(k,v,cls){ return '<tr><th>'+k+'</th><td'+(cls?' class="'+cls+'"':'')+'>'+v+'</td></tr>'; };
   const fmt=function(v,digits,suffix){ return isFinite(v)? v.toFixed(digits)+suffix : '—'; };
   let dirText;
@@ -642,10 +825,19 @@ function finishProbe(){
       row(L2('A = 当前灵敏度','A = current sensitivity'), L2('过冲 ','overshoot ')+fmt(ovA*100,1,'%')+' · '+L2('到位 ','arrive ')+fmt(avgArr(A),0,' ms')+' · '+L2('成功 ','hit ')+Math.round((A.n?A.succ/A.n:0)*100)+'%')+
       row(L2('B = 灵敏度 ×1.15','B = sensitivity ×1.15'), L2('过冲 ','overshoot ')+fmt(ovB*100,1,'%')+' · '+L2('到位 ','arrive ')+fmt(avgArr(B),0,' ms')+' · '+L2('成功 ','hit ')+Math.round((B.n?B.succ/B.n:0)*100)+'%')+
       '</table>'+
+      diagLineHtml()+
       '<div style="margin-top:12px;font-size:14px;line-height:24px;color:var(--txt)">'+L2('方向判断：','Direction: ')+dirText+'</div>';
+  }
+  if(isFinite(dOv)){
+    body+='<div style="margin-top:16px">'+
+      '<canvas id="probeTrend" width="360" height="120" style="display:block;width:360px;height:120px"></canvas>'+
+      '<div id="probeTrendStat" style="margin-top:6px;font-size:12.5px;line-height:16px;color:var(--dim)"></div>'+
+      '<button id="probeTrendSave" type="button" class="btn ghost btn-sm" style="margin-top:8px">'+L2('存图','Save image')+'</button>'+
+      '</div>';
   }
   body+='<div style="margin-top:10px;font-size:13px;line-height:24px;color:var(--dim)">'+L2('注意：未完全排除适应效应，仅供方向参考。','Note: adaptation effects are not fully ruled out — directional reference only.')+'</div>';
   resBody.innerHTML=body;
+  if(document.getElementById('probeTrend')) renderProbeTrend(probeRuns);
   res.classList.add('show');
 }
 
@@ -657,6 +849,8 @@ function loop(now){
     if(now-(idleLast||0)>=30){ idleLast=now; arena.setView(yaw,pitch,f); arena.draw(now); }
     return;
   }
+  if(lastFrameNow){ var dtF=now-lastFrameNow; if(dtF>0 && dtF<500 && frameT.length<6000) frameT.push(dtF); }
+  lastFrameNow=now;
   if(mode==='step'){ loopStep(now); return; }
   const t=(now-t0)/1000;
   const th=R_DEG*D2R*Math.cos(W_DEG*D2R*t);
@@ -779,6 +973,7 @@ function finish(){
     '</table>'+
     (prevTxt||'');
   }
+  body+=diagLineHtml();
   body+='<div style="margin-top:10px;font-size:13.5px;color:var(--dim)">'+L2('跟枪 ≠ 灵敏度标定：这里测跟枪手感；找灵敏度请用「灵敏度标定」。','Tracking ≠ sensitivity calibration: this measures tracking feel; use Sensitivity calibration to find your sensitivity.')+'</div>';
   resBody.innerHTML=body;
   res.classList.add('show');

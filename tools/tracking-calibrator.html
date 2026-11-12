@@ -30,6 +30,12 @@
 <link rel="alternate" hreflang="x-default" href="https://i11usorycat.github.io/cs2-aim-tools/">
 <style>
   html,body{margin:0;height:100%;background:var(--bg);overflow:hidden;color:var(--txt);font-family:"Microsoft YaHei UI","Microsoft YaHei","Noto Sans SC","Segoe UI",system-ui,sans-serif}
+  /* 原生滚动条：6px 暗色细线，延续站点 1px 线风格 */
+  *{scrollbar-width:thin;scrollbar-color:var(--line,rgba(255,255,255,.18)) transparent}
+  ::-webkit-scrollbar{width:6px;height:6px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:var(--line,rgba(255,255,255,.18));border-radius:0}
+  ::-webkit-scrollbar-thumb:hover{background:var(--dim,rgba(255,255,255,.35))}
   canvas{display:block;cursor:none}
   #ui{position:fixed;left:24px;top:20px;font-size:14px;line-height:1.9;pointer-events:none;text-shadow:0 0 6px #000}
   .overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;
@@ -46,9 +52,13 @@
   input{width:110px;padding:8px;background:var(--panel);border:1px solid var(--line);color:var(--txt);
     border-radius:6px;font-size:15px;text-align:center;pointer-events:auto}
   table{border-collapse:collapse;margin-top:8px}
-  .rt td,.rt th{padding:5px 14px;font-size:14px}
+  .rt td,.rt th{padding:4px 14px;font-size:14px;line-height:18px}
   #res{overflow:auto;padding:20px}
   #resBody{max-height:78vh;overflow:auto}
+  /* 小屏结果页：底部按钮组在滚动容器外，给内容留出按钮高度+16px，滚到底时最后一行不被压住 */
+  @media (max-height:840px){
+    #resBody{padding-bottom:150px}
+  }
   td,th{padding:9px 20px;text-align:right;border-bottom:1px solid var(--panel)}
   th{color:var(--dim);font-weight:500}
   .big{font-size:30px;font-weight:700;color:var(--acc)}
@@ -256,7 +266,7 @@ function diagStats(){
 }
 function diagLineHtml(){
   const d=diagStats();
-  return '<div style="margin-top:10px;font-size:12.5px;line-height:16px;color:var(--dim)">'+
+  return '<div style="margin-top:6px;font-size:12.5px;line-height:16px;color:var(--dim)">'+
     L2('输入采样率 ','Input sampling rate ')+(isFinite(d.hz)? Math.round(d.hz)+' Hz' : '—')+
     ' · '+L2('帧间隔 P99 ','Frame interval P99 ')+(isFinite(d.p99)? d.p99.toFixed(1)+' ms' : '—')+
     '</div>';
@@ -741,7 +751,7 @@ function renderProbeTrend(runs){
   const cv=document.getElementById('probeTrend');
   if(!cv) return;
   const dpr=window.devicePixelRatio||1;
-  const cssW=360, cssH=120;
+  const cssW=360, cssH=100;
   cv.width=Math.round(cssW*dpr); cv.height=Math.round(cssH*dpr);
   cv.style.width=cssW+'px'; cv.style.height=cssH+'px';
   const g=cv.getContext('2d');
@@ -843,21 +853,24 @@ function finishProbe(){
       row(L2('自适应间隔','Adaptive interval'), result.interval+' ms')+
       row(L2('步进次数','Step trials'), n+L2(' 次',' trials'))+
       '</table>'+
-      '<table class="rt" style="margin-top:14px">'+
+      '<table class="rt" style="margin-top:8px">'+
       row(L2('A = 当前灵敏度','A = current sensitivity'), L2('过冲 ','overshoot ')+fmt(ovA*100,1,'%')+' · '+L2('到位 ','arrive ')+fmt(avgArr(A),0,' ms')+' · '+L2('成功 ','hit ')+Math.round((A.n?A.succ/A.n:0)*100)+'%')+
       row(L2('B = 灵敏度 ×1.15','B = sensitivity ×1.15'), L2('过冲 ','overshoot ')+fmt(ovB*100,1,'%')+' · '+L2('到位 ','arrive ')+fmt(avgArr(B),0,' ms')+' · '+L2('成功 ','hit ')+Math.round((B.n?B.succ/B.n:0)*100)+'%')+
       '</table>'+
-      diagLineHtml()+
-      '<div style="margin-top:12px;font-size:14px;line-height:24px;color:var(--txt)">'+L2('方向判断：','Direction: ')+dirText+'</div>';
+      '<div style="margin-top:12px;font-size:14px;line-height:22px;color:var(--txt)">'+L2('方向判断：','Direction: ')+dirText+'</div>'+
+      diagLineHtml();
   }
   if(isFinite(dOv)){
-    body+='<div style="margin-top:32px">'+
-      '<canvas id="probeTrend" width="360" height="120" style="display:block;width:360px;height:120px;margin:0"></canvas>'+
-      '<div id="probeTrendStat" style="display:block;margin-top:16px;font-size:12.5px;line-height:18px;color:var(--dim)"></div>'+
-      '<button id="probeTrendSave" type="button" class="btn ghost btn-sm" style="margin-top:12px">'+L2('存图','Save image')+'</button>'+
+    body+='<div style="margin-top:24px">'+
+      '<canvas id="probeTrend" width="360" height="100" style="display:block;width:360px;height:100px;margin:0"></canvas>'+
+      '<div id="probeTrendStat" style="display:block;margin-top:14px;font-size:12.5px;line-height:18px;color:var(--dim)"></div>'+
+      '<div style="margin-top:12px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">'+
+        '<button id="probeTrendSave" type="button" class="btn ghost btn-sm" style="margin:0">'+L2('存图','Save image')+'</button>'+
+        '<span style="font-size:12px;line-height:18px;color:var(--dim)">'+L2('注意：未完全排除适应效应，仅供方向参考。','Note: adaptation effects are not fully ruled out — directional reference only.')+'</span>'+
+      '</div>'+
       '</div>';
   }
-  body+='<div style="margin-top:10px;font-size:13px;line-height:24px;color:var(--dim)">'+L2('注意：未完全排除适应效应，仅供方向参考。','Note: adaptation effects are not fully ruled out — directional reference only.')+'</div>';
+
   resBody.innerHTML=body;
   if(document.getElementById('probeTrend')) renderProbeTrend(probeRuns);
   res.classList.add('show');

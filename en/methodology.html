@@ -1,42 +1,379 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-default="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Methodology · Vernier</title>
-<meta name="description" content="How Vernier's sensitivity calibration was designed and tested — controlled experiments, four iterations of the overshoot method, and honest conclusions.">
+<meta name="description" content="How Vernier designed and tested its measurements — sensitivity, the open-loop detour, axis-staged positioning, the sensitivity probe, what timing can and cannot measure, and why there is no "true" sensitivity.">
 <link rel="canonical" href="https://i11usorycat.github.io/cs2-aim-tools/en/methodology.html">
+<link rel="alternate" hreflang="zh" href="https://i11usorycat.github.io/cs2-aim-tools/methodology.html">
 <link rel="alternate" hreflang="en" href="https://i11usorycat.github.io/cs2-aim-tools/en/methodology.html">
 <link rel="alternate" hreflang="x-default" href="https://i11usorycat.github.io/cs2-aim-tools/">
 <meta property="og:title" content="Vernier — methodology">
-<meta property="og:description" content="How Vernier's sensitivity calibration was designed and tested — controlled experiments, four iterations of the overshoot method, and honest conclusions.">
-<meta property="og:image" content="https://i11usorycat.github.io/cs2-aim-tools/assets/og-en.png">
 <meta property="og:url" content="https://i11usorycat.github.io/cs2-aim-tools/en/methodology.html">
 <style>
-  body{max-width:760px;margin:0 auto;padding:48px 22px 80px;background:#f7f2e8;color:#33291c;
-    font-family:Georgia,"Times New Roman",serif;line-height:1.8;font-size:16.5px}
-  h1{font-size:30px;border-bottom:3px solid #c2410c;padding-bottom:12px}
-  h2{font-size:22px;margin-top:34px;color:#c2410c}
+  :root{ --ink:#33291c; --paper:#f7f2e8; --card:#efe7d7; --accent:#c2410c; --muted:#7b6a54 }
+  html[lang="zh-CN"] body{font-family:"Microsoft YaHei UI","Microsoft YaHei","Noto Sans SC","Segoe UI",system-ui,sans-serif;line-height:1.75;letter-spacing:normal}
+  body{max-width:760px;margin:0 auto;padding:48px 22px 80px;background:var(--paper);color:var(--ink);
+    font-family:Georgia,"Times New Roman",serif;line-height:1.8;font-size:16.5px;
+    font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
+  h1{font-size:30px;border-bottom:3px solid var(--accent);padding-bottom:12px}
+  h2{font-size:22px;margin-top:34px;color:var(--accent)}
   h3{font-size:18px;margin-top:24px}
   h4{font-size:16.5px;margin-top:22px;margin-bottom:6px}
-  pre{background:#efe7d7;padding:14px;border-radius:8px;overflow-x:auto;font-size:13.5px}
-  blockquote{border-left:3px solid #c2410c;margin:14px 0;padding:2px 16px;color:#7b6a54}
+  pre{background:var(--card);padding:14px;border-radius:8px;overflow-x:auto;font-size:13.5px;line-height:1.65}
+  code{font-family:Consolas,"SF Mono",Menlo,monospace;font-size:.94em}
+  blockquote{border-left:3px solid var(--accent);margin:14px 0;padding:2px 16px;color:var(--muted)}
   li{margin:6px 0}
-  a{color:#c2410c}
-  .topbar{display:flex;align-items:center;justify-content:space-between;gap:16px}
+  a{color:var(--accent)}
+  article[hidden]{display:none}
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:8px}
   .topbar .back{text-decoration:none}
-  .langsw{display:inline-flex;border:1px solid #efe7d7;border-radius:8px;overflow:hidden;font-size:14px}
-  .langsw a,.langsw span{padding:5px 12px;text-decoration:none;color:#7b6a54}
-  .langsw .on{background:#c2410c;color:#fff}
+  .langsw{display:inline-flex;border:1px solid var(--card);border-radius:8px;overflow:hidden;font-size:14px}
+  .langsw button,.langsw a{padding:5px 12px;border:0;background:transparent;font:inherit;color:var(--muted);cursor:pointer;text-decoration:none}
+  .langsw .on{background:var(--accent);color:#fff}
+  @media (max-width:520px){ body{padding:32px 16px 60px} h1{font-size:26px} }
 </style>
 </head>
 <body>
 <div class="topbar">
   <a class="back" href="../">← Vernier</a>
-  <nav class="langsw" aria-label="Language / 语言">
-    <a href="../methodology.html" hreflang="zh-CN">中</a>
-    <span class="on" aria-current="page">EN</span>
+  <nav class="langsw" aria-label="语言 / Language">
+    <button type="button" data-lang="zh">中</button>
+    <button type="button" data-lang="en">EN</button>
   </nav>
 </div>
+<article data-lang="zh" lang="zh-CN">
+<h1>方法论</h1>
+
+<p>这份文档记录：每个测量是怎么设计的、支撑它的证据是什么、以及哪些做法被否掉了。每条结论后面都附了可验证的方式——实测数字，或者文献名。</p>
+
+<h2>这份方法页回答什么</h2>
+
+<p>三十秒就能拿走结论，剩下的都是证据。</p>
+
+<ol>
+<li><strong>16 到 32 cm/360 之间，灵敏度对可测表现没有显著影响。</strong>五档各 30 球的对照实验，极差 5.8%，在噪声之内。别再花几个小时调它。</li>
+<li><strong>闭环任务测不出增益误差。</strong>你会在点击前修正，修正把误差抹平——落点分布永远居中。这是我们做了四版过冲法才接受的事。</li>
+<li><strong>步进任务能测出来。</strong>目标跳变后的前 ~100–150 ms 还没开始修正，响应幅度正比于增益；自检注入 0.85/1.00/1.15，读回 84%/99%/114%。</li>
+<li><strong>所以我们只报能量得准的东西：</strong>落点偏差、首段停点、哪一段慢（T1/T2）。「你的理想 cm/360 是多少」——明确不提供，因为它测不出来。</li>
+</ol>
+
+<p>下面每一节都先给一句结论，再展开证据。失败的过程收在最后的附录里，不想看可以跳过。</p>
+
+
+
+
+
+<h2>灵敏度到底重不重要？</h2>
+
+<p><strong>结论：在这个区间里，灵敏度对命中速度没有可测的影响——调它带来的收益小于测量噪声。</strong></p>
+
+<h3>对照实验</h3>
+
+<p>五种灵敏度，各 30 球，分块顺序做平衡（后半程反向，用来抵消学习与疲劳漂移）：</p>
+
+<pre><code>cm/360   相邻两球中位间隔   中位重入次数
+16       538 ms            1.0
+20       551 ms            0.0
+23.2     538 ms            0.0
+27       521 ms            0.0
+32       531 ms            0.0</code></pre>
+
+<p>极差 5.8%，在统计噪声之内。<strong>在这个区间里，灵敏度对命中速度没有可测的影响。</strong>这也解释了为什么有人能调几个小时灵敏度却感觉不出差别——效应比噪声还小。</p>
+
+<h2>开环这条路：三个模型，一次诚实的改判</h2>
+
+<p><strong>结论：想从弹道里读出「你以为目标在哪」这条路走不通——三个模型都以同样的方式失败，拟合出的幅度把动作形状吸收了。</strong></p>
+
+<p>如果甩枪的前 250 ms 还是弹道的，那它的终点应该编码的是<em>设置</em>，而不是<em>修正</em>。为此做了三个模型，全部以同一种方式失败：拟合出的幅度把动作的形状吸收进去了。</p>
+
+<h3>v5 —— 指数上升，A·(1 − e<sup>−t/τ</sup>)</h3>
+
+<p>把已知增益 1.00 的最小急动度轨迹（真实动作的 S 形）喂进去：</p>
+
+<pre><code>动作时长   读出的增益
+0.15 s     1.089
+0.20 s     1.172
+0.25 s     1.281</code></pre>
+
+<p>这个模型没有加速段，拿它拟合 S 曲线会把幅度抬高。</p>
+
+<h3>v6 —— 最小急动度，A·(10u³ − 15u⁴ + 6u⁵)</h3>
+
+<p>在干净的合成数据上正确到 ±1.6%，但在真实录制上，同一段动作指数模型读 0.88、这个模型读 1.33。A 和 D 在一条被截断的轨迹里不可分辨：更长更平的曲线，配一个更大的幅度，残差一样好。</p>
+
+<h3>v7 —— 首次停点，不做任何拟合</h3>
+
+<p>取速度掉到峰值 15% 以下那一刻的位置，不外推。端到端验证（把合成动作从页面真实的 pointermove 路径注入）：</p>
+
+<pre><code>注入增益   cm/360   读出
+0.85       27.1     84%
+1.00       27.1     99%
+1.15       27.1     114%
+1.00       40.0     99%</code></pre>
+
+<p>测量链准确到 ±1%，而且<strong>与灵敏度设置无关</strong>。</p>
+
+<h3>它到底测的是什么</h3>
+
+<p>链条既然证明是准的，剩下的读数就只能当真——而它稳定在 <strong>20° 时 71%、40° 时 71%</strong>（CI ±13–14%，统计上分不开）。纯增益误差也应该与距离无关，但调好的灵敏度会落在 100% 附近。71% 意味着<strong>第一段动作只走完了大约 71% 的距离</strong>，剩下的靠修正补上。</p>
+
+<p>这才是人指点的两段式结构，不是灵敏度误差。所以这个页面<strong>从「开环标定」改名成「初段覆盖」</strong>，并且删掉了「建议 cm/360」和「应用到设置」——它们此前在制造漂移（每跑一轮就把 cm/360 乘上约 0.7）。</p>
+
+<p>自检：在页面地址后面加 <strong>?selftest=1</strong>，它会注入三个已知增益，报告这条测量链在你当前浏览器里还成不成立。</p>
+<h2>分轴定位（Axis-staged）</h2>
+
+<p><strong>结论：把二维甩枪拆成「横移 → 纵向微调」两段，就能分别测出你慢在哪一段；ID 减半还顺带省掉约一个比特的运动时间。</strong></p>
+
+<p>目标：把二维的甩枪拆成两段，让每一段都能单独被测量。</p>
+
+<h3>1. 两成分动作，强行串行化</h3>
+
+<p>Woodworth（1899）把瞄准描述为「初始弹道冲击 + 二次修正」两个成分。斜向的二维甩枪里，两个成分同时发生，所以单一的「总用时」说不出是哪一段慢。</p>
+
+<p>分轴定位强行规定顺序：先画一条水平带（横移，<strong>T1</strong>），准星一进带就变绿，之后只剩纵向微调（<strong>T2</strong>）。</p>
+
+<blockquote>可验证：结果页把 T1、T2 分别给出中位数。自适应随机 / 小球精度只报一个总用时和一个误差——同一次慢，可能是任意一段造成的。</blockquote>
+
+<h3>2. 为什么 ID 减半很重要</h3>
+
+<p>Fitts（1954）：<code>MT = a + b · ID</code>，其中 <code>ID = log2(2A / W)</code>。</p>
+
+<p>如果横移只需要走到带边，有效距离 <code>A</code> 减半，ID 就<strong>正好少了 1 bit</strong>，移动时间少掉一个 <code>b</code>。MacKenzie（1992）给出的斜率 <code>b</code> 大约 100–150 ms/bit（经典一维实验）。</p>
+
+<blockquote>可验证：实测里 T1（大范围横移）明显大于 T2（纵向微调），这正是「第二段 ID 更低」的预测。</blockquote>
+
+<h3>3. 渐隐不是装饰，是必需的</h3>
+
+<p>指导假说（Salmoni、Schmidt &amp; Walter 1984）：附加反馈能加快习得，但会制造依赖，一旦撤掉表现就掉下来。那条带就是这种附加反馈，所以它不能被永远保留，而是按阶梯渐隐：</p>
+
+<pre><code>A0  带 = 2.0 × 半径，实线
+A1  带 = 1.6 × 半径，实线
+A2  带 = 1.3 × 半径，虚线
+A3  细线，目标出现 0.4 s 后淡出
+A4  完全没有带，回到纯二维瞄准</code></pre>
+
+<p>规则：连续 5 次进带升一级；进带失败、或连续 2 次未命中降一级。</p>
+
+<blockquote>可验证：等级存在 <code>localStorage["cs2at.axisFade"]</code> 里（{level, enter, miss}），<code>?axisLevel=0..4</code> 可以钉住某一级做 A/B。</blockquote>
+
+<h3>4. T1/T2 分诊——老项目做不到的事</h3>
+
+<p>老项目回答的是「多快、多准」，回答不了「时间花在哪一段」。两个总用时相同的人，瓶颈可能完全相反：一个横移慢、落点干净；一个横移快、进带后一直悬停。分轴把两者分开：</p>
+
+<pre><code>症状             读数                          建议
+T1 &gt; 800 ms      大范围横移太慢                先扫快，再减速
+T2 &gt; 260 ms      进带后还在修正                进带就停手，只上下微调
+|纵向误差| &gt; 0.6°  纵向控制是短板               横移到位后先压住垂直</code></pre>
+
+<blockquote>可验证：每跑完一轮，<code>window.__axisReport</code> 会给出 {t1, t2, dy, hit, level, n}。</blockquote>
+
+<h2>灵敏度探针</h2>
+
+<p><strong>结论：闭环任务测不出增益误差，步进任务能测出来；一次会话最多分辨约 5% 的差异。</strong></p>
+
+<h3>为什么闭环任务测不出增益误差</h3>
+
+<p>闭环指向里，视觉反馈会把误差抹平：不管增益是多少，玩家都会一直修正到准星落在目标上。于是落点分布永远居中，与设置无关（Powers 1973；Elliott 等 2010）。</p>
+
+<p>我们自己的对照实验——五种灵敏度、各 30 球、分块顺序平衡：</p>
+
+<pre><code>cm/360   相邻两球中位间隔
+16       538 ms
+20       551 ms
+23.2     538 ms
+27       521 ms
+32       531 ms</code></pre>
+
+<p>极差 5.8%，在测量噪声之内。同一个实验换个口径去测「首段覆盖」，得到的是 <strong>20° 时 71%、40° 时 71%</strong>——与距离无关，也就说明它读的是动作策略，不是设置。</p>
+
+<h3>为什么步进任务能测出来</h3>
+
+<p>目标跳变（step）会触发一次初始开环响应。前 ~100–150 ms 视觉反馈还来不及介入，所以响应的幅度正比于控制增益。把位移对跳变幅度做回归，就能直接得到增益，不需要任何模型（Woodworth 1899；Fitts &amp; Peterson 1964；传递函数综述见 Argelaguet &amp; Andujar 2013）。</p>
+
+<blockquote>可验证：初段覆盖页在 <code>?selftest=1</code> 下自检，把 0.85 / 1.00 / 1.15 三个已知增益从真实指针路径注入，读回来是 84% / 99% / 114%——15% 的增益台阶，分辨率到 ±1%。</blockquote>
+
+<h3>交错 A/B 的局限</h3>
+
+<p>把两个增益交错着练，会引发双重适应（Martin、Keating &amp; Goodkin 1996）：两个内部模型互相竞争，测出来的差异被压小；而且每次切换后的 washout 会污染一块里的前几球。实际后果是功效上限：</p>
+
+<pre><code>每条件样本数 ≈ 2 (1.96 + 0.84)² (σ / δ)²，σ ≈ 10%
+δ 5%  -&gt;  约 63 球
+δ 2%  -&gt;  约 390 球
+δ 1%  -&gt;  约 1570 球</code></pre>
+
+<p>所以 60 球的 A/B 大约只能分辨 5%，30 球一块大约 7%，更小的差异在一次会话里和噪声没有区别。</p>
+
+
+<h3>时间能测到什么精度：采样率与帧间隔 P99</h3>
+
+<p><strong>结论：本站报的是「输入采样率」和「帧间隔 P99」，不报「输入到显示的绝对延迟」——后者用浏览器测不准。</strong></p>
+
+<ul>
+<li><strong>输入采样率</strong>：用 <code>pointerrawupdate</code> 拿到未合并的指针事件（MDN：<em>pointerrawupdate</em> 提供未经浏览器合并的原始指针事件）。它决定你能分辨的最小时间粒度——1000 Hz 的鼠标，相邻两个样本至少隔 1 ms。</li>
+<li><strong>帧间隔 P99</strong>：取 <code>requestAnimationFrame</code> 相邻时间戳之差，报第 99 百分位。均值会被少数长帧掩盖，P99 才代表「卡一下」的程度。</li>
+<li><strong>为什么不用 rAF 算延迟</strong>：rAF 回调与垂直同步对齐（HTML 规范里渲染更新按刷新率调度），任何事件的耗时都会被吸附到 16.7 ms（60 Hz）或 8.3 ms（120 Hz）的栅格上。亚帧的差异进不了这个时间轴，所以拿它算「输入→显示」的绝对延迟，只会得到一个不存在的精度。</li>
+<li><strong>事件时间戳同源</strong>：<code>event.timeStamp</code> 与 <code>performance.now()</code> 共享同一时间原点，可以相减；但两者都只表示「浏览器看到事件」的时刻，不含显示器扫描输出那一段。</li>
+</ul>
+
+<h2>不存在「真实灵敏度」</h2>
+
+<p><strong>结论：「理想灵敏」不是一个客观存在的数值，它是映射与距离的函数；本站因此不提供这个数字。</strong></p>
+
+<p><strong>1. 灵敏度是映射的属性，不是人的属性。</strong>所谓「最优」是相对于显示增益、以及你此刻面对的距离定义的；改动其中任何一个，最优值就会移动。我们的五档实验在 16–32 cm/360 之间没有找到可测差异（极差 5.8%，在噪声内）。</p>
+
+<p><strong>2. 可测信号由策略主导。</strong>首段覆盖在 20° 和 40° 都是 71%——与距离无关，改设置也不动它。真正的增益误差会跟着设置走，这个数不会。</p>
+
+<p><strong>3. 任何残余效应都低于一次会话的分辨率。</strong>要分辨 1% 需要每个条件约 1570 球；整个五档实验（5 × 30 = 150 球）只能分辨到约 10%。</p>
+
+<p>所以站点报告的是这些，而不是一个「理想值」：</p>
+
+<pre><code>问题                        能测吗   我们报什么
+我的落点是否系统性偏一侧？   能       点击偏差 + CI（点击偏差检查）
+我的第一段停在哪？          能       初段覆盖（?selftest=1 证明链条）
+我甩枪的哪一段慢？          能       T1 / T2 / 纵向误差（分轴定位）
+我的理想 cm/360 是多少？     不能     明确不提供</code></pre>
+
+<h2>其余测量工具</h2>
+
+<p><strong>结论：每个工具只报它能证明的东西，测不出来的就不报。</strong></p>
+
+<p>同一条原则：每个工具只报它能证明的东西。</p>
+
+<pre><code>工具          测什么                        关键参数 / 判据
+六维检查      反应、第一枪、反应确定、微调、  90 秒固定配方（微调 / 大角度 / 中距离循环），
+              拉枪、稳定                     前 6 球热身不计分
+阶梯精度      85% 命中率下的最小目标尺寸    6-down/1-up（收敛于 1/(1+1/6)=85.7%），
+                                             反转时步长减半，阈值取反转点中位数
+随机距离      不同距离下的适应力            5–45° 随机、方向随机、球固定 1.5°，
+                                             按 5–15/15–25/25–35/35–45° 分箱
+跟枪测试      跟踪误差                    RMS、相位滞后、速度增益（闭环）
+分轴定位      两段各自的时间               T1 横移 / T2 微调 / 纵向误差</code></pre>
+
+<p>六维检查的六项分别对应：反应（首动时间）、第一枪（首段落点）、反应确定（停点到击发的间隔）、微调（小角度命中率）、拉枪（大角度命中率与用时）、稳定（前半程与后半程的命中率差）。阶梯与随机距离的判定管线与其它训练模式共用同一套 <code>spawn / judge / finish</code>，只是记录字段不同。</p>
+
+<h2>结论</h2>
+
+<ol>
+<li><strong>16 到 32 cm/360 之间，灵敏度对可测表现没有显著影响</strong>；不要在调它上面过度投入。</li>
+<li>如果非要校准，用过冲法，但<strong>汇总样本、剔除命中、并且防漂移</strong>。</li>
+<li>只用一个<strong>难度控制器</strong>，并且把目标定在 <strong>85% 成功率</strong>，否则反馈环会发散。</li>
+<li>换硬件或改引擎之后感觉到的差别，多半来自重建肌肉记忆——只有重复能修。</li>
+<li><strong>点击任务测不出增益误差。</strong>闭环修正会把它抹掉；开环又拿掉了动作赖以规划的视觉信息。剩下能测的只有：第一段停在哪（初段覆盖）、落点是否系统性偏离（点击偏差）、以及哪一段慢（分轴定位）。</li>
+<li>信任任何一个数字之前，先自检测量链。初段覆盖页在 <code>?selftest=1</code> 提供自检；过不了自检的那一轮不该采信。</li>
+</ol>
+
+
+<h2>附录：我们怎么走到这里的</h2>
+
+<blockquote>这一节记录的是过程，不是结论。想直接拿走方法的话，可以跳过。</blockquote>
+
+<h3>过冲法的四次迭代</h3>
+
+<h4>v1 —— 记录点击位置</h4>
+
+<pre><code>f       = (落点 - 目标) / 目标
+cm_new  = cm * (1 + f)</code></pre>
+
+<p>问题：玩家在点击前就会视觉修正，记录到的位置已经是修正后的位置。每一轮只建议 3–8% 的改动，永远不收敛。</p>
+
+<h4>v2 —— 记录停稳位置（速度 &lt; 25°/s 持续 70 ms）</h4>
+
+<p>观测到的最好收敛：</p>
+
+<pre><code>cm/360   过冲
+23.2     +7.4%
+24.9     +4.8%
+26.1     +2.9%
+26.9     +2.9%
+27.7     +2.3%</code></pre>
+
+<p>单调下降；最后两轮只差 0.7%。</p>
+
+<h4>v3 —— 记录弹道终点（速度降到 40°/s 以下）</h4>
+
+<p><strong>失败。</strong>这个点落在减速中段。散度约 ±15%，而要测的偏差只有约 5%，信噪比太低：</p>
+
+<pre><code>cm/360   过冲      过冲 : 欠冲
+23.2     +8.7%     20 : 13
+25.2     +16.0%    20 : 14
+29.2     +3.3%     22 : 7
+51.5     -0.7%     15 : 16</code></pre>
+
+<p>轮次之间符号都翻转过。</p>
+
+<h4>v4 —— 点击位置，剔除命中，汇总样本</h4>
+
+<ul>
+<li>用点击位置（零延迟，和玩家的体感一致）</li>
+<li><strong>剔除命中</strong>（角度误差在球半径内）：命中只说明「控制够用」，不代表「有偏差」</li>
+<li>把所有轮次的样本汇总，每个样本换算成它隐含的 cm/360，取全局中位数</li>
+</ul>
+
+<p>结果：480 个样本收敛到 27.2 cm/360，最终偏差 −0.1%。</p>
+
+<h3>踩过的坑</h3>
+
+<h4>1. 自动回填导致的漂移</h4>
+
+<p>「再测一轮」会自动填入建议值。数据有噪声时，每一轮都建议一点小改动，序列一路漂到荒谬的值（23.2 漂到 8.0，也就是转一整圈只要 8 cm）。</p>
+
+<p>修法：改动超过 35% 时拒绝自动填入；加一个「清空样本池」按钮。</p>
+
+<h4>2. 限时里的死亡螺旋</h4>
+
+<pre><code>允许时间 = 0.9 × 命中球用时的中位数
+-&gt; 只有快的尝试才算命中
+-&gt; 中位数下降
+-&gt; 允许时间下降
+-&gt; 超时更多，活下来的命中更快</code></pre>
+
+<p>实测命中率从 60% 掉到 30%、再掉到 25%，同时球半径还在变大——因为两个控制器在互相打架。</p>
+
+<p>修法：</p>
+
+<pre><code>限时模式开 -&gt; 球固定，只调允许时间
+               命中率 &gt;= 85%：收紧 6%
+               命中率 &lt;  70%：放宽 7%
+限时模式关 -&gt; 时间固定，只调球的大小</code></pre>
+
+<h4>3. 视觉大小和命中判定不一致</h4>
+
+<p>球按 1.5° 半径画，命中判定却用甩枪距离的 3%（约 0.6°）。玩家看着准星明明在球里，却判成未命中。</p>
+
+<p>修法：命中判定直接用角度误差和画出来的半径比。</p>
+
+<h4>4. 角度没有归一化</h4>
+
+<pre><code>// 错
+Math.abs(tYaw - yaw);      // 目标 179°，当前 -179° -&gt; 358°
+
+// 对
+wrapPi(tYaw - yaw);        // -&gt; 2°</code></pre>
+
+<p>症状：「往一个方向转过去之后，就再也打不中了」。累计转动越过 ±180° 之后，判定永远不可能通过。</p>
+
+<h4>5. tan() 在 90° 处翻号</h4>
+
+<p>目标的世界坐标原本用 <code>x = D * tan(yaw)</code> 算，越过 ±90° 会翻号，球被画到镜像的位置上。</p>
+
+<p>正确的球面定位：</p>
+
+<pre><code>const x = D * Math.cos(pitch) * Math.sin(yaw);
+const y = D * Math.sin(pitch);
+const z = D * Math.cos(pitch) * Math.cos(yaw);</code></pre>
+
+<h4>6. 同步写盘会把输入报告合并掉</h4>
+
+<p>一个原始输入记录器如果每个 HID 报告都 <code>WriteLine</code> + <code>AutoFlush</code>，会堵住消息循环，Windows 就开始合并 <code>WM_INPUT</code>：</p>
+
+<pre><code>同步写盘     -&gt; 实测 124 Hz
+内存缓冲     -&gt; 实测 4207 Hz</code></pre>
+
+<p>同一只 8K 鼠标，差 34 倍。测回报率之前，先排除这一项。</p>
+</article>
+<article data-lang="en" lang="en">
 <h1>Methodology</h1>
 
 <p>This document records how each measurement was designed, what evidence backs it, and which approaches were rejected. Every claim carries a way to check it — a measured number, or a citation.</p>
@@ -245,6 +582,18 @@ delta 1%  ->  ~1570 trials</code></pre>
 <p>So a 60-ball A/B can resolve about 5%, a 30-ball block about 7%, and anything smaller is
 indistinguishable from noise in one session.</p>
 
+
+<h3>What the timing can actually measure: sampling rate and frame-interval P99</h3>
+
+<p><strong>Conclusion: this site reports the input sampling rate and the frame-interval P99 — never an absolute input-to-display latency, because a browser cannot measure that honestly.</strong></p>
+
+<ul>
+<li><strong>Input sampling rate.</strong> <code>pointerrawupdate</code> delivers pointer events before the browser coalesces them (MDN: <em>pointerrawupdate</em> fires for raw, un-coalesced pointer events). It sets the smallest time step you can resolve — a 1000 Hz mouse gives one sample every 1 ms at best.</li>
+<li><strong>Frame-interval P99.</strong> Take the differences between consecutive <code>requestAnimationFrame</code> timestamps and report the 99th percentile. A mean hides the few long frames; P99 is what tells you how bad the stutter is.</li>
+<li><strong>Why rAF cannot give a latency.</strong> Animation-frame callbacks are aligned to vertical sync (the HTML rendering update is scheduled at the refresh rate), so every event cost snaps to the 16.7 ms (60 Hz) or 8.3 ms (120 Hz) grid. Sub-frame differences never enter that timeline, so an &ldquo;input-to-display latency&rdquo; computed from rAF is precision that does not exist.</li>
+<li><strong>Timestamps share one origin.</strong> <code>event.timeStamp</code> and <code>performance.now()</code> are on the same time origin and can be subtracted — but both mark when the <em>browser</em> saw the event; neither includes display scan-out.</li>
+</ul>
+
 <h2>There is no such thing as a &ldquo;true&rdquo; sensitivity</h2>
 
 <p><strong>Conclusion: an &ldquo;ideal sensitivity&rdquo; is not an objective number — it is a function of the mapping and the distances you face, which is why the site does not offer one.</strong></p>
@@ -307,8 +656,6 @@ two variables moving at once would make neither number interpretable.</p>
 <li>Verify the measuring chain before trusting a number: the open-loop page self-checks at <code>?selftest=1</code>.</li>
 
 
-</body>
-</html>
 
 <h2>Appendix: how we got here</h2>
 
@@ -355,7 +702,7 @@ cm/360   overshoot   overshoots : undershoots
 
 <h4>v4 — click position, hits excluded, pooled samples</h4>
 
-<li>Use the click position (zero latency, matches what the player feels)</li>
+<li>Use the click position (no settling wait — it matches what the player feels)</li>
 <li><strong>Exclude hits</strong> (angular error within ball radius) from the bias estimate: a hit means "control was sufficient", not "there was a bias"</li>
 <li>Pool every trial across runs, convert each to the cm/360 it implies, take the global median</li>
 
@@ -430,3 +777,48 @@ memory buffering     -&gt; measured 4207 Hz
 </code></pre>
 
 <p>A 34x difference on the same 8K mouse. Always rule this out before measuring polling rate.</p>
+</article>
+<script>
+(function(){
+  var zhTitle="方法论 · Vernier", enTitle="Methodology · Vernier";
+  var DEFAULT=document.documentElement.getAttribute("data-default")||"zh";
+  function pick(){
+    try{
+      var q=new URLSearchParams(location.search).get("lang");
+      if(q==="zh"||q==="en") return q;
+      var s=localStorage.getItem("vernier.lang");
+      if(s==="zh"||s==="en") return s;
+    }catch(e){}
+    // 不再用浏览器语言兜底：文件本身决定默认语言（zh 页默认中文，en 页默认英文），
+    // 这样分享出去的链接看到的就是它标称的语言；?lang= 与上次选择仍可覆盖。
+    return DEFAULT;
+  }
+  function apply(lang, syncUrl){
+    document.documentElement.lang = (lang==="en") ? "en" : "zh-CN";
+    document.title = (lang==="en") ? enTitle : zhTitle;
+    var arts=document.querySelectorAll("article[data-lang]");
+    for(var i=0;i<arts.length;i++) arts[i].hidden = (arts[i].getAttribute("data-lang")!==lang);
+    var btns=document.querySelectorAll(".langsw [data-lang]");
+    for(var j=0;j<btns.length;j++){
+      var on=btns[j].getAttribute("data-lang")===lang;
+      btns[j].classList.toggle("on", on);
+      if(on) btns[j].setAttribute("aria-current","page"); else btns[j].removeAttribute("aria-current");
+    }
+    try{ localStorage.setItem("vernier.lang", lang); }catch(e){}
+    if(syncUrl!==false){
+      try{ var u=new URL(location.href); u.searchParams.set("lang", lang); history.replaceState(null,"",u); }catch(e){}
+    }
+  }
+  apply(pick(), false);
+  var btn=document.querySelectorAll(".langsw [data-lang]");
+  for(var k=0;k<btn.length;k++){
+    btn[k].addEventListener("click", function(e){
+      e.preventDefault();
+      var l=this.getAttribute("data-lang");
+      apply(l, true);   // 不滚动：切语言时保持当前位置，避免把顶部导航甩出视口
+    });
+  }
+})();
+</script>
+</body>
+</html>

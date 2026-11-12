@@ -1,36 +1,36 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-default="zh">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>方法论 · Vernier</title>
-<meta name="description" content="分毫 Vernier 的方法论：灵敏度到底重不重要、过冲法的四次失败、开环的三种模型、分轴定位与灵敏度探针，以及「不存在真实灵敏度」的三条理由。">
+<meta name="description" content="分毫 Vernier 的方法论：灵敏度到底重不重要、开环的三种模型、分轴定位与灵敏度探针、时间测量的精度边界，以及「不存在真实灵敏度」的三条理由。">
 <link rel="canonical" href="https://i11usorycat.github.io/cs2-aim-tools/methodology.html">
 <link rel="alternate" hreflang="zh" href="https://i11usorycat.github.io/cs2-aim-tools/methodology.html">
 <link rel="alternate" hreflang="en" href="https://i11usorycat.github.io/cs2-aim-tools/en/methodology.html">
 <link rel="alternate" hreflang="x-default" href="https://i11usorycat.github.io/cs2-aim-tools/">
 <meta property="og:title" content="Vernier — 方法论">
-<meta property="og:description" content="灵敏度到底重不重要、四次失败、分轴定位与灵敏度探针，以及「不存在真实灵敏度」的三条理由。">
 <meta property="og:url" content="https://i11usorycat.github.io/cs2-aim-tools/methodology.html">
 <style>
   :root{ --ink:#33291c; --paper:#f7f2e8; --card:#efe7d7; --accent:#c2410c; --muted:#7b6a54 }
+  html[lang="zh-CN"] body{font-family:"Microsoft YaHei UI","Microsoft YaHei","Noto Sans SC","Segoe UI",system-ui,sans-serif;line-height:1.75;letter-spacing:normal}
   body{max-width:760px;margin:0 auto;padding:48px 22px 80px;background:var(--paper);color:var(--ink);
-    font-family:"Microsoft YaHei UI","Microsoft YaHei","Noto Sans SC","Segoe UI",system-ui,sans-serif;
-    line-height:1.75;font-size:16.5px;letter-spacing:normal;
+    font-family:Georgia,"Times New Roman",serif;line-height:1.8;font-size:16.5px;
     font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
   h1{font-size:30px;border-bottom:3px solid var(--accent);padding-bottom:12px}
   h2{font-size:22px;margin-top:34px;color:var(--accent)}
   h3{font-size:18px;margin-top:24px}
   h4{font-size:16.5px;margin-top:22px;margin-bottom:6px}
-  pre{background:var(--card);padding:14px;border-radius:8px;overflow-x:auto;font-size:13.5px;
-    line-height:1.65;font-variant-numeric:tabular-nums}
+  pre{background:var(--card);padding:14px;border-radius:8px;overflow-x:auto;font-size:13.5px;line-height:1.65}
   code{font-family:Consolas,"SF Mono",Menlo,monospace;font-size:.94em}
   blockquote{border-left:3px solid var(--accent);margin:14px 0;padding:2px 16px;color:var(--muted)}
   li{margin:6px 0}
   a{color:var(--accent)}
+  article[hidden]{display:none}
   .topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:8px}
   .topbar .back{text-decoration:none}
   .langsw{display:inline-flex;border:1px solid var(--card);border-radius:8px;overflow:hidden;font-size:14px}
-  .langsw a,.langsw span{padding:5px 12px;text-decoration:none;color:var(--muted)}
+  .langsw button,.langsw a{padding:5px 12px;border:0;background:transparent;font:inherit;color:var(--muted);cursor:pointer;text-decoration:none}
   .langsw .on{background:var(--accent);color:#fff}
   @media (max-width:520px){ body{padding:32px 16px 60px} h1{font-size:26px} }
 </style>
@@ -39,10 +39,11 @@
 <div class="topbar">
   <a class="back" href="./">← Vernier</a>
   <nav class="langsw" aria-label="语言 / Language">
-    <span class="on" aria-current="page">中</span>
-    <a href="./en/methodology.html" hreflang="en">EN</a>
+    <button type="button" data-lang="zh">中</button>
+    <button type="button" data-lang="en">EN</button>
   </nav>
 </div>
+<article data-lang="zh" lang="zh-CN">
 <h1>方法论</h1>
 
 <p>这份文档记录：每个测量是怎么设计的、支撑它的证据是什么、以及哪些做法被否掉了。每条结论后面都附了可验证的方式——实测数字，或者文献名。</p>
@@ -204,6 +205,18 @@ T2 &gt; 260 ms      进带后还在修正                进带就停手，只�
 
 <p>所以 60 球的 A/B 大约只能分辨 5%，30 球一块大约 7%，更小的差异在一次会话里和噪声没有区别。</p>
 
+
+<h3>时间能测到什么精度：采样率与帧间隔 P99</h3>
+
+<p><strong>结论：本站报的是「输入采样率」和「帧间隔 P99」，不报「输入到显示的绝对延迟」——后者用浏览器测不准。</strong></p>
+
+<ul>
+<li><strong>输入采样率</strong>：用 <code>pointerrawupdate</code> 拿到未合并的指针事件（MDN：<em>pointerrawupdate</em> 提供未经浏览器合并的原始指针事件）。它决定你能分辨的最小时间粒度——1000 Hz 的鼠标，相邻两个样本至少隔 1 ms。</li>
+<li><strong>帧间隔 P99</strong>：取 <code>requestAnimationFrame</code> 相邻时间戳之差，报第 99 百分位。均值会被少数长帧掩盖，P99 才代表「卡一下」的程度。</li>
+<li><strong>为什么不用 rAF 算延迟</strong>：rAF 回调与垂直同步对齐（HTML 规范里渲染更新按刷新率调度），任何事件的耗时都会被吸附到 16.7 ms（60 Hz）或 8.3 ms（120 Hz）的栅格上。亚帧的差异进不了这个时间轴，所以拿它算「输入→显示」的绝对延迟，只会得到一个不存在的精度。</li>
+<li><strong>事件时间戳同源</strong>：<code>event.timeStamp</code> 与 <code>performance.now()</code> 共享同一时间原点，可以相减；但两者都只表示「浏览器看到事件」的时刻，不含显示器扫描输出那一段。</li>
+</ul>
+
 <h2>不存在「真实灵敏度」</h2>
 
 <p><strong>结论：「理想灵敏」不是一个客观存在的数值，它是映射与距离的函数；本站因此不提供这个数字。</strong></p>
@@ -251,8 +264,6 @@ T2 &gt; 260 ms      进带后还在修正                进带就停手，只�
 <li>信任任何一个数字之前，先自检测量链。初段覆盖页在 <code>?selftest=1</code> 提供自检；过不了自检的那一轮不该采信。</li>
 </ol>
 
-</body>
-</html>
 
 <h2>附录：我们怎么走到这里的</h2>
 
@@ -295,7 +306,7 @@ cm_new  = cm * (1 + f)</code></pre>
 <h4>v4 —— 点击位置，剔除命中，汇总样本</h4>
 
 <ul>
-<li>用点击位置（零延迟，和玩家的体感一致）</li>
+<li>用点击位置（不需要等待停稳，和玩家的体感一致）</li>
 <li><strong>剔除命中</strong>（角度误差在球半径内）：命中只说明「控制够用」，不代表「有偏差」</li>
 <li>把所有轮次的样本汇总，每个样本换算成它隐含的 cm/360，取全局中位数</li>
 </ul>
@@ -361,3 +372,453 @@ const z = D * Math.cos(pitch) * Math.cos(yaw);</code></pre>
 内存缓冲     -&gt; 实测 4207 Hz</code></pre>
 
 <p>同一只 8K 鼠标，差 34 倍。测回报率之前，先排除这一项。</p>
+</article>
+<article data-lang="en" lang="en">
+<h1>Methodology</h1>
+
+<p>This document records how each measurement was designed, what evidence backs it, and which approaches were rejected. Every claim carries a way to check it — a measured number, or a citation.</p>
+
+
+<h2>What this page answers</h2>
+
+<p>Thirty seconds gets you the conclusions; everything after is the evidence.</p>
+
+<ol>
+<li><strong>Between 16 and 32 cm/360, sensitivity has no measurable effect on performance.</strong> Five conditions, thirty trials each — spread 5.8%, inside the noise. Stop tuning it.</li>
+<li><strong>Closed-loop tasks cannot measure a gain error.</strong> You correct before clicking, and the correction erases the error — the landing distribution stays centred. It took us four versions of the overshoot method to accept that.</li>
+<li><strong>A step task can.</strong> For the first ~100–150 ms after a target jump there is no correction yet, so the response amplitude is proportional to the gain; injecting 0.85 / 1.00 / 1.15 reads back 84% / 99% / 114%.</li>
+<li><strong>So we report only what can be measured:</strong> landing bias, first-stop coverage, and which stage is slow (T1/T2). &ldquo;Your ideal cm/360&rdquo; is deliberately not offered, because it cannot be measured.</li>
+</ol>
+
+<p>Each section below opens with its conclusion in bold, then the evidence. The failed attempts are collected in the appendix at the end — skip them if you just want the method.</p>
+
+<h2>Does sensitivity actually matter?</h2>
+
+<p><strong>Conclusion: within this range sensitivity has no measurable effect on hit speed — the gain from tuning it is smaller than the measurement noise.</strong></p>
+
+<h3>Controlled experiment</h3>
+
+<p>Five sensitivities, thirty trials each, with block order counterbalanced (reversed in the second half to cancel learning and fatigue drift):</p>
+
+<pre><code>
+cm/360   median ball-to-ball interval   median re-entries
+16       538 ms                         1.0
+20       551 ms                         0.0
+23.2     538 ms                         0.0
+27       521 ms                         0.0
+32       531 ms                         0.0
+</code></pre>
+
+<p>The spread is 5.8%, which is inside statistical noise. <strong>Within this range sensitivity has no measurable effect on hit speed.</strong> This also explains why players can tweak sensitivity for hours without feeling a difference: the effect is smaller than the noise.</p>
+
+<h2>The open-loop detour: three models, one honest reframe</h2>
+
+<p><strong>Conclusion: reading &ldquo;where you think the target is&rdquo; out of the ballistic path does not work — all three models failed the same way, with the fitted amplitude swallowing the shape of the movement.</strong></p>
+
+<p>If the first 250&nbsp;ms of a flick is still ballistic, its endpoint ought to encode the
+<em>setting</em> rather than the <em>correction</em>. Three models were built. All failed
+the same way: the fitted amplitude absorbed the shape of the movement.</p>
+
+<h3>v5 &mdash; exponential rise, A&middot;(1&nbsp;&minus;&nbsp;e<sup>&minus;t/&tau;</sup>)</h3>
+
+<p>Synthetic minimum-jerk trajectories (the realistic S-shape) with a known gain of 1.00:</p>
+
+<pre><code>duration   reported gain
+0.15 s     1.089
+0.20 s     1.172
+0.25 s     1.281</code></pre>
+
+<p>The model has no acceleration phase, so fitting it to an S-curve inflates the amplitude.</p>
+
+<h3>v6 &mdash; minimum-jerk, A&middot;(10u&sup3;&nbsp;&minus;&nbsp;15u&#8308;&nbsp;+&nbsp;6u&#8309;)</h3>
+
+<p>Correct on clean synthetic data to &plusmn;1.6%, but on a real recording the same motion
+read 0.88 with the exponential and 1.33 with this model. A and D are not separately
+identifiable from a truncated trajectory: a longer, flatter curve fits equally well with a
+larger amplitude.</p>
+
+<h3>v7 &mdash; first stop, no model at all</h3>
+
+<p>Take the position at the moment speed falls below 15% of its peak &mdash; no extrapolation.
+Validated end-to-end, with synthetic motion injected through the page&rsquo;s own
+<code>pointermove</code> path:</p>
+
+<pre><code>injected   cm/360   reported
+0.85       27.1     84%
+1.00       27.1     99%
+1.15       27.1     114%
+1.00       40.0     99%</code></pre>
+
+<p>The chain is accurate to &plusmn;1% and independent of the sensitivity setting.</p>
+
+<h3>What it actually measures</h3>
+
+<p>With the chain proven, the remaining readings had to be believed &mdash; and they sat at
+<strong>71% at 20&deg; and 71% at 40&deg;</strong> (CI &plusmn;13&ndash;14%, statistically
+indistinguishable). A pure gain error would also be distance-invariant, but a correctly
+tuned sensitivity would land near 100%. 71% means the first movement covers only about
+71% of the distance and a correction supplies the rest.</p>
+
+<p>That is the two-phase structure of human pointing, not a sensitivity error. The page was
+renamed from &ldquo;open-loop calibration&rdquo; to <strong>first-move coverage</strong>, and
+its &ldquo;suggested cm/360&rdquo; and &ldquo;apply to settings&rdquo; controls were removed &mdash;
+each run was multiplying cm/360 by about 0.7.</p>
+
+<p>Self-check: append <code>?selftest=1</code> to the page URL. It injects three known
+gains and reports whether the chain still holds in the current browser.</p>
+
+<h2>Axis-staged positioning</h2>
+
+<p><strong>Conclusion: splitting a 2-D flick into transport and vertical micro-adjustment makes it possible to measure which stage is slow — and halving the effective distance saves roughly one bit of movement time.</strong></p>
+
+<p>Goal: split a 2-D flick into its two stages so each can be measured separately.</p>
+
+<h3>1. A two-component movement, forced to serialize</h3>
+
+<p>Woodworth (1899) described aiming as an initial ballistic impulse followed by a corrective
+secondary movement. In a diagonal 2-D flick both components happen at once, so a single
+&ldquo;time to hit&rdquo; cannot say which one was slow.</p>
+
+<p>Axis-staged forces the order: a horizontal band is drawn first (transport,
+<strong>T1</strong>), and once the crosshair is inside the band it turns green and only a
+vertical fine adjustment remains (<strong>T2</strong>).</p>
+
+<blockquote>Verifiable: the result page reports T1 and T2 as separate medians. The random /
+precision drills report one total time and one error — the same slow run could be either
+stage.</blockquote>
+
+<h3>2. Why halving the ID matters</h3>
+
+<p>Fitts (1954): <code>MT = a + b &middot; ID</code>, with <code>ID = log2(2A / W)</code>.</p>
+
+<p>If the transport only has to reach the band, the effective distance <code>A</code> halves,
+so the ID drops by <strong>exactly one bit</strong>, and movement time falls by <code>b</code>.
+MacKenzie (1992) puts the slope <code>b</code> at roughly 100–150 ms/bit in the classic 1-D
+studies.</p>
+
+<blockquote>Verifiable: in our runs T1 (gross sweep) sits well above T2 (fine adjust), which
+is what a lower-ID second stage predicts.</blockquote>
+
+<h3>3. Fading the guide is necessary, not cosmetic</h3>
+
+<p>The guidance hypothesis (Salmoni, Schmidt &amp; Walter 1984): augmented feedback speeds up
+acquisition but creates a dependency, and performance falls away once it is removed. The band
+is exactly that guidance, so it is faded on a ladder instead of being kept forever:</p>
+
+<pre><code>A0  band = 2.0 x radius, solid
+A1  band = 1.6 x radius, solid
+A2  band = 1.3 x radius, dashed
+A3  thin line, fades 0.4 s after the target appears
+A4  no band at all - plain 2-D aiming</code></pre>
+
+<p>Rule: five consecutive band entries upgrade a level; a failed entry, or two consecutive
+misses, downgrades one.</p>
+
+<blockquote>Verifiable: the level lives in <code>localStorage["cs2at.axisFade"]</code> as
+<code>{level, enter, miss}</code>, and <code>?axisLevel=0..4</code> pins it for an A/B.</blockquote>
+
+<h3>4. T1/T2 triage — what the older drills cannot do</h3>
+
+<p>The older drills answer &ldquo;how fast and how accurate&rdquo;; they cannot answer
+&ldquo;which stage costs you the time&rdquo;. Two players with the same total time can have
+opposite bottlenecks: one sweeps slowly and lands cleanly, the other sweeps fast and then
+hovers. Axis separates them:</p>
+
+<pre><code>symptom          reading                          advice
+T1 > 800 ms      the gross sweep is slow          move faster first, then settle
+T2 > 260 ms      still correcting after arrival   stop on entry, adjust vertically only
+|dy| > 0.6 deg   vertical control is the weak link lock vertical before clicking</code></pre>
+
+<blockquote>Verifiable: <code>window.__axisReport</code> exposes
+<code>{t1, t2, dy, hit, level, n}</code> after every run.</blockquote>
+
+<h2>The sensitivity probe</h2>
+
+<p><strong>Conclusion: closed-loop tasks cannot see a gain error, step tasks can, and one session resolves at best about 5%.</strong></p>
+
+<h3>Why a closed-loop task cannot measure a gain error</h3>
+
+<p>In closed-loop pointing the visual feedback nulls the error: whatever the gain, the player
+keeps correcting until the crosshair is on the target. The endpoint distribution is centred at
+zero no matter what the setting is (Powers 1973; Elliott et al. 2010).</p>
+
+<p>Our own controlled run — five sensitivities, thirty trials each, block order
+counterbalanced:</p>
+
+<pre><code>cm/360   median ball-to-ball interval
+16       538 ms
+20       551 ms
+23.2     538 ms
+27       521 ms
+32       531 ms</code></pre>
+
+<p>The spread is 5.8%, inside the noise of the measurement. The same experiment run as a
+first-move estimate gives <strong>71% at 20&deg; and 71% at 40&deg;</strong> — distance-invariant,
+which means it is reading the movement strategy, not the setting.</p>
+
+<h3>Why a step task can</h3>
+
+<p>A step (the target jumps) triggers an initial open-loop response. For the first
+~100–150 ms visual feedback cannot act, so the response amplitude is proportional to the
+control gain. Regressing displacement on the step size recovers that gain directly, with no
+model to fit (Woodworth 1899; Fitts &amp; Peterson 1964; Argelaguet &amp; Andujar 2013 for the
+transfer-function review).</p>
+
+<blockquote>Verifiable: the first-move page self-checks with <code>?selftest=1</code>,
+injecting known gains of 0.85 / 1.00 / 1.15 through the real pointer path — it reads back
+84% / 99% / 114%, so a 15% gain step is resolved to &plusmn;1%.</blockquote>
+
+<h3>Limits of interleaved A/B</h3>
+
+<p>Interleaving two gains invites dual adaptation (Martin, Keating &amp; Goodkin 1996): the
+two internal models compete, the measured difference shrinks, and washout after each switch
+biases the first trials of a block. The practical consequence is a power limit:</p>
+
+<pre><code>n per condition ~= 2 (1.96 + 0.84)^2 (sigma / delta)^2,  sigma ~ 10%
+delta 5%  ->  ~63 trials
+delta 2%  ->  ~390 trials
+delta 1%  ->  ~1570 trials</code></pre>
+
+<p>So a 60-ball A/B can resolve about 5%, a 30-ball block about 7%, and anything smaller is
+indistinguishable from noise in one session.</p>
+
+
+<h3>What the timing can actually measure: sampling rate and frame-interval P99</h3>
+
+<p><strong>Conclusion: this site reports the input sampling rate and the frame-interval P99 — never an absolute input-to-display latency, because a browser cannot measure that honestly.</strong></p>
+
+<ul>
+<li><strong>Input sampling rate.</strong> <code>pointerrawupdate</code> delivers pointer events before the browser coalesces them (MDN: <em>pointerrawupdate</em> fires for raw, un-coalesced pointer events). It sets the smallest time step you can resolve — a 1000 Hz mouse gives one sample every 1 ms at best.</li>
+<li><strong>Frame-interval P99.</strong> Take the differences between consecutive <code>requestAnimationFrame</code> timestamps and report the 99th percentile. A mean hides the few long frames; P99 is what tells you how bad the stutter is.</li>
+<li><strong>Why rAF cannot give a latency.</strong> Animation-frame callbacks are aligned to vertical sync (the HTML rendering update is scheduled at the refresh rate), so every event cost snaps to the 16.7 ms (60 Hz) or 8.3 ms (120 Hz) grid. Sub-frame differences never enter that timeline, so an &ldquo;input-to-display latency&rdquo; computed from rAF is precision that does not exist.</li>
+<li><strong>Timestamps share one origin.</strong> <code>event.timeStamp</code> and <code>performance.now()</code> are on the same time origin and can be subtracted — but both mark when the <em>browser</em> saw the event; neither includes display scan-out.</li>
+</ul>
+
+<h2>There is no such thing as a &ldquo;true&rdquo; sensitivity</h2>
+
+<p><strong>Conclusion: an &ldquo;ideal sensitivity&rdquo; is not an objective number — it is a function of the mapping and the distances you face, which is why the site does not offer one.</strong></p>
+
+<p><strong>1. Sensitivity is a property of the mapping, not of the player.</strong> The optimum
+is defined relative to the display gain and to the distances you happen to face; change either
+and the optimum moves. Our five-condition experiment found no measurable difference from 16 to
+32 cm/360 (spread 5.8%, inside noise).</p>
+
+<p><strong>2. The measurable signal is dominated by strategy.</strong> First-move coverage is
+71% at 20&deg; and 71% at 40&deg; — distance-invariant, and unchanged when the setting changes.
+A real gain error would track the setting; this number does not.</p>
+
+<p><strong>3. Any residual effect is below the resolution of a session.</strong> Detecting 1%
+needs about 1570 trials per condition; the entire five-condition experiment (5 &times; 30 = 150
+trials) can only resolve about 10%.</p>
+
+<p>What can be measured, and what the site therefore reports instead:</p>
+
+<pre><code>question                                  measurable?   what we report
+is my landing systematically off-centre?  yes           click bias + CI (click-bias checker)
+where does my first movement stop?        yes           first-move coverage (?selftest=1)
+which stage of the flick is slow?         yes           T1 / T2 / vertical error (axis-staged)
+what is my ideal cm/360?                  NO            deliberately not offered</code></pre>
+
+<h2>The other measurement tools</h2>
+
+<p><strong>Conclusion: each tool reports only what it can prove, and stays silent about the rest.</strong></p>
+
+<p>Same principle: each tool reports only what it can prove.</p>
+
+<pre><code>tool             what it measures                    key parameters / criteria
+Check-up         reaction, first shot, confirmation,  fixed 90 s recipe (micro / wide / mid cycle),
+                 micro-adjust, wide flick, stability  the first 6 shots are warm-up and not scored
+Staircase        smallest target held at 85% hits    6-down/1-up (converges at 1/(1+1/6) = 85.7%),
+                                                     step halves at every reversal, threshold = median
+                                                     of the reversal points
+Random distance  adaptation across distances         5–45° random, random direction, 1.5° fixed,
+                                                     binned 5–15 / 15–25 / 25–35 / 35–45°
+Tracking         tracking error                      RMS, phase lag, velocity gain (closed loop)
+Axis-staged      time of each stage                  T1 transport / T2 micro-adjust / vertical error</code></pre>
+
+<p>The six check-up dimensions map to: reaction (time to first movement), first shot (where the first
+sub-movement lands), confirmation (interval from the first stop to the shot), micro-adjust (hit rate
+on small angles), wide flick (hit rate and time on large angles), stability (hit-rate difference
+between the first and the second half of the run).</p>
+
+<p>Staircase and random distance reuse the same <code>spawn / judge / finish</code> pipeline as every
+other mode; only the recorded fields differ. Staircase pins the distance at 18° so that size is the
+only variable, and random distance pins the size at 1.5° so that distance is the only variable —
+two variables moving at once would make neither number interpretable.</p>
+
+<h2>Conclusions</h2>
+
+<li><strong>Sensitivity between 16 and 32 cm/360 has no significant effect</strong> on measured performance; do not over-invest in tuning it.</li>
+<li>If you calibrate, use the overshoot method, but <strong>pool samples, exclude hits, and guard against drift</strong>.</li>
+<li>Use a <strong>single difficulty controller</strong> and an <strong>85% success target</strong>, otherwise the feedback loop diverges.</li>
+<li>Most of the felt difference after a hardware or engine change comes from rebuilding motor memory, which only repetition can fix.</li>
+<li><strong>Pointing tasks cannot measure gain error.</strong> Closed-loop correction erases it; opening the loop removes the information the movement is planned from. What remains measurable is <em>where the first movement stops</em> (first-move coverage) and <em>whether the landing is systematically off-centre</em> (click bias).</li>
+<li>Verify the measuring chain before trusting a number: the open-loop page self-checks at <code>?selftest=1</code>.</li>
+
+
+
+<h2>Appendix: how we got here</h2>
+
+<blockquote>This section records the process, not the conclusions. If you only want the method, skip it.</blockquote>
+<h3>Four iterations of the overshoot method</h3>
+
+<h4>v1 — record the click position</h4>
+
+<pre><code>
+f       = (landing - target) / target
+cm_new  = cm * (1 + f)
+</code></pre>
+
+<p>Problem: players visually correct before clicking, so the recorded position is already the corrected one. Each round suggested only a 3-8% change and never converged.</p>
+
+<h4>v2 — record the settled position (speed &lt; 25°/s for 70 ms)</h4>
+
+<p>Best convergence observed:</p>
+
+<pre><code>
+cm/360   overshoot
+23.2     +7.4%
+24.9     +4.8%
+26.1     +2.9%
+26.9     +2.9%
+27.7     +2.3%
+</code></pre>
+
+<p>Monotonic decrease; the last two rounds differed by 0.7%.</p>
+
+<h4>v3 — record the ballistic endpoint (speed dropping below 40°/s)</h4>
+
+<p><strong>Failed.</strong> This captures a point mid-deceleration. Scatter was about ±15% while the bias being measured was about 5%, so the signal-to-noise ratio was too low:</p>
+
+<pre><code>
+cm/360   overshoot   overshoots : undershoots
+23.2     +8.7%       20 : 13
+25.2     +16.0%      20 : 14
+29.2     +3.3%       22 : 7
+51.5     -0.7%       15 : 16
+</code></pre>
+
+<p>The sign flipped between rounds.</p>
+
+<h4>v4 — click position, hits excluded, pooled samples</h4>
+
+<li>Use the click position (zero latency, matches what the player feels)</li>
+<li><strong>Exclude hits</strong> (angular error within ball radius) from the bias estimate: a hit means "control was sufficient", not "there was a bias"</li>
+<li>Pool every trial across runs, convert each to the cm/360 it implies, take the global median</li>
+
+<p>Result: 480 samples converged to 27.2 cm/360 with a final bias of -0.1%.</p>
+
+<h3>Pitfalls encountered</h3>
+
+<h4>1. Auto-fill drift</h4>
+
+<p>"Run again" filled the suggested value automatically. With noisy data each round suggested a small change, and the sequence drifted to an absurd value (23.2 to 8.0, i.e. 8 cm per full turn).</p>
+
+<p>Fix: refuse to auto-fill when the change exceeds 35%; add a "clear pool" button.</p>
+
+<h4>2. Death spiral in the time limit</h4>
+
+<pre><code>
+allowed time = 0.9 * median of HIT times
+-&gt; only fast attempts count as hits
+-&gt; the median falls
+-&gt; the allowed time falls
+-&gt; more timeouts, the surviving hits are faster still
+</code></pre>
+
+<p>Measured hit rate fell 60% -&gt; 30% -&gt; 25% while the ball radius grew, because two controllers were fighting.</p>
+
+<p>Fix:</p>
+
+<pre><code>
+time-limit mode on  -&gt; ball fixed, only the time limit adapts
+                       hit rate &gt;= 85%: tighten 6%
+                       hit rate &lt;  70%: relax 7%
+time-limit mode off -&gt; time fixed, only the ball adapts
+</code></pre>
+
+<h4>3. Visual size did not match the hit test</h4>
+
+<p>The ball was drawn at a 1.5° radius while the hit test used 3% of flick distance (about 0.6°). Players saw the crosshair inside the ball and still registered a miss.</p>
+
+<p>Fix: the hit test compares angular error directly against the drawn radius.</p>
+
+<h4>4. Angles were not wrapped</h4>
+
+<pre><code>
+// wrong
+Math.abs(tYaw - yaw);      // target 179°, current -179° -&gt; 358°
+
+// correct
+wrapPi(tYaw - yaw);        // -&gt; 2°
+</code></pre>
+
+<p>Symptom: "after I turn one direction I can no longer hit anything". Once accumulated rotation passed ±180° the test could never pass.</p>
+
+<h4>5. `tan()` flips at 90°</h4>
+
+<p>Target world position was computed as `x = D * tan(yaw)`, which flips sign past ±90°, drawing the ball at a mirrored position.</p>
+
+<p>Correct spherical placement:</p>
+
+<pre><code>
+const x = D * Math.cos(pitch) * Math.sin(yaw);
+const y = D * Math.sin(pitch);
+const z = D * Math.cos(pitch) * Math.cos(yaw);
+</code></pre>
+
+<h4>6. Synchronous disk writes merge input reports</h4>
+
+<p>A raw-input logger that calls `WriteLine` + `AutoFlush` per HID report blocks the message loop, and Windows begins coalescing `WM_INPUT`:</p>
+
+<pre><code>
+synchronous writes   -&gt; measured 124 Hz
+memory buffering     -&gt; measured 4207 Hz
+</code></pre>
+
+<p>A 34x difference on the same 8K mouse. Always rule this out before measuring polling rate.</p>
+</article>
+<script>
+(function(){
+  var zhTitle="方法论 · Vernier", enTitle="Methodology · Vernier";
+  var DEFAULT=document.documentElement.getAttribute("data-default")||"zh";
+  function pick(){
+    try{
+      var q=new URLSearchParams(location.search).get("lang");
+      if(q==="zh"||q==="en") return q;
+      var s=localStorage.getItem("vernier.lang");
+      if(s==="zh"||s==="en") return s;
+    }catch(e){}
+    // 不再用浏览器语言兜底：文件本身决定默认语言（zh 页默认中文，en 页默认英文），
+    // 这样分享出去的链接看到的就是它标称的语言；?lang= 与上次选择仍可覆盖。
+    return DEFAULT;
+  }
+  function apply(lang, syncUrl){
+    document.documentElement.lang = (lang==="en") ? "en" : "zh-CN";
+    document.title = (lang==="en") ? enTitle : zhTitle;
+    var arts=document.querySelectorAll("article[data-lang]");
+    for(var i=0;i<arts.length;i++) arts[i].hidden = (arts[i].getAttribute("data-lang")!==lang);
+    var btns=document.querySelectorAll(".langsw [data-lang]");
+    for(var j=0;j<btns.length;j++){
+      var on=btns[j].getAttribute("data-lang")===lang;
+      btns[j].classList.toggle("on", on);
+      if(on) btns[j].setAttribute("aria-current","page"); else btns[j].removeAttribute("aria-current");
+    }
+    try{ localStorage.setItem("vernier.lang", lang); }catch(e){}
+    if(syncUrl!==false){
+      try{ var u=new URL(location.href); u.searchParams.set("lang", lang); history.replaceState(null,"",u); }catch(e){}
+    }
+  }
+  apply(pick(), false);
+  var btn=document.querySelectorAll(".langsw [data-lang]");
+  for(var k=0;k<btn.length;k++){
+    btn[k].addEventListener("click", function(e){
+      e.preventDefault();
+      var l=this.getAttribute("data-lang");
+      apply(l, true);   // 不滚动：切语言时保持当前位置，避免把顶部导航甩出视口
+    });
+  }
+})();
+</script>
+</body>
+</html>

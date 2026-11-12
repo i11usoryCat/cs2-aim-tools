@@ -899,7 +899,8 @@ try{
       </div>
     </div>
     <div class="card">
-      <div class="t" style="margin-bottom:10px">趋势（最近 60 组）
+      <div class="t" style="margin-bottom:10px;display:flex;align-items:center;gap:10px">趋势（最近 60 组）
+        <button id="trendSave" style="background:transparent;border:1px solid var(--line);color:var(--dim);font-size:12.5px;padding:5px 12px;cursor:pointer">存图</button>
         <select id="trendMode" style="margin-left:12px;padding:5px 10px;background:var(--panel);border:1px solid var(--line);color:var(--txt);border-radius:7px;font-size:13px"></select>
       </div>
       <canvas id="trendCv" style="width:100%;height:220px;display:block"></canvas>
@@ -1309,7 +1310,7 @@ const EN={
   '墨玉':'Jade','墨鱼':'Ink','湖泊':'Lake','明亮':'Light','暖砂':'Sand','森林':'Forest','极简灰':'Mono','赛博':'Cyber','深蓝':'Night',
   '经典':'Classic','浅灰':'Light grey','暗蓝':'Night blue','纯黑':'Mono black','沙色':'Sand',
   '训练场景':'Training scene','背景、网格、准星的颜色。':'Background, grid and crosshair colours in the trainer.','只影响网页界面，不影响训练场景。':'Affects the UI only, not the training scene.',
-  '最近':'Last','六维':'Six-skill','本周':'This week','天':'days','未设置':'not set',
+  '最近':'Last','六维':'Six-skill','本周':'This week','天':'days','未设置':'not set','存图':'Save image',
   '球':'balls','第':'No.','天 · 已完成':' days · done','天 · 连续':' days · streak',
   '一':'M','二':'T','三':'W','四':'T','五':'F','六':'S','日':'S',
   '定位':'Positioning','速度':'Speed','转向':'Turning','稳定':'Stability','体检':'Assessment',
@@ -2147,6 +2148,58 @@ function drawTrend(runs){
   const lg=(c,zh,en)=>'<span style="white-space:nowrap;margin-right:16px"><span style="display:inline-block;width:10px;height:3px;background:'+c+';vertical-align:middle;margin-right:6px"></span>'+(EN_UI?en:zh)+'</span>';
   $('trendLegend').innerHTML=lg(acc,'命中率','Hit rate')+lg(mtC,'中位用时','Median time')+lg(dim,'限时','Limit');
 }
+// 一键存图：把趋势 canvas 连同站名/日期画进一张干净的 PNG
+function exportTrend(){
+  const src=$('trendCv'); if(!src) return;
+  const EN_UI=document.documentElement.getAttribute('lang')==='en';
+  const css=getComputedStyle(document.documentElement);
+  const bg=css.getPropertyValue('--panel').trim()||'#ffffff';
+  const fg=css.getPropertyValue('--txt').trim()||'#1b1a17';
+  const dimC=css.getPropertyValue('--dim').trim()||'#57534b';
+  const lineC=css.getPropertyValue('--line').trim()||'#d8cfbc';
+  const pad=32, W=1200;
+  const chartW=W-pad*2;
+  const chartH=Math.round(chartW * (src.height/src.width || 0.366));
+  const headH=104, footH=56;
+  const c=document.createElement('canvas');
+  c.width=W; c.height=headH+chartH+footH;
+  const g=c.getContext('2d');
+  g.fillStyle=bg; g.fillRect(0,0,c.width,c.height);
+  // 站名
+  g.fillStyle=fg; g.font='700 30px "Microsoft YaHei UI","Segoe UI",sans-serif'; g.textAlign='left';
+  g.fillText('Vernier 分毫', pad, 50);
+  // 日期 + 模式
+  const d=new Date(); const pad2=n=>String(n).padStart(2,'0');
+  const today=d.getFullYear()+'-'+pad2(d.getMonth()+1)+'-'+pad2(d.getDate());
+  const modeTxt=trendMode ? ((EN_UI? (MODE_EN[trendMode]||trendMode) : (MODE_NAME[trendMode]||trendMode))) : (EN_UI? 'all modes':'全部模式');
+  g.fillStyle=dimC; g.font='14px "Microsoft YaHei UI","Segoe UI",sans-serif';
+  g.fillText((EN_UI? 'Trend · ':'趋势 · ')+modeTxt+(EN_UI? ' · ':' · ')+today, pad, 78);
+  // 顶部细线
+  g.strokeStyle=lineC; g.lineWidth=1;
+  g.beginPath(); g.moveTo(pad,90); g.lineTo(W-pad,90); g.stroke();
+  // 图
+  g.drawImage(src, pad, headH-6, chartW, chartH);
+  // 页脚
+  g.beginPath(); g.moveTo(pad, headH+chartH+6); g.lineTo(W-pad, headH+chartH+6); g.stroke();
+  g.fillStyle=dimC; g.font='12px "Microsoft YaHei UI","Segoe UI",sans-serif';
+  g.textAlign='left';  g.fillText('i11usoryCat · cs2-aim-tools', pad, headH+chartH+34);
+  g.textAlign='right'; g.fillText(EN_UI? 'all data stays local':'数据全部留在本地', W-pad, headH+chartH+34);
+  // 下载
+  const name='vernier-trend-'+today+'.png';
+  try{ window.__lastTrendPng=c.toDataURL('image/png'); }catch(e){}
+  c.toBlob(function(blob){
+    if(!blob) return;
+    const a=document.createElement('a');
+    a.href=URL.createObjectURL(blob); a.download=name;
+    document.body.appendChild(a); a.click();
+    setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },1000);
+  },'image/png');
+  return name;
+}
+window.__exportTrend=exportTrend;
+document.addEventListener('DOMContentLoaded',function(){ var b=document.getElementById('trendSave'); if(b) b.onclick=exportTrend; });
+if(document.readyState!=='loading'){ var tb=document.getElementById('trendSave'); if(tb) tb.onclick=exportTrend; }
+
 $('trendMode').addEventListener('change',()=>{
   trendMode=$('trendMode').value;
   const runs=load(K_RUNS,[]);

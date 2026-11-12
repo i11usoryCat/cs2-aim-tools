@@ -25,6 +25,12 @@
 <title>灵敏度标定 · 过冲法（全样本）</title>
 <style>
   html,body{margin:0;height:100%;background:var(--bg);overflow:hidden;color:var(--txt);font-family:"Microsoft YaHei UI","Microsoft YaHei","Noto Sans SC","Segoe UI",system-ui,sans-serif}
+  /* 原生滚动条：6px 暗色细线，延续站点 1px 线风格 */
+  *{scrollbar-width:thin;scrollbar-color:var(--line,rgba(255,255,255,.18)) transparent}
+  ::-webkit-scrollbar{width:6px;height:6px}
+  ::-webkit-scrollbar-track{background:transparent}
+  ::-webkit-scrollbar-thumb{background:var(--line,rgba(255,255,255,.18));border-radius:0}
+  ::-webkit-scrollbar-thumb:hover{background:var(--dim,rgba(255,255,255,.35))}
   canvas{display:block;cursor:none}
   #ui{position:fixed;left:24px;top:20px;font-size:14px;line-height:1.9;pointer-events:none;text-shadow:0 0 6px #000}
   .overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;
@@ -42,8 +48,10 @@
     border-radius:6px;font-size:15px;text-align:center;pointer-events:auto}
   table{border-collapse:collapse;margin-top:8px}
   .rt td,.rt th{padding:5px 14px;font-size:14px}
-  #res{overflow:auto;padding:20px}
-  #resBody{max-height:78vh;overflow:auto}
+  #res{overflow:auto;padding:16px}
+  /* 结果面板整页滚动；内容在 1440×900 内一屏放下，小屏才出现细滚动条 */
+  #resBody{max-height:none;overflow:visible;flex-shrink:0}
+  .rt td,.rt th{padding:3px 14px;font-size:14px;line-height:18px}
   td,th{padding:9px 20px;text-align:right;border-bottom:1px solid var(--panel)}
   th{color:var(--dim);font-weight:500}
   .big{font-size:30px;font-weight:700;color:var(--acc)}

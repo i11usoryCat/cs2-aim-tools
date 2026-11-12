@@ -631,15 +631,35 @@ function loopStep(now){
 /* ————— 步进探针历史：趋势图 + 存图 —————
    同一探针最近 10 次方向判断结果（dOv，带符号）画成折线；数据存 localStorage cs2at.probeRuns（最多 30 条）。 */
 const PROBE_STORE_KEY='cs2at.probeRuns';
+// 历史数据可能同时存在两种 dOv 单位：旧版百分数（9.6）与当前分数（0.096）。
+// 统一归一化成分数，轴标签再乘 100 显示，避免 9.6 → 960 → ×1.15 = 1105% 的双重放大。
+function probeDovToFrac(v){
+  if(!isFinite(v)) return NaN;
+  return Math.abs(v)>1.5 ? v/100 : v;
+}
 function loadProbeRuns(){
   try{
     const a=JSON.parse(localStorage.getItem(PROBE_STORE_KEY)||'[]');
     if(!Array.isArray(a)) return [];
-    return a.filter(function(x){ return x && isFinite(x.dOv); }).slice(-30);
+    const out=[];
+    a.forEach(function(x){
+      if(!x || !isFinite(x.dOv)) return;
+      const y=Object.assign({}, x);
+      // 新数据带单位标记；旧数据无标记时按数值量级兼容（>1.5 视为旧的百分数）
+      y.dOv=(x.dOvUnit==='pct'||x.dOvUnit==='percent') ? x.dOv/100 : probeDovToFrac(x.dOv);
+      y.dOvUnit='frac';
+      out.push(y);
+    });
+    return out.slice(-30);
   }catch(e){ return []; }
 }
 function saveProbeRuns(list){
-  const cut=list.filter(function(x){ return x && isFinite(x.dOv); }).slice(-30);
+  const cut=list.filter(function(x){ return x && isFinite(x.dOv); }).map(function(x){
+    const y=Object.assign({}, x);
+    y.dOv=probeDovToFrac(x.dOv);
+    y.dOvUnit='frac';   // 明确写入单位：分数（0.096 = 9.6%）
+    return y;
+  }).slice(-30);
   try{ localStorage.setItem(PROBE_STORE_KEY, JSON.stringify(cut)); }catch(e){}
   return cut;
 }
@@ -670,9 +690,9 @@ function drawProbeTrend(g, cssW, cssH, runs, opt){
   const fontPx=opt.fontPx||9, dotR=opt.dotR||3;
   const w=cssW-padL-padR, hh=cssH-padT-padB;
   if(w<=0||hh<=0) return st;
-  let maxAbs=5;
-  list.forEach(function(r){ const a=Math.abs(r.dOv*100); if(a>maxAbs) maxAbs=a; });
-  maxAbs=Math.ceil(maxAbs*1.15/5)*5;
+  let maxPct=5;
+  list.forEach(function(r){ const a=Math.abs(r.dOv)*100; if(a>maxPct) maxPct=a; });
+  const maxAbs=Math.max(5, Math.ceil(maxPct*1.15));
   const x0=padL, y0=padT, cy=y0+hh/2;
   const X=function(i){ return list.length<=1? x0+w/2 : x0 + w*i/(list.length-1); };
   const Y=function(pct){ return cy - (pct/maxAbs)*(hh/2); };
@@ -708,6 +728,7 @@ function drawProbeTrend(g, cssW, cssH, runs, opt){
     g.beginPath(); g.arc(X(iCur), Math.round(Y(list[iCur].dOv*100))+0.5, dotR, 0, Math.PI*2); g.fill();
   }
   g.restore();
+  st.maxAbs=maxAbs;
   return st;
 }
 function probeStatText(st){
@@ -727,6 +748,7 @@ function renderProbeTrend(runs){
   if(!g) return;
   g.setTransform(dpr,0,0,dpr,0,0);
   const st=drawProbeTrend(g, cssW, cssH, runs, {});
+  window.__probeTrendDebug={maxAbs:st.maxAbs, n:st.n, med:st.med, same:st.same};
   const el=document.getElementById('probeTrendStat');
   if(el) el.textContent=probeStatText(st);
   const btn=document.getElementById('probeTrendSave');
@@ -756,7 +778,7 @@ function exportProbeTrend(runs){
     const data=cv.toDataURL('image/png');
     const d=new Date(); const p2=function(n){ return (n<10?'0':'')+n; };
     const name='vernier-probe-'+d.getFullYear()+p2(d.getMonth()+1)+p2(d.getDate())+'.png';
-    window.__lastProbeExport={filename:name, dataUrl:data, w:cssW, h:cssH};
+    window.__lastProbeExport={filename:name, dataUrl:data, w:cssW, h:cssH, axisAbs:st.maxAbs, axisLabelTop:'+'+st.maxAbs.toFixed(0)+'%', axisLabelBottom:'-'+st.maxAbs.toFixed(0)+'%'};
     const a=document.createElement('a');
     a.href=data; a.download=name; a.style.display='none';
     document.body.appendChild(a); a.click();
@@ -829,10 +851,10 @@ function finishProbe(){
       '<div style="margin-top:12px;font-size:14px;line-height:24px;color:var(--txt)">'+L2('方向判断：','Direction: ')+dirText+'</div>';
   }
   if(isFinite(dOv)){
-    body+='<div style="margin-top:16px">'+
-      '<canvas id="probeTrend" width="360" height="120" style="display:block;width:360px;height:120px"></canvas>'+
-      '<div id="probeTrendStat" style="margin-top:6px;font-size:12.5px;line-height:16px;color:var(--dim)"></div>'+
-      '<button id="probeTrendSave" type="button" class="btn ghost btn-sm" style="margin-top:8px">'+L2('存图','Save image')+'</button>'+
+    body+='<div style="margin-top:32px">'+
+      '<canvas id="probeTrend" width="360" height="120" style="display:block;width:360px;height:120px;margin:0"></canvas>'+
+      '<div id="probeTrendStat" style="display:block;margin-top:16px;font-size:12.5px;line-height:18px;color:var(--dim)"></div>'+
+      '<button id="probeTrendSave" type="button" class="btn ghost btn-sm" style="margin-top:12px">'+L2('存图','Save image')+'</button>'+
       '</div>';
   }
   body+='<div style="margin-top:10px;font-size:13px;line-height:24px;color:var(--dim)">'+L2('注意：未完全排除适应效应，仅供方向参考。','Note: adaptation effects are not fully ruled out — directional reference only.')+'</div>';

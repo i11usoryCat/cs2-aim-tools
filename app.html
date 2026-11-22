@@ -32,6 +32,8 @@
 <meta property="og:url" content="https://i11usorycat.github.io/cs2-aim-tools/">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="assets/favicon.svg">
+<link rel="stylesheet" href="assets/theme.css?v=1">
+<link rel="stylesheet" href="assets/type.css?v=3">
 <script>
 /* 首屏预置：主题与语言先于 CSS 生效，防闪烁 */
 try{
@@ -70,60 +72,17 @@ try{
 })();
 </script>
 <style>
-  /* ——— 墨鱼：暖纸 + 深青 + 杏橙 ——— */
-  html[data-theme="ink"]{
-    --bg:#f7f5f0; --bg2:#efece4; --panel:#fffefb; --panel2:#f1ede4;
-    --line:#e2dccf; --line2:#d3ccbb; --txt:#202b2c; --dim:#6d7a7b; --dim2:#9aa5a4;
-    --acc:#0f766e; --acc2:#115e59; --ok:#15803d; --warn:#b45309;
-    --head:#f7f5f0e6; --shade:30 43 44; --ring:#0f766e33;
+  /* —— 主题唯一来源：assets/theme.css（页面不再自带主题定义） —— */
+  :root{
+    --panel2:var(--bg2); --line2:var(--line);
+    --dim2:color-mix(in srgb, var(--dim) 78%, transparent);
+    --head:color-mix(in srgb, var(--bg) 92%, transparent);
+    --shade:24 21 17; --ring:color-mix(in srgb, var(--acc) 22%, transparent);
+    --ok:#15803d; --warn:#b45309;
   }
-  html[data-theme="jade"]{
-    --bg:#101917; --bg2:#152220; --panel:#16211f; --panel2:#1d2b28;
-    --line:#2a3a36; --line2:#374b46; --txt:#efeade; --dim:#93a8a1; --dim2:#6b807a;
-    --acc:#7fbfa6; --acc2:#5aa78c; --ok:#a3d977; --warn:#e0a458;
-    --head:#101917e6; --shade:0 0 0; --ring:#7fbfa633;
-  }
-  html[data-theme="lake"]{
-    --bg:#eef4f6; --bg2:#e4eef1; --panel:#ffffff; --panel2:#e8f1f4;
-    --line:#d2e2e7; --line2:#bdd3da; --txt:#14313a; --dim:#587a85; --dim2:#8aa6af;
-    --acc:#0e7490; --acc2:#0b5f78; --ok:#2f855a; --warn:#b7791f;
-    --head:#eef4f6e6; --shade:20 49 58; --ring:#0e749033;
-  }
-  html[data-theme="light"]{
-    --bg:#f4f6f9; --bg2:#e9eef4; --panel:#fff; --panel2:#eef2f7;
-    --line:#dde4ed; --line2:#cdd6e0; --txt:#1a2230; --dim:#5b6879; --dim2:#8b98a8;
-    --acc:#2f6feb; --acc2:#1d4ed8; --ok:#17803d; --warn:#b26b00;
-    --head:#f4f6f9e6; --shade:26 34 48; --ring:#2f6feb33;
-  }
-  html[data-theme="sand"]{
-    --bg:#f7f2e8; --bg2:#efe7d7; --panel:#fffdf8; --panel2:#f3ece0;
-    --line:#e3d9c6; --line2:#d5c8ae; --txt:#33291c; --dim:#7b6a54; --dim2:#a5947c;
-    --acc:#c2410c; --acc2:#9a3412; --ok:#4d7c0f; --warn:#a16207;
-    --head:#f7f2e8e6; --shade:51 41 28; --ring:#c2410c33;
-  }
-  html[data-theme="forest"]{
-    --bg:#0f1a14; --bg2:#132019; --panel:#16241b; --panel2:#1d2f22;
-    --line:#2a4433; --line2:#35543f; --txt:#e8f2ea; --dim:#8aa697; --dim2:#61806f;
-    --acc:#4ade80; --acc2:#22c55e; --ok:#22c55e; --warn:#eab308;
-    --head:#0f1a14e6; --shade:0 0 0; --ring:#4ade8033;
-  }
-  html[data-theme="mono"]{
-    --bg:#15171b; --bg2:#1a1d22; --panel:#1c1f24; --panel2:#23272e;
-    --line:#2e333b; --line2:#3a404a; --txt:#e8eaee; --dim:#98a0aa; --dim2:#6c7480;
-    --acc:#c9d1d9; --acc2:#e5e7eb; --ok:#a3e635; --warn:#fbbf24;
-    --head:#15171be6; --shade:0 0 0; --ring:#c9d1d933;
-  }
-  html[data-theme="cyber"]{
-    --bg:#120a1f; --bg2:#170d28; --panel:#1b1032; --panel2:#241542;
-    --line:#3a2166; --line2:#4b2b82; --txt:#f1eaff; --dim:#a98fd6; --dim2:#7c63a8;
-    --acc:#c084fc; --acc2:#a855f7; --ok:#f472b6; --warn:#fbbf24;
-    --head:#120a1fe6; --shade:0 0 0; --ring:#c084fc33;
-  }
-  html[data-theme="night"]{
-    --bg:#0b0f14; --bg2:#0f151c; --panel:#151b24; --panel2:#1b232e;
-    --line:#2a3442; --line2:#354152; --txt:#e6edf3; --dim:#8b949e; --dim2:#5f6b76;
-    --acc:#58a6ff; --acc2:#3b82f6; --ok:#3fb950; --warn:#d29922;
-    --head:#0b0f14e6; --shade:0 0 0; --ring:#58a6ff33;
+  html[data-theme="jade"],html[data-theme="forest"],html[data-theme="mono"],
+  html[data-theme="night"],html[data-theme="cyber"]{
+    --shade:0 0 0; --ok:#3fb950; --warn:#d29922;
   }
 
   *{box-sizing:border-box}
@@ -177,6 +136,7 @@ try{
     transition:.16s;text-decoration:none}
   .gear svg{width:16px;height:16px}
   .gear:hover{color:var(--acc);border-color:var(--acc)}
+.gear.on{color:var(--acc);border-color:var(--acc);background:color-mix(in srgb,var(--acc) 10%,transparent)}
   .lang{display:flex; gap:0; border:1px solid var(--line); border-radius:8px; overflow:hidden; margin-right:8px}
   .lang span{padding:6px 12px; min-width:36px; text-align:center; font-size:12.5px; color:var(--dim); cursor:pointer; transition:.15s; user-select:none}
   .lang span:hover{background:var(--panel2); color:var(--txt)}
@@ -333,15 +293,6 @@ try{
 
 #plan :root{color-scheme:light dark}
 
-#plan[data-theme="jade"]{--bg:#101917;--panel:#16211f;--panel2:#1d2b28;--line:#2a3a36;--txt:#efeade;--dim:#93a8a1;--acc:#7fbfa6}
-#plan[data-theme="ink"]{--bg:#f6f4ef;--panel:#fffdf9;--panel2:#efebe2;--line:#ddd6c8;--txt:#1f2b2c;--dim:#5d6c6e;--acc:#0f766e}
-#plan[data-theme="lake"]{--bg:#eef4f6;--panel:#fff;--panel2:#e8f1f4;--line:#d2e2e7;--txt:#14313a;--dim:#4e6e79;--acc:#0e7490}
-#plan[data-theme="light"]{--bg:#f4f6f9;--panel:#fff;--panel2:#eef2f7;--line:#d9e0e9;--txt:#1a2230;--dim:#4e5b6d;--acc:#2f6feb}
-#plan[data-theme="sand"]{--bg:#f7f2e8;--panel:#fffdf8;--panel2:#f3ece0;--line:#e0d5c2;--txt:#33291c;--dim:#66563f;--acc:#c2410c}
-#plan[data-theme="forest"]{--bg:#0f1a14;--panel:#16241b;--panel2:#1d2f22;--line:#2a4433;--txt:#e8f2ea;--dim:#8aa697;--acc:#4ade80}
-#plan[data-theme="mono"]{--bg:#15171b;--panel:#1c1f24;--panel2:#23272e;--line:#2e333b;--txt:#e8eaee;--dim:#98a0aa;--acc:#c9d1d9}
-#plan[data-theme="cyber"]{--bg:#120a1f;--panel:#1b1032;--panel2:#241542;--line:#3a2166;--txt:#f1eaff;--dim:#a98fd6;--acc:#c084fc}
-#plan[data-theme="night"]{--bg:#0b0f14;--panel:#151b24;--panel2:#1b232e;--line:#2a3442;--txt:#e6edf3;--dim:#8b949e;--acc:#58a6ff}
 
   *{box-sizing:border-box}
 #plan{margin:0;background:var(--bg);color:var(--txt);font-family:"Microsoft YaHei","Segoe UI",system-ui,sans-serif;line-height:1.7}
@@ -478,11 +429,14 @@ try{
     transition:transform .15s ease}
   input[type=range]:active::-moz-range-thumb{transform:scale(1.4)}
 
-  /* 细滚动条（保留位置感） */
-  html{scrollbar-width:thin;scrollbar-color:var(--line) transparent}
-  html::-webkit-scrollbar{width:8px;height:8px}
-  html::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px}
+  /* 细滚动条（保留位置感）：6px 暗线。
+     Chromium 设置标准 scrollbar-width 会覆盖 ::-webkit-scrollbar 宽度，所以只在 Firefox 用 thin。 */
+  html::-webkit-scrollbar{width:6px;height:6px}
+  html::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--txt) 30%,transparent);border-radius:0}
   html::-webkit-scrollbar-track{background:transparent}
+  @supports (-moz-appearance:none){
+    html{scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--txt) 30%,transparent) transparent}
+  }
 
   :focus-visible{outline:2px solid var(--acc);outline-offset:2px;border-radius:4px}
   @media (prefers-reduced-motion:reduce){
@@ -494,13 +448,6 @@ try{
      纸面手册 · Paper manual（与训练器的「黑色仪器」刻意区分）
      只动样式：不改 id / 事件 / 存储键
      ============================================================ */
-  /* —— 纸面美术：默认沙色主题对齐 art-direction 第 1 节色板 —— */
-  html[data-theme="sand"]{
-    --bg:#f5f0e6; --bg2:#efe8da; --panel:#fffdf8; --panel2:#f3ece0;
-    --line:#d8cfbc; --line2:#cdc2ab;
-    --txt:#1b1a17; --dim:#57534b; --dim2:#8a7f6d;
-    --acc:#c2410c; --acc2:#9a3412; --ok:#4d7c0f; --warn:#a16207; --gold:#a8842f;
-  }
   :root{
     --h-sec:25px; --h-card:15.5px;
     --card-pad-y:22px; --card-pad-x:24px; --card-gap:14px;
@@ -772,7 +719,7 @@ try{
   nav{position:relative}
   .nav-ink{
     position:absolute; left:0; bottom:0; height:2px; width:0;
-    background:var(--acc); transform-origin:left center; pointer-events:none;
+    background:var(--txt); transform-origin:left center; pointer-events:none;
     transition:transform 220ms cubic-bezier(.2,.8,.2,1), width 220ms cubic-bezier(.2,.8,.2,1);
   }
   nav a.on{background:none}
@@ -842,6 +789,215 @@ try{
     #drillGrid .cols{grid-template-columns:repeat(2,1fr); gap:0 18px}
     .statsbar{grid-template-columns:1fr; gap:10px 0; max-height:none}
   }
+
+  /* ============================================================
+     视觉系统 v3「编辑体」—— Hub / 数据 / 计划 / 设置
+     只改视觉：字体、尺度、版面、纸感光；内容与功能不动
+     ============================================================ */
+
+  /* 主题跟随站点：不写死任何纸色，只叠一层极淡的光 */
+  :root{
+    --vn-glow:color-mix(in srgb, var(--acc) 8%, transparent);
+    --vn-glow2:color-mix(in srgb, var(--txt) 4%, transparent);
+  }
+  html[data-theme="forest"],html[data-theme="jade"],html[data-theme="mono"],
+  html[data-theme="night"],html[data-theme="cyber"]{
+    --vn-glow:color-mix(in srgb, var(--acc) 4%, transparent);   /* 深底上暖光降到 4%，避免发脏 */
+    --vn-glow2:transparent;
+  }
+  :root{
+    --paper-bg:
+      radial-gradient(1100px 680px at 16% -12%,
+        var(--vn-glow) 0%,
+        color-mix(in srgb, var(--vn-glow) 74%, transparent) 15%,
+        color-mix(in srgb, var(--vn-glow) 50%, transparent) 30%,
+        color-mix(in srgb, var(--vn-glow) 26%, transparent) 45%,
+        color-mix(in srgb, var(--vn-glow) 10%, transparent) 55%,
+        transparent 62%),
+      radial-gradient(880px 560px at 94% 4%,
+        var(--vn-glow2) 0%,
+        color-mix(in srgb, var(--vn-glow2) 60%, transparent) 20%,
+        color-mix(in srgb, var(--vn-glow2) 30%, transparent) 40%,
+        transparent 64%),
+      var(--bg);
+  }
+
+  /* 字号与字体：全站统一到 v3 栈 */
+  /* 主题切换：颜色渐变过去，不硬跳 */
+  html,body{ transition: background-color .5s cubic-bezier(.4,0,.2,1), color .45s cubic-bezier(.4,0,.2,1) }
+  body{
+    font-family:var(--f-ui);
+    font-size:var(--fs-body);
+    line-height:var(--lh-body);
+    -webkit-font-smoothing:antialiased;
+    background:var(--paper-bg,var(--bg));
+    background-attachment:fixed;
+  }
+
+  /* h1/h2 换衬线 */
+  h1,h2,.brand-name{
+    font-family:var(--f-display);
+    font-weight:900;
+    letter-spacing:-.015em;
+  }
+  h2{ font-size:var(--fs-h2); line-height:1.2; }
+  .card>.t, .card .t{ font-family:var(--f-ui); font-weight:600; font-size:16px; letter-spacing:0; }
+  .brand-name{ font-size:19px; letter-spacing:.01em; }
+  .brand-sub{ font-family:var(--f-ui); font-size:9.5px; letter-spacing:.22em; text-transform:uppercase; color:var(--dim) }
+
+  /* ---------- Hub 头部两栏 ---------- */
+  #play{ display:none }
+  #play.on{
+    display:flex; flex-direction:column;
+    margin:0; padding:36px 0 40px;
+    min-height:calc(100vh - 230px); box-sizing:border-box;
+    animation:plotTab 200ms var(--ease, cubic-bezier(.2,.8,.2,1)) both;
+  }
+  #play.on{ justify-content:flex-start; gap:40px }
+  /* 矮视口（笔记本 1440×800、浏览器 chrome 吃掉 100px 时）：压一档，保证零滚动 */
+  @media (max-height: 820px){
+    #play.on{ padding:18px 0 20px; gap:24px }
+    .ph-left h2{ font-size:clamp(40px,4.6vw,54px) !important }
+    #play .statsbar{ padding-top:16px }
+    #play .statsbar .sb-v{ font-size:34px !important }
+    #play .statsbar .sb{ gap:6px }
+    #drillGrid .grp{ margin-bottom:8px; padding-bottom:8px }
+    #drillGrid .item{ height:38px }
+    #drillGrid .col{ min-height:0 !important }
+  }
+  #play .play-head{ flex:0 0 auto; order:1 }
+  #drillGrid{ flex:0 0 auto; display:flex; align-items:flex-start; order:3; padding-top:8px }
+  #play .statsbar{ flex:0 0 auto; order:2; padding:36px 0 0 }
+  #play .play-head{ margin-bottom:0 }
+  .play-head{
+    display:grid; grid-template-columns:1.15fr .85fr; gap:64px;
+    align-items:end; padding:8px 0 28px; border-bottom:1px solid var(--line);
+  }
+  .ph-eyebrow{
+    font-size:var(--fs-label); letter-spacing:var(--track-label); text-transform:uppercase;
+    color:var(--dim); margin-bottom:18px;
+  }
+  .ph-left h2{
+    font-size:clamp(52px,6vw,76px); line-height:.96; letter-spacing:-.02em; margin:0;
+  }
+  .ph-right{ padding-bottom:6px }
+  .ph-right .hint{
+    font-size:15px; line-height:1.7; color:var(--dim); margin:0 0 22px; max-width:38ch;
+  }
+  .ph-right .hint a{ color:var(--acc) !important }
+  #todaySlot .today{
+    display:flex; align-items:center; justify-content:space-between; gap:16px;
+    height:52px; padding:0 2px; margin:0;
+    border:0; border-bottom:1px solid var(--line);
+    background:transparent; color:var(--txt); text-decoration:none;
+    font-size:14px; letter-spacing:.02em;
+  }
+  #todaySlot .today:hover{ background:color-mix(in srgb, var(--txt) 5%, transparent) }
+  #todaySlot .today .td-l{ font-weight:600 }
+  #todaySlot .today .td-r{ color:var(--acc); display:flex; align-items:center; gap:10px }
+  #todaySlot .today .ar{ transition:transform 140ms var(--ease) }
+  #todaySlot .today:hover .ar{ transform:translateX(6px) }
+
+  /* ---------- 数字条：4 格通栏 ---------- */
+  #play .statsbar{
+    display:grid; grid-template-columns:repeat(4,1fr); gap:0;
+    margin:0; padding:26px 0 0; border-top:0; max-height:none;
+  }
+  #play .statsbar .sb{
+    display:flex; flex-direction:column; align-items:flex-start; gap:10px;
+    padding:0 28px; min-width:0; border-left:0;   /* 一种线：统计条不用竖线，靠 28px 间距 */
+  }
+  #play .statsbar .sb:first-child{ padding-left:0 }
+  #play .statsbar .sb-k{
+    font-size:var(--fs-label); letter-spacing:var(--track-label); text-transform:uppercase;
+    color:var(--dim); line-height:1;
+  }
+  #play .statsbar .sb-v{
+    font-family:var(--f-ui); font-weight:800; font-size:44px; line-height:1;
+    letter-spacing:-.03em; color:var(--txt); font-variant-numeric:tabular-nums;
+    white-space:nowrap;
+  }
+  #play .statsbar .sb-v .u{ font-size:14px; font-weight:500; letter-spacing:0; color:var(--dim) }
+  #play .statsbar .sb-v.dim{ color:var(--dim2) }
+
+  /* ---------- 目录五列 ---------- */
+  #drillGrid{ display:flex !important; margin:0; width:100%; align-items:center }
+  #drillGrid .cols{ width:100% }
+  #drillGrid .cols{
+    display:grid; grid-template-columns:repeat(5,1fr); gap:0;
+    align-items:stretch; border-left:0;
+  }
+  #drillGrid .col{
+    display:flex; flex-direction:column;
+    border-right:1px solid var(--line); padding:0 20px 12px;
+    min-height:calc(44px * 3 + 46px);          /* 让所有竖线落在同一条基线 */
+  }
+  #drillGrid .col:last-child{ border-right:0 }   /* 最后一列不收边：只留 4 条 */
+  #drillGrid .grp{
+    display:flex; align-items:baseline; gap:9px;
+    margin:0 0 14px; padding:0 0 12px; border-bottom:0;   /* 短线太多：标题不再画线 */
+    font-family:var(--f-display); font-weight:700; font-size:var(--fs-h3);
+    letter-spacing:0; color:var(--txt); text-transform:none;
+  }
+  #drillGrid .grp i{
+    font-family:var(--f-ui); font-style:normal; font-weight:600; font-size:10px;
+    letter-spacing:.18em; color:var(--dim2); font-variant-numeric:tabular-nums;
+  }
+  #drillGrid .grp::before,#drillGrid .grp::after{ display:none }
+  #drillGrid .item{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    height:44px; padding:0; margin:0; border:0; border-bottom:0;
+    font-size:14.5px; color:var(--txt); text-decoration:none;
+    transition:color 120ms var(--ease);
+  }
+  #drillGrid .item:hover{ background:transparent; color:var(--acc) }
+  #drillGrid .item .ar{ color:var(--dim2); font-size:13px; transition:transform 140ms var(--ease) }
+  #drillGrid .item:hover .ar{ transform:translateX(6px); color:var(--acc) }
+  #drillGrid .item::before{ display:none }
+
+  /* ---------- 其它页：只换字体与尺度 ---------- */
+  .card{ border-radius:0 !important; background:transparent !important; border:1px solid var(--line) !important; }
+  .card>.t{ font-family:var(--f-ui) }
+  #set .v, #data .v, .v{ font-family:var(--f-ui); font-weight:800; font-variant-numeric:tabular-nums; letter-spacing:-.02em }
+  table td,table th{ font-size:13px; font-variant-numeric:tabular-nums }
+  .k{ font-size:var(--fs-label); letter-spacing:.16em; text-transform:uppercase; color:var(--dim) }
+  .hint{ font-size:13.5px }
+  nav a{ font-family:var(--f-ui) }
+  section h2{ font-family:var(--f-display) }
+
+  @media (max-width:900px){
+    .play-head{ grid-template-columns:1fr; gap:24px; padding-bottom:20px }
+    .ph-left h2{ font-size:44px }
+    #play .statsbar{ grid-template-columns:repeat(2,1fr); gap:22px 0 }
+    #play .statsbar .sb:nth-child(3){ padding-left:0; border-left:0 }
+    #drillGrid .cols{ grid-template-columns:repeat(2,1fr) }
+    #drillGrid .col{ padding:0 14px 4px }
+  }
+  @media (prefers-reduced-motion:reduce){
+    #play.on{ animation:none !important }
+  }
+
+  /* ============================================================
+     对比度审计修正：强调色「文字」用 --acc-text（= --acc 朝正文色混合 10%）
+     主题令牌 --acc 本身不动，填充块/描边仍用原 --acc。
+     修复前 light 主题的强调色文字只有 4.2:1；改后 ≥4.7:1（见 report）。
+     ============================================================ */
+  nav a.on,
+  .lang span.on,
+  .tmbtn.on,
+  .brand:hover .brand-name,
+  .ph-right .hint a,
+  #todaySlot .today .td-r,
+  .big,
+  #plan h1,
+  #plan .stat .v,
+  #plan .planTotal .sum b,
+  #plan .planOps span:hover,
+  #plan .addRow:hover,
+  #plan button:hover,
+  #plan .chip.new:hover,
+  #plan a.back:hover,
+  [style*="color:var(--acc)"]{ color:var(--acc-text, var(--acc)) !important }
 </style>
 </head>
 <body>
@@ -853,7 +1009,7 @@ try{
     <svg class="mark" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-linecap="butt" aria-hidden="true"><defs><mask id="vmHead" maskUnits="userSpaceOnUse" x="0" y="0" width="32" height="32"><rect width="32" height="32" fill="#fff" stroke="none"/><rect x="-8.12" y="12.58" width="44" height="2.6" transform="rotate(-45 13.88 13.88)" fill="#000" stroke="none"/><rect x="-10.81" y="9.89" width="44" height="2.6" transform="rotate(-45 11.19 11.19)" fill="#000" stroke="none"/><rect x="-13.50" y="7.20" width="44" height="2.6" transform="rotate(-45 8.50 8.50)" fill="#000" stroke="none"/></mask></defs><g mask="url(#vmHead)"><circle cx="16" cy="16" r="8.80" stroke-width="1.90"/><path d="M20.40 16H30M16 20.40V30M11.60 16H2M16 11.60V2" stroke-width="2.20"/><circle cx="16" cy="16" r="1.50" fill="currentColor" stroke="none"/></g></svg>
     <span class="brand-text">
       <span class="brand-name">Vernier</span>
-      <span class="brand-sub">瞄准 · 度量</span>
+      <span class="brand-sub">瞄准，度量</span>
     </span>
   </a>
   <nav>
@@ -921,13 +1077,19 @@ try{
   </section>
 
   <section id="play">
-    <h2 id="playTitle" style="cursor:default;user-select:none">训练</h2>
-    <div class="hint">不知道自己该用多少灵敏度？<a href="#set" style="color:var(--acc);text-decoration:none;font-weight:600">去标定一次</a>，把明显的过头/不足修掉。</div>
+    <div class="play-head">
+      <div class="ph-left">
+        <div class="ph-eyebrow">01 — 训练 · DRILLS</div>
+        <h2 id="playTitle" style="cursor:default;user-select:none">训练</h2>
+      </div>
+      <div class="ph-right">
+        <div class="hint">不知道自己该用多少灵敏度？<a href="#set" style="color:var(--acc);text-decoration:none;font-weight:600">去标定一次</a>，把明显的过头/不足修掉。</div>
+        <div id="todaySlot"></div>
+      </div>
+    </div>
 
     <div class="grid" id="drillGrid"></div>
     <div class="statsbar" id="statsBar"></div>
-
-
   </section>
 
   
@@ -1249,7 +1411,7 @@ const SCENES=[
 /* ---------- i18n ---------- */
 const K_LANG='cs2at.lang';
 const EN={
-  '个人数据':'Stats','训练':'Drills','计划训练':'Plan','设置':'Settings','← 首页':'← Home','瞄准 · 度量':'aim, measured',
+  '个人数据':'Stats','训练':'Drills','计划训练':'Plan','设置':'Settings','← 首页':'← Home','瞄准，度量':'aim, measured',
   '最佳成绩按模式分别记录，只存在本浏览器。':'Best results per mode, stored locally in this browser.',
   '总训练组数':'Sets','训练天数':'Days','本地组数':'Local sets','最低限时':'Best limit','最高命中率':'Best hit rate',
   '历史最低限时':'Historical best limit','历史最高命中率':'Historical best hit rate',
@@ -1313,6 +1475,8 @@ const EN={
   '最近':'Last','六维':'Six-skill','本周':'This week','天':'days','未设置':'not set','存图':'Save image',
   '球':'balls','第':'No.','天 · 已完成':' days · done','天 · 连续':' days · streak',
   '一':'M','二':'T','三':'W','四':'T','五':'F','六':'S','日':'S',
+  '01 — 训练 · DRILLS':'01 — Training · Drills',
+  '最近六维':'Last six-skill','本周训练':'This week','辅助等级':'Axis level','先从六维检查开始':'Start with the six-skill check',
   '定位':'Positioning','速度':'Speed','转向':'Turning','稳定':'Stability','体检':'Assessment',
   '今天练什么':'What to train today','先从六维检查开始 →':'Start with the six-skill check →',
   '自动（跟随时间）':'Auto (by time)','明亮':'Light','深色':'Dark',
@@ -1571,7 +1735,10 @@ function moveInk(){
     const ink=document.getElementById('navInk');
     const nav=document.querySelector('nav');
     const on=document.querySelector('nav a.on');
-    if(!ink||!nav||!on) return;
+    if(!ink||!nav) return;
+    // 当前页没有对应导航项（例如设置页）→ 收起下划线，别停在上一个页签上
+    if(!on){ ink.style.opacity='0'; ink.style.width='0px'; return; }
+    ink.style.opacity='1';
     const nr=nav.getBoundingClientRect(), ar=on.getBoundingClientRect();
     ink.style.width=ar.width+'px';
     ink.style.transform='translateX('+(ar.left-nr.left)+'px)';
@@ -1583,7 +1750,7 @@ function show(t){
   // 无效 hash 回落到数据页，不要白屏
   if(!document.getElementById(t)) t='data';
   document.querySelectorAll('section').forEach(s=>s.classList.toggle('on', s.id===t));
-  document.querySelectorAll('nav a').forEach(a=>a.classList.toggle('on', a.dataset.t===t));
+  document.querySelectorAll('[data-t]').forEach(a=>a.classList.toggle('on', a.dataset.t===t));
   moveInk();
   // 计划页的行是渲染时用 L() 拼的，切到该页后补一次翻译，避免残留「80 球」
   if(t==='plan'){ try{ translateRoot(document.body, (typeof LANG!=='undefined'&&LANG==='en')?'en':'zh-CN'); }catch(e){} }
@@ -1887,10 +2054,13 @@ function renderDrills(){
   const zhPage = document.documentElement.getAttribute('lang')!=='en';
   const today = byName['六维检查'];
   let html='';
-  // 一律先渲染中文，英文交给 translateRoot（和其余文案同一套机制），避免中英混排
-  html+='<a class="today" href="'+(today? today.u : '#')+'">'+
-        '<span class="td-l">今天练什么</span>'+
-        '<span class="td-r">先从六维检查开始 →</span></a>';
+  // 今天练什么：头部右栏的唯一入口
+  const slot=$('todaySlot');
+  if(slot){
+    slot.innerHTML='<a class="today" href="'+(today? today.u : '#')+'">'+
+      '<span class="td-l">今天练什么</span>'+
+      '<span class="td-r">先从六维检查开始 <span class="ar">→</span></span></a>';
+  }
   html+='<div class="cols">';
   let seq=0;                                   // 交错入场序号（跨列连续，按视觉顺序）
   GROUPS.forEach(function(g,gi){
@@ -1935,16 +2105,24 @@ function renderStatsBar(){
   try{ const c=+cfg.cm; if(isFinite(c)&&c>0) cm=c.toFixed(1)+' cm/360'; }catch(e){}
   const en = (typeof LANG!=='undefined') ? LANG==='en' : document.documentElement.getAttribute('lang')==='en';
   const T = en
-    ? { last:'Last', week:'This week', sens:'Sensitivity', six:'Six-skill', day:' days', unset:'not set' }
-    : { last:'最近', week:'本周', sens:'灵敏度', six:'六维', day:' 天', unset:'未设置' };
+    ? { last:'Last six-skill', week:'This week', sens:'cm / 360', six:'Six-skill', day:' days', unset:'not set', axis:'Axis level' }
+    : { last:'最近六维', week:'本周训练', sens:'灵敏度', six:'六维', day:' 天', unset:'未设置', axis:'辅助等级' };
+  // 辅助等级：分轴定位的渐隐等级（0–4 → A0–A4），是训练数据不是设置
+  let axisLv = 0;
+  try{
+    const s=JSON.parse(localStorage.getItem('cs2at.axisFade')||'{}');
+    if(typeof s.level==='number') axisLv=Math.max(0,Math.min(4,Math.round(s.level)));
+  }catch(e){}
+  const axisVal = 'A'+axisLv;
   // 记录旧值，稍后做「上浮淡出 / 下淡入」
   const prev={};
   el.querySelectorAll('.num').forEach(function(n,i){ prev[i]=n.textContent; });
   const cmNum = (cm!=='未设置')? (+cfg.cm) : null;
   el.innerHTML=
-    '<div class="sb"><span class="sb-k">'+T.last+'</span><span class="sb-v'+(six==='—'?' dim':'')+'">'+T.six+' <span class="num" data-to="'+(six==='—'?'':'')+'">'+six+'</span></span></div>'+
-    '<div class="sb"><span class="sb-k">'+T.week+'</span><span class="sb-v'+(days?'':' dim')+'"><span class="num" data-to="'+days+'">'+days+'</span>'+T.day+'</span></div>'+
-    '<div class="sb"><span class="sb-k">'+T.sens+'</span><span class="sb-v'+(cm==='未设置'?' dim':'')+'">'+(cm==='未设置'?T.unset:'<span class="num" data-to="'+(cmNum||0)+'" data-dec="1">'+cmNum.toFixed(1)+'</span> cm/360')+'</span></div>';
+    '<div class="sb"><span class="sb-k">'+T.last+'</span><span class="sb-v'+(six==='—'?' dim':'')+'"><span class="num" data-to="'+(six==='—'?'':'')+'">'+six+'</span>'+(six==='—'?'':'<span class="u"> / 100</span>')+'</span></div>'+
+    '<div class="sb"><span class="sb-k">'+T.week+'</span><span class="sb-v'+(days?'':' dim')+'"><span class="num" data-to="'+days+'">'+days+'</span><span class="u">'+T.day+'</span></span></div>'+
+    '<div class="sb"><span class="sb-k">'+T.sens+'</span><span class="sb-v'+(cm==='未设置'?' dim':'')+'">'+(cm==='未设置'?T.unset:'<span class="num" data-to="'+(cmNum||0)+'" data-dec="1">'+cmNum.toFixed(1)+'</span><span class="u"> cm/360</span>')+'</span></div>'+
+    '<div class="sb"><span class="sb-k">'+T.axis+'</span><span class="sb-v"><span class="num">'+axisVal+'</span></span></div>';
   // C. 数字滚动：先量终值宽度锁住，再从 0 滚上去（只改文字，不动布局）
   const reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   // 数字变了：旧值上浮淡出，新值从下淡入（160ms，tabular-nums，不动布局）
@@ -3278,5 +3456,6 @@ initPlan();
 </script>
 
 
+<div class="vn-dither"></div>
 </body>
 </html>

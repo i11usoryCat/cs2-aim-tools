@@ -1,0 +1,84 @@
+/* Vernier 排版与色彩系统 v3 — 所有页面共用 */
+@font-face{
+  font-family:"Vernier Serif";
+  src:url("fonts/serif-900.woff2") format("woff2");
+  font-weight:900; font-style:normal; font-display:swap;
+}
+@font-face{
+  font-family:"Vernier Sans";
+  src:url("fonts/sans-var.woff2") format("woff2-variations");
+  font-weight:100 900; font-style:normal; font-display:swap;
+}
+
+:root{
+  /* 字体栈 */
+  --f-display:"Vernier Serif","Noto Serif SC","Songti SC",Georgia,serif;
+  --f-ui:"Vernier Sans","Inter","Microsoft YaHei UI","Microsoft YaHei",system-ui,sans-serif;
+
+  /* 纸面（Hub / 落地页 / 方法页）——跟随站点主题，主题没定义时回落到暖纸 */
+  --paper:var(--bg, #f4efe4);
+  --paper-2:var(--bg2, #ece5d6);
+  --ink:var(--txt, #191713);
+  --ink-2:var(--dim, #5b5346);
+  --rule:var(--line, #d3c7ae);
+  --acc-paper:var(--acc, #c2410c);
+
+  /* 暗色（工具页） */
+  --dark:#0b0f14;
+  --dark-2:#121821;
+  --ink-d:#e8eef5;
+  --ink-d2:#93a3b5;
+  --rule-d:rgba(255,255,255,.12);
+
+  /* 尺度 */
+  --fs-display:clamp(52px,6.2vw,84px);
+  --fs-h1:clamp(34px,3.4vw,46px);
+  --fs-h2:26px;
+  --fs-h3:19px;
+  --fs-body:15px;
+  --fs-label:10.5px;
+  --fs-micro:9.5px;
+  --lh-body:1.85;
+  --track-label:.24em;
+
+  /* 间距（8 的倍数） */
+  --s1:8px; --s2:16px; --s3:24px; --s4:32px; --s5:48px; --s6:64px; --s7:96px;
+
+  --ease:cubic-bezier(.2,.8,.2,1);
+}
+
+/* 纸面底：两层极淡径向光 + 3% 噪点 */
+.vn-paper{
+  background:
+    radial-gradient(1100px 680px at 16% -12%, color-mix(in srgb, var(--acc-paper) 9%, transparent), transparent 62%),
+    radial-gradient(880px 560px at 94% 4%, rgba(84,108,142,.07), transparent 64%),
+    var(--paper);
+  color:var(--ink);
+  font-family:var(--f-ui);
+  -webkit-font-smoothing:antialiased;
+}
+.vn-paper::before{
+  content:""; position:fixed; inset:0; pointer-events:none; z-index:0; opacity:.55;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/><feColorMatrix type='saturate' values='0'/></filter><rect width='140' height='140' filter='url(%23n)' opacity='0.045'/></svg>");
+}
+
+/* 显示级标题：衬线 + 紧行距 + 负字距 */
+.vn-display{
+  font-family:var(--f-display); font-weight:900;
+  font-size:var(--fs-display); line-height:.96; letter-spacing:-.02em;
+}
+.vn-h1{ font-family:var(--f-display); font-weight:900; font-size:var(--fs-h1); line-height:1.08; letter-spacing:-.01em; }
+.vn-h2{ font-family:var(--f-display); font-weight:700; font-size:var(--fs-h2); line-height:1.25; }
+.vn-h3{ font-family:var(--f-ui); font-weight:600; font-size:var(--fs-h3); line-height:1.4; }
+.vn-label{
+  font-family:var(--f-ui); font-size:var(--fs-label); letter-spacing:var(--track-label);
+  text-transform:uppercase; color:var(--ink-2); font-weight:500;
+}
+.vn-num{
+  font-family:var(--f-ui); font-variant-numeric:tabular-nums;
+  font-weight:800; letter-spacing:-.03em; line-height:1.05;
+}
+.vn-rule{ border:0; border-top:1px solid var(--rule); }
+.vn-em{ color:var(--acc-paper); }
+
+@media (prefers-reduced-motion: reduce){ *{ animation-duration:.01ms !important; transition-duration:.01ms !important; } }

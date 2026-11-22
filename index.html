@@ -97,53 +97,28 @@ try{
 <link rel="alternate" hreflang="en" href="https://i11usorycat.github.io/cs2-aim-tools/en/">
 <link rel="alternate" hreflang="zh" href="https://i11usorycat.github.io/cs2-aim-tools/">
 <link rel="alternate" hreflang="x-default" href="https://i11usorycat.github.io/cs2-aim-tools/">
+<link rel="stylesheet" href="assets/theme.css?v=1">
+<link rel="stylesheet" href="assets/type.css?v=3">
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20class%3D%22%22%20viewBox%3D%220%200%2032%2032%22%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-linecap%3D%22butt%22%20aria-hidden%3D%22true%22%3E%3Cdefs%3E%3Cmask%20id%3D%22vmF%22%20maskUnits%3D%22userSpaceOnUse%22%20x%3D%220%22%20y%3D%220%22%20width%3D%2232%22%20height%3D%2232%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20fill%3D%22%23fff%22%20stroke%3D%22none%22%2F%3E%3Crect%20x%3D%22-8.12%22%20y%3D%2212.58%22%20width%3D%2244%22%20height%3D%222.6%22%20transform%3D%22rotate(-45%2013.88%2013.88)%22%20fill%3D%22%23000%22%20stroke%3D%22none%22%2F%3E%3Crect%20x%3D%22-10.81%22%20y%3D%229.89%22%20width%3D%2244%22%20height%3D%222.6%22%20transform%3D%22rotate(-45%2011.19%2011.19)%22%20fill%3D%22%23000%22%20stroke%3D%22none%22%2F%3E%3Crect%20x%3D%22-13.50%22%20y%3D%227.20%22%20width%3D%2244%22%20height%3D%222.6%22%20transform%3D%22rotate(-45%208.50%208.50)%22%20fill%3D%22%23000%22%20stroke%3D%22none%22%2F%3E%3C%2Fmask%3E%3C%2Fdefs%3E%3Cg%20mask%3D%22url(%23vmF)%22%3E%3Ccircle%20cx%3D%2216%22%20cy%3D%2216%22%20r%3D%228.80%22%20stroke-width%3D%221.90%22%2F%3E%3Cpath%20d%3D%22M20.40%2016H30M16%2020.40V30M11.60%2016H2M16%2011.60V2%22%20stroke-width%3D%222.20%22%2F%3E%3Ccircle%20cx%3D%2216%22%20cy%3D%2216%22%20r%3D%221.50%22%20fill%3D%22currentColor%22%20stroke%3D%22none%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E">
 <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
 <style>
-    html[data-theme="ink"]{
-    --bg:#f7f5f0; --bg2:#efece4; --panel:#fffefb; --line:#e2dccf;
-    --txt:#202b2c; --dim:#6d7a7b; --acc:#0f766e; --acc2:#115e59; --gold:#b45309;
+  /* 主题唯一来源：assets/theme.css */
+  :root{
+    --panel2:var(--bg2); --line2:var(--line);
+    --dim2:color-mix(in srgb, var(--dim) 78%, transparent);
+    --head:color-mix(in srgb, var(--bg) 92%, transparent);
+    --shade:24 21 17; --ring:color-mix(in srgb, var(--acc) 22%, transparent);
+    --ok:#15803d; --warn:#b45309;
   }
-  html[data-theme="jade"]{
-    --bg:#101917; --bg2:#152220; --panel:#16211f; --line:#2a3a36;
-    --txt:#efeade; --dim:#93a8a1; --acc:#7fbfa6; --acc2:#5aa78c; --gold:#e0a458;
-  }
-  html[data-theme="lake"]{
-    --bg:#eef4f6; --bg2:#e4eef1; --panel:#ffffff; --line:#d2e2e7;
-    --txt:#14313a; --dim:#587a85; --acc:#0e7490; --acc2:#0b5f78; --gold:#b7791f;
-  }
-  html[data-theme="light"]{
-    --bg:#f4f6f9; --bg2:#e9eef4; --panel:#fff; --line:#dde4ed;
-    --txt:#1a2230; --dim:#5b6879; --acc:#2f6feb; --acc2:#1d4ed8; --gold:#b26b00;
-  }
-  html[data-theme="sand"]{
-    --bg:#f7f2e8; --bg2:#efe7d7; --panel:#fffdf8; --line:#e3d9c6;
-    --txt:#33291c; --dim:#7b6a54; --acc:#c2410c; --acc2:#9a3412; --gold:#a16207;
-  }
-  html[data-theme="forest"]{
-    --bg:#0f1a14; --bg2:#132019; --panel:#16241b; --line:#2a4433;
-    --txt:#e8f2ea; --dim:#8aa697; --acc:#4ade80; --acc2:#22c55e; --gold:#eab308;
-  }
-  html[data-theme="mono"]{
-    --bg:#15171b; --bg2:#1a1d22; --panel:#1c1f24; --line:#2e333b;
-    --txt:#e8eaee; --dim:#98a0aa; --acc:#c9d1d9; --acc2:#e5e7eb; --gold:#fbbf24;
-  }
-  html[data-theme="cyber"]{
-    --bg:#120a1f; --bg2:#170d28; --panel:#1b1032; --line:#3a2166;
-    --txt:#f1eaff; --dim:#a98fd6; --acc:#c084fc; --acc2:#a855f7; --gold:#fbbf24;
-  }
-  html[data-theme="night"]{
-    --bg:#0b0f14; --bg2:#0f151c; --panel:#151b24; --line:#2a3442;
-    --txt:#e6edf3; --dim:#8b949e; --acc:#58a6ff; --acc2:#3b82f6; --gold:#d29922;
-  }
+  html[data-theme="jade"],html[data-theme="forest"],html[data-theme="mono"],
+  html[data-theme="night"],html[data-theme="cyber"]{ --shade:0 0 0 }
   *{box-sizing:border-box}
   html,body{margin:0;height:100%}
   body{display:flex;align-items:center;justify-content:center;overflow:hidden}
   #stage{position:relative;width:900px;height:660px;display:flex;flex-direction:column;
     align-items:center;justify-content:center;transform-origin:center center;
     will-change:transform}
-  html{scrollbar-width:none}          /* Firefox */
-  html::-webkit-scrollbar{display:none} /* Chrome / Edge */
+  /* 滚动条：6px 暗线（规则在文件末尾；这里只保留占位注释，旧的全隐藏规则已移除） */
   html,body{margin:0;background:var(--bg);color:var(--txt);overflow-x:hidden;
     font-family:"Microsoft YaHei UI","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
     -webkit-font-smoothing:antialiased}
@@ -349,6 +324,234 @@ try{
     .logo-mark,.brandline,h1,.sub,.by,.start,.tip,.foot{ animation:none !important; opacity:1 !important; transform:none !important }
     .sub::before{ animation:none !important; transform:none !important }
   }
+
+  /* ============================================================
+     视觉系统 v3「编辑体」— 落地页海报（只改视觉，不改内容）
+     ============================================================ */
+  html,body{ background:var(--paper); }
+  body{
+    font-family:var(--f-ui); color:var(--ink);
+    background:
+      radial-gradient(1100px 680px at 16% -12%,
+        color-mix(in srgb, var(--acc-paper) 8%, transparent) 0%,
+        color-mix(in srgb, var(--acc-paper) 6%, transparent) 14%,
+        color-mix(in srgb, var(--acc-paper) 4.5%, transparent) 27%,
+        color-mix(in srgb, var(--acc-paper) 3%, transparent) 40%,
+        color-mix(in srgb, var(--acc-paper) 1.6%, transparent) 53%,
+        transparent 62%),
+      radial-gradient(880px 560px at 94% 4%,
+        color-mix(in srgb, var(--ink) 4%, transparent) 0%,
+        color-mix(in srgb, var(--ink) 3%, transparent) 16%,
+        color-mix(in srgb, var(--ink) 2%, transparent) 32%,
+        color-mix(in srgb, var(--ink) .9%, transparent) 48%,
+        transparent 64%),
+      var(--paper);
+  }
+  html[data-theme="forest"] body,html[data-theme="jade"] body,html[data-theme="mono"] body,
+  html[data-theme="night"] body,html[data-theme="cyber"] body{
+    background:
+      radial-gradient(1100px 680px at 16% -12%, color-mix(in srgb, var(--acc-paper) 4%, transparent), transparent 62%),
+      radial-gradient(880px 560px at 94% 4%, transparent, transparent 64%),
+      var(--paper);
+  }
+  .grain{display:none !important}
+
+  /* 海报：品牌块 → 一句话 → 刻度尺 → 单行入口 → 页脚 */
+  #stage{display:flex; flex-direction:column}
+  #stage .hero{flex:1; padding:0 64px 8px; justify-content:center; display:flex; flex-direction:column; align-items:center; min-height:0}
+  .logo-mark{width:64px; height:64px; color:var(--ink); margin-bottom:18px}
+  .brandline{
+    font-family:var(--f-ui); font-size:10.5px; letter-spacing:.24em; text-transform:uppercase;
+    color:var(--ink-2); margin:0 0 18px; font-weight:500;
+  }
+  /* 品牌名只出现一次：小字距的 VERNIER 是标识，第二行 h1 仅留语义 */
+  h1{
+    position:absolute; width:1px; height:1px; margin:-1px; padding:0;
+    overflow:hidden; clip-path:inset(50%); white-space:nowrap; border:0;
+  }
+  /* 一句话：衬线大字，一个词朱红 */
+  .sub{
+    font-family:var(--f-display); font-weight:900;
+    font-size:clamp(52px,6.2vw,76px); line-height:.96; letter-spacing:-.02em;
+    color:var(--ink); text-align:center; margin:0; max-width:none;
+  }
+  .sub .em{color:var(--acc-paper)}
+  .sub > span{
+    display:block; margin-top:20px;
+    font-family:var(--f-ui); font-weight:400; font-size:14px; line-height:1.7;
+    letter-spacing:0; color:var(--ink-2); opacity:1 !important;
+  }
+  /* 刻度尺：一句话下方，1px 朱红刻度 + 细线 */
+  .sub::before{
+    content:""; display:block; width:260px; height:9px; margin:0 auto 28px;
+    background:
+      repeating-linear-gradient(to right, var(--rule) 0 1px, transparent 1px 13px) 0 0/100% 5px no-repeat,
+      linear-gradient(to right, transparent, var(--rule) 50%, transparent) 0 7px/100% 1px no-repeat;
+    animation:none; transform:none;
+  }
+  /* 作者行：注脚级 */
+  .by{
+    font-family:var(--f-ui); font-size:10.5px; letter-spacing:.24em; text-transform:uppercase;
+    color:var(--ink-2); margin:26px 0 0;
+  }
+  /* 单行入口 */
+  .start{
+    margin:32px 0 0; padding:0; height:56px; width:min(460px,100%);
+    display:flex; align-items:center; justify-content:space-between;
+    background:transparent !important; color:var(--acc-paper) !important;   /* 全屏唯一一处朱红 */
+    border:0 !important; border-top:1px solid var(--acc-paper) !important; border-bottom:1px solid var(--acc-paper) !important;
+    border-radius:0 !important; box-shadow:none !important;
+    font-family:var(--f-ui); font-size:17px; font-weight:600; letter-spacing:.1em;
+    cursor:pointer; position:relative;
+  }
+  .start::after{
+    content:"→"; font-family:var(--f-ui); font-weight:400; letter-spacing:0;
+    color:var(--acc-paper); transition:transform 140ms var(--ease);
+  }
+  .start:hover{ background:color-mix(in srgb, var(--ink) 5%, transparent) !important; filter:none !important }
+  .start:hover::after{ transform:translateX(6px) }
+  .start:active{ transform:none !important; background:color-mix(in srgb, var(--ink) 9%, transparent) !important }
+  .tip{
+    font-family:var(--f-ui); font-size:10.5px; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--ink-2); margin:14px 0 0;
+  }
+  /* 页脚：注脚级 */
+  .foot{
+    position:static; flex:0 0 auto; padding:0 40px 22px; text-align:center;
+    font-family:var(--f-ui); font-size:10.5px; letter-spacing:.1em; color:var(--ink-2);
+  }
+  .foot code{
+    font-family:var(--f-ui); font-size:11px; letter-spacing:.04em; color:var(--ink-2);
+    border-top:1px solid var(--rule); border-bottom:1px solid var(--rule);
+    padding:7px 0; display:inline-block; margin-bottom:10px;
+  }
+  .foot a{color:var(--ink-2); text-decoration:none; border-bottom:1px solid transparent}
+  .foot a:hover{color:var(--ink); border-bottom-color:var(--acc-paper)}
+  #buildTag{font-size:10px !important; letter-spacing:.1em !important; color:var(--ink-2) !important}
+
+  /* 语言开关：注脚级 */
+  .langTop{top:26px; right:40px}
+  .langTop span{
+    font-family:var(--f-ui); font-size:10.5px; letter-spacing:.18em; text-transform:uppercase;
+    color:var(--ink-2); background:transparent !important; box-shadow:none !important;
+    padding:6px 10px; border:1px solid transparent;
+  }
+  .langTop span.on{
+    color:var(--ink) !important; background:transparent !important;
+    border:1px solid var(--rule); box-shadow:none !important;
+  }
+
+  @media (max-width:900px){
+    #stage .hero{padding:0 28px 110px}
+    .sub{font-size:clamp(44px,11vw,60px)}
+    .sub::before{width:180px}
+    .start{width:100%}
+    .foot{bottom:14px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .sub::before{animation:none !important}
+  }
+
+  /* ============================================================
+     v3.1 大屏版面：内容列 min(920px,68vw)，底部仪表带框住页面
+     ============================================================ */
+  /* 主题切换：颜色渐变过去，不硬跳 */
+  html,body{ transition: background-color .5s cubic-bezier(.4,0,.2,1), color .45s cubic-bezier(.4,0,.2,1) }
+  html,body{ height:auto; min-height:100%; }
+  body{
+    display:block !important;
+    overflow-x:hidden !important;
+    overflow-y:auto !important;
+    padding-bottom:56px;              /* 给固定仪表带留位 */
+  }
+  main{ display:block; min-height:calc(100vh - 56px) }
+  #stage{
+    will-change:auto !important;   /* 有 will-change:transform 时 fixed 会相对它定位，仪表带就浮不到视口底 */
+    width:auto !important; height:auto !important; min-height:calc(100vh - 56px);
+    transform:none !important; display:flex !important; flex-direction:column;
+    align-items:center; justify-content:center; padding:40px 0 32px; box-sizing:border-box;
+  }
+  #stage .hero{
+    width:min(920px,68vw); margin:0 auto; padding:0 !important;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    flex:0 0 auto; min-height:0; text-align:center;
+  }
+  .logo-mark{ width:76px; height:76px; margin-bottom:22px }
+  .brandline{ font-size:11px; letter-spacing:.34em; margin-bottom:38px }
+
+  /* 主标题：大屏放到 132px */
+  .sub{ width:100%; font-size:clamp(64px,8.2vw,132px); line-height:.94; letter-spacing:-.025em }
+  .sub > span{ font-size:17px; line-height:1.75; margin-top:30px }
+  /* 刻度尺随列宽拉伸 */
+  .sub::before{
+    width:100%; height:11px; margin:0 auto 40px;
+    background:
+      repeating-linear-gradient(to right, var(--rule) 0 1px, transparent 1px 15px) 0 0/100% 6px no-repeat,
+      linear-gradient(to right, transparent, var(--rule) 50%, transparent) 0 9px/100% 1px no-repeat;
+  }
+  .by{ margin:32px 0 0; font-size:11px; letter-spacing:.26em }
+
+  /* 唯一入口：同列宽、文字真正居中 + 箭头紧贴文字右侧 8px */
+  .start{
+    position:relative;
+    width:100% !important; height:56px; margin:44px 0 0; padding:0 20px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:18px; letter-spacing:.08em;
+    color:var(--acc-text, var(--acc-paper)) !important;   /* 文字用可读强调色：浅纸主题 ≥4.5:1 */
+    border-top:1px solid var(--acc-text, var(--acc-paper)) !important;
+    border-bottom:1px solid var(--acc-text, var(--acc-paper)) !important;
+    transition:background 140ms var(--ease);
+  }
+  .start::after{ content:none }   /* 旧版箭头是 flex 项，会把文字挤离中心轴 */
+  .start-t{ position:relative; display:inline-block }
+  .start-t::after{                /* 箭头脱离布局：文字中心 = 列中心，箭头在文字右 8px */
+    content:"→"; position:absolute; left:100%; top:50%; margin-left:8px;
+    transform:translateY(-50%); color:inherit;
+    transition:transform 140ms var(--ease);
+  }
+  .start:hover{ background:color-mix(in srgb, var(--acc-text, var(--acc-paper)) 7%, transparent) !important; filter:none !important }
+  .start:hover .start-t::after{ transform:translate(6px, -50%) }
+  .tip{ font-size:10.5px; letter-spacing:.14em; margin:18px 0 0 }
+
+  /* 底部仪表带：左公式，右链接 + 版本 */
+  .foot{
+    position:fixed !important; left:0; right:0; bottom:0; top:auto;
+    height:56px; padding:0 40px; margin:0;
+    display:flex; align-items:center; justify-content:space-between; gap:24px;
+    border-top:1px solid var(--rule);
+    background:color-mix(in srgb, var(--paper) 92%, transparent);
+    backdrop-filter:none;
+    font-size:11px; letter-spacing:.08em; color:var(--ink-2);
+    text-align:left; z-index:60;
+  }
+  .foot code{
+    border:0; padding:0; margin:0; font-family:var(--f-ui);
+    font-size:13px; letter-spacing:0; color:var(--ink-2);
+    font-variant-numeric:tabular-nums; white-space:nowrap;
+  }
+  .foot-r{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; justify-content:flex-end }
+  .foot-r a{ color:var(--ink-2); text-decoration:none; border-bottom:1px solid transparent }
+  .foot-r a:hover{ color:var(--ink); border-bottom-color:var(--acc-paper) }
+  #buildTag{ margin-left:12px; font-size:10.5px; letter-spacing:.14em; color:var(--ink-2) }
+
+  @media (max-width:900px){
+    #stage .hero{ width:88vw }
+    .sub{ font-size:clamp(44px,11vw,64px) }
+    .sub > span{ font-size:15px }
+    .start{ font-size:16px }
+    .foot{ padding:0 16px; gap:12px }
+    .foot code{ display:none }          /* 小屏优先放链接 */
+  }
+
+  /* 小屏允许滚动：滚动条 = 6px 暗线（1440×900/1800×1000 无溢出，不会出现）
+     注意：Chromium 一旦设置标准 scrollbar-width，就会盖掉 ::-webkit-scrollbar 的宽度，
+     所以 Firefox 才用 scrollbar-width:thin，Chromium 用 6px 的 webkit 规则。 */
+  html::-webkit-scrollbar{ width:6px; height:6px; display:block }
+  html::-webkit-scrollbar-thumb{ background:color-mix(in srgb, var(--txt) 30%, transparent); border-radius:0 }
+  html::-webkit-scrollbar-track{ background:transparent }
+  @supports (-moz-appearance:none){
+    html{ scrollbar-width:thin; scrollbar-color:color-mix(in srgb, var(--txt) 30%, transparent) transparent }
+  }
 </style>
 </head>
 <body>
@@ -357,8 +560,7 @@ try{
   <span data-l="zh" tabindex="0" role="button">中</span><span data-l="en" tabindex="0" role="button">EN</span>
 </nav>
 <main>
-<canvas id="fx"></canvas>
-<div class="grain"></div>
+<div class="grain" style="display:none"></div>
 
 <div id="stage">
 <div class="hero">
@@ -366,26 +568,29 @@ try{
   <div class="brandline">VERNIER</div>
   <h1>Vernier</h1>
   <div class="sub">aim, measured<br><span style="opacity:.8">分毫 · 灵敏度标定 · 甩枪训练 · 四周计划</span></div>
-  <div class="by"><a href="https://github.com/i11usoryCat" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">i11usoryCat</a> <span style="opacity:.5">×</span> <a href="dialogue.html" style="color:var(--gold);text-decoration:none">大肥鱼</a></div>
-  <button class="start" onclick="location.href='app.html#play'">开始</button>
+  <div class="by"><a href="https://github.com/i11usoryCat" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">i11usoryCat</a> <span style="opacity:.5">×</span> <a href="dialogue.html" style="color:var(--gold-text, var(--gold));text-decoration:none">大肥鱼</a></div>
+  <button class="start" onclick="location.href='app.html#play'"><span class="start-t">开始</span></button>
   <div class="tip">建议使用 Chrome 或 Edge</div>
 </div>
 
 <div class="foot">
-  <code id="eggFormula" title="">cm/360 = 360 / (sensitivity × m_yaw) / DPI × 2.54</code><br>
-  <a href="https://github.com/i11usoryCat/cs2-aim-tools">GitHub</a> ·
-  <a href="methodology.html">方法论</a> ·
-  <a href="https://github.com/i11usoryCat/cs2-aim-tools/blob/main/docs/training-plan.md">训练方案</a> ·
-  <a href="app.html#plan">训练计划</a> ·
-  <a href="https://github.com/i11usoryCat/cs2-aim-tools/issues" target="_blank" rel="noopener" id="fbLink">反馈</a>
-  <div id="buildTag" style="margin-top:8px;font-size:12px;color:var(--dim);letter-spacing:1px"><span>版本 build</span> 2026-10-28 · 8</div>
+  <code id="eggFormula" title="">cm/360 = 360 / (sensitivity × m_yaw) / DPI × 2.54</code>
+  <div class="foot-r">
+    <a href="https://github.com/i11usoryCat/cs2-aim-tools">GitHub</a> ·
+    <a href="methodology.html">方法论</a> ·
+    <a href="https://github.com/i11usoryCat/cs2-aim-tools/blob/main/docs/training-plan.md">训练方案</a> ·
+    <a href="app.html#plan">训练计划</a> ·
+    <a href="https://github.com/i11usoryCat/cs2-aim-tools/issues" target="_blank" rel="noopener" id="fbLink">反馈</a>
+    <span id="buildTag">版本 build 2026-11-22 · 9</span>
+  </div>
 </div>
 </div>
 </main>
 
 <script>
 (function(){
-  const cv=document.getElementById('fx'), ctx=cv.getContext('2d');
+  const cv=document.getElementById('fx'); if(!cv) return;   /* v3：去掉背景彩点（噪声） */
+  const ctx=cv.getContext('2d');
   const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
   let W=0,H=0,pts=[],ACC=[15,118,110],DIM=[109,122,123],started=false;
 
@@ -471,7 +676,7 @@ try{
 
 var EN={
     '甩枪训练中心':'AIM TRAINING HUB',
-    '瞄准，被度量。':'Aim, measured.','aim, measured':'aim, measured',
+    '瞄准，度量。':'Aim, measured.','aim, measured':'aim, measured',
     '分毫 · 灵敏度标定 · 甩枪训练 · 四周计划':'Vernier · calibration · drills · four-week plan',
     '灵敏度标定 · 甩枪训练 · 四周计划':'Calibration · drills · four-week plan','浏览器里的灵敏度标定与甩枪训练。':'Sensitivity calibration and flick training in the browser.','浏览器端 · 无需安装 · 不读取游戏数据':'Browser based · no install · reads no game data',
     '标定 → 计划 → 每天十五分钟':'Calibrate → plan → fifteen minutes a day',
@@ -490,14 +695,14 @@ var EN={
     '原始输入记录器':'Raw input recorder',
     'C# 单文件，验证真实回报率与报告间隔抖动。':'Single-file C# tool to verify polling rate and report jitter.',
     '方法论':'Methodology','训练方案':'Training plan','训练计划':'Plan','反馈':'Feedback',
-    '版本 build':'build',
+    '版本 build':'build','版本 build 2026-11-22 · 9':'build 2026-11-22 · 9',
     '请用电脑打开（建议 Chrome / Edge）·':'Open on desktop (Chrome / Edge) ·',
     '复制链接':'Copy link',
     '已复制':'Copied'
   };
   var ZH={}; Object.keys(EN).forEach(function(k){ ZH[EN[k]]=k; });
-  ZH['aim, measured']='瞄准，被度量';
-  EN['瞄准，被度量']='aim, measured';
+  ZH['aim, measured']='瞄准，度量';
+  EN['瞄准，度量']='aim, measured';
   EN['大肥鱼']='Big Fish';
   var LANG='en';
   try{
@@ -524,7 +729,7 @@ var EN={
   function markSwitch(lang){
     var box=document.getElementById('langTop');
     if(box) box.querySelectorAll('span[data-l]').forEach(function(el){ el.classList.toggle('on', el.dataset.l===lang); });
-    try{ document.title = lang==='en'? 'Vernier — aim, measured' : '分毫 · 瞄准，被度量'; }catch(e){}
+    try{ document.title = lang==='en'? 'Vernier — aim, measured' : '分毫 · 瞄准，度量'; }catch(e){}
   }
 
 
@@ -704,7 +909,10 @@ function rippleSwitch(lang, cx, cy){
   var W=900, H=660, MIN=0.62;
   var st=document.getElementById('stage');
   var html=document.documentElement, body=document.body;
-  function fit(){
+  // v3：不再缩放固定舞台，改成全宽版面（大屏不再是一张小卡片漂在画布上）
+  function fit(){ try{ st.style.transform='none'; html.style.overflow=null; body.style.overflow=null; }catch(e){} }
+  if(true){ fit(); addEventListener('resize', fit); return; }
+  function fitOld(){
     var k=Math.min(1, (innerWidth-24)/W, (innerHeight-24)/H);
     var use=Math.max(k, MIN);
     st.style.transform='scale('+use.toFixed(4)+')';
@@ -768,5 +976,6 @@ function rippleSwitch(lang, cx, cy){
 </script>
 
 
+<div class="vn-dither"></div>
 </body>
 </html>

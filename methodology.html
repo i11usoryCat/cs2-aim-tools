@@ -11,31 +11,100 @@
 <link rel="alternate" hreflang="x-default" href="https://i11usorycat.github.io/cs2-aim-tools/">
 <meta property="og:title" content="Vernier — 方法论">
 <meta property="og:url" content="https://i11usorycat.github.io/cs2-aim-tools/methodology.html">
+<link rel="stylesheet" href="assets/type.css">
 <style>
-  :root{ --ink:#33291c; --paper:#f7f2e8; --card:#efe7d7; --accent:#c2410c; --muted:#7b6a54 }
-  html[lang="zh-CN"] body{font-family:"Microsoft YaHei UI","Microsoft YaHei","Noto Sans SC","Segoe UI",system-ui,sans-serif;line-height:1.75;letter-spacing:normal}
-  body{max-width:760px;margin:0 auto;padding:48px 22px 80px;background:var(--paper);color:var(--ink);
-    font-family:Georgia,"Times New Roman",serif;line-height:1.8;font-size:16.5px;
-    font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}
-  h1{font-size:30px;border-bottom:3px solid var(--accent);padding-bottom:12px}
-  h2{font-size:22px;margin-top:34px;color:var(--accent)}
-  h3{font-size:18px;margin-top:24px}
-  h4{font-size:16.5px;margin-top:22px;margin-bottom:6px}
-  pre{background:var(--card);padding:14px;border-radius:8px;overflow-x:auto;font-size:13.5px;line-height:1.65}
-  code{font-family:Consolas,"SF Mono",Menlo,monospace;font-size:.94em}
-  blockquote{border-left:3px solid var(--accent);margin:14px 0;padding:2px 16px;color:var(--muted)}
-  li{margin:6px 0}
-  a{color:var(--accent)}
-  article[hidden]{display:none}
-  .topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:8px}
-  .topbar .back{text-decoration:none}
-  .langsw{display:inline-flex;border:1px solid var(--card);border-radius:8px;overflow:hidden;font-size:14px}
-  .langsw button,.langsw a{padding:5px 12px;border:0;background:transparent;font:inherit;color:var(--muted);cursor:pointer;text-decoration:none}
-  .langsw .on{background:var(--accent);color:#fff}
-  @media (max-width:520px){ body{padding:32px 16px 60px} h1{font-size:26px} }
+  /* 编辑体：纸面 + 衬线标题 + 无衬线正文。色与尺度全部取 assets/type.css 的变量。 */
+  *{box-sizing:border-box}
+  html{scroll-behavior:auto}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:var(--f-ui); font-size:16px; line-height:1.85;
+    font-variant-numeric:tabular-nums; font-feature-settings:"tnum" 1;
+    -webkit-font-smoothing:antialiased;
+  }
+  /* 纸感：两层极淡径向光 + 噪点，和 Hub 同一套 */
+  body::before{ content:""; position:fixed; inset:0; pointer-events:none; z-index:0;
+    background:
+      radial-gradient(1100px 680px at 16% -12%, rgba(194,65,12,.075), transparent 62%),
+      radial-gradient(880px 560px at 94% 4%, rgba(84,108,142,.075), transparent 64%); }
+  .page{ position:relative; z-index:1; max-width:820px; margin:0 auto; padding:64px 32px 120px; }
+
+  /* 顶部：返回 + 语言切换，按注脚级排 */
+  .topbar{ display:flex; align-items:baseline; justify-content:space-between; gap:24px;
+    padding-bottom:16px; border-bottom:1px solid var(--rule); margin-bottom:56px; }
+  .topbar .back{ font-family:var(--f-ui); font-size:12px; letter-spacing:.14em;
+    text-transform:uppercase; color:var(--ink-2); text-decoration:none; }
+  .topbar .back:hover{ color:var(--acc-paper); }
+  .langsw{ display:inline-flex; gap:0; align-items:baseline; }
+  .langsw button{ appearance:none; background:none; border:0; padding:4px 10px; cursor:pointer;
+    font-family:var(--f-ui); font-size:11px; letter-spacing:.2em; text-transform:uppercase;
+    color:var(--ink-2); border-bottom:1px solid transparent; }
+  .langsw button:hover{ color:var(--ink); }
+  .langsw button.on{ color:var(--acc-paper); border-bottom-color:var(--acc-paper); }
+
+  /* 标题层级 */
+  h1{ font-family:var(--f-display); font-weight:900; font-size:clamp(44px,5vw,64px);
+    line-height:1.02; letter-spacing:-.02em; margin:0 0 28px; }
+  article > h1 + p{ font-size:17px; line-height:1.8; color:var(--ink); max-width:60ch; margin-bottom:8px; }
+  h2{ font-family:var(--f-display); font-weight:700; font-size:var(--fs-h2); line-height:1.3;
+    letter-spacing:-.005em; margin:var(--s6) 0 var(--s2); padding-top:var(--s4);
+    border-top:1px solid var(--rule); }
+  article > h2:first-of-type{ margin-top:var(--s5); padding-top:0; border-top:0; }
+  h3{ font-family:var(--f-ui); font-weight:600; font-size:17px; line-height:1.5;
+    letter-spacing:.01em; margin:var(--s4) 0 var(--s1); }
+  h4{ font-family:var(--f-ui); font-weight:600; font-size:15px; margin:var(--s3) 0 4px; }
+
+  /* 正文与列表：68ch 行宽 */
+  p, li{ font-family:var(--f-ui); font-size:16px; line-height:1.85; color:var(--ink); }
+  p{ margin:0 0 18px; max-width:68ch; }
+  ul, ol{ max-width:68ch; padding-left:22px; }
+  li{ margin:0 0 10px; }
+  strong{ font-weight:700; }
+  em{ font-style:italic; }
+  a{ color:var(--acc-paper); text-decoration:underline; text-underline-offset:3px; text-decoration-thickness:1px; }
+
+  /* 四条开篇结论：01–04 朱红小号 + 衬线结论句 */
+  ol.lead{ list-style:none; counter-reset:lead; padding:0; margin:var(--s4) 0 var(--s5); max-width:68ch; }
+  ol.lead > li{ counter-increment:lead; position:relative; padding-left:64px; margin:0 0 40px; }
+  ol.lead > li::before{
+    content:counter(lead,decimal-leading-zero);
+    position:absolute; left:0; top:8px;
+    font-family:var(--f-ui); font-weight:700; font-size:11px; letter-spacing:.22em;
+    color:var(--acc-paper);
+  }
+  ol.lead > li > strong{ display:block; font-family:var(--f-display); font-weight:700;
+    font-size:23px; line-height:1.36; letter-spacing:-.005em; margin-bottom:6px; }
+
+  /* 代码块：纸面更暗一档，直角，无阴影 */
+  pre{ background:var(--paper-2); border:1px solid var(--rule); border-radius:0;
+    padding:18px 20px; margin:0 0 20px; overflow-x:auto;
+    font-family:Consolas,"SF Mono",Menlo,ui-monospace,monospace; font-size:13px; line-height:1.7;
+    color:var(--ink); font-variant-numeric:tabular-nums; }
+  pre code{ font:inherit; background:none; padding:0; }
+  p code, li code{ font-family:Consolas,"SF Mono",Menlo,ui-monospace,monospace; font-size:.9em;
+    background:var(--paper-2); padding:1px 5px; border:1px solid var(--rule); }
+
+  blockquote{ margin:0 0 20px; padding:2px 0 2px 18px; border-left:1px solid var(--rule);
+    color:var(--ink-2); font-size:15px; line-height:1.8; max-width:64ch; }
+
+  /* 附录：左竖线缩进，字号降一档 */
+  .appendix{ margin-top:var(--s7); padding-left:var(--s3); border-left:1px solid var(--rule); }
+  .appendix > h2{ margin-top:0; padding-top:0; border-top:0; }
+  .appendix h3{ font-size:16px; margin-top:var(--s4); }
+  .appendix p, .appendix li, .appendix blockquote{ font-size:15px; color:var(--ink-2); }
+  .appendix pre{ background:transparent; border:0; border-left:1px solid var(--rule); padding-left:16px; font-size:12.5px; }
+
+  article[hidden]{ display:none; }
+  @media (max-width:640px){
+    .page{ padding:40px 20px 72px; }
+    ol.lead > li{ padding-left:44px; }
+    ol.lead > li > strong{ font-size:20px; }
+    .appendix{ padding-left:16px; }
+  }
 </style>
 </head>
 <body>
+<div class="page">
 <div class="topbar">
   <a class="back" href="./">← Vernier</a>
   <nav class="langsw" aria-label="语言 / Language">
@@ -52,7 +121,7 @@
 
 <p>三十秒就能拿走结论，剩下的都是证据。</p>
 
-<ol>
+<ol class="lead">
 <li><strong>16 到 32 cm/360 之间，灵敏度对可测表现没有显著影响。</strong>五档各 30 球的对照实验，极差 5.8%，在噪声之内。别再花几个小时调它。</li>
 <li><strong>闭环任务测不出增益误差。</strong>你会在点击前修正，修正把误差抹平——落点分布永远居中。这是我们做了四版过冲法才接受的事。</li>
 <li><strong>步进任务能测出来。</strong>目标跳变后的前 ~100–150 ms 还没开始修正，响应幅度正比于增益；自检注入 0.85/1.00/1.15，读回 84%/99%/114%。</li>
@@ -265,6 +334,7 @@ T2 &gt; 260 ms      进带后还在修正                进带就停手，只�
 </ol>
 
 
+<div class="appendix">
 <h2>附录：我们怎么走到这里的</h2>
 
 <blockquote>这一节记录的是过程，不是结论。想直接拿走方法的话，可以跳过。</blockquote>
@@ -372,6 +442,7 @@ const z = D * Math.cos(pitch) * Math.cos(yaw);</code></pre>
 内存缓冲     -&gt; 实测 4207 Hz</code></pre>
 
 <p>同一只 8K 鼠标，差 34 倍。测回报率之前，先排除这一项。</p>
+</div>
 </article>
 <article data-lang="en" lang="en">
 <h1>Methodology</h1>
@@ -383,7 +454,7 @@ const z = D * Math.cos(pitch) * Math.cos(yaw);</code></pre>
 
 <p>Thirty seconds gets you the conclusions; everything after is the evidence.</p>
 
-<ol>
+<ol class="lead">
 <li><strong>Between 16 and 32 cm/360, sensitivity has no measurable effect on performance.</strong> Five conditions, thirty trials each — spread 5.8%, inside the noise. Stop tuning it.</li>
 <li><strong>Closed-loop tasks cannot measure a gain error.</strong> You correct before clicking, and the correction erases the error — the landing distribution stays centred. It took us four versions of the overshoot method to accept that.</li>
 <li><strong>A step task can.</strong> For the first ~100–150 ms after a target jump there is no correction yet, so the response amplitude is proportional to the gain; injecting 0.85 / 1.00 / 1.15 reads back 84% / 99% / 114%.</li>
@@ -657,6 +728,7 @@ two variables moving at once would make neither number interpretable.</p>
 
 
 
+<div class="appendix">
 <h2>Appendix: how we got here</h2>
 
 <blockquote>This section records the process, not the conclusions. If you only want the method, skip it.</blockquote>
@@ -777,7 +849,9 @@ memory buffering     -&gt; measured 4207 Hz
 </code></pre>
 
 <p>A 34x difference on the same 8K mouse. Always rule this out before measuring polling rate.</p>
+</div>
 </article>
+<script src="assets/lang-ripple.js"></script>
 <script>
 (function(){
   var zhTitle="方法论 · Vernier", enTitle="Methodology · Vernier";
@@ -815,10 +889,13 @@ memory buffering     -&gt; measured 4207 Hz
     btn[k].addEventListener("click", function(e){
       e.preventDefault();
       var l=this.getAttribute("data-lang");
-      apply(l, true);   // 不滚动：切语言时保持当前位置，避免把顶部导航甩出视口
+      var pt={x:(e.clientX||innerWidth/2), y:(e.clientY||innerHeight/2)};
+      var swap=function(){ apply(l, true); };   // 不滚动：保持当前位置
+      if(window.LangRipple && window.LangRipple.run){ window.LangRipple.run(pt, swap); } else { swap(); }
     });
   }
 })();
 </script>
+</div>
 </body>
 </html>

@@ -2105,8 +2105,8 @@ function renderStatsBar(){
   try{ const c=+cfg.cm; if(isFinite(c)&&c>0) cm=c.toFixed(1)+' cm/360'; }catch(e){}
   const en = (typeof LANG!=='undefined') ? LANG==='en' : document.documentElement.getAttribute('lang')==='en';
   const T = en
-    ? { last:'Last six-skill', week:'This week', sens:'cm / 360', six:'Six-skill', day:' days', unset:'not set', axis:'Axis level' }
-    : { last:'最近六维', week:'本周训练', sens:'灵敏度', six:'六维', day:' 天', unset:'未设置', axis:'辅助等级' };
+    ? { last:'Last six-skill', week:'This week', sens:'cm / 360', six:'Six-skill', day:' days', unset:'not run yet', axis:'Axis level' }
+    : { last:'最近六维', week:'本周训练', sens:'灵敏度', six:'六维', day:' 天', unset:'未测', axis:'辅助等级' };
   // 辅助等级：分轴定位的渐隐等级（0–4 → A0–A4），是训练数据不是设置
   let axisLv = 0;
   try{
@@ -2119,7 +2119,9 @@ function renderStatsBar(){
   el.querySelectorAll('.num').forEach(function(n,i){ prev[i]=n.textContent; });
   const cmNum = (cm!=='未设置')? (+cfg.cm) : null;
   el.innerHTML=
-    '<div class="sb"><span class="sb-k">'+T.last+'</span><span class="sb-v'+(six==='—'?' dim':'')+'"><span class="num" data-to="'+(six==='—'?'':'')+'">'+six+'</span>'+(six==='—'?'':'<span class="u"> / 100</span>')+'</span></div>'+
+    '<div class="sb"><span class="sb-k">'+T.last+'</span><span class="sb-v'+(six==='—'?' dim':'')+'">'+(six==='—'
+        ? '<span class="u" style="font-size:15px">'+T.unset+'</span>'
+        : '<span class="num" data-to="">'+six+'</span><span class="u"> / 100</span>')+'</span></div>'+
     '<div class="sb"><span class="sb-k">'+T.week+'</span><span class="sb-v'+(days?'':' dim')+'"><span class="num" data-to="'+days+'">'+days+'</span><span class="u">'+T.day+'</span></span></div>'+
     '<div class="sb"><span class="sb-k">'+T.sens+'</span><span class="sb-v'+(cm==='未设置'?' dim':'')+'">'+(cm==='未设置'?T.unset:'<span class="num" data-to="'+(cmNum||0)+'" data-dec="1">'+cmNum.toFixed(1)+'</span><span class="u"> cm/360</span>')+'</span></div>'+
     '<div class="sb"><span class="sb-k">'+T.axis+'</span><span class="sb-v"><span class="num">'+axisVal+'</span></span></div>';

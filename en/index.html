@@ -272,8 +272,8 @@ try{
 
 var EN={
     '甩枪训练中心':'AIM TRAINING HUB',
-    '瞄准，被度量。':'Aim, measured.','aim, measured':'aim, measured',
-  '瞄准，被度量':'aim, measured',
+    '瞄准，度量。':'Aim, measured.','aim, measured':'aim, measured',
+  '瞄准，度量':'aim, measured',
   '分毫 · 灵敏度标定 · 甩枪训练 · 四周计划':'Fenhao · calibration · flick drills · 4-week plan',
   '开始':'Start','大肥鱼':'Big Fish',
     '分毫 · 灵敏度标定 · 甩枪训练 · 四周计划':'Calibration · drills · four-week plan',
@@ -300,7 +300,7 @@ var EN={
     '已复制':'Copied'
   };
   var ZH={}; Object.keys(EN).forEach(function(k){ ZH[EN[k]]=k; });
-  ZH['aim, measured']='瞄准，被度量';
+  ZH['aim, measured']='瞄准，度量';
   // en/ 英文镜像页：默认英文；只有显式 ?lang=zh 才中文
   // （旧逻辑按 navigator.language 判定，中文系统打开 en/index.html 会整页——含 <title>——翻成中文）
   var LANG='en';
@@ -328,7 +328,7 @@ var EN={
   function markSwitch(lang){
     var box=document.getElementById('langTop');
     if(box) box.querySelectorAll('span[data-l]').forEach(function(el){ el.classList.toggle('on', el.dataset.l===lang); });
-    try{ document.title = lang==='en'? 'Vernier — aim, measured' : '分毫 · 瞄准，被度量'; }catch(e){}
+    try{ document.title = lang==='en'? 'Vernier — aim, measured' : '分毫 · 瞄准，度量'; }catch(e){}
   }
 
 

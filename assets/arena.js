@@ -44,6 +44,35 @@
     return 'rgba(' + Math.round(c[0]) + ',' + Math.round(c[1]) + ',' + Math.round(c[2]) + ',' +
       (a === undefined ? 1 : Math.round(a * 1000) / 1000) + ')';
   }
+  function parseStop(s) {
+    var m = /^rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)(?:\s*,\s*([\d.]+))?\s*\)$/i.exec(String(s || '').trim());
+    if (!m) return null;
+    return [+m[1], +m[2], +m[3], m[4] === undefined ? 1 : +m[4]];
+  }
+  /* 给大面积渐变补中间停靠点（每 step=12.5% 一个），配合 .vn-dither 消除色阶 */
+  function addDenseStops(g, list, step) {
+    step = step || 0.125;
+    var prev = null;
+    for (var i = 0; i < list.length; i++) {
+      var pos = list[i][0], color = list[i][1];
+      if (prev && pos > prev[0] + 1e-6) {
+        var a = parseStop(prev[1]), b = parseStop(color);
+        if (a && b) {
+          var n = Math.floor((pos - prev[0]) / step);
+          for (var k = 1; k < n; k++) {
+            var t = k / n;
+            g.addColorStop(prev[0] + (pos - prev[0]) * t,
+              'rgba(' + Math.round(a[0] + (b[0] - a[0]) * t) + ',' +
+              Math.round(a[1] + (b[1] - a[1]) * t) + ',' +
+              Math.round(a[2] + (b[2] - a[2]) * t) + ',' +
+              (a[3] + (b[3] - a[3]) * t) + ')');
+          }
+        }
+      }
+      g.addColorStop(pos, color);
+      prev = [pos, color];
+    }
+  }
   function parseColor(c) {
     if (typeof c !== 'string') return null;
     var s = c.trim();
@@ -152,17 +181,21 @@
     // 1) 天幕：顶部 → 地平线（暗色保持原配方；浅色「晨雾」用明显的亮度层级）
     var sky = g.createLinearGradient(0, 0, 0, hor);
     if (p.dark) {
-      sky.addColorStop(0, css(p.skyTop));
-      sky.addColorStop(0.40, css(mix(p.skyTop, p.skyMid, 0.80)));
-      sky.addColorStop(0.74, css(mix(p.skyMid, p.horizon, 0.60)));
-      sky.addColorStop(1, css(p.horizon));
+      addDenseStops(sky, [
+        [0, css(p.skyTop)],
+        [0.40, css(mix(p.skyTop, p.skyMid, 0.80))],
+        [0.74, css(mix(p.skyMid, p.horizon, 0.60))],
+        [1, css(p.horizon)]
+      ], 0.125);
     } else {
       // 天顶冷灰蓝保持到 52%，最后 20% 快速拉到暖白地平线带
-      sky.addColorStop(0, css(p.skyTop));
-      sky.addColorStop(0.52, css(mix(p.skyTop, p.horizon, 0.02)));
-      sky.addColorStop(0.78, css(mix(p.skyTop, p.horizon, 0.30)));
-      sky.addColorStop(0.92, css(mix(p.skyTop, p.horizon, 0.72)));
-      sky.addColorStop(1, css(p.horizon));
+      addDenseStops(sky, [
+        [0, css(p.skyTop)],
+        [0.52, css(mix(p.skyTop, p.horizon, 0.02))],
+        [0.78, css(mix(p.skyTop, p.horizon, 0.30))],
+        [0.92, css(mix(p.skyTop, p.horizon, 0.72))],
+        [1, css(p.horizon)]
+      ], 0.125);
     }
     g.fillStyle = sky;
     g.fillRect(0, 0, Wb, hor + 1);
@@ -185,19 +218,23 @@
     // 3) 地面：地平线 → 底部（远 → 近）
     var gg = g.createLinearGradient(0, hor, 0, Hb);
     if (p.dark) {
-      gg.addColorStop(0, css(mix(p.horizon, p.groundFar, 0.35)));
-      gg.addColorStop(0.22, css(p.groundFar));
-      gg.addColorStop(0.62, css(mix(p.groundFar, p.groundNear, 0.75)));
-      gg.addColorStop(1, css(p.groundNear));
+      addDenseStops(gg, [
+        [0, css(mix(p.horizon, p.groundFar, 0.35))],
+        [0.22, css(p.groundFar)],
+        [0.62, css(mix(p.groundFar, p.groundNear, 0.75))],
+        [1, css(p.groundNear)]
+      ], 0.125);
     } else {
       // 晨雾：梯度按「屏幕可见地面」铺（烘焙图上下留白不能算进可见高度）
       var gf = clamp((st.H * st.S * (1 - st.horFrac)) / Math.max(1, groundH), 0, 1);
-      gg.addColorStop(0, css(mix(p.horizon, p.groundFar, 0.10)));
-      gg.addColorStop(0.06 * gf, css(mix(p.horizon, p.groundFar, 0.30)));
-      gg.addColorStop(0.25 * gf, css(p.groundFar));
-      gg.addColorStop(0.62 * gf, css(mix(p.groundFar, p.groundNear, 0.75)));
-      gg.addColorStop(gf, css(p.groundNear));
-      gg.addColorStop(1, css(p.groundNear));
+      addDenseStops(gg, [
+        [0, css(mix(p.horizon, p.groundFar, 0.10))],
+        [0.06 * gf, css(mix(p.horizon, p.groundFar, 0.30))],
+        [0.25 * gf, css(p.groundFar)],
+        [0.62 * gf, css(mix(p.groundFar, p.groundNear, 0.75))],
+        [gf, css(p.groundNear)],
+        [1, css(p.groundNear)]
+      ], 0.125);
     }
     g.fillStyle = gg;
     g.fillRect(0, hor, Wb, groundH + 1);
@@ -342,20 +379,16 @@
     var w2 = cv.width, h2 = cv.height;
     var grd = g.createLinearGradient(0, 0, 0, h2);
     if (dark) {
-      grd.addColorStop(0, css(p.fog, 0));
-      grd.addColorStop(0.18, css(p.fog, 0.14));
-      grd.addColorStop(0.38, css(p.fog, 0.34));
-      grd.addColorStop(0.50, css(p.fog, 0.44));
-      grd.addColorStop(0.62, css(p.fog, 0.34));
-      grd.addColorStop(0.82, css(p.fog, 0.14));
-      grd.addColorStop(1, css(p.fog, 0));
+      addDenseStops(grd, [
+        [0, css(p.fog, 0)], [0.18, css(p.fog, 0.14)], [0.38, css(p.fog, 0.34)],
+        [0.50, css(p.fog, 0.44)], [0.62, css(p.fog, 0.34)], [0.82, css(p.fog, 0.14)],
+        [1, css(p.fog, 0)]
+      ], 0.125);
     } else {
-      grd.addColorStop(0, css(p.fog, 0));
-      grd.addColorStop(0.20, css(p.fog, 0.05));
-      grd.addColorStop(0.42, css(p.fog, 0.10));
-      grd.addColorStop(0.62, css(p.fog, GEO.fogLightA));
-      grd.addColorStop(0.82, css(p.fog, 0.10));
-      grd.addColorStop(1, css(p.fog, 0.02));
+      addDenseStops(grd, [
+        [0, css(p.fog, 0)], [0.20, css(p.fog, 0.05)], [0.42, css(p.fog, 0.10)],
+        [0.62, css(p.fog, GEO.fogLightA)], [0.82, css(p.fog, 0.10)], [1, css(p.fog, 0.02)]
+      ], 0.125);
     }
     g.fillStyle = grd;
     g.fillRect(0, 0, w2, h2);

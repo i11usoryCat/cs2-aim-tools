@@ -1,0 +1,75 @@
+/* Vernier 主题表 —— 全站唯一一份
+   所有页面（index / app / methodology / en / tools）共用。
+   新增主题：在这里加一段 html[data-theme="x"]，其余页面自动生效。 */
+html[data-theme="sand"]{
+  --bg:#f7f2e8; --bg2:#efe7d7; --panel:#fffdf8; --line:#e3d9c6;
+  --txt:#33291c; --dim:#6f5f49; --acc:#c2410c; --acc2:#9a3412; --gold:#a16207;
+  --on-acc:#ffffff; --dark:0;
+}
+html[data-theme="ink"]{
+  --bg:#f7f5f0; --bg2:#efece4; --panel:#fffefb; --line:#e2dccf;
+  --txt:#202b2c; --dim:#516061; --acc:#0f766e; --acc2:#115e59; --gold:#b45309;
+  --on-acc:#ffffff; --dark:0;
+}
+html[data-theme="lake"]{
+  --bg:#eef4f6; --bg2:#e4eef1; --panel:#ffffff; --line:#d2e2e7;
+  --txt:#14313a; --dim:#446370; --acc:#0e7490; --acc2:#0b5f78; --gold:#b7791f;
+  --on-acc:#ffffff; --dark:0;
+}
+html[data-theme="light"]{
+  --bg:#f4f6f9; --bg2:#e9eef4; --panel:#ffffff; --line:#dde4ed;
+  --txt:#1a2230; --dim:#52606f; --acc:#2f6feb; --acc2:#1d4ed8; --gold:#b26b00;
+  --on-acc:#ffffff; --dark:0;
+}
+html[data-theme="jade"]{
+  --bg:#101917; --bg2:#152220; --panel:#16211f; --line:#2a3a36;
+  --txt:#efeade; --dim:#93a8a1; --acc:#7fbfa6; --acc2:#5aa78c; --gold:#e0a458;
+  --on-acc:#0b0f14; --dark:1;
+}
+html[data-theme="forest"]{
+  --bg:#0f1a14; --bg2:#132019; --panel:#16241b; --line:#2a4433;
+  --txt:#e8f2ea; --dim:#8aa697; --acc:#4ade80; --acc2:#22c55e; --gold:#eab308;
+  --on-acc:#0b0f14; --dark:1;
+}
+html[data-theme="mono"]{
+  --bg:#15171b; --bg2:#1a1d22; --panel:#1c1f24; --line:#2e333b;
+  --txt:#e8eaee; --dim:#98a0aa; --acc:#c9d1d9; --acc2:#e5e7eb; --gold:#fbbf24;
+  --on-acc:#0b0f14; --dark:1;
+}
+html[data-theme="night"]{
+  --bg:#0b0f14; --bg2:#0f151c; --panel:#151b24; --line:#2a3442;
+  --txt:#e6edf3; --dim:#8b949e; --acc:#58a6ff; --acc2:#3b82f6; --gold:#d29922;
+  --on-acc:#0b0f14; --dark:1;
+}
+html[data-theme="cyber"]{
+  --bg:#120a1f; --bg2:#170d28; --panel:#1b1032; --line:#3a2166;
+  --txt:#f1eaff; --dim:#a98fd6; --acc:#c084fc; --acc2:#a855f7; --gold:#fbbf24;
+  --on-acc:#0b0f14; --dark:1;
+}
+
+/* 文字专用色（派生，不改上面的主题令牌）：
+   --acc / --gold 直接当文字时，浅纸主题对比不足 4.5:1
+   （light 的 --acc #2f6feb 在纸面只有 4.22:1；lake 的 --gold #b7791f 只有 3.28:1）。
+   这里朝正文色混合：浅纸变深、深纸变浅，两个方向都提高对比度。
+   填充/描边仍用 --acc / --gold 原值，只有「文字」改用这两个派生值。 */
+html{
+  --acc-text: color-mix(in srgb, var(--acc) 90%, var(--txt));
+  --gold-text: color-mix(in srgb, var(--gold) 70%, var(--txt));
+}
+
+/* 主题色过渡：属性变化时平滑（避免一阶一阶跳） */
+html{ color-scheme: light; }
+html[data-theme="jade"],html[data-theme="forest"],html[data-theme="mono"],
+html[data-theme="night"],html[data-theme="cyber"]{ color-scheme: dark; }
+
+body,html{
+  transition: background-color .55s cubic-bezier(.4,0,.2,1), color .45s cubic-bezier(.4,0,.2,1);
+}
+
+/* 抖动层：消除大面积渐变的色阶（banding）
+   3% 噪点 + 极淡的 1px 细纹，覆盖整页，不拦截事件。 */
+.vn-dither{
+  position:fixed; inset:0; pointer-events:none; z-index:9998; opacity:.62;
+  mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='d'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='180' height='180' filter='url(%23d)' opacity='0.55'/></svg>");
+}

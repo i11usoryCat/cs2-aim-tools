@@ -655,8 +655,9 @@ try{
   #drillGrid .grp{ opacity:0; animation:plotRise 260ms cubic-bezier(.2,.8,.2,1) forwards; animation-delay:calc(var(--gi,0) * 24ms) }
 
   /* B. 线条绘制：分组编号后的短刻度，从左匀速拉出 */
+  #drillGrid .grp i{ display:inline-flex; align-items:center; white-space:nowrap }
   #drillGrid .grp i::after{
-    content:""; display:inline-block; vertical-align:middle;
+    content:""; display:inline-block; vertical-align:middle; flex:0 0 18px;
     width:18px; height:1px; margin-left:8px; background:var(--dim2);
     transform-origin:left center; animation:plotDraw 420ms linear both;
     animation-delay:calc(120ms + var(--gi,0) * 24ms);
@@ -934,7 +935,7 @@ try{
   }
   #drillGrid .col:last-child{ border-right:0 }   /* 最后一列不收边：只留 4 条 */
   #drillGrid .grp{
-    display:flex; align-items:baseline; gap:9px;
+    display:flex; align-items:baseline; gap:9px; white-space:nowrap; overflow:hidden;
     margin:0 0 14px; padding:0 0 12px; border-bottom:0;   /* 短线太多：标题不再画线 */
     font-family:var(--f-display); font-weight:700; font-size:var(--fs-h3);
     letter-spacing:0; color:var(--txt); text-transform:none;
@@ -946,12 +947,14 @@ try{
   #drillGrid .grp::before,#drillGrid .grp::after{ display:none }
   #drillGrid .item{
     display:flex; align-items:center; justify-content:space-between; gap:12px;
-    height:44px; padding:0; margin:0; border:0; border-bottom:0;
+    height:44px; padding:0; margin:0; border:0;
+    white-space:nowrap; overflow:hidden; border-bottom:0;
     font-size:14.5px; color:var(--txt); text-decoration:none;
     transition:color 120ms var(--ease);
   }
   #drillGrid .item:hover{ background:transparent; color:var(--acc) }
-  #drillGrid .item .ar{ color:var(--dim2); font-size:13px; transition:transform 140ms var(--ease) }
+  #drillGrid .item>span:first-child{ overflow:hidden; text-overflow:ellipsis; min-width:0 }
+  #drillGrid .item .ar{ color:var(--dim2); font-size:13px; flex:0 0 auto; transition:transform 140ms var(--ease) }
   #drillGrid .item:hover .ar{ transform:translateX(6px); color:var(--acc) }
   #drillGrid .item::before{ display:none }
 
@@ -1003,6 +1006,7 @@ try{
 <body>
 <div id="mobileTip" style="display:none"><span class="mtText">请用电脑打开（建议 Chrome / Edge）·</span><button type="button" id="mtCopy">复制链接</button><button type="button" id="mtClose" style="background:transparent;border:none;color:var(--dim);cursor:pointer;font-size:15px;padding:0 2px" aria-label="关闭">✕</button></div>
 <script src="assets/scenes.js"></script>
+<script src="assets/lang-ripple.js"></script>
 
 <header>
   <a class="brand" href="index.html" title="Vernier · 分毫">
@@ -1426,7 +1430,7 @@ const EN={
   '文件格式不对，没有改动任何数据。':'Invalid file — nothing was changed.',
   '全部 ▾':'All ▾','收起 ▴':'Collapse ▴',
   '模式':'Mode','最低限时':'Best limit','最高命中率':'Best hit','最快中位用时':'Fastest median','组数':'Sets',
-  '自适应随机':'Adaptive random','定角重复':'Fixed angle','分轴定位':'Axis-staged','小球精度':'Precision','跟枪测试':'Tracking test',
+  '自适应随机':'Adaptive','定角重复':'Fixed angle','分轴定位':'Axis-staged','小球精度':'Precision','跟枪测试':'Tracking',
   "90 秒跟枪，输出跟踪误差 RMS、相位滞后、速度增益——检验跟枪手感。":"90-second tracking: error RMS, phase lag and speed gain — test your tracking feel.",
   '六维检查':'Check-up','90 秒一局测六样：反应、第一枪、反应确定、微调、拉枪、稳定。打完告诉你怎么练。':'One 90-second run scores six skills — reaction, first shot, confirm, micro-adjust, flick, steadiness — then tells you what to train.',
   '状态快测':'State check','20 球无时限，球大小按命中率自适应，快速看今天手感。':'20 dots, no time limit — size adapts to your hit rate. A quick feel check for today.',
@@ -1455,7 +1459,7 @@ const EN={
   '测出你每次都甩过头还是不够，把明显的偏差修掉。':'Measures whether you overshoot or fall short, and fixes the obvious bias.',
   '快速标定':'Quick calibration','固定 3 轮出建议，新手快速找到自己的灵敏度。':'3 fixed rounds then a suggestion — the fast way for beginners to find their sensitivity.',
   '遇到瓶颈的用户：找出属于这个阶段最好的灵敏度。':'Hit a plateau? Find the best sensitivity for your current stage.',
-  '阶梯精度':'Staircase precision','随机距离':'Random distance',
+  '阶梯精度':'Staircase','随机距离':'Distance',
   '初段覆盖':'First-move coverage','看你第一段甩动覆盖了目标多远——动作习惯，不是灵敏度。':'How far your first movement covers toward the target — a habit, not your sensitivity.',
   '开环标定':'Open-loop calibration','拟合甩出前 250ms 的弹道——测「预设落点」，灵敏度本身。':'Fits your first 250 ms of flick — measures the preset endpoint, sensitivity itself.',
   '语言 / Language':'Language',
@@ -1478,7 +1482,7 @@ const EN={
   '01 — 训练 · DRILLS':'01 — Training · Drills',
   '最近六维':'Last six-skill','本周训练':'This week','辅助等级':'Axis level','先从六维检查开始':'Start with the six-skill check',
   '定位':'Positioning','速度':'Speed','转向':'Turning','稳定':'Stability','体检':'Assessment',
-  '今天练什么':'What to train today','先从六维检查开始 →':'Start with the six-skill check →',
+  '今天练什么':'Today\u2019s drill','先从六维检查开始 →':'Start with the six-skill check →',
   '自动（跟随时间）':'Auto (by time)','明亮':'Light','深色':'Dark',
   '当前按本地时间自动切换（06:30–18:30 明亮）':'Following local time — light from 06:30 to 18:30',
   '作者推荐':'Author picks','— 大肥鱼常用的两套，日用与夜用':'— two themes the author actually uses, day and night',
@@ -1796,6 +1800,23 @@ let switching=false, watchdog=null;
 
 function rippleSwitch(lang, cx, cy){
   if(switching) return;
+  // 简短路径：共享雨滴涟漪（不克隆 DOM，不重排，不会出现文字重影）
+  if(window.LangRipple){
+    switching=true;
+    var doSwap=function(){
+      try{
+        LANG=lang; setLang(lang); applyLang();
+        try{ show((location.hash||'#data').slice(1)); }catch(e){}
+        try{ if(window.__vRender) window.__vRender(); }catch(e){}
+        try{ if(window.__planRender) window.__planRender(); }catch(e){}
+      }catch(e){}
+      document.querySelectorAll('#langSw span[data-lang]').forEach(function(el){ el.classList.toggle('on', el.dataset.lang===lang); });
+      switching=false;
+    };
+    setTimeout(function(){ switching=false; }, 1200);
+    window.LangRipple.run({x:cx, y:cy}, doSwap);
+    return;
+  }
   // reduced-motion：不做波纹，直接切
   try{
     if(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches){

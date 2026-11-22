@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="sand">
 <head>
 <meta charset="utf-8">
 <script>/* 剪贴板兜底：writeText 在失焦/无权限时抛 NotAllowedError（未捕获会进 console），统一降级到 execCommand */
@@ -24,6 +24,9 @@
 })();</script>
 <title>甩枪训练 · 自适应难度</title>
 <link rel="icon" href="../assets/favicon.svg">
+<link rel="stylesheet" href="../assets/theme.css">
+<link rel="stylesheet" href="../assets/type.css">
+<script src="../assets/lang-ripple.js"></script>
 <style>
   html,body{margin:0;height:100%;background:var(--bg);overflow:hidden;color:var(--txt);font-family:"Microsoft YaHei UI","Microsoft YaHei","Noto Sans SC","Segoe UI",system-ui,sans-serif}
   /* 原生滚动条：6px 暗色细线，延续站点 1px 线风格 */
@@ -33,23 +36,24 @@
   ::-webkit-scrollbar-thumb{background:var(--line,rgba(255,255,255,.18));border-radius:0}
   ::-webkit-scrollbar-thumb:hover{background:var(--dim,rgba(255,255,255,.35))}
   canvas{display:block;cursor:none}
-  #hud{position:fixed;left:22px;top:16px;font-size:14px;line-height:1.9;pointer-events:none;text-shadow:0 0 6px #000}
+  #hud{position:fixed;left:22px;top:16px;font-size:14px;line-height:1.9;pointer-events:none;text-shadow:0 0 6px color-mix(in srgb,var(--bg) 82%,transparent)}
   #hud b{color:var(--hud-acc,var(--acc))}
   .overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;
-    text-align:center;font-size:16px;line-height:2;color:var(--txt);background:var(--overlay);overflow:auto;padding:24px}
+    text-align:center;font-size:16px;line-height:2;color:var(--txt);
+    background:color-mix(in srgb,var(--bg) 62%,transparent);overflow:auto;padding:24px}
   /* 结果页内容比视口高时，居中会裁掉顶部且滚不上去；safe center 在溢出时退回 start */
   .overlay{align-items:safe center;justify-content:safe center}
   .overlay.show{display:flex}
   /* 开始/暂停页：文案区局部 scrim（只盖中间带，不整体加遮罩，保住天空与地面的纵深） */
   #msg::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
     background:radial-gradient(ellipse 62% 26% at 50% 47%,
-      rgba(var(--scrim-rgb,11,15,20), var(--scrim-a,.35)) 0%,
-      rgba(var(--scrim-rgb,11,15,20), var(--scrim-a,.35)) 30%,
-      rgba(var(--scrim-rgb,11,15,20), 0) 100%)}
+      color-mix(in srgb,var(--bg) 58%,transparent) 0%,
+      color-mix(in srgb,var(--bg) 58%,transparent) 30%,
+      transparent 100%)}
   #msg>*{position:relative;z-index:1}
   /* 结果页：半透明面板承载内容（正文 ≥7:1 / 次要 ≥4.5:1），按钮按主/次分层 */
   #resPanel{box-sizing:border-box;width:100%;max-width:640px;padding:32px 56px 32px 32px;border-radius:0;text-align:left;line-height:1.5;
-    background:rgba(var(--scrim-rgb,11,15,20),var(--res-panel-a,.86));
+    background:color-mix(in srgb,var(--panel) 92%,transparent);
     border:1px solid var(--line)}
   #res .btn{background-color:transparent;border:1px solid color-mix(in srgb,var(--txt) 32%,transparent);color:var(--txt)}
   #res .btn:hover{background-color:transparent;border-color:var(--txt)}
@@ -69,7 +73,7 @@
   #back:hover{color:var(--acc);border-color:var(--line);background:var(--panel)}
   #back.on{display:inline-block}
   #grab{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;
-    background:rgba(0,0,0,.35);color:#fff;font-size:18px;letter-spacing:2px;cursor:pointer}
+    background:color-mix(in srgb,var(--bg) 72%,transparent);color:var(--txt);font-size:18px;letter-spacing:2px;cursor:pointer}
   #grab.on{display:flex}
   #msg .pauseHide{display:none}
   #msg.showParams .pauseHide{display:block}
@@ -87,10 +91,10 @@
   /* 输入框：只有内阴影（凹陷），不要底部 1px 反光——那会让它看起来凸起 */
   .fld input{padding:7px 9px;background:var(--panel);border:1px solid var(--line);color:var(--txt);
     border-radius:7px;font-size:14px;font-family:inherit;width:112px;
-    box-shadow:inset 0 1px 2px rgba(0,0,0,.07)}
+    box-shadow:inset 0 1px 2px color-mix(in srgb,var(--txt) 7%,transparent)}
   .fld select{padding:7px 9px;background:var(--panel);border:1px solid var(--line);color:var(--txt);
     border-radius:7px;font-size:14px;font-family:inherit;width:auto;max-width:100%;
-    box-shadow:inset 0 1px 2px rgba(0,0,0,.07)}
+    box-shadow:inset 0 1px 2px color-mix(in srgb,var(--txt) 7%,transparent)}
   summary::-webkit-details-marker{display:none}
   /* ===== 浮层排版（art-direction §2） ===== */
   .art-kicker{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);line-height:16px}
@@ -219,56 +223,176 @@
   .res-table td,.res-table th{height:32px}
   .res-sec{margin-top:24px;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);line-height:16px}
   .res-sec b{font-weight:500;color:var(--dim)}
+
+  /* ===== 视觉系统 v3「编辑体」：只改覆盖层，不动场地与判定 ===== */
+  body{font-family:var(--f-ui)}
+  #topLeft{position:fixed;left:16px;top:12px;z-index:45;display:flex;align-items:center;gap:10px}
+  #back{position:static;left:auto;top:auto;display:none;font-family:var(--f-ui);font-size:11.5px;
+    letter-spacing:.1em;padding:6px 2px;border:0;background:none;color:var(--dim);text-decoration:none}
+  #back.on{display:inline-block}
+  #back:hover{color:var(--txt);background:none;border:0}
+  #langSwitch{display:inline-flex;align-items:center;height:28px;border:1px solid var(--line);
+    font-family:var(--f-ui);font-size:10.5px;letter-spacing:.18em;user-select:none}
+  #langSwitch button{appearance:none;-webkit-appearance:none;background:transparent;border:0;color:var(--dim);
+    font:inherit;letter-spacing:inherit;padding:0 9px;height:26px;cursor:pointer;position:relative}
+  #langSwitch button[aria-pressed="true"]{color:var(--txt)}
+  #langSwitch button[aria-pressed="true"]::after{content:"";position:absolute;left:8px;right:8px;bottom:-1px;height:1px;background:var(--txt)}
+  #langSwitch span{color:var(--dim);opacity:.6;pointer-events:none}
+  /* 开始页：两栏编辑版式 */
+  #msg{align-items:stretch;justify-content:flex-start;text-align:left;
+    padding:clamp(88px,11vh,132px) clamp(24px,5vw,72px) 48px;overflow:auto}
+  #msg::before{background:radial-gradient(ellipse 74% 62% at 30% 46%,
+      color-mix(in srgb,var(--bg) 58%,transparent) 0%,
+      transparent 72%)}
+  #msgCol{width:100%;max-width:1260px;margin:0 auto;display:grid;
+    grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);
+    column-gap:clamp(44px,6vw,104px);align-items:start;text-align:left}
+  #v3Kicker{grid-area:1/1/2/2;font-family:var(--f-ui);font-size:10.5px;letter-spacing:.24em;
+    text-transform:uppercase;color:var(--dim);line-height:1.4}
+  #v3Kicker b{color:var(--dim);font-weight:500}
+  #titleTop{grid-area:2/1/3/2;margin:22px 0 0;font-family:var(--f-display);font-weight:900;
+    font-size:clamp(52px,6.2vw,84px);line-height:.96;letter-spacing:-.02em;color:var(--txt);
+    max-width:15ch;text-wrap:balance}
+  #titleTop .v3-title-main{display:block;white-space:nowrap;overflow-wrap:normal;word-break:keep-all}
+  #titleTop .v3-title-sub{display:block;margin-top:.35em;font-family:var(--f-ui);font-weight:600;
+    font-size:.6em;line-height:1.2;letter-spacing:0;color:var(--ink-2);white-space:nowrap}
+  #titleTop.long{font-size:clamp(38px,4vw,50px);line-height:1.02}
+  #subNote{grid-area:3/1/4/2;margin-top:clamp(24px,3.2vh,36px);font-family:var(--f-ui);
+    font-size:15px;line-height:1.85;color:var(--dim);max-width:34ch}
+  #modeNote{grid-area:4/1/5/2;margin-top:16px;font-size:14px;line-height:1.85;color:var(--dim);max-width:48ch}
+  #btnRow{grid-area:3/2/4/3;margin-top:10px;align-self:start;display:flex;flex-direction:row;align-items:flex-start;gap:12px;flex-wrap:wrap}
+  #sensHint{grid-area:1/2/2/3;margin-top:0;font-size:12px;line-height:1.6;color:var(--dim);
+    cursor:pointer;font-variant-numeric:tabular-nums;max-width:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #bw{grid-area:4/2/5/3;margin-top:12px;font-size:12.5px;line-height:1.65;color:var(--acc)}
+  /* 「参数」：上面一行 10.5px 微标签 + 下面一个真正的 1px 线框按钮 */
+  #more{grid-area:6/1/7/2;justify-self:start;margin-top:26px;
+    display:flex;flex-direction:column;align-items:flex-start;gap:8px;
+    background:none;border:0;padding:0;cursor:pointer;text-align:left;
+    color:color-mix(in srgb,var(--txt) 52%,var(--dim));font-family:var(--f-ui)}
+  #more .moreBtn{display:inline-flex;align-items:center;gap:8px;
+    padding:7px 14px;border:1px solid var(--line);background:transparent;
+    color:var(--txt);font-size:13px;letter-spacing:.04em;line-height:1;
+    transition:background-color 140ms var(--ease),border-color 140ms var(--ease)}
+  #more:hover .moreBtn{background:color-mix(in srgb,var(--txt) 5%,transparent);border-color:color-mix(in srgb,var(--txt) 28%,var(--line))}
+  #more:active .moreBtn{background:color-mix(in srgb,var(--txt) 9%,transparent)}
+  #more::before{content:"PARAMETERS";display:block;font-size:10.5px;letter-spacing:.24em;color:inherit;font-weight:500}
+  /* EN 下按钮文案本身就是「Parameters ▾」，再叠一个 PARAMETERS 微标签会重复；中文下标签保留 */
+  html[lang="en"] #more::before{display:none}
+  #more:hover{color:var(--txt);transform:none;background:none}
+  #v3Stats{grid-area:5/1/6/3;margin-top:clamp(40px,5.6vh,60px);display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+    box-sizing:border-box;padding:0 24px;background:color-mix(in srgb,var(--bg) 72%,transparent);
+    border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .v3-stat{padding:20px 24px 18px;border-left:1px solid var(--line);min-width:0}
+  .v3-stat:first-child{border-left:0;padding-left:0}
+  .v3-stat b{display:block;font-family:var(--f-ui);font-weight:800;font-size:clamp(34px,3.1vw,44px);
+    line-height:1;letter-spacing:-.04em;color:var(--txt);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .v3-stat span{display:block;margin-top:10px;font-family:var(--f-ui);font-size:10.5px;
+    letter-spacing:.24em;text-transform:uppercase;color:var(--ink-2);font-weight:500;white-space:nowrap}
+  #msgCol>.pauseHide{grid-column:1/-1;width:100%;max-width:1260px}
+  #msg.showParams .pauseHide{margin-top:48px!important}
+  #go{border-radius:0;padding:18px 44px;font-family:var(--f-ui);font-size:14px;font-weight:600;
+    letter-spacing:.2em;text-transform:uppercase;min-width:170px;min-height:58px}
+  #fsBtn{border-radius:0;padding:0 18px;font-family:var(--f-ui);font-size:10.5px;letter-spacing:.12em;
+    text-transform:uppercase;min-height:58px;color:var(--dim);border:1px solid var(--line);background:transparent}
+  #fsBtn:hover{color:var(--txt);border-color:var(--txt);background:transparent}
+  #msg .btn:focus-visible,#go:focus-visible,#fsBtn:focus-visible,#more:focus-visible{outline:1px solid var(--txt);outline-offset:3px}
+  /* 结果页：编辑式头部 + 大数字 */
+  #res{justify-content:flex-start;align-items:center;text-align:left;padding:44px clamp(16px,4vw,48px)}
+  #resPanel{width:100%;max-width:980px;padding:clamp(28px,4.4vw,56px);border-radius:0;
+    background:color-mix(in srgb,var(--panel) 92%,transparent);border:1px solid var(--line)}
+  #resBody{max-width:100%;width:100%}
+  .v3-res-head{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;
+    gap:8px 28px;padding-bottom:24px;border-bottom:1px solid var(--line)}
+  .v3-res-head .art-kicker{grid-column:1/-1;font-family:var(--f-ui);font-size:10.5px;letter-spacing:.24em;
+    text-transform:uppercase;color:var(--dim)}
+  .v3-res-mode{grid-column:1;margin:8px 0 0;font-family:var(--f-display);font-weight:900;
+    font-size:clamp(34px,4vw,54px);line-height:1.02;letter-spacing:-.02em;color:var(--txt)}
+  .v3-res-extra{grid-column:2;justify-self:end;font-family:var(--f-ui);font-size:10.5px;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--dim);white-space:nowrap}
+  .res-num{font-family:var(--f-ui);font-size:clamp(64px,7.4vw,104px);font-weight:800;line-height:.9;
+    letter-spacing:-.04em;color:var(--acc);margin-top:32px;padding:0 0 8px;border:0;text-align:left}
+  .res-num::after{display:none}
+  .res-num i{font-family:var(--f-ui);font-size:.28em;font-weight:600;color:var(--dim);margin-left:8px;letter-spacing:0}
+  .res-note{margin-top:28px;font-family:var(--f-ui);font-size:13px;line-height:1.9;color:var(--dim);
+    font-variant-numeric:tabular-nums;max-width:62ch}
+  .res-sec{margin-top:clamp(36px,4.8vw,48px);font-family:var(--f-ui);font-size:10.5px;letter-spacing:.24em;
+    text-transform:uppercase;color:var(--dim);line-height:1.5}
+  .res-advice{margin-top:14px;font-family:var(--f-ui);font-size:15px;line-height:1.85;color:var(--txt);max-width:62ch}
+  .res-table{margin-top:16px;font-family:var(--f-ui);font-size:13px}
+  .res-table th{font-size:10.5px;letter-spacing:.18em}
+  .res-table td,.res-table th{height:36px;border-top:1px solid var(--line)}
+  .res-foot{margin-top:20px;font-size:12.5px;line-height:1.8;color:var(--dim)}
+  #resActions{margin-top:48px;padding-top:24px;border-top:1px solid var(--line);
+    display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap}
+  #resSubActions{display:flex;flex-direction:row;align-items:center;gap:12px;flex-wrap:wrap}
+  #resActions .btn{margin:0;border-radius:0;font-family:var(--f-ui);font-size:13px;letter-spacing:.12em}
+  #again{padding:16px 30px;font-size:13px;letter-spacing:.16em}
+  #resSubActions .btn{padding:10px 16px;font-size:12px}
+  @media (max-width:960px){
+    #msg{padding:84px 24px 36px}
+    #msgCol{grid-template-columns:1fr;column-gap:0}
+    #v3Kicker{grid-area:auto}
+    #titleTop{grid-area:auto;font-size:clamp(42px,10vw,64px);margin-top:18px}
+    #subNote{grid-area:auto;margin-top:24px}
+    #modeNote{grid-area:auto}
+    #btnRow{grid-area:auto;margin-top:32px}
+    #sensHint{grid-area:auto;margin-top:20px;white-space:normal;overflow:visible}
+    #bw{grid-area:auto}
+    #more{grid-area:auto;margin-top:28px}
+    #v3Stats{grid-area:auto;margin-top:36px;grid-template-columns:repeat(2,minmax(0,1fr));padding:0 16px}
+    .v3-stat{padding:18px 16px 16px}
+    .v3-stat:nth-child(3){border-left:0;padding-left:0}
+    #res{padding:20px 14px}
+    #resPanel{padding:24px 18px}
+    #resActions{flex-direction:column;align-items:flex-start}
+    #resSubActions{flex-wrap:wrap}
+  }
+
+  /* v3 result page fits 1440×900 without turning into a scroll page */
+  #res{justify-content:safe center;padding:20px 24px}
+  #resPanel{max-width:940px;padding:clamp(24px,3.2vw,40px) clamp(24px,3.6vw,44px)}
+  .v3-res-head{padding-bottom:18px}
+  .v3-res-mode{font-size:clamp(30px,3.4vw,46px)}
+  .res-num{font-size:clamp(56px,6.2vw,88px);margin-top:22px;padding-bottom:4px}
+  .res-num i{font-size:.26em}
+  .res-note{margin-top:18px}
+  .res-sec{margin-top:30px}
+  .res-advice{margin-top:10px;font-size:14px}
+  .res-table{margin-top:12px}
+  .res-table td,.res-table th{height:32px}
+  .res-foot{margin-top:14px}
+  #resActions{margin-top:28px;padding-top:16px}
+  #again{padding:14px 26px}
+  #resSubActions .btn{padding:9px 14px}
 </style>
 </head>
 <body>
-<script>/* --on-acc 自适应：按强调色亮度自动选黑/白，修「白字压亮绿 1.74:1」的老问题。
-   只改 --on-acc 这一个变量；--acc 与其它颜色一律不动。越早越好：body 一出现就执行。 */
-(function(){
-  function relLum(c){
-    c=(c||'').trim();
-    var hx=/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(c);
-    if(hx){
-      var h=hx[1]; if(h.length===3){h=h[0]+h[0]+h[1]+h[1]+h[2]+h[2];}
-      var n=parseInt(h,16), rgb=[(n>>16)&255,(n>>8)&255,n&255];
-      function f(v){ v/=255; return v<=0.03928? v/12.92 : Math.pow((v+0.055)/1.055,2.4); }
-      return 0.2126*f(rgb[0])+0.7152*f(rgb[1])+0.0722*f(rgb[2]);
-    }
-    var m=/rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(c); if(!m) return 0;
-    function f2(v){ v/=255; return v<=0.03928? v/12.92 : Math.pow((v+0.055)/1.055,2.4); }
-    return 0.2126*f2(+m[1]) + 0.7152*f2(+m[2]) + 0.0722*f2(+m[3]);
-  }
-  function apply(){
-    try{
-      var acc=getComputedStyle(document.documentElement).getPropertyValue('--acc').trim();
-      var L=relLum(acc);
-      var want=L>0.32 ? '#0b0f14' : '#ffffff';
-      var r=document.documentElement.style;
-      if(r.getPropertyValue('--on-acc').trim()!==want) r.setProperty('--on-acc',want);
-    }catch(e){}
-  }
-  apply();
-  try{ new MutationObserver(apply).observe(document.documentElement,{attributes:true,attributeFilter:['class','data-theme','style']}); }catch(e){}
-  try{ addEventListener('load',apply); }catch(e){}
-})();</script>
 <canvas id="c" style="touch-action:none"></canvas>
 <div id="grab">点击画面开始</div>
-<a id="back" href="../app.html#play">← 返回</a>
+<div id="topLeft">
+  <a id="back" href="../app.html#play">← 返回</a>
+  <div id="langSwitch" role="group" aria-label="Language">
+    <button type="button" data-lang="zh">中</button>
+    <span>/</span>
+    <button type="button" data-lang="en">EN</button>
+  </div>
+</div>
 <div id="hud"></div>
 
 <div id="msg" class="overlay show"><div id="msgCol">
-  <div id="titleTop" style="font-size:26px;color:var(--txt);font-weight:700;letter-spacing:2px;line-height:32px">甩枪训练</div>
-  <div id="subNote" style="margin-top:12px;color:var(--dim);font-size:14px;line-height:1.75">看到球 → 甩过去 → 手停 → 点击</div>
-  <div id="modeNote" style="margin-top:8px;color:var(--dim);font-size:13px;max-width:520px;line-height:24px;display:none;text-wrap:pretty;line-break:strict;word-break:normal"></div>
-  <div id="btnRow" style="margin-top:32px;display:flex;flex-direction:row;align-items:flex-start;gap:12px;flex-wrap:wrap">
-    <button id="go" class="btn" style="margin-top:0;padding:15px 56px;font-size:16px;letter-spacing:2px"><span class="btn-label">开 始</span></button>
-    <button id="fsBtn" type="button" style="padding:12px 20px;font-size:14px;cursor:pointer;font-family:inherit;min-height:52px;display:inline-flex;align-items:center;justify-content:center">全屏 ⛶</button>
+  <div id="v3Kicker" class="v3-kicker"><b>01</b> — 训练 / DRILLS</div>
+  <h1 id="titleTop" class="vn-display">甩枪训练</h1>
+  <div id="subNote">看到球 → 甩过去 → 手停 → 点击</div>
+  <div id="modeNote" style="display:none"></div>
+  <div id="v3Stats" class="v3-stats" aria-hidden="true"></div>
+  <div id="btnRow">
+    <button id="go" class="btn" style="margin-top:0"><span class="btn-label">开 始</span></button>
+    <button id="fsBtn" type="button" style="min-height:58px;display:inline-flex;align-items:center;justify-content:center">全屏 ⛶</button>
   </div>
-  <div id="sensHint" style="margin-top:18px;font-size:13px;color:var(--dim);cursor:pointer;font-variant-numeric:tabular-nums"
-       title="点击修改参数">…</div>
-  <div id="bw" style="margin-top:10px;font-size:13px;color:var(--acc);font-variant-numeric:tabular-nums"></div>
+  <div id="sensHint" title="点击修改参数">…</div>
+  <div id="bw"></div>
 
-  <button id="more" type="button" style="margin-top:32px;padding:8px 16px;font-size:13px;font-family:inherit;cursor:pointer">参数 ▾</button>
+  <button id="more" type="button"><span class="moreBtn">参数 <b style="font-weight:400;opacity:.7">▾</b></span></button>
   <div class="pauseHide" style="margin-top:26px;width:100%;max-width:560px">
     <div style="display:flex;flex-wrap:wrap;gap:12px;justify-content:flex-start">
       <label class="fld">模式
@@ -369,7 +493,7 @@ const PITCH_LIM=75*Math.PI/180, D2R=Math.PI/180, R2D=180/Math.PI;
 
 let W=0,H=0,f=1;
 let yaw=0, pitch=0, tYaw=0, tPitch=0, sYaw=0, sPitch=0;
-const EN_UI=(function(){ try{
+let EN_UI=(function(){ try{
     var q=new URLSearchParams(location.search);
     if(q.get('lang')) return q.get('lang')==='en';
     var s=localStorage.getItem('cs2at.lang');
@@ -378,7 +502,9 @@ const EN_UI=(function(){ try{
     return n.indexOf('zh')!==0;
   }catch(e){ return true; } })();   // 按浏览器语言自动选：中文浏览器看中文，其余默认英文
 window.__IS_EN = EN_UI;
-try{ var __fb=document.getElementById('fsBtn'); if(__fb) __fb.textContent = EN_UI ? 'Fullscreen ⛶' : '全屏 ⛶'; }catch(e){}
+let LANG = EN_UI ? 'en' : 'zh';
+try{ document.documentElement.lang = EN_UI ? 'en' : 'zh-CN'; }catch(e){}
+try{ document.title = EN_UI ? 'Flick trainer · adaptive' : '甩枪训练 · 自适应难度'; }catch(e){}
 // 命中特效（flash/shatter/both/off）与准星击中反馈（auto/custom/off）
 const hitFxMode=(function(){ try{ var m=localStorage.getItem('cs2at.hitFx'); if(m==='0') m='off'; if(!m||m==='1') m='flash'; return m; }catch(e){ return 'flash'; } })();
 const hitCrossMode=(function(){ try{ var m=localStorage.getItem('cs2at.hitCross'); if(m==='0') m='off'; if(!m||m==='1') m='auto'; return m; }catch(e){ return 'auto'; } })();
@@ -438,6 +564,7 @@ const AXIS_TIERS=[
 ];
 const AXIS_FADE_FACTOR=[2.0,1.6,1.3,1.3,2.0];   // A0–A3 带宽容差系数；A4 无线、容差回到 2.0
 const AXIS_FADE_DESC=['带 = 2.0×半径，实线','带 = 1.6×半径，实线','带 = 1.3×半径，虚线','线 0.4s 后淡出','无线，纯 2D 瞄准'];
+const AXIS_FADE_DESC_EN=['band = 2.0×radius, solid','band = 1.6×radius, solid','band = 1.3×radius, dashed','lines fade after 0.4s','no lines, pure 2D aim'];
 let axisLevel=0, axisEnterStreak=0, axisMissStreak=0;
 let axisBalls=[], axisTierIdx=0, axisCurTier=0, axisTierForce=-1, axisLevelOverride=false;
 let axisEntered=false, axisEntryAt=0, axisT1=null, axisGreen=false, axisPulseUntil=0;
@@ -722,22 +849,9 @@ function _rgbOf(hex, amt){
   const n=parseInt(h,16), a=amt||0;
   return [Math.max(0,Math.min(255,((n>>16)&255)+a)), Math.max(0,Math.min(255,((n>>8)&255)+a)), Math.max(0,Math.min(255,(n&255)+a))];
 }
-function arenaOverlayTint(){
-  try{
-    const light=!SC.dark;
-    document.documentElement.style.setProperty('--overlay', hexA(SC.bg, light?0.34:0.40));
-    // 文案区的局部 scrim：浅色场景用 SC.bg 的暖白（0.55），暗色用 SC.bg 的暗色（0.35）
-    const c=_rgbOf(SC.bg,0);
-    document.documentElement.style.setProperty('--scrim-rgb', c[0]+','+c[1]+','+c[2]);
-    document.documentElement.style.setProperty('--scrim-a', light?'0.55':'0.35');
-    // 结果页面板：正文/次要文字都要 ≥7:1 / ≥4.5:1
-    document.documentElement.style.setProperty('--res-panel-a', light?'0.92':'0.86');
-  }catch(e){}
-}
 function arenaEnsureCache(){
   if(arKey===SC && arW===W && arH===H) return;
   arKey=SC; arW=W; arH=H;
-  arenaOverlayTint();
   const hw=Math.max(2, Math.floor(W*0.5));
   // —— 地平线雾带（宽扁光晕 + 剪影 + 雾） ——
   const bandH=Math.max(160, Math.floor(H*ARENA.hazeH));
@@ -922,55 +1036,19 @@ function pickScene(){
   return 'classic';
 }
 let SC = SCENES[pickScene()] || SCENES.classic;
-const SITE_THEMES={
-  ink:{bg:'#12181d',panel:'#1a2226',line:'#2a3a36',txt:'#e6edf3',dim:'#93a8a1',acc:'#0f766e'},
-  jade:{bg:'#101917',panel:'#16211f',line:'#2a3a36',txt:'#efeade',dim:'#93a8a1',acc:'#7fbfa6'},
-  lake:{bg:'#eef4f6',panel:'#ffffff',line:'#d2e2e7',txt:'#14313a',dim:'#587a85',acc:'#0e7490'},
-  light:{bg:'#f4f6f9',panel:'#ffffff',line:'#dde4ed',txt:'#1a2230',dim:'#5b6879',acc:'#2f6feb'},
-  sand:{bg:'#f7f2e8',panel:'#fffdf8',line:'#e3d9c6',txt:'#33291c',dim:'#7b6a54',acc:'#c2410c'},
-  forest:{bg:'#0f1a14',panel:'#16241b',line:'#2a4433',txt:'#e8f2ea',dim:'#8aa697',acc:'#4ade80'},
-  mono:{bg:'#15171b',panel:'#1c1f24',line:'#2e333b',txt:'#e8eaee',dim:'#98a0aa',acc:'#c9d1d9'},
-  cyber:{bg:'#120a1f',panel:'#1b1032',line:'#3a2166',txt:'#f1eaff',dim:'#a98fd6',acc:'#c084fc'},
-  night:{bg:'#0b0f14',panel:'#151b24',line:'#2a3442',txt:'#e6edf3',dim:'#8b949e',acc:'#58a6ff'}
-};
 function siteTheme(){
   try{
     const q=new URLSearchParams(location.search);
     return q.get('theme')||localStorage.getItem('cs2at.theme')||(function(){var d=new Date(),tm=d.getHours()*60+d.getMinutes();return (tm>=1410||tm<460)?'forest':'sand';})();
   }catch(e){ return 'sand'; }
 }
+/* 唯一主题源：assets/theme.css 的 html[data-theme]；页面不再维护第二份色表 */
 function applyPageTheme(){
-  const t=SITE_THEMES[siteTheme()]||SITE_THEMES.jade;
-  const r=document.documentElement.style;
-  r.setProperty('--bg',t.bg); r.setProperty('--panel',t.panel); r.setProperty('--line',t.line);
-  r.setProperty('--txt',t.txt); r.setProperty('--dim',t.dim); r.setProperty('--acc',t.acc);
-  r.setProperty('--on-acc','#ffffff');
-  const dark=(t.txt.indexOf('#e')===0||t.txt.indexOf('#f')===0);
-  r.setProperty('--overlay',dark?'rgba(10,14,18,.40)':'rgba(248,250,252,.34)');
-  document.body.style.background=t.bg;
-}
-
-function applyVars(sc){
-  const dark=!!sc.dark, r=document.documentElement.style;
-  const ui=sc.ui||sc.cross;
-  // 亮色主色上配深字
-  const rgb=(function(h){h=(h||'').replace('#','');if(h.length===3)h=h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
-    const v=parseInt(h,16);return isNaN(v)?[255,255,255]:[(v>>16)&255,(v>>8)&255,v&255];})(ui);
-  const lum=(0.299*rgb[0]+0.587*rgb[1]+0.114*rgb[2])/255;
-  r.setProperty('--bg', sc.bg);
-  r.setProperty('--txt', dark?'#e6edf3':'#14313a');
-  r.setProperty('--dim', dark?'#8b949e':'#5b6b73');
-  r.setProperty('--panel', dark?'#161d24':'#ffffff');
-  r.setProperty('--line', dark?'#263039':'#d7e0e4');
-  r.setProperty('--acc', ui);
-  r.setProperty('--on-acc', lum>0.62?'#111820':'#ffffff');
-  r.setProperty('--overlay', dark?'rgba(11,15,20,.96)':'rgba(238,244,246,.97)');
+  var th=siteTheme();
+  var known={sand:1,ink:1,lake:1,light:1,jade:1,forest:1,mono:1,night:1,cyber:1};
+  document.documentElement.setAttribute('data-theme', known[th]?th:'sand');
 }
 applyPageTheme();
-try{
-  document.body.style.background=SC.bg;
-  document.body.style.color = SC.dark? 'var(--txt)' : '#1f2b2c';
-}catch(e){}
 
 
 
@@ -983,7 +1061,8 @@ try{
    旧「量角卡尺」装饰层保留在 ARENA_DECOR 开关后面，便于回滚。 */
 const ARENA_DECOR=false;   // ← 旧装饰层开关：true = 回滚旧刻度/圆环/水印/几何命中环
 const ATMOS={
-  margin:0.22,                 // 天幕缓存上下留白（pitch 平移余量，覆盖 ±12°）
+  margin:0.75,                 // 天幕缓存上下留白（pitch 平移余量：需覆盖 f·tan(35°)，0.55 时约 ±34° 就会露出底）
+  ridgeRes:[1.0,1.0,1.0],      // 剪影烘焙分辨率：三层均 1:1（0.75/0.85 放大插值会把远山脊线糊掉）
   par:[0.36,0.24,0.15],        // 三层剪影的视差（×W×yaw，单位 px/rad）
   ridgeH:[0.10,0.13,0.16],     // 三层剪影高度（×H，暗色场景）
   ridgeHL:[0.20,0.14,0.10],    // 三层剪影高度（×H，浅色晨雾：按参考 P.ridgeHFrac 浅色档）
@@ -1021,6 +1100,7 @@ let atmFogCv=null, atmFogHD=0;
 const atmRidgeCv=[null,null,null], atmRidgeWD=[0,0,0], atmRidgeHD=[0,0,0];
 let atmCrossCv=null, atmHitCv=null, atmHitWarmCv=null, atmCoreCv=null;
 let atmBgLum=0.5, axisDarkCv=null;   // 背景亮度（给目标描边定强度）/ 目标周围暗斑缓存
+let atmSkyTopRGB=null, atmSkyBotRGB=null;   // 天幕缓存上/下边缘色：pitch 超出缓存覆盖时做无缝兜底
 
 function _atmMix(a,b,t){ return [a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, a[2]+(b[2]-a[2])*t]; }
 function _atmCSS(c,a){ return 'rgba('+Math.round(c[0])+','+Math.round(c[1])+','+Math.round(c[2])+','+(Math.round(a*1000)/1000)+')'; }
@@ -1082,8 +1162,12 @@ function atmBuildMistSky(g, hw, hh){
   const gg=g.createLinearGradient(0,hy,0,hh);
   gg.addColorStop(0,_atmCSS(_atmMix(P.horizon,P.groundFar,0.45),1));
   gg.addColorStop(0.035,_atmCSS(P.groundFar,1));
+  gg.addColorStop(0.16,_atmCSS(_atmMix(P.groundFar,P.groundNear,0.20),1));
   gg.addColorStop(0.30,_atmCSS(_atmMix(P.groundFar,P.groundNear,0.55),1));
+  gg.addColorStop(0.43,_atmCSS(_atmMix(P.groundFar,P.groundNear,0.78),1));
   gg.addColorStop(0.55,_atmCSS(P.groundNear,1));
+  gg.addColorStop(0.70,_atmCSS(P.groundNear,1));
+  gg.addColorStop(0.86,_atmCSS(P.groundNear,1));
   gg.addColorStop(1,_atmCSS(P.groundNear,1));
   g.fillStyle=gg; g.fillRect(0,hy,hw,hh-hy);
   // 光池：只落在画面下 40%（屏幕 ~0.63H–0.89H），提亮 ≤6%
@@ -1110,8 +1194,13 @@ function atmBuildSky(cv, hw, hh){
   const haze=dark? horizon : _atmMix(warm, bgc, 0.50);
   const gs=g.createLinearGradient(0,0,0,hy);
   gs.addColorStop(0,_atmCSS(coolTop,1));
+  gs.addColorStop(0.12,_atmCSS(_atmMix(coolTop,horizon,0.13),1));
+  gs.addColorStop(0.24,_atmCSS(_atmMix(coolTop,horizon,0.29),1));
   gs.addColorStop(0.35,_atmCSS(_atmMix(coolTop,horizon,0.45),1));
+  gs.addColorStop(0.48,_atmCSS(_atmMix(coolTop,horizon,0.57),1));
+  gs.addColorStop(0.60,_atmCSS(_atmMix(coolTop,horizon,0.69),1));
   gs.addColorStop(0.72,_atmCSS(_atmMix(coolTop,horizon,0.82),1));
+  gs.addColorStop(0.86,_atmCSS(_atmMix(coolTop,horizon,0.91),1));
   gs.addColorStop(1,_atmCSS(horizon,1));
   g.fillStyle=gs; g.fillRect(0,0,hw,hy);
   // 方向光：更弥散的「天光」——半径 ×1.6、强度 ×0.65
@@ -1157,8 +1246,12 @@ function atmBuildSky(cv, hw, hh){
     gg.addColorStop(0,_atmCSS(_atmMix(horizon,farC,0.22),1));
     gg.addColorStop(0.06,_atmCSS(farC,1));
   }
+  gg.addColorStop(dark?0.14:0.16,_atmCSS(_atmMix(farC,nearC,dark?0.16:0.15),1));
   gg.addColorStop(dark?0.28:0.30,_atmCSS(_atmMix(farC,nearC,dark?0.35:0.30),1));
+  gg.addColorStop(dark?0.42:0.44,_atmCSS(_atmMix(farC,nearC,dark?0.48:0.45),1));
+  gg.addColorStop(dark?0.55:0.58,_atmCSS(_atmMix(farC,nearC,dark?0.64:0.62),1));
   gg.addColorStop(dark?0.68:0.72,_atmCSS(_atmMix(farC,nearC,dark?0.80:0.78),1));
+  gg.addColorStop(dark?0.84:0.86,_atmCSS(_atmMix(farC,nearC,dark?0.92:0.90),1));
   gg.addColorStop(1,_atmCSS(nearC,1));
   g.fillStyle=gg; g.fillRect(0,hy,hw,hh-hy);
   // 方向光落点：暗色场景宽、居中；晨雾场景收窄、更靠前
@@ -1203,7 +1296,8 @@ function atmBuildRidge(i){
   const dark=!!SC.dark, HD=Math.max(24, Math.floor(H*(dark?ATMOS.ridgeH[i]:ATMOS.ridgeHL[i])));
   const CWd=Math.floor(W + 2*ATMOS.par[i]*W*Math.PI);
   atmRidgeHD[i]=HD; atmRidgeWD[i]=CWd;
-  atmRidgeCv[i]=_mkCv(CWd*0.5, HD*0.5);
+  const rs=ATMOS.ridgeRes[i]||1;
+  atmRidgeCv[i]=_mkCv(Math.max(2,Math.round(CWd*rs)), Math.max(2,Math.round(HD*rs)));
   const g=atmRidgeCv[i].getContext('2d'); if(!g) return;
   const w2=atmRidgeCv[i].width, h2=atmRidgeCv[i].height;
   const col=dark? [0,0,0] : MIST.silhouette;
@@ -1236,6 +1330,10 @@ function atmEnsureCache(){
   atmKey=SC; atmW=W; atmH=H;
   const dark=!!SC.dark, white=[255,255,255];
   const ui=_rgbOf(SC.ui||SC.cross,0);
+  // 兜底色 = 天幕缓存上下边缘的精确颜色（与 atmBuildSky / atmBuildMistSky 的首末渐变色一致），
+  // 抬头时缓存上沿之外露出的就是天幕顶部色、低头时下沿之外是地面近处色，衔接处不会出现色块或白边。
+  atmSkyTopRGB = dark? _rgbOf(SC.bg,-14) : MIST.skyTop;
+  atmSkyBotRGB = dark? _rgbOf(SC.bg,30)  : MIST.groundNear;
   // 天幕 + 地面（缓存比屏幕高，pitch 移动时用源裁剪，不露出边缘）
   const M=Math.floor(H*ATMOS.margin);
   atmSkyHD=H+2*M;
@@ -1261,9 +1359,14 @@ function atmEnsureCache(){
 function drawAtmosphereBackdrop(){
   atmEnsureCache();
   if(!atmSkyCv) return;
+  const cvW=atmSkyCv.width, cvH=atmSkyCv.height;
   const hy=H*0.5+f*Math.tan(pitch);
   const y0=hy-atmSkyHD*0.5;
   const visTop=Math.max(0,y0), visBot=Math.min(H,y0+atmSkyHD);
+  // 天幕缓存覆盖不到的上下两端（pitch 超过缓存留白时）：用缓存「边缘那一行」纵向拉伸兜底。
+  // 逐列取的就是接缝处同一像素，所以兜底区与天幕无缝衔接——既不露画布底色，也不会出现纯色横带。
+  if(visTop>0) ctx.drawImage(atmSkyCv, 0, 0, cvW, 1, 0, 0, W, visTop);
+  if(visBot<H) ctx.drawImage(atmSkyCv, 0, cvH-1, cvW, 1, 0, visBot, W, H-visBot);
   const dh=visBot-visTop; if(dh<=0) return;
   ctx.drawImage(atmSkyCv, 0, (visTop-y0)*0.5, W*0.5, dh*0.5, 0, visTop, W, dh);
 }
@@ -1278,7 +1381,8 @@ function drawAtmosphereRidges(){
     let sx=-destX;
     const maxSx=CWd-W;
     if(maxSx<=0) sx=0; else { if(sx<0) sx=0; else if(sx>maxSx) sx=maxSx; }
-    ctx.drawImage(cv, sx*0.5, 0, W*0.5, cv.height, 0, hy-HD, W, HD);
+    const rs=ATMOS.ridgeRes[i]||1;
+    ctx.drawImage(cv, sx*rs, 0, W*rs, cv.height, 0, hy-HD, W, HD);
   }
 }
 function drawAtmosphereFog(){
@@ -1447,7 +1551,16 @@ function arenaGroundTexture(){
   ctx.globalAlpha=1;
 }
 function drawSceneBase(now, dtMs, withGlow){
-  ctx.fillStyle=SC.bg; ctx.fillRect(0,0,W,H);
+  // 天幕/地面兜底：先整块画布铺「天幕顶部/地面近处」边缘色，并重置混合状态，任何 pitch 都不会露白/透明。
+  // 抬头（pitch≥0）取天幕顶部色、低头取地面近处色；缓存覆盖范围之外的接缝由 drawAtmosphereBackdrop()
+  // 用缓存边缘行纵向拉伸补满（见该函数注释），所以不会再出现 SC.bg 的纯色白/黑横带。
+  ctx.save();
+  ctx.globalAlpha=1;
+  ctx.globalCompositeOperation='source-over';
+  const edgeRGB = (pitch>=0? atmSkyTopRGB : atmSkyBotRGB);
+  ctx.fillStyle = edgeRGB? ('rgb('+Math.round(edgeRGB[0])+','+Math.round(edgeRGB[1])+','+Math.round(edgeRGB[2])+')') : SC.bg;
+  ctx.fillRect(0,0,W,H);
+  ctx.restore();
   if(ARENA_DECOR){                       // 旧装饰层回滚路径
     drawArenaHaze();
     grid();
@@ -1520,6 +1633,53 @@ function applyRes(){
 
 /* 模式默认参数：从下拉框读出 mode，再按模式设半径/限时/状态。
    抽成函数是为了两件事：测试可以直接驱动，且不再依赖 start() 的执行上下文。 */
+
+/* v3：开始页读数条 + 标题自适应字号（只做视觉，不参与逻辑） */
+function updateV3Stats(){
+  var st=document.getElementById('v3Stats'); if(!st) return;
+  function num(id,def){ var el=document.getElementById(id); if(!el) return def; var v=parseFloat(el.value); return isFinite(v)?v:def; }
+  var dpi=num('dpi',800), yaw=num('yaw',0.022), cm=num('cm',27.1);
+  var sens=num('sens',NaN);
+  if(!(isFinite(sens)&&sens>0)) sens=(dpi>0&&cm>0&&yaw>0)? 360/((cm/2.54)*dpi)/yaw : 0;
+  var em=document.getElementById('endMode');
+  var isTime=em && em.value==='time';
+  var count=Math.max(20, parseInt((document.getElementById('cnt')||{}).value)||40);
+  var secs=Math.max(15, parseInt((document.getElementById('endTime')||{}).value)||120);
+  var sizeOv=parseFloat((document.getElementById('sizeOv')||{}).value);
+  var target=isFinite(sizeOv)&&sizeOv>=0.35&&sizeOv<=3 ? sizeOv
+    : (mode==='precision'?0.7 : mode==='axis'?AXIS_TIERS[1].r : mode==='wide'?Math.max(0.8,R0*0.8) : mode==='staircase'?stRadius : R0);
+  var cells=[
+    [cm.toFixed(1),'CM / 360'],
+    [sens>0? sens.toFixed(2) : '—','SENSITIVITY'],
+    [isTime? String(Math.round(secs)) : String(Math.round(count)), isTime?'SECONDS':'SHOTS'],
+    [target.toFixed(1),'TARGET / °']
+  ];
+  st.innerHTML=cells.map(function(c,i){
+    return '<div class="v3-stat"><b>'+c[0]+'</b><span>'+c[1]+'</span></div>';
+  }).join('');
+}
+function fitV3Title(){
+  var el=document.getElementById('titleTop'); if(!el) return;
+  var t=(el.textContent||'').trim();
+  var cjk=(t.match(/[\u4e00-\u9fa5]/g)||[]).length;
+  var hasSub=!!el.querySelector('.v3-title-sub');
+  el.classList.toggle('long', hasSub || t.length>7 || cjk>6);
+}
+function setV3Title(text){
+  var el=document.getElementById('titleTop'); if(!el) return;
+  text=String(text==null?'':text).trim();
+  var main=text, sub='';
+  var m=text.match(/^(.*?)[（(](.*)[）)]\s*$/);
+  if(m){ main=m[1].trim(); sub=m[2].trim(); }
+  if(sub) sub=sub.replace(/\s*→\s*/g,' → ');
+  el.textContent='';
+  var a=document.createElement('span'); a.className='v3-title-main'; a.textContent=main; el.appendChild(a);
+  if(sub){ var b=document.createElement('span'); b.className='v3-title-sub'; b.textContent=sub; el.appendChild(b); }
+  fitV3Title();
+}
+window.__fitV3Title=fitV3Title;
+window.__setV3Title=setV3Title;
+window.__updateV3Stats=updateV3Stats;
 function applyModeDefaults(){
   mode=(document.getElementById('mode')||{value:'random'}).value||'random';
   if(mode==='precision'){ radius=0.7; limitChk.checked=false; }
@@ -1541,18 +1701,11 @@ function applyModeDefaults(){
 }
 
 function applyHudColor(){
-  // 浅色晨雾场景顶部是暗天空：HUD 用暖白字 + 金色强调；暗色场景维持原样
+  // UI 颜色只来自 theme.css；场地本身仍由 SC 驱动 canvas
   try{
+    hud.style.color='var(--txt)';
     const r=document.documentElement.style;
-    if(SC.dark){
-      hud.style.color='var(--txt)';
-      r.removeProperty('--hud-acc'); r.removeProperty('--hud-dim'); r.removeProperty('--hud-fps');
-    } else {
-      hud.style.color='#f7f1e3';
-      r.setProperty('--hud-acc','#ffd9a0');
-      r.setProperty('--hud-dim','rgba(246,240,228,.72)');
-      r.setProperty('--hud-fps','#ffd9a0');
-    }
+    r.removeProperty('--hud-acc'); r.removeProperty('--hud-dim'); r.removeProperty('--hud-fps');
   }catch(e){}
 }
 function start(){
@@ -1573,7 +1726,7 @@ function start(){
   padFirePrev=false; lastPadT=0;
   try{
     SC = SCENES[pickScene()] || SCENES.night;
-    document.body.style.background = SC.bg;
+    document.body.style.background = 'var(--bg)';
     applyHudColor();
   }catch(e){}
   try{
@@ -1585,10 +1738,8 @@ function start(){
       if(bg){ SC.bg=bg; }
       if(tg){ SC.tgt=tg; SC.ring=tg; SC.tgtFill=tg; }
       try{ localStorage.setItem('cs2at.sceneCustom', JSON.stringify({bg:bg||'',tg:tg||''})); }catch(e){}
-      document.body.style.background=SC.bg;
     } else if(ssv && ssv!=='auto' && SCENES[ssv]){
       SC = SCENES[ssv];
-      document.body.style.background = SC.bg;
       applyHudColor();
       try{ localStorage.setItem('cs2at.scene', ssv); localStorage.setItem('cs2at.sceneUser','1'); }catch(e){}
     }
@@ -1918,7 +2069,9 @@ function resKicker(zhBase, enBase, zhExtra, enExtra){
   var base=EN_UI?enBase:zhBase;
   var extra=EN_UI?enExtra:zhExtra;
   var readout=EN_UI?'Readout':'读数';
-  return '<div class="art-kicker"><b>01</b> / '+readout+(base? ' · '+base : '')+(extra? ' · '+extra : '')+'</div>';
+  return '<div class="v3-res-head"><div class="art-kicker"><b>01</b> / '+readout+'</div>'+
+    '<h1 class="v3-res-mode">'+base+'</h1>'+
+    '<div class="v3-res-extra">'+readout+(extra? ' · '+extra : '')+'</div></div>';
 }
 function resSec(no, zh, en){
   return '<div class="res-sec"><b>'+no+'</b> / '+(EN_UI?en:zh)+'</div>';
@@ -1937,11 +2090,9 @@ function checkReportHtml(){
     return '<div style="font-size:18px;color:var(--dim)">'+(EN_UI?'Not enough data — run it again.':'数据不足，再跑一次。')+'</div>';
   }
   // 三档配色：浅色主题下 --acc（橙）与红太近，改用品蓝/深红/墨绿拉开
-  const thB=document.documentElement.getAttribute('data-theme');
-  const isLightB=(thB==='ink'||thB==='light'||thB==='lake'||thB==='sand');
   const band=v=> v>=75? {c:'var(--acc)', t:EN_UI?'Strong':'强'}
-    : v>=45? {c: isLightB? '#0f766e' : '#d29922', t:EN_UI?'Mid':'中'}
-    : {c: isLightB? '#b91c1c' : '#e5484d', t:EN_UI?'Weak':'弱'};
+    : v>=45? {c:'var(--gold)', t:EN_UI?'Mid':'中'}
+    : {c:'var(--acc2,var(--acc))', t:EN_UI?'Weak':'弱'};
   const ITEMS=[
     {k:'react', zh:'反应', en:'Reaction'},
     {k:'first', zh:'第一枪', en:'First shot'},
@@ -2038,6 +2189,7 @@ function drawCheckScatter(){
     var css=getComputedStyle(document.documentElement);
     var dim=css.getPropertyValue('--dim').trim()||'#8b949e';
     var acc=css.getPropertyValue('--acc').trim()||'#7fbfa6';
+    var gold=css.getPropertyValue('--gold').trim()||acc;
     ctx.strokeStyle=dim; ctx.lineWidth=1;
     [0.7,1.2].forEach(function(r){ ctx.beginPath(); ctx.arc(cx,cy,r*px,0,Math.PI*2); ctx.stroke(); });
     ctx.beginPath(); ctx.moveTo(cx-8,cy); ctx.lineTo(cx+8,cy); ctx.moveTo(cx,cy-8); ctx.lineTo(cx,cy+8); ctx.stroke();
@@ -2045,7 +2197,7 @@ function drawCheckScatter(){
       var x=cx+d.dx*px, y=cy-d.dy*px;
       if(Math.abs(x-cx)>S/2-4||Math.abs(y-cy)>S/2-4) return;
       ctx.beginPath(); ctx.arc(x,y,d.kind==='micro'?2:2.6,0,Math.PI*2);
-      ctx.fillStyle=d.hit? acc : '#d29922';
+      ctx.fillStyle=d.hit? acc : gold;
       ctx.fill();
     });
   }catch(e){}
@@ -2129,7 +2281,7 @@ function axisReportHtml(){
   const dys=B.filter(function(b){ return !b.timeout; }).map(function(b){ return Math.abs(b.dy); });
   const t1=Math.round(med(t1s)), t2=Math.round(med(t2s)), dy=med(dys);
   window.__axisReport={t1:t1, t2:t2, dy:Math.round(dy*100)/100, hit:hitRate, level:axisLevel, n:B.length};
-  const levelTxt='A'+axisLevel+' · '+(AXIS_FADE_DESC[axisLevel]||'');
+  const levelTxt='A'+axisLevel+' · '+((EN_UI?AXIS_FADE_DESC_EN:AXIS_FADE_DESC)[axisLevel]||'');
   let tierRows='';
   AXIS_TIERS.forEach(function(cfg,ti){
     // 只统计本档实际打过的球；没跑到的档显示「—」，绝不套用总体中位数
@@ -2163,12 +2315,16 @@ function axisReportHtml(){
     : '两段分得很干净——保持节奏，去更窄的带。';
   return resKicker('分轴定位','Axis-staged', TOTAL+' 球', TOTAL+' shots')+
     '<div class="res-num">'+t1+'<i>ms</i></div>'+
-    '<div class="res-note">T1 中位 · T2 '+t2+' ms · 纵向误差 '+dy.toFixed(2)+'° · 命中 '+hitRate+'% · 渐隐 '+levelTxt+'</div>'+
+    '<div class="res-note">'+(EN_UI
+      ? 'T1 median · T2 '+t2+' ms · vertical error '+dy.toFixed(2)+'° · hit '+hitRate+'% · fade '+levelTxt
+      : 'T1 中位 · T2 '+t2+' ms · 纵向误差 '+dy.toFixed(2)+'° · 命中 '+hitRate+'% · 渐隐 '+levelTxt)+'</div>'+
     resSec('02','判断','Verdict')+
     '<div class="res-advice">'+advice+'</div>'+
     resSec('03','分档','By tier')+
-    '<table class="res-table"><tr><th>档位</th><th>T1</th><th>T2</th><th>纵向误差</th><th>命中率</th><th>球数</th></tr>'+tierRows+'</table>'+
-    '<div class="res-foot">渐隐：连续 5 次进带升级；进带失败或连续 2 次未命中降级（当前 '+levelTxt+'）</div>';
+    '<table class="res-table"><tr><th>'+(EN_UI?'Tier':'档位')+'</th><th>T1</th><th>T2</th><th>'+(EN_UI?'Vertical error':'纵向误差')+'</th><th>'+(EN_UI?'Hit rate':'命中率')+'</th><th>'+(EN_UI?'Shots':'球数')+'</th></tr>'+tierRows+'</table>'+
+    '<div class="res-foot">'+(EN_UI
+      ? 'Fade: 5 consecutive band entries promote; entering miss or 2 consecutive misses demote (current '+levelTxt+')'
+      : '渐隐：连续 5 次进带升级；进带失败或连续 2 次未命中降级（当前 '+levelTxt+'）')+'</div>';
 }
 let resTableAnimTimer=0;
 function animateResultTable(){
@@ -2310,10 +2466,13 @@ function exportTrendPng(){
   }catch(e){ window.__trendExport={err:String((e&&e.message)||e)}; }
 }
 function finish(){
+  var dry=window.__langDryRender===true;
   running=false; alive=false;
-  if(document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(function(){});
-  var gz=document.getElementById('grab'); if(gz) gz.classList.remove('on');
-  if(document.pointerLockElement) document.exitPointerLock();
+  if(!dry){
+    if(document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(function(){});
+    var gz=document.getElementById('grab'); if(gz) gz.classList.remove('on');
+    if(document.pointerLockElement) document.exitPointerLock();
+  }
   const overallHit=hits/trial, overallMT=med(times.filter((v,i)=>hitFlags[i]));
   let rows='';
   blocks.forEach(b=>{
@@ -2363,7 +2522,7 @@ function finish(){
   const _d=new Date(), _p=n=>String(n).padStart(2,'0');
   const TODAY=_d.getFullYear()+'-'+_p(_d.getMonth()+1)+'-'+_p(_d.getDate());
   if(mode==='check') window.__s6=checkScores();   // 先算分再存，runs 里才带得上
-  try{
+  if(dry){} else try{
     const key='cs2at.best', histKey='cs2at.runs';
     const b=JSON.parse(localStorage.getItem(key)||'{}');
     const rec=b[mode]||{runs:0};
@@ -2422,6 +2581,7 @@ go.addEventListener('click',e=>{ e.stopPropagation(); start(); });
     }catch(err){}
   });
   document.addEventListener('fullscreenchange', sync);
+  window.__syncFs=sync; window.__syncFS=sync;
   sync();
 })();
 document.getElementById('again').addEventListener('click',e=>{ e.stopPropagation(); start(); });
@@ -2455,7 +2615,8 @@ document.addEventListener('pointerdown',function(e){
 });
 
 function pause(){ if(!running||paused)return; paused=true; pauseAt=performance.now();
-  go.textContent=(window.__IS_EN?'Resume':'继续'); msg.classList.add('show'); msg.classList.add('paused'); if(document.pointerLockElement) document.exitPointerLock();
+  if(window.__setGoLabel) window.__setGoLabel(window.__IS_EN?'RESUME':'继续'); else go.textContent=(window.__IS_EN?'Resume':'继续');
+  msg.classList.add('show'); msg.classList.add('paused'); if(document.pointerLockElement) document.exitPointerLock();
   // ESC 只暂停、不退全屏：丢全屏就立刻要回来（同一按键手势内通常能成功）
   /* 全屏由独立按钮控制，暂停/继续不再抢手势 */ }
 function resume(){ msg.classList.remove('paused'); if(endMode==='time'){ endAt += performance.now()-pauseAt; } if(!paused)return; const d=performance.now()-pauseAt;
@@ -2951,18 +3112,26 @@ function updateHud(now){
   // 内容不变就不碰 DOM：每帧重建 innerHTML 是帧时间抖动的主要来源
   const recent=hitFlags.slice(-10);
   const rate=recent.length? Math.round(recent.filter(Boolean).length/recent.length*100) : 0;
+  const E=EN_UI;
+  const restTxt=Math.max(0,((endAt-performance.now())/1000)).toFixed(1);
   const html=(endMode==='time'
-      ? '剩余 <b>'+Math.max(0,((endAt-performance.now())/1000)).toFixed(1)+'</b>s &nbsp; 已打 <b>'+trial+'</b> 球'
-      : '第 <b>'+(trial+1)+'</b>/'+TOTAL)
-      +' &nbsp; 球半径 <b>'+radius.toFixed(2)+'°</b> &nbsp; '+cm360.toFixed(1)+' cm/360'+
-      (mode==='axis'? ' &nbsp; 分轴 <b>A'+axisLevel+'</b>':'')+'<br>'+
-    '近 10 球命中率 <b>'+rate+'%</b> &nbsp; 连击 <b>'+streak+'</b>'+(limitChk.checked? ' &nbsp; 限时 <b>'+Math.round(allowed)+'ms</b>':'')+'<br>'+
+      ? (E? 'Remaining <b>'+restTxt+'</b>s &nbsp; shots <b>'+trial+'</b>'
+            : '剩余 <b>'+restTxt+'</b>s &nbsp; 已打 <b>'+trial+'</b> 球')
+      : (E? 'Shot <b>'+(trial+1)+'</b>/'+TOTAL : '第 <b>'+(trial+1)+'</b>/'+TOTAL))
+      + (E? ' &nbsp; radius <b>'+radius.toFixed(2)+'°</b> &nbsp; '+cm360.toFixed(1)+' cm/360'
+            : ' &nbsp; 球半径 <b>'+radius.toFixed(2)+'°</b> &nbsp; '+cm360.toFixed(1)+' cm/360')+
+      (mode==='axis'? (E? ' &nbsp; axis <b>A'+axisLevel+'</b>' : ' &nbsp; 分轴 <b>A'+axisLevel+'</b>'):'')+'<br>'+
+    (E? 'Last 10 <b>'+rate+'%</b> &nbsp; streak <b>'+streak+'</b>' : '近 10 球命中率 <b>'+rate+'%</b> &nbsp; 连击 <b>'+streak+'</b>')+
+    (limitChk.checked? (E? ' &nbsp; limit <b>'+Math.round(allowed)+'ms</b>' : ' &nbsp; 限时 <b>'+Math.round(allowed)+'ms</b>') : '')+'<br>'+
     (fpsShow? ' <span style="color:var(--hud-fps,var(--acc))">· '+fpsVal+' fps</span>':'')+
     '<br><span style="font-size:13px;color:var(--hud-dim,var(--dim));font-variant-numeric:tabular-nums">'+
-      '输入采样 <b>'+(rawRateHz()?Math.round(rawRateHz())+' Hz':'—')+'</b>'+
-      ' · 帧间隔 P99 <b>'+(frameP99Ms()?frameP99Ms().toFixed(1)+' ms':'—')+'</b></span>'+
+      (E?'Input sampling ':'输入采样 ')+'<b>'+(rawRateHz()?Math.round(rawRateHz())+' Hz':'—')+'</b>'+
+      (E?' · frame interval P99 ':' · 帧间隔 P99 ')+'<b>'+(frameP99Ms()?frameP99Ms().toFixed(1)+' ms':'—')+'</b></span>'+
     '<br><span style="font-size:13px;color:var(--hud-dim,var(--dim))">'+
-      (mode==='axis'? (axisLevel>=4? 'A4 无线：直接二维瞄准 → 点击' : '先横移进带（线变绿）→ 上下微调 → 点击') : '看到球 → 甩过去 → 手停 → 点击')+'</span>';
+      (mode==='axis'
+        ? (E? (axisLevel>=4? 'A4 no lines: direct 2D aim → click' : 'Sweep into the band (turns green) → vertical adjust → click')
+             : (axisLevel>=4? 'A4 无线：直接二维瞄准 → 点击' : '先横移进带（线变绿）→ 上下微调 → 点击'))
+        : (E? 'See the dot → flick → stop → click' : '看到球 → 甩过去 → 手停 → 点击'))+'</span>';
   if(html!==hudLastHtml){ hudLastHtml=html; hud.innerHTML=html; }
 }
 requestAnimationFrame(loop);
@@ -2971,22 +3140,29 @@ requestAnimationFrame(loop);
   var el = document.getElementById('bw');
   if(!el) return;
   var ok = (typeof window !== 'undefined') && ('onpointerrawupdate' in window);
-  if(!ok){
-    el.innerHTML = EN_UI
-      ? '⚠️ No raw pointer input in this browser (pointerrawupdate): reaction times will be inflated and not comparable across browsers<br>Use <b style="color:var(--acc)">Chrome</b> or <b style="color:var(--acc)">Edge</b>'
-      : '⚠️ 当前浏览器不支持原始输入（pointerrawupdate）：反应时间会偏大，跨浏览器不可比<br>建议使用 <b style="color:var(--acc)">Chrome</b> 或 <b style="color:var(--acc)">Edge</b>';
-  } else {
+  var raw=null;
+  if(ok){
     // 有 rawupdate 但原始锁可能失败（部分 Linux/Wayland、远程桌面）：先警告，失败时再显示
-    var raw=document.createElement('div');
+    raw=document.createElement('div');
     raw.id='rawWarn';
     raw.style.cssText='display:none;position:fixed;left:50%;top:70px;transform:translateX(-50%);z-index:9999;'+
-      'background:rgba(20,16,8,.92);border:1px solid #d29922;color:#f5d78a;padding:9px 16px;border-radius:10px;'+
+      'background:color-mix(in srgb,var(--panel) 94%,transparent);border:1px solid var(--gold);color:var(--txt);padding:9px 16px;border-radius:10px;'+
       'font-size:13px;line-height:1.6;max-width:min(560px,calc(100vw - 32px));pointer-events:none';
-    raw.textContent=EN_UI
-      ? '⚠️ Raw input lock failed: movement is system-accelerated — cm/360 and reaction times are not comparable. This run will be marked.'
-      : '⚠️ 原始输入锁定失败：本次测量经过系统加速，cm/360 与反应时间不可比，本次成绩会打上标记。';
     document.body.appendChild(raw);
   }
+  function sync(){
+    if(!ok){
+      el.innerHTML = EN_UI
+        ? '⚠️ No raw pointer input in this browser (pointerrawupdate): reaction times will be inflated and not comparable across browsers<br>Use <b style="color:var(--acc)">Chrome</b> or <b style="color:var(--acc)">Edge</b>'
+        : '⚠️ 当前浏览器不支持原始输入（pointerrawupdate）：反应时间会偏大，跨浏览器不可比<br>建议使用 <b style="color:var(--acc)">Chrome</b> 或 <b style="color:var(--acc)">Edge</b>';
+    } else if(raw){
+      raw.textContent=EN_UI
+        ? '⚠️ Raw input lock failed: movement is system-accelerated — cm/360 and reaction times are not comparable. This run will be marked.'
+        : '⚠️ 原始输入锁定失败：本次测量经过系统加速，cm/360 与反应时间不可比，本次成绩会打上标记。';
+    }
+  }
+  window.__syncBw=sync;
+  sync();
 })();
 
 (function(){
@@ -2994,6 +3170,7 @@ requestAnimationFrame(loop);
   if(!hint) return;
   function num(id, def){ var el=document.getElementById(id); if(!el) return def; var v=parseFloat(el.value); return isFinite(v)? v : def; }
   function upd(){
+    updateV3Stats();
     var d = num('dpi',800), y = num('yaw', document.getElementById('yaw')?0.022:0), c = num('cm',27);
     if(!(d>0 && c>0)) { hint.textContent=''; return; }
     var s = y>0 ? 360/((c/2.54)*d)/y : 0;
@@ -3018,14 +3195,20 @@ requestAnimationFrame(loop);
       hint.innerHTML='<span class="st-new">'+txt+'</span>';
       hint.__swapTimer2=setTimeout(function(){ hint.innerHTML=txt; }, 80);
     }, 80);
+    updateV3Stats();
   }
   ['dpi','yaw','cm','cnt','endTime'].forEach(function(id){
     var el=document.getElementById(id);
     if(el){ el.addEventListener('input',upd); el.addEventListener('change',upd); }
   });
+  ['sizeOv','endMode','mode'].forEach(function(id){
+    var el=document.getElementById(id);
+    if(el){ el.addEventListener('input',function(){ upd(); updateV3Stats(); }); el.addEventListener('change',function(){ upd(); updateV3Stats(); }); }
+  });
   var emEl=document.getElementById('endMode');
   if(emEl) emEl.addEventListener('change',upd);
   upd();
+  updateV3Stats();
   window.__updSensHint = upd;
 })();
 
@@ -3079,43 +3262,56 @@ requestAnimationFrame(loop);
   }catch(e){}
 })();
 
-/* ===== 英文界面（不改动游戏逻辑，只翻译渲染出来的文字）===== */
+/* ===== 语言切换（v3）：DOM 翻译 + 动态重渲染 + LangRipple ===== */
 (function(){
-  var EN = (function(){
-    try{
-      var q=new URLSearchParams(location.search);
-      if(q.get('lang')) return q.get('lang')==='en';
-      var sv=localStorage.getItem('cs2at.lang');
-      if(sv) return sv==='en';
-      var nv=(navigator.language||'en').toLowerCase();
-      return nv.indexOf('zh')!==0;
-    }catch(e){ return true; }
-  })();
-  if(!EN) return;
-
+  var current = EN_UI ? 'en' : 'zh';
   var D={
     '甩枪训练 · 自适应难度':'Flick trainer · adaptive',
     '甩枪训练':'Flick trainer',
+    '点击画面开始':'Click to start',
+    '分轴定位（横移→微调）':'Axis-staged (sweep → micro-adjust)',
+    '04 / 趋势':'04 / Trend',
+    '训练':'Training',
+    '— 训练 / DRILLS':'— TRAINING / DRILLS',
     '看到球 → 甩过去 → 手停 → 点击':'See the dot → flick → stop → click',
-    '开 始':'START',
+    '开 始':'START','全屏 ⛶':'Fullscreen ⛶','退出全屏 ⤢':'Exit fullscreen ⤢',
+    '参数 ▾':'Parameters ▾','收起参数 ▴':'Hide parameters ▴',
+    '← 返回':'← Back','继续':'Continue','准备好':'Get ready',
     '▸ 高级设置':'▸ Advanced',
     '模式':'Mode','球数':'Shots','时间限制':'Time limit','收缩模式':'Shrink',
     '结束方式':'End condition','按球数':'By count','按时间':'By time','时长（秒）':'Duration (s)',
     '灵敏度 · 配色 · 更多参数 →':'Sensitivity · palette · more →','去设置里改灵敏度':'Change sensitivity in settings',
     '手柄瞄准':'Gamepad aim','速度式':'Velocity','绝对式':'Absolute','原始输入':'Raw input',
-    '← 返回':'← Back','自动':'auto','游戏灵敏度':'Game sensitivity','目标大小':'Dot size','球大小':'Dot size','再来一组':'Again','复制本组数据':'Copy this set','关闭':'Close','继续':'Continue','回计划':'Back to plan','回训练中心':'Back to hub',
-    '准备好':'Get ready',
-    '阶梯精度':'Staircase precision','随机距离':'Random distance',
+    '自动':'auto','游戏灵敏度':'Game sensitivity','目标大小':'Dot size','球大小':'Dot size',
+    '再来一组':'Again','复制本组数据':'Copy this set','关闭':'Close','回计划':'Back to plan','回训练中心':'Back to hub',
+    '阶梯精度':'Staircase precision','随机距离':'Random distance','分轴定位':'Axis-staged',
+    '六维检查（90秒）':'Check-up (90 s)','六维检查':'Six-dim check','微调训练':'Micro-adjust','移动跟枪':'Moving target',
+    '大角度甩枪':'Wide flick','小球精度':'Precision','定角重复':'Fixed angle','自适应随机':'Adaptive random',
     '固定 18° 距离，球会按命中率自动变大变小；收敛后的尺寸 = 你在 85% 命中率下能稳定打中的最小目标。':'Fixed 18° distance; the target shrinks or grows with your hit rate. The converged size is the smallest you hold at 85%.',
     '距离 5–45° 随机、方向随机；练「换距离」时的适应力，结果按距离分箱对比。':'Distance 5–45° random, direction random. Trains adaptation across distances; results are binned by distance.',
-    '自适应随机':'Adaptive random','定角重复':'Fixed angle','小球精度':'Precision',
-    '大角度甩枪':'Wide flick','移动跟枪':'Moving target','微调训练':'Micro-adjust','六维检查（90秒）':'Check-up (90 s)','目标大小°':'Target size °',
-    '场景':'Scene','自动（跟随设置）':'Auto (follow settings)','自定义场景':'Custom scene','自定义':'Custom',
+    '分轴定位：目标出现 → 两条竖线标出水平带 → 准星横移进带立刻变绿 → 只剩上下微调 → 点击。记 T1 横移 / T2 微调 / 纵向误差。':'Axis-staged: target appears → two vertical lines mark the horizontal band → the crosshair turns green as soon as it enters → only vertical micro-adjust remains → click. Records T1 sweep / T2 adjust / vertical error.',
+    '目标大小°':'Target size °','场景':'Scene','自动（跟随设置）':'Auto (follow settings)','自定义场景':'Custom scene','自定义':'Custom',
     '经典':'Classic','墨玉':'Jade','墨鱼':'Ink','浅灰':'Light grey','暗蓝':'Night blue','纯黑':'Pure black','沙色':'Sandstone',
     '中位用时':'Median','分段数据':'Per-segment','阶段':'Set','用时':'Time','命中率':'Hit rate',
     '限时':'Limit','球半径':'Radius','超时':'Timeouts','次':'','近 10 球命中率':'Last 10',
     '连击':'Streak','球':'shots','建议使用':'Use','或':'or','当前':'Current',
-    '⚠️ 当前浏览器不支持原始输入（pointerrawupdate）：反应时间会偏大，跨浏览器不可比':'⚠️ This browser lacks raw input (pointerrawupdate): reaction times read high and are not comparable across browsers'
+    '收缩模式（球越打越小）':'Shrink mode (target shrinks)',
+    '90 秒 · 题目一样 · 方向随机':'90 s · same tasks · random direction',
+    '换模式':'Switch mode','时间限制':'Time limit','鼠标 DPI':'Mouse DPI',
+    '点击修改参数':'Click to edit parameters',
+    '读数':'Readout','趋势':'Trend','判断':'Verdict','分段':'Stages','存图':'Save image',
+    '中位':'Median','最好':'Best','方向稳定度':'Direction stability','同向':'same direction',
+    '最近':'Last','再跑':'Run',
+    '档位':'Tier','纵向误差':'Vertical error','球数':'Shots',
+    '渐隐':'Fade','方向判断：':'Direction: ',
+    '注意：未完全排除适应效应，仅供方向参考。':'Note: adaptation effects are not fully ruled out — directional reference only.',
+    '热身不追分——手热了就进主练。':'Warm-up is not about score — once the hands are warm, move to main practice.',
+    '阶梯在找一个尺寸——看反转点，不看单球。':'The staircase is hunting a size — read reversal points, not single balls.',
+    '四个距离箱子的差距，就是你要补的地方。':'The gap between the four distance bins is what to train.',
+    '超时 0 次':'0 timeouts',
+    '第 1 段':'Set 1',
+    '⚠️ 当前浏览器不支持原始输入（pointerrawupdate）：反应时间会偏大，跨浏览器不可比':'⚠️ This browser lacks raw input (pointerrawupdate): reaction times read high and are not comparable across browsers',
+    '⚠️ 原始输入锁定失败：本次测量经过系统加速，cm/360 与反应时间不可比，本次成绩会打上标记。':'⚠️ Raw input lock failed: movement is system-accelerated — cm/360 and reaction times are not comparable. This run will be marked.'
   };
   var RULES=[
     [/^→ 对应\s*$/,'→ '],
@@ -3129,11 +3325,17 @@ requestAnimationFrame(loop);
     [/^→ 对应 游戏灵敏度 ([\d.]+)/,'→ Game sensitivity $1'],
     [/^→ 对应 cm\/360 ([\d.]+)/,'→ cm/360 $1'],
     [/^360° 转身需要 ([\d.]+) cm，180° 需要 ([\d.]+) cm$/,'360° needs $1 cm · 180° needs $2 cm'],
-    [/^中位用时 ([\d]+) ms\s*·\s*([\d]+) 球\s*·\s*最长连击 ([\d]+)$/,'Median $1 ms · $2 shots · best streak $3'],
-    [/^中位用时 ([\d]+) ms/,'Median $1 ms'],
+    [/^中位用时 ([\d.]+) ms\s*·\s*([\d]+) 球\s*·\s*最长连击 ([\d]+)$/,'Median $1 ms · $2 shots · best streak $3'],
+    [/^中位用时 ([\d.]+) ms/,'Median $1 ms'],
     [/^(\d+) 球/,'$1 shots'],
     [/^近 10 球命中率 ([\d]+)%?$/,'Last 10: $1%'],
     [/^最长连击 (\d+)$/,'Best streak $1'],
+    [/^最近 (\d+) 次 · 中位 ([\d.]+)% · 方向稳定度 (\d+)\/(\d+) 同向$/,'Last $1 · median $2% · direction stability $3/$4 same'],
+    [/^最近 (\d+) 次 · 中位 ([\d.]+)ms · 最好 ([\d.]+)ms$/,'Last $1 · median $2ms · best $3ms'],
+    [/^再跑 (\d+) 次出现趋势$/,'Run $1 more to see the trend'],
+    [/^(\d+) 次$/,'$1 times'],
+    [/^(\d+) 秒$/,'$1 s'],
+    [/^(\d+) 球$/,'$1 shots'],
     [/^热身不追分——手热了就进主练。$/,'Warm-up is not about score — once the hands are warm, move to main practice.'],
     [/^0\.7° 很难，目标先定 25%，稳住手腕。$/,'0.7° is brutal — aim for 25% first and keep the wrist steady.'],
     [/^接近目标区了——继续练一次定位的精度。$/,'Close to the target zone — keep training one-shot precision.'],
@@ -3145,33 +3347,164 @@ requestAnimationFrame(loop);
     [/^命中 (\d+)%，在调整区——保持难度，再打一组看趋势。$/,'$1% — in the tuning zone. Keep the difficulty and run one more set to see the trend.'],
     [/^命中 (\d+)%，稳了。下一组限时收紧 10%，继续加压。$/,'$1% — solid. Tighten the limit 10% next set and keep pushing.']
   ];
-  var D2={}; for(var k in D){ D2[k.replace(/\s+/g,'')]=D[k]; }
-  function tr(t){
-    var s=t.trim(); if(!s) return t;
-    if(D[s]!==undefined) return t.replace(s, D[s]);
-    for(var i=0;i<RULES.length;i++){ if(RULES[i][0].test(s)) return t.replace(s, s.replace(RULES[i][0], RULES[i][1])); }
+  var D2={}; for(var dk in D){ D2[dk.replace(/\s+/g,'')]=D[dk]; }
+  var zhStore=new WeakMap(), attrStore=new WeakMap();
+  function isCJK(t){ return /[\u4e00-\u9fa5]/.test(t||''); }
+  function trText(t){
+    var s=String(t==null?'':t).trim(); if(!s) return t;
+    var hit=D[s]; if(hit===undefined) hit=D2[s.replace(/\s+/g,'')];
+    if(hit!==undefined) return String(t).replace(s,hit);
+    for(var i=0;i<RULES.length;i++){
+      if(RULES[i][0].test(s)) return String(t).replace(s, s.replace(RULES[i][0], RULES[i][1]));
+    }
     return t;
   }
-  function walk(){
-    var w=document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null), n;
+  var SKIP={SCRIPT:1,STYLE:1,NOSCRIPT:1,TEXTAREA:1};
+  function walkRoot(root,en){
+    if(!root) return;
+    var w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,null),n;
     while((n=w.nextNode())){
-      var v=n.nodeValue; if(!v || !/[\u4e00-\u9fa5]/.test(v)) continue;
-      var nv=tr(v);
-      if(nv!==v) n.nodeValue=nv;
+      var p=n.parentElement; if(p&&SKIP[p.tagName]) continue;
+      var v=n.nodeValue||'';
+      if(!v.trim()) continue;
+      if(en){
+        if(isCJK(v)){
+          if(!zhStore.has(n)) zhStore.set(n,v);
+          var nv=trText(v); if(nv!==v) n.nodeValue=nv;
+        } else if(zhStore.has(n)){
+          var orig=zhStore.get(n);
+          if(v!==trText(orig)) zhStore.delete(n);
+        }
+      } else if(zhStore.has(n)){
+        n.nodeValue=zhStore.get(n);
+      }
     }
-    document.querySelectorAll('option').forEach(function(o){
-      if(/[\u4e00-\u9fa5]/.test(o.textContent)){ var t=o.textContent.trim(); if(D[t]) o.textContent=D[t]; }
-    });
-    document.querySelectorAll('input[placeholder],[title]').forEach(function(el){
-      var ph=el.getAttribute('placeholder'); if(ph && D[ph.trim()]) el.setAttribute('placeholder', D[ph.trim()]);
-      var ti=el.getAttribute('title'); if(ti && D[ti.trim()]) el.setAttribute('title', D[ti.trim()]);
-    });
-    if(document.title.indexOf('甩枪训练')===0) document.title='Flick trainer · adaptive';
   }
-  walk();
-  new MutationObserver(function(){ walk(); }).observe(document.body,{childList:true,subtree:true,characterData:true});
+  function attrsIn(root,en){
+    var els=[]; if(!root||root.nodeType!==1) return;
+    els.push(root); var all=root.querySelectorAll?root.querySelectorAll('*'):[];
+    for(var i=0;i<all.length;i++) els.push(all[i]);
+    for(var j=0;j<els.length;j++){
+      var el=els[j], keys=['title','placeholder','aria-label'];
+      for(var k=0;k<keys.length;k++){
+        var a=keys[k], v=el.getAttribute&&el.getAttribute(a); if(!v) continue;
+        if(en){
+          if(isCJK(v)){
+            var map=attrStore.get(el)||{}; if(!(a in map)) map[a]=v; attrStore.set(el,map);
+            var nv=trText(v); if(nv!==v) el.setAttribute(a,nv);
+          }
+        } else {
+          var m=attrStore.get(el); if(m&&a in m) el.setAttribute(a,m[a]);
+        }
+      }
+    }
+  }
+  function translateAll(){
+    walkRoot(document.body,current==='en');
+    attrsIn(document.body,current==='en');
+  }
+  function translateAdded(node){
+    if(current!=='en') return;
+    if(node.nodeType===3){ walkRoot(node.parentNode||node,true); attrsIn(node.parentNode,true); }
+    else if(node.nodeType===1){ walkRoot(node,true); attrsIn(node,true); }
+  }
+  function translateChar(node){
+    if(current!=='en'||!node||node.nodeType!==3) return;
+    var v=node.nodeValue||'';
+    if(isCJK(v)){ zhStore.set(node,v); var nv=trText(v); if(nv!==v) node.nodeValue=nv; }
+    else if(zhStore.has(node)){
+      var orig=zhStore.get(node); if(v!==trText(orig)) zhStore.delete(node);
+    }
+  }
+  function setSwitch(){
+    var sw=document.getElementById('langSwitch'); if(!sw) return;
+    var bs=sw.querySelectorAll('button[data-lang]');
+    for(var i=0;i<bs.length;i++){
+      var on=bs[i].getAttribute('data-lang')===current;
+      bs[i].setAttribute('aria-pressed',on?'true':'false');
+    }
+  }
+  function setGoLabel(txt){
+    var go=document.getElementById('go');
+    if(go) go.innerHTML='<span class="btn-label">'+txt+'</span>';
+  }
+  window.__setGoLabel=setGoLabel;
+  function updateShell(){
+    var en=current==='en';
+    try{ document.title=en?'Flick trainer · adaptive':'甩枪训练 · 自适应难度'; }catch(e){}
+    var kick=document.getElementById('v3Kicker');
+    if(kick) kick.innerHTML='<b>01</b> — '+(en?'TRAINING / DRILLS':'训练 / DRILLS');
+    var back=document.getElementById('back'); if(back) back.textContent=en?'← Back':'← 返回';
+    setGoLabel((typeof paused!=='undefined'&&paused)? (en?'RESUME':'继续') : (en?'START':'开 始'));
+    setSwitch();
+  }
+  function applyLang(next){
+    next=next==='en'?'en':'zh';
+    if(next===current) return;
+    current=next; EN_UI=next==='en'; LANG=current; window.__IS_EN=EN_UI;
+    try{ localStorage.setItem('cs2at.lang',current); }catch(e){}
+    try{ document.documentElement.lang=EN_UI?'en':'zh-CN'; }catch(e){}
+    translateAll();
+    updateShell();
+    if(window.__syncModeUI) window.__syncModeUI();
+    if(window.__updSensHint) window.__updSensHint();
+    if(window.__updateV3Stats) window.__updateV3Stats();
+    if(window.__syncMore) window.__syncMore();
+    if(window.__syncBw) window.__syncBw();
+    if(window.__syncFs) window.__syncFs();
+    translateAll();
+    var res=document.getElementById('res');
+    if(res && res.classList.contains('show')){
+      var prev=window.__langDryRender;
+      window.__langDryRender=true;
+      try{ finish(); }catch(e){}finally{ window.__langDryRender=prev===true; }
+      translateAll();
+    }
+    updateShell(); setSwitch();
+  }
+  window.__applyLang=applyLang;
+  window.__getLang=function(){ return current; };
+  function toggle(e){
+    var b=e.target&&e.target.closest?e.target.closest('button[data-lang]'):null;
+    if(!b) return;
+    var target=b.getAttribute('data-lang');
+    if(target===current) return;
+    var run=function(){ try{ applyLang(target); }catch(err){ window.__langErr=String(err&&(err.stack||err.message)||err); } };
+    if(!window.LangRipple || reducedMotion){ run(); return; }
+    if(window.__langBusy) return;
+    window.__langBusy=true;
+    var x=e.clientX, y=e.clientY;
+    var prevTheme=document.documentElement.getAttribute('data-theme');
+    try{ document.documentElement.setAttribute('data-theme',(typeof SC!=='undefined'&&SC.dark)?'night':'sand'); }catch(err){}
+    try{ window.LangRipple.run({x:isFinite(x)?x:innerWidth/2,y:isFinite(y)?y:innerHeight/2},run); }
+    catch(err){ run(); }
+    try{ if(prevTheme===null) document.documentElement.removeAttribute('data-theme'); else document.documentElement.setAttribute('data-theme',prevTheme); }catch(err){}
+    setTimeout(function(){ window.__langBusy=false; },680);
+  }
+  var sw=document.getElementById('langSwitch');
+  if(sw){
+    ['pointerdown','mousedown','mouseup','pointerup'].forEach(function(t){
+      sw.addEventListener(t,function(e){ e.stopPropagation(); },true);
+    });
+    sw.addEventListener('click',toggle);
+  }
+  updateShell();
+  translateAll();
+  if(window.__syncModeUI) window.__syncModeUI();
+  if(window.__updSensHint) window.__updSensHint();
+  if(window.__updateV3Stats) window.__updateV3Stats();
+  var mo=new MutationObserver(function(muts){
+    if(current!=='en') return;
+    for(var i=0;i<muts.length;i++){
+      var m=muts[i];
+      if(m.type==='childList'){
+        for(var j=0;j<m.addedNodes.length;j++) translateAdded(m.addedNodes[j]);
+      } else if(m.type==='characterData'){ translateChar(m.target); }
+      else if(m.type==='attributes'&&m.target&&m.target.getAttribute){ attrsIn(m.target,true); }
+    }
+  });
+  mo.observe(document.body,{childList:true,subtree:true,characterData:true});
 })();
-
 </script>
 
 <script>
@@ -3187,6 +3520,8 @@ requestAnimationFrame(loop);
     var resShown=!!(document.getElementById('res') && document.getElementById('res').classList.contains('show'));
     // 结果页的出口都在面板里：隐藏左上角「← 返回」；开始/暂停页仍保留
     back.classList.toggle('on', shown && !resShown);
+    var ls=document.getElementById('langSwitch');
+    if(ls) ls.style.display = shown ? 'inline-flex' : 'none';
     // 浮层出现时隐藏游戏 HUD：结果页/暂停页不再叠着旧 HUD 文字（开始页 HUD 本来就是空的）
     hud.style.visibility = shown? 'hidden' : '';
   }
@@ -3207,8 +3542,13 @@ requestAnimationFrame(loop);
   var more=document.getElementById('more'), msg=document.getElementById('msg');
   if(!more||!msg) return;
   function sync(){
-    more.style.display = 'inline-block';
-    more.textContent = msg.classList.contains('showParams') ? '收起参数 ▴' : '参数 ▾';
+    more.style.display = 'flex';
+    var label = msg.classList.contains('showParams')
+      ? (EN_UI?'Hide parameters ▴':'收起参数 ▴')
+      : (EN_UI?'Parameters ▾':'参数 ▾');
+    // 保持 .moreBtn 线框：只换文字，不换结构
+    var span = more.querySelector('.moreBtn');
+    if(span) span.textContent = label; else more.textContent = label;
   }
   more.addEventListener('click', function(e){
     e.stopPropagation();
@@ -3216,6 +3556,7 @@ requestAnimationFrame(loop);
     sync();
   });
   new MutationObserver(sync).observe(msg,{attributes:true,attributeFilter:['class']});
+  window.__syncMore=sync;
   sync();
 })();
 
@@ -3299,11 +3640,18 @@ requestAnimationFrame(loop);
       if(cnt) cnt.disabled=on;
       // 标题跟着所选模式走（选项文案本身已按语言翻译）
       var tt=document.getElementById('titleTop');
-      if(tt && ms.options && ms.selectedIndex>=0) tt.textContent=ms.options[ms.selectedIndex].textContent;
+      if(tt && ms.options && ms.selectedIndex>=0){
+        var titleTxt=ms.options[ms.selectedIndex].textContent;
+        if(window.__setV3Title) window.__setV3Title(titleTxt); else tt.textContent=titleTxt;
+      }
       // 每个模式一行说明：这个模式练什么、指标是什么
       var mn=document.getElementById('modeNote');
       if(mn){
-        var notes={
+        var notes=EN_UI?{
+          staircase:'Fixed 18° distance; the target shrinks or grows with your hit rate. The converged size is the smallest you hold at 85%.',
+          distance:'Distance 5–45° random, direction random. Trains adaptation across distances; results are binned by distance.',
+          axis:'Axis-staged: target appears → two vertical lines mark the horizontal band → the crosshair turns green as soon as it enters → only vertical micro-adjust remains → click. Records T1 sweep / T2 adjust / vertical error.'
+        }:{
           staircase:'固定 18° 距离，球会按命中率自动变大变小；收敛后的尺寸 = 你在 85% 命中率下能稳定打中的最小目标。',
           distance:'距离 5–45° 随机、方向随机；练「换距离」时的适应力，结果按距离分箱对比。',
           axis:'分轴定位：目标出现 → 两条竖线标出水平带 → 准星横移进带立刻变绿 → 只剩上下微调 → 点击。记 T1 横移 / T2 微调 / 纵向误差。'
@@ -3312,6 +3660,7 @@ requestAnimationFrame(loop);
         mn.style.display = notes[ms.value] ? '' : 'none';
       }
       if(window.__updSensHint) window.__updSensHint();
+      if(window.__updateV3Stats) window.__updateV3Stats();
       // 检查模式下死控件直接隐藏，换成一行只读说明
       var fe=document.getElementById('fldEnd'), fc=document.getElementById('fldCnt'), ft=document.getElementById('fldEndTime'), cn=document.getElementById('checkNote'), cr=document.getElementById('chkRow');
       if(fe) fe.style.display = on? 'none' : '';
@@ -3321,6 +3670,7 @@ requestAnimationFrame(loop);
       if(cn) cn.style.display = on? '' : 'none';
     }
     ms.addEventListener('change', syncCheck);
+    window.__syncModeUI=syncCheck;
     syncCheck();
     var sw=document.getElementById('switchMode');
     if(sw) sw.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); if(ms){ ms.value='random'; } syncCheck(); });
@@ -3345,5 +3695,6 @@ requestAnimationFrame(loop);
   }catch(e){}
 })();
 </script>
+<div class="vn-dither"></div>
 </body>
 </html>

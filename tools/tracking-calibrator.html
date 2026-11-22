@@ -1,7 +1,21 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="sand">
 <head>
 <meta charset="utf-8">
+<link rel="stylesheet" href="../assets/theme.css">
+<script>/* 主题：assets/theme.css 是唯一来源；这里只决定 data-theme（?theme= → cs2at.theme → 本地时间） */
+(function(){
+  var OK={sand:1,ink:1,lake:1,light:1,jade:1,forest:1,mono:1,night:1,cyber:1};
+  var t=null;
+  try{ t=new URLSearchParams(location.search).get('theme'); }catch(e){}
+  if(!t){ try{ t=localStorage.getItem('cs2at.theme'); }catch(e){} }
+  if(!OK[t]){
+    try{ var d=new Date(), m=d.getHours()*60+d.getMinutes(); t=(m>=1410||m<460)?'forest':'sand'; }catch(e){ t='sand'; }
+  }
+  window.__THEME=t;
+  try{ document.documentElement.setAttribute('data-theme',t); }catch(e){}
+})();</script>
+
 <script>/* 剪贴板兜底：writeText 在失焦/无权限时抛 NotAllowedError（未捕获会进 console），统一降级到 execCommand */
 (function(){
   try{
@@ -30,16 +44,17 @@
 <link rel="alternate" hreflang="x-default" href="https://i11usorycat.github.io/cs2-aim-tools/">
 <style>
   html,body{margin:0;height:100%;background:var(--bg);overflow:hidden;color:var(--txt);font-family:"Microsoft YaHei UI","Microsoft YaHei","Noto Sans SC","Segoe UI",system-ui,sans-serif}
-  /* 原生滚动条：6px 暗色细线，延续站点 1px 线风格 */
-  *{scrollbar-width:thin;scrollbar-color:var(--line,rgba(255,255,255,.18)) transparent}
+  /* 原生滚动条：6px 暗色细线，延续站点 1px 线风格。
+     只用 ::-webkit-scrollbar：一旦写 scrollbar-width/scrollbar-color，
+     Chromium 会忽略下面这组 6px 规则（实测变成 10px 白条）。 */
   ::-webkit-scrollbar{width:6px;height:6px}
   ::-webkit-scrollbar-track{background:transparent}
-  ::-webkit-scrollbar-thumb{background:var(--line,rgba(255,255,255,.18));border-radius:0}
-  ::-webkit-scrollbar-thumb:hover{background:var(--dim,rgba(255,255,255,.35))}
+  ::-webkit-scrollbar-thumb{background:var(--line);border-radius:0}
+  ::-webkit-scrollbar-thumb:hover{background:var(--dim)}
   canvas{display:block;cursor:none}
-  #ui{position:fixed;left:24px;top:20px;font-size:14px;line-height:1.9;pointer-events:none;text-shadow:0 0 6px #000}
+  #ui{position:fixed;left:24px;top:20px;font-size:14px;line-height:1.9;pointer-events:none;text-shadow:0 0 6px var(--bg)}
   .overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;
-    text-align:center;font-size:16px;line-height:2;color:var(--txt);background:var(--overlay)}
+    text-align:center;font-size:16px;line-height:2;color:var(--txt);background:color-mix(in srgb, var(--bg) 96%, transparent)}
   .overlay.show{display:flex}
 
   #back{position:fixed;left:16px;top:14px;z-index:40;display:none;font-size:13px;color:var(--dim);
@@ -77,125 +92,138 @@
   #modeHint{max-width:640px}
   #rawWarn .wb{padding:4px 10px;border-radius:7px;border:1px solid currentColor;background:transparent;
     color:inherit;font:inherit;font-size:12px;cursor:pointer;pointer-events:auto}
-  #rawWarn .wb:hover{background:rgba(255,255,255,.10)}
+  #rawWarn .wb:hover{background:color-mix(in srgb, var(--txt) 10%, transparent)}
 </style>
 <link rel="stylesheet" href="../assets/ui-material.css">
+<link rel="stylesheet" href="../assets/type.css">
+<link rel="stylesheet" href="../assets/overlay-v3.css">
+<style>
+  /* 结果页一屏（1440×900）：趋势图 + 说明改成两栏并排；纯排版，不碰测量逻辑 */
+  #res{padding-top:80px}
+  #res .ov-wrap{padding-bottom:24px}
+  #resBody{margin-top:16px}
+  #res .ov-res-actions{margin-top:20px}
+  #resBody .trend-box{display:grid;grid-template-columns:360px minmax(0,1fr);
+    column-gap:32px;align-items:start;margin-top:16px}
+  #resBody .trend-box > canvas{grid-column:1;grid-row:1 / span 2}
+  #resBody #probeTrendStat{grid-column:2;grid-row:1;font-size:12.5px;line-height:18px;color:var(--dim)}
+  #resBody .trend-actions{grid-column:2;grid-row:2;display:flex;align-items:center;gap:16px;
+    flex-wrap:wrap;margin-top:12px}
+  #resBody .trend-note{font-size:12px;line-height:18px;color:var(--dim)}
+  @media (max-width:1100px){
+    #resBody .trend-box{display:block}
+    #resBody .trend-box > canvas{margin-bottom:12px}
+  }
+</style>
 </head>
 <body>
-<a id="back" href="../app.html#play">← 返回</a>
+<script>/* 语言初始化（最早执行）：?lang= 优先，其次上次选择 cs2at.lang，最后浏览器语言。
+   qa 的 en-stub-target 静态检查要求这里出现 q.get('lang') 字面量。 */
+(function(){
+  var q; try{ q=new URLSearchParams(location.search); }catch(e){ q={get:function(){return null;}}; }
+  var en;
+  var p=q.get('lang');
+  if(p==='en'||p==='zh') en=(p==='en');
+  else {
+    var s=null; try{ s=localStorage.getItem('cs2at.lang'); }catch(e){}
+    if(s==='en'||s==='zh') en=(s==='en');
+    else { var n=(navigator.language||'en').toLowerCase(); en=n.indexOf('zh')!==0; }
+  }
+  window.__IS_EN=en;
+  try{ document.documentElement.lang = en?'en':'zh-CN'; }catch(e){}
+})();</script>
+<div id="topbar">
+  <a id="back" href="../app.html#play">← 返回</a>
+  <div id="langSw" role="group" aria-label="Language">
+    <button type="button" data-lang="zh">中</button><span class="sep">/</span><button type="button" data-lang="en">EN</button>
+  </div>
+</div>
 <canvas id="c"></canvas>
 <div id="ui"></div>
 
 <div id="msg" class="overlay show">
-  <div id="ttl" style="font-size:26px;color:var(--txt);font-weight:700;letter-spacing:2px"><span class="ff-num">01</span>跟枪测试</div>
-  <div style="margin-top:8px;color:var(--dim);font-size:14px">目标走圆，准星压在目标上</div>
-  <div style="margin-top:24px;display:flex;gap:12px;align-items:center;justify-content:flex-start;flex-wrap:wrap">
-    <button id="go" class="btn">开 始</button>
-    <button id="fsBtn" type="button" class="btn ghost">全屏 ⛶</button>
-  </div>
-  <div id="sum" style="margin-top:16px;font-size:13px;line-height:16px;color:var(--dim)"></div>
-  <div id="bw" style="margin-top:8px;font-size:13px;line-height:24px;color:var(--gold)"></div>
-  <div class="ff-sec">02 / MODE</div>
-  <div class="modeRow">
-    <button id="modeSine" type="button" class="btn ghost btn-sm is-on">连续正弦</button>
-    <button id="modeStep" type="button" class="btn ghost btn-sm">步进跟随（灵敏度探针）</button>
-  </div>
-  <div id="modeHint" style="margin-top:8px;font-size:12px;color:var(--dim);line-height:24px"></div>
-  <div class="ff-sec">03 / PARAMETERS</div>
-  <button id="more" class="more">参数 ▾</button>
-  <div class="pauseHide" style="margin-top:16px;width:100%;max-width:640px">
-    <div style="display:flex;flex-wrap:wrap;gap:16px 24px;justify-content:flex-start">
-      <label class="fld">鼠标 DPI<input id="dpi" type="number" step="100" value="800"></label>
-      <label class="fld">m_yaw<input id="yaw" type="number" step="0.0001" value="0.022"></label>
-      <label class="fld">cm/360<input id="cm" type="number" step="0.1" value="27.1"></label>
-      <label class="fld sineOnly">相位角速度 °/s<input id="w" type="number" step="5" value="60"></label>
-      <label class="fld sineOnly">半径 °<input id="r" type="number" step="1" value="15"></label>
-      <label class="fld sineOnly">时长 秒<input id="t" type="number" step="10" value="90"></label>
+  <div class="ov-wrap">
+    <header class="ov-head">
+      <div class="ov-head-l">
+        <div class="ov-eyebrow"><span class="ff-num">01</span><span>跟枪 · TRACKING</span></div>
+        <h1 id="ttl" class="ov-title">跟枪测试</h1>
+      </div>
+      <div class="ov-head-r">
+        <p class="ov-lede">目标走圆，准星压在目标上</p>
+        <div class="ov-actions">
+          <button id="go" class="btn">开 始</button>
+          <button id="fsBtn" type="button" class="btn ghost">全屏 ⛶</button>
+        </div>
+        <div id="bw" class="ov-warn" data-no-i18n></div>
+      </div>
+    </header>
+    <div class="ov-nums" aria-label="参数摘要">
+      <div class="ov-num"><b id="nCm">27.1</b><span>cm/360</span></div>
+      <div class="ov-num"><b id="nSens">1.92</b><span>灵敏度</span></div>
+      <div class="ov-num"><b id="nDpi">800</b><span>DPI</span></div>
+      <div class="ov-num"><b id="nMode">正弦</b><span>模式</span></div>
     </div>
-    <div style="margin-top:16px;font-size:12px;color:var(--dim);line-height:24px">
-      跟枪 ≠ 灵敏度标定：这里测跟枪手感（误差 RMS、相位滞后、速度增益）；找灵敏度请用「灵敏度标定」。
+    <div id="sum" data-no-i18n style="display:none"></div>
+    <div class="ov-sec"><span class="ff-num">02</span><span>MODE · 测什么</span></div>
+    <div class="modeRow">
+      <button id="modeSine" type="button" class="btn ghost btn-sm is-on">连续正弦</button>
+      <button id="modeStep" type="button" class="btn ghost btn-sm">步进跟随（灵敏度探针）</button>
     </div>
+    <div id="modeHint" data-no-i18n class="ov-note" style="margin-top:12px"></div>
+    <div class="ov-sec"><span class="ff-num">03</span><span>PARAMETERS · 参数</span></div>
+    <button id="more" class="more">参数 ▾</button>
+    <div class="pauseHide">
+      <div class="ov-fields">
+        <label class="fld">鼠标 DPI<input id="dpi" type="number" step="100" value="800"></label>
+        <label class="fld">m_yaw<input id="yaw" type="number" step="0.0001" value="0.022"></label>
+        <label class="fld">cm/360<input id="cm" type="number" step="0.1" value="27.1"></label>
+        <label class="fld sineOnly">相位角速度 °/s<input id="w" type="number" step="5" value="60"></label>
+        <label class="fld sineOnly">半径 °<input id="r" type="number" step="1" value="15"></label>
+        <label class="fld sineOnly">时长 秒<input id="t" type="number" step="10" value="90"></label>
+      </div>
+      <p class="ov-note">跟枪 ≠ 灵敏度标定：这里测跟枪手感（误差 RMS、相位滞后、速度增益）；找灵敏度请用「灵敏度标定」。</p>
+    </div>
+    <div id="rawWarn" style="display:none;position:fixed;left:50%;top:70px;transform:translateX(-50%);z-index:9999;background:var(--panel);border:1px solid var(--gold);color:var(--gold);padding:9px 16px;border-radius:1px;font-size:13px;line-height:1.6;max-width:min(560px,calc(100vw - 32px));pointer-events:auto;text-align:left">⚠️ 原始输入锁定失败：本次测量经过系统加速，误差指标不可比。</div>
   </div>
-  <div id="rawWarn" style="display:none;position:fixed;left:50%;top:70px;transform:translateX(-50%);z-index:9999;background:rgba(20,16,8,.92);border:1px solid var(--gold);color:#f5d78a;padding:9px 16px;border-radius:0;font-size:13px;line-height:1.6;max-width:min(560px,calc(100vw - 32px));pointer-events:auto;text-align:left">⚠️ 原始输入锁定失败：本次测量经过系统加速，误差指标不可比。</div>
 </div>
 
-<div id="res" class="overlay"><div class="ff-sec" style="margin-top:0">04 / RESULT</div><div id="resBody"></div>
-  <button id="again" class="btn">再测一轮</button>
-  <div style="margin-top:16px;display:flex;gap:12px;justify-content:flex-start;flex-wrap:wrap">
-    <button id="copyRes" class="btn ghost btn-sm">复制结果</button>
+<div id="res" class="overlay">
+  <div class="ov-wrap">
+    <div class="ov-eyebrow"><span class="ff-num">04</span><span>RESULT · 结果</span></div>
+    <h2 class="ov-rtitle">结果</h2>
+    <div id="resBody" data-no-i18n></div>
+    <div class="ov-res-actions">
+      <button id="again" class="btn">再测一轮</button>
+      <button id="copyRes" class="btn ghost btn-sm">复制结果</button>
+    </div>
+    <div id="copyHint" data-no-i18n></div>
   </div>
-  <div id="copyHint" style="margin-top:8px;font-size:13px;color:var(--acc)"></div></div>
+</div>
 
 <script src="../assets/scenes.js"></script>
 <script src="../assets/arena.js"></script>
+<script src="../assets/lang-ripple.js"></script>
+<script src="../assets/lang-switch.js"></script>
 <script>
 'use strict';
 /* ————— 场景与主题（同标定器：页面皮肤跟随站点） ————— */
 const SCENES=window.GAME_SCENES;
 const THEME2SCENE=window.THEME2SCENE;
+/* 主题变量全部来自 assets/theme.css（html[data-theme]）；场景仍由 THEME2SCENE 映射 */
+const THEME=window.__THEME||document.documentElement.getAttribute('data-theme')||'sand';
 function pickScene(){
   try{
     const q=new URLSearchParams(location.search);
     if(q.get('scene') && SCENES[q.get('scene')]) return q.get('scene');
-    const th=q.get('theme')||localStorage.getItem('cs2at.theme')||(function(){var d=new Date(),tm=d.getHours()*60+d.getMinutes();return (tm>=1410||tm<460)?'forest':'sand';})();
-    if(th && THEME2SCENE[th]) return THEME2SCENE[th];
+    const s=THEME2SCENE[THEME];
+    if(s && SCENES[s]) return s;
     const sc=localStorage.getItem('cs2at.scene');
     if(sc && SCENES[sc]) return sc;
   }catch(e){}
   return 'classic';
 }
 const SC=SCENES[pickScene()]||SCENES.classic;
-const SITE_THEMES={
-  ink:{bg:'#f7f5f0',panel:'#fffefb',line:'#e2dccf',txt:'#202b2c',dim:'#6d7a7b',acc:'#0f766e'},
-  jade:{bg:'#101917',panel:'#16211f',line:'#2a3a36',txt:'#efeade',dim:'#93a8a1',acc:'#7fbfa6'},
-  lake:{bg:'#eef4f6',panel:'#ffffff',line:'#d2e2e7',txt:'#14313a',dim:'#587a85',acc:'#0e7490'},
-  light:{bg:'#f4f6f9',panel:'#ffffff',line:'#dde4ed',txt:'#1a2230',dim:'#5b6879',acc:'#2f6feb'},
-  sand:{bg:'#f7f2e8',panel:'#fffdf8',line:'#e3d9c6',txt:'#33291c',dim:'#7b6a54',acc:'#c2410c'},
-  forest:{bg:'#0f1a14',panel:'#16241b',line:'#2a4433',txt:'#e8f2ea',dim:'#8aa697',acc:'#4ade80'},
-  mono:{bg:'#15171b',panel:'#1c1f24',line:'#2e333b',txt:'#e8eaee',dim:'#98a0aa',acc:'#c9d1d9'},
-  cyber:{bg:'#120a1f',panel:'#1b1032',line:'#3a2166',txt:'#f1eaff',dim:'#a98fd6',acc:'#c084fc'},
-  night:{bg:'#0b0f14',panel:'#151b24',line:'#2a3442',txt:'#e6edf3',dim:'#8b949e',acc:'#58a6ff'}
-};
-(function(){
-  const th=(function(){ try{ var q=new URLSearchParams(location.search); return q.get('theme')||localStorage.getItem('cs2at.theme')||(function(){var d=new Date(),tm=d.getHours()*60+d.getMinutes();return (tm>=1410||tm<460)?'forest':'sand';})(); }catch(e){ return 'sand'; } })();
-  const t=SITE_THEMES[th]||SITE_THEMES.sand;
-  const dark=!(th==='ink'||th==='light'||th==='lake'||th==='sand');
-  const r=document.documentElement.style;
-  r.setProperty('--bg',t.bg); r.setProperty('--panel',t.panel); r.setProperty('--line',t.line);
-  r.setProperty('--txt',t.txt); r.setProperty('--dim',t.dim); r.setProperty('--acc',t.acc);
-  r.setProperty('--on-acc','#ffffff');
-  r.setProperty('--overlay',dark?'rgba(11,15,20,.96)':'rgba(238,244,246,.97)');
-})();
-
-/* --on-acc 自适应：按强调色亮度自动选黑/白，修「白字压亮绿 1.74:1」的老问题。
-   只改 --on-acc 这一个变量，不动 --acc 本身，也不动其它任何颜色。 */
-(function(){
-  function relLum(c){
-    var s=String(c||'').trim(), rgb=null;
-    if(s.charAt(0)==='#'){
-      s=s.slice(1);
-      if(s.length===3) s=s.charAt(0)+s.charAt(0)+s.charAt(1)+s.charAt(1)+s.charAt(2)+s.charAt(2);
-      if(/^[0-9a-fA-F]{6}$/.test(s)){ var n=parseInt(s,16); rgb=[(n>>16)&255,(n>>8)&255,n&255]; }
-    } else {
-      var m=/rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(s);
-      if(m) rgb=[+m[1],+m[2],+m[3]];
-    }
-    if(!rgb) return 0;
-    function f(v){ v/=255; return v<=0.03928? v/12.92 : Math.pow((v+0.055)/1.055,2.4); }
-    return 0.2126*f(rgb[0]) + 0.7152*f(rgb[1]) + 0.0722*f(rgb[2]);
-  }
-  var root=document.documentElement;
-  function apply(){
-    var acc=getComputedStyle(root).getPropertyValue('--acc').trim();
-    if(!acc) return;
-    var next=relLum(acc)>0.32 ? '#0b0f14' : '#ffffff';
-    if(root.style.getPropertyValue('--on-acc').trim()===next) return;   // 幂等：避免 MutationObserver 自激
-    root.style.setProperty('--on-acc', next);
-  }
-  apply();
-  try{ new MutationObserver(apply).observe(root,{attributes:true,attributeFilter:['class','data-theme','style']}); }catch(e){}
-  try{ addEventListener('load',apply); }catch(e){}
-})();
+function cssColor(name){ try{ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }catch(e){ return ''; } }
 
 /* ————— 基础 ————— */
 const cv=document.getElementById('c'), ctx=cv.getContext('2d');
@@ -283,7 +311,13 @@ function updSum(){
       ? Math.round(CM*10)/10+' cm/360 · sensitivity '+sensOf(CM).toFixed(2)+' · DPI '+DPI
       : Math.round(CM*10)/10+' cm/360 · 灵敏度 '+sensOf(CM).toFixed(2)+' · DPI '+DPI;
   }catch(e){}
-  document.getElementById('sum').textContent=s;
+  try{ document.getElementById('sum').textContent=s; }catch(e){}
+  try{
+    var a=document.getElementById('nCm'), b=document.getElementById('nSens'), c=document.getElementById('nDpi');
+    if(a) a.textContent=Math.round(CM*10)/10;
+    if(b) b.textContent=sensOf(CM).toFixed(2);
+    if(c) c.textContent=DPI;
+  }catch(e){}
 }
 dpiEl.addEventListener('input',function(){ DPI=parseFloat(dpiEl.value)||800; updSum(); });
 yawEl.addEventListener('input',function(){ YAW=parseFloat(yawEl.value)||0.022; updSum(); });
@@ -309,6 +343,7 @@ function setMode(m){
   if(modeHintEl) modeHintEl.innerHTML = mode==='step'
     ? L2('步进跟随：目标瞬移，间隔阶梯自适应（连 3 次到位缩 8%、失败加 8%），A/B 交错 4 块 × 10 秒，约 43 秒。','Step follow: targets teleport; adaptive interval staircase (3 hits → −8%, miss → +8%); A/B interleaved 4 × 10 s, ~43 s.')
     : L2('连续正弦：目标绕圆匀速运动，测跟踪误差 / 相位滞后 / 速度增益。','Continuous sine: target orbits at constant speed; measures tracking error / phase lag / speed gain.');
+  try{ var nm=document.getElementById('nMode'); if(nm) nm.textContent = mode==='step' ? L2('步进','Step') : L2('正弦','Sine'); }catch(e){}
   try{ updSum(); }catch(e){}
 }
 function pickMode(m){ if(running) return; setMode(m); }
@@ -338,22 +373,26 @@ try{
 /* 原始输入：只有 unadjustedMovement 这条路。失败时不自动重试——
    自动重试发生在 promise 回调里，已脱离用户手势，必然再失败。
    改为显示原因 + 两个按钮，点按钮才是新的用户手势。 */
+function paintLockWarn(){
+  var el=document.getElementById('rawWarn');
+  if(!el) return;
+  var reason=window.__lockReason||'';
+  el.style.display='';
+  var EN = !!window.__IS_EN;
+  el.innerHTML=(EN?'⚠️ Raw input lock failed ('+reason+') — system acceleration distorts the numbers.'
+                  :'⚠️ 原始输入锁定失败（'+reason+'）——系统加速会让增益类数字失真。')
+    +'<span style="display:inline-flex;gap:8px;margin-left:10px;vertical-align:middle">'
+    +'<button id="lockRetry" class="wb">'+(EN?'Retry':'重试')+'</button>'
+    +'<button id="lockPlain" class="wb">'+(EN?'Continue accelerated':'用加速输入继续')+'</button></span>'
+    +'<div style="margin-top:6px;font-size:12px;opacity:.85">'+(EN?'Fix: turn off Windows “Enhance pointer precision” · avoid remote desktop / editor previews · open directly in Chrome / Edge':'修法：关掉 Windows「提高指针精确度」 · 别在远程桌面 / 编辑器预览里跑 · 用 Chrome / Edge 直接打开')+'</div>';
+  var a=document.getElementById('lockRetry'), b=document.getElementById('lockPlain');
+  if(a) a.onclick=function(ev){ ev.stopPropagation(); doLock(); };
+  if(b) b.onclick=function(ev){ ev.stopPropagation(); plainLock(); };
+}
 function lockWarn(reason){
   rawLockFailed=true;
-  var el=document.getElementById('rawWarn');
-  if(el){
-    el.style.display='';
-    var EN = !!window.__IS_EN;
-    el.innerHTML=(EN?'⚠️ Raw input lock failed ('+reason+') — system acceleration distorts the numbers.'
-                    :'⚠️ 原始输入锁定失败（'+reason+'）——系统加速会让增益类数字失真。')
-      +'<span style="display:inline-flex;gap:8px;margin-left:10px;vertical-align:middle">'
-      +'<button id="lockRetry" class="wb">'+(EN?'Retry':'重试')+'</button>'
-      +'<button id="lockPlain" class="wb">'+(EN?'Continue accelerated':'用加速输入继续')+'</button></span>'
-      +'<div style="margin-top:6px;font-size:12px;opacity:.85">'+(EN?'Fix: turn off Windows “Enhance pointer precision” · avoid remote desktop / editor previews · open directly in Chrome / Edge':'修法：关掉 Windows「提高指针精确度」 · 别在远程桌面 / 编辑器预览里跑 · 用 Chrome / Edge 直接打开')+'</div>';
-    var a=document.getElementById('lockRetry'), b=document.getElementById('lockPlain');
-    if(a) a.onclick=function(ev){ ev.stopPropagation(); doLock(); };
-    if(b) b.onclick=function(ev){ ev.stopPropagation(); plainLock(); };
-  }
+  window.__lockReason=reason||'unsupported';
+  paintLockWarn();
   if(running && !paused) pause();
 }
 function plainLock(){
@@ -598,7 +637,7 @@ function drawTargetBall(yawT,pitchT){
   ctx.fillStyle=SC.tgt; ctx.fill();
 }
 function drawCrosshair(){
-  ctx.strokeStyle=SC.cross||'#fff'; ctx.lineWidth=2;
+  ctx.strokeStyle=cssColor('--txt')||SC.cross; ctx.lineWidth=2;
   const cxp=W/2, cyp=H/2;
   ctx.beginPath(); ctx.moveTo(cxp-12,cyp); ctx.lineTo(cxp+12,cyp); ctx.moveTo(cxp,cyp-12); ctx.lineTo(cxp,cyp+12); ctx.stroke();
 }
@@ -675,8 +714,9 @@ function saveProbeRuns(list){
 }
 function _probeColors(){
   const cs=getComputedStyle(document.documentElement);
-  const v=function(n,f){ const x=cs.getPropertyValue(n).trim(); return x||f; };
-  return {dim:v('--dim','#8aa697'), line:v('--line','#2a4433'), txt:v('--txt','#e8f2ea'), acc:v('--acc','#4ade80'), bg:v('--bg','#0f1a14')};
+  const v=function(n){ return cs.getPropertyValue(n).trim(); };
+  const txt=v('--txt');
+  return {dim:v('--dim'), line:v('--line'), txt:txt, acc:v('--acc'), bg:v('--bg')};
 }
 function probeTrendStats(runs){
   const last=runs.slice(-10);
@@ -833,47 +873,49 @@ function finishProbe(){
       probeRuns=loadProbeRuns();
     }
   }catch(e){ probeRuns=[]; }
-  const row=function(k,v,cls){ return '<tr><th>'+k+'</th><td'+(cls?' class="'+cls+'"':'')+'>'+v+'</td></tr>'; };
-  const fmt=function(v,digits,suffix){ return isFinite(v)? v.toFixed(digits)+suffix : '—'; };
-  let dirText;
-  if(dirKey==='high') dirText=L2('过冲随灵敏度上升（B×1.15 的过冲高于 A）→ 当前灵敏度偏高；建议把 cm/360 调大约 10–15% 后复测。','Overshoot rises with sensitivity (B×1.15 > A) → current sensitivity is too high; raise cm/360 by ~10–15% and retest.');
-  else if(dirKey==='low') dirText=L2('灵敏度上升反而降低过冲（B×1.15 的过冲低于 A）→ 当前灵敏度偏低；建议把 cm/360 调小约 10–15% 后复测。','Overshoot falls as sensitivity rises (B×1.15 < A) → current sensitivity is too low; lower cm/360 by ~10–15% and retest.');
-  else if(dirKey==='match') dirText=L2('A/B 过冲差异小于 5% → 灵敏度方向接近匹配，或本局噪声偏大。','A/B overshoot difference is below 5% → direction looks matched, or this run was noisy.');
-  else dirText=L2('有效样本不足（A/B 各需 ≥3 次）→ 方向无法判断，再测一轮。','Not enough samples (need ≥3 per block) → direction undetermined; run again.');
-  let body='<div style="font-size:17px;color:var(--acc);margin-bottom:4px">'+L2('步进跟随 · 结果','Step follow · Result')+'</div>';
-  if(!n){
-    body+='<div style="margin-top:8px;font-size:14px">'+L2('没有采集到有效步进。','No valid step trials captured.')+'</div>';
-  } else {
-    body+=(rawLockFailed?'<div style="margin-top:6px;font-size:13.5px;color:#f85149">'+L2('⚠️ 本次输入未校准（原始输入锁定失败），数值仅供参考。','⚠️ Raw input lock failed — numbers are indicative only.')+'</div>':'')+
-      '<table class="rt">'+
-      row(L2('到位用时','Time to arrive'), isFinite(result.arrAvg)? Math.round(result.arrAvg)+' ms' : '—', 'big')+
-      row(L2('过冲比','Overshoot ratio'), fmt(result.ovAvg*100,1,'%'))+
-      row(L2('抖动次数','Jitter count'), fmt(result.jitAvg,1,' '+L2('次','times')))+
-      row(L2('成功率','Success rate'), Math.round(result.succAll*100)+'%')+
-      row(L2('自适应间隔','Adaptive interval'), result.interval+' ms')+
-      row(L2('步进次数','Step trials'), n+L2(' 次',' trials'))+
-      '</table>'+
-      '<table class="rt" style="margin-top:8px">'+
-      row(L2('A = 当前灵敏度','A = current sensitivity'), L2('过冲 ','overshoot ')+fmt(ovA*100,1,'%')+' · '+L2('到位 ','arrive ')+fmt(avgArr(A),0,' ms')+' · '+L2('成功 ','hit ')+Math.round((A.n?A.succ/A.n:0)*100)+'%')+
-      row(L2('B = 灵敏度 ×1.15','B = sensitivity ×1.15'), L2('过冲 ','overshoot ')+fmt(ovB*100,1,'%')+' · '+L2('到位 ','arrive ')+fmt(avgArr(B),0,' ms')+' · '+L2('成功 ','hit ')+Math.round((B.n?B.succ/B.n:0)*100)+'%')+
-      '</table>'+
-      '<div style="margin-top:12px;font-size:14px;line-height:22px;color:var(--txt)">'+L2('方向判断：','Direction: ')+dirText+'</div>'+
-      diagLineHtml();
-  }
-  if(isFinite(dOv)){
-    body+='<div style="margin-top:24px">'+
-      '<canvas id="probeTrend" width="360" height="100" style="display:block;width:360px;height:100px;margin:0"></canvas>'+
-      '<div id="probeTrendStat" style="display:block;margin-top:14px;font-size:12.5px;line-height:18px;color:var(--dim)"></div>'+
-      '<div style="margin-top:12px;display:flex;align-items:center;gap:16px;flex-wrap:wrap">'+
-        '<button id="probeTrendSave" type="button" class="btn ghost btn-sm" style="margin:0">'+L2('存图','Save image')+'</button>'+
-        '<span style="font-size:12px;line-height:18px;color:var(--dim)">'+L2('注意：未完全排除适应效应，仅供方向参考。','Note: adaptation effects are not fully ruled out — directional reference only.')+'</span>'+
-      '</div>'+
-      '</div>';
-  }
-
-  resBody.innerHTML=body;
-  if(document.getElementById('probeTrend')) renderProbeTrend(probeRuns);
-  res.classList.add('show');
+  result.__render=function(){
+    const row=function(k,v,cls){ return '<tr><th>'+k+'</th><td'+(cls?' class="'+cls+'"':'')+'>'+v+'</td></tr>'; };
+    const fmt=function(v,digits,suffix){ return isFinite(v)? v.toFixed(digits)+suffix : '—'; };
+    let dirText;
+    if(result.dirKey==='high') dirText=L2('过冲随灵敏度上升（B×1.15 的过冲高于 A）→ 当前灵敏度偏高；建议把 cm/360 调大约 10–15% 后复测。','Overshoot rises with sensitivity (B×1.15 > A) → current sensitivity is too high; raise cm/360 by ~10–15% and retest.');
+    else if(result.dirKey==='low') dirText=L2('灵敏度上升反而降低过冲（B×1.15 的过冲低于 A）→ 当前灵敏度偏低；建议把 cm/360 调小约 10–15% 后复测。','Overshoot falls as sensitivity rises (B×1.15 < A) → current sensitivity is too low; lower cm/360 by ~10–15% and retest.');
+    else if(result.dirKey==='match') dirText=L2('A/B 过冲差异小于 5% → 灵敏度方向接近匹配，或本局噪声偏大。','A/B overshoot difference is below 5% → direction looks matched, or this run was noisy.');
+    else dirText=L2('有效样本不足（A/B 各需 ≥3 次）→ 方向无法判断，再测一轮。','Not enough samples (need ≥3 per block) → direction undetermined; run again.');
+    let body='';
+    if(!result.n){
+      body+='<div style="margin-top:8px;font-size:14px">'+L2('没有采集到有效步进。','No valid step trials captured.')+'</div>';
+    } else {
+      body+=(result.raw?'<div style="margin-top:6px;font-size:13.5px;color:var(--gold)">'+L2('⚠️ 本次输入未校准（原始输入锁定失败），数值仅供参考。','⚠️ Raw input lock failed — numbers are indicative only.')+'</div>':'')+
+        '<table class="rt">'+
+        row(L2('到位用时','Time to arrive'), isFinite(result.arrAvg)? Math.round(result.arrAvg)+' ms' : '—', isFinite(result.arrAvg)?'big':'')+
+        row(L2('过冲比','Overshoot ratio'), fmt(result.ovAvg*100,1,'%'))+
+        row(L2('抖动次数','Jitter count'), fmt(result.jitAvg,1,' '+L2('次','times')))+
+        row(L2('成功率','Success rate'), Math.round(result.succAll*100)+'%')+
+        row(L2('自适应间隔','Adaptive interval'), result.interval+' ms')+
+        row(L2('步进次数','Step trials'), result.n+L2(' 次',' trials'))+
+        '</table>'+
+        '<table class="rt" style="margin-top:8px">'+
+        row(L2('A = 当前灵敏度','A = current sensitivity'), L2('过冲 ','overshoot ')+fmt(result.ovA*100,1,'%')+' · '+L2('到位 ','arrive ')+fmt(avgArr(A),0,' ms')+' · '+L2('成功 ','hit ')+Math.round((A.n?A.succ/A.n:0)*100)+'%')+
+        row(L2('B = 灵敏度 ×1.15','B = sensitivity ×1.15'), L2('过冲 ','overshoot ')+fmt(result.ovB*100,1,'%')+' · '+L2('到位 ','arrive ')+fmt(avgArr(B),0,' ms')+' · '+L2('成功 ','hit ')+Math.round((B.n?B.succ/B.n:0)*100)+'%')+
+        '</table>'+
+        '<div style="margin-top:12px;font-size:14px;line-height:22px;color:var(--txt)">'+L2('方向判断：','Direction: ')+dirText+'</div>'+
+        diagLineHtml();
+    }
+    if(isFinite(result.dOv)){
+      body+='<div class="trend-box">'+
+        '<canvas id="probeTrend" width="360" height="100" style="display:block;width:360px;height:100px;margin:0"></canvas>'+
+        '<div id="probeTrendStat"></div>'+
+        '<div class="trend-actions">'+
+          '<button id="probeTrendSave" type="button" class="btn ghost btn-sm" style="margin:0">'+L2('存图','Save image')+'</button>'+
+          '<span class="trend-note">'+L2('注意：未完全排除适应效应，仅供方向参考。','Note: adaptation effects are not fully ruled out — directional reference only.')+'</span>'+
+        '</div>'+
+        '</div>';
+    }
+    resBody.innerHTML=body;
+    if(document.getElementById('probeTrend')) renderProbeTrend(probeRuns);
+    res.classList.add('show');
+  };
+  result.__render();
 }
 
 let idleLast=0;
@@ -912,7 +954,7 @@ function loop(now){
     ctx.beginPath(); ctx.arc(p.sx,p.sy,rad*0.25,0,Math.PI*2);
     ctx.fillStyle=SC.tgt; ctx.fill();
   }
-  ctx.strokeStyle=SC.cross||'#fff'; ctx.lineWidth=2;
+  ctx.strokeStyle=cssColor('--txt')||SC.cross; ctx.lineWidth=2;
   const cxp=W/2, cyp=H/2;
   ctx.beginPath(); ctx.moveTo(cxp-12,cyp); ctx.lineTo(cxp+12,cyp); ctx.moveTo(cxp,cyp-12); ctx.lineTo(cxp,cyp+12); ctx.stroke();
 
@@ -976,42 +1018,47 @@ function finish(){
   const rms=Math.sqrt(es/Math.max(1,ec));
   const lag=Math.max(0, Math.round(lagMs));
   result={ok:ok, gain:gain, ci:ci, nlaps:nlaps, rms:rms, lag:lag, n:c, frames:n, raw:rawLockFailed};
-  // 与上一轮对比
-  let prevTxt='';
+  // 与上一轮对比：差值存进 result，渲染时再按当前语言生成文案（切语言不丢）
+  let prevDiff=null;
   try{
     const prev=JSON.parse(localStorage.getItem('cs2at.track')||'null');
-    if(prev && isFinite(prev.rms) && isFinite(prev.lag)){
-      const dr=rms-prev.rms, dl=lag-prev.lag;
+    if(prev && isFinite(prev.rms) && isFinite(prev.lag)) prevDiff={dr:rms-prev.rms, dl:lag-prev.lag};
+    localStorage.setItem('cs2at.track', JSON.stringify({rms:rms, lag:lag, gain:gain}));
+  }catch(e){}
+  result.prevDiff=prevDiff;
+  result.minSec=minSec;
+  result.__render=function(){
+    const row=(k,v,cls)=>'<tr><th>'+k+'</th><td'+(cls?' class="'+cls+'"':'')+'>'+v+'</td></tr>';
+    let prevTxt='';
+    if(result.prevDiff){
+      const dr=result.prevDiff.dr, dl=result.prevDiff.dl;
       prevTxt='<div style="margin-top:8px;font-size:13px;color:var(--dim)">'+
         L2('对比上一轮：RMS '+(dr>=0?'▲ +':'▼ ')+dr.toFixed(2)+'° · 滞后 '+(dl>=0?'▲ +':'▼ ')+dl+' ms',
            'vs last run: RMS '+(dr>=0?'▲ +':'▼ ')+dr.toFixed(2)+'° · lag '+(dl>=0?'▲ +':'▼ ')+dl+' ms')+'</div>';
     }
-    localStorage.setItem('cs2at.track', JSON.stringify({rms:rms, lag:lag, gain:gain}));
-  }catch(e){}
-  const row=(k,v,cls)=>'<tr><th>'+k+'</th><td'+(cls?' class="'+cls+'"':'')+'>'+v+'</td></tr>';
-  let body;
-  if(!ok){
-    body='<div style="font-size:17px;color:var(--acc);margin-bottom:4px">'+L2('结果','Result')+'</div>'+
-      '<div style="margin-top:8px;font-size:14px">'+L2('有效样本太少（'+c+' 帧 / '+nlaps+' 圈，至少 6 圈 ≈ '+minSec+' 秒）——跟住目标，再测一轮。','Too few valid samples ('+c+' frames / '+nlaps+' laps, need ≥6 laps ≈ '+minSec+' s) — stay on target and run again.')+'</div>';
-  } else {
-    const gTxt=(gain>=1?'+':'')+((gain-1)*100).toFixed(1)+'%';
-    const ciTxt=isFinite(ci)? (ci*100).toFixed(2)+'%' : '—';
-    body='<div style="font-size:17px;color:var(--acc);margin-bottom:4px">'+L2('结果','Result')+'</div>'+
-    (rawLockFailed
-      ? '<div style="margin-top:6px;font-size:13.5px;color:#f85149">'+L2('⚠️ 本次输入未校准（原始输入锁定失败），增益数值不可比，仅 RMS / 滞后可参考。','⚠️ Raw input lock failed — the gain number is not comparable; only RMS / lag are meaningful.')+'</div>'
-      : '')+
-    '<table class="rt">'+
-    row(L2('跟踪误差 RMS','Tracking error RMS'), rms.toFixed(2)+'°', 'big')+
-    row(L2('相位滞后','Phase lag'), lag+' ms')+
-    (rawLockFailed? '' : row(L2('速度增益','Speed gain'), gain.toFixed(3)+'（'+gTxt+'）· '+L2('误差 ±','error ±')+ciTxt))+
-    row(L2('样本','Samples'), c+L2(' 帧 · ',' frames · ')+nlaps+L2(' 圈',' laps'))+
-    '</table>'+
-    (prevTxt||'');
-  }
-  body+=diagLineHtml();
-  body+='<div style="margin-top:10px;font-size:13.5px;color:var(--dim)">'+L2('跟枪 ≠ 灵敏度标定：这里测跟枪手感；找灵敏度请用「灵敏度标定」。','Tracking ≠ sensitivity calibration: this measures tracking feel; use Sensitivity calibration to find your sensitivity.')+'</div>';
-  resBody.innerHTML=body;
-  res.classList.add('show');
+    let body;
+    if(!result.ok){
+      body='<div style="margin-top:8px;font-size:14px">'+L2('有效样本太少（'+result.n+' 帧 / '+result.nlaps+' 圈，至少 6 圈 ≈ '+result.minSec+' 秒）——跟住目标，再测一轮。','Too few valid samples ('+result.n+' frames / '+result.nlaps+' laps, need ≥6 laps ≈ '+result.minSec+' s) — stay on target and run again.')+'</div>';
+    } else {
+      const gTxt=(result.gain>=1?'+':'')+((result.gain-1)*100).toFixed(1)+'%';
+      const ciTxt=isFinite(result.ci)? (result.ci*100).toFixed(2)+'%' : '—';
+      body=(result.raw
+        ? '<div style="margin-top:6px;font-size:13.5px;color:var(--gold)">'+L2('⚠️ 本次输入未校准（原始输入锁定失败），增益数值不可比，仅 RMS / 滞后可参考。','⚠️ Raw input lock failed — the gain number is not comparable; only RMS / lag are meaningful.')+'</div>'
+        : '')+
+      '<table class="rt">'+
+      row(L2('跟踪误差 RMS','Tracking error RMS'), result.rms.toFixed(2)+'°', 'big')+
+      row(L2('相位滞后','Phase lag'), result.lag+' ms')+
+      (result.raw? '' : row(L2('速度增益','Speed gain'), result.gain.toFixed(3)+'（'+gTxt+'）· '+L2('误差 ±','error ±')+ciTxt))+
+      row(L2('样本','Samples'), result.n+L2(' 帧 · ',' frames · ')+result.nlaps+L2(' 圈',' laps'))+
+      '</table>'+
+      (prevTxt||'');
+    }
+    body+=diagLineHtml();
+    body+='<div style="margin-top:10px;font-size:13.5px;color:var(--dim)">'+L2('跟枪 ≠ 灵敏度标定：这里测跟枪手感；找灵敏度请用「灵敏度标定」。','Tracking ≠ sensitivity calibration: this measures tracking feel; use Sensitivity calibration to find your sensitivity.')+'</div>';
+    resBody.innerHTML=body;
+    res.classList.add('show');
+  };
+  result.__render();
 }
 
 /* ————— 控制 ————— */
@@ -1035,6 +1082,25 @@ document.getElementById('copyRes').addEventListener('click',function(e){
     navigator.clipboard.writeText(t).then(function(){ if(h) h.textContent=(window.__IS_EN?'Copied ✓ ':'已复制 ✓ ')+t; });
   } else { try{ prompt('复制：',t); }catch(err){} }
 });
+/* ————— 运行时语言切换后的动态区域刷新 ————— */
+function refreshHudText(){
+  if(!running){ try{ ui.textContent=''; }catch(e){} return; }
+  if(paused){ ui.innerHTML=L2('已暂停 · 点击继续','Paused · click to resume'); }
+}
+function refreshI18n(){
+  try{ updSum(); }catch(e){}
+  try{ var fb=document.getElementById('fsBtn'); if(fb) fb.textContent=L2('全屏 ⛶','Fullscreen ⛶'); }catch(e){}
+  try{ setMode(mode); }catch(e){}
+  try{
+    var bw=document.getElementById('bw');
+    if(bw) bw.textContent=('onpointerrawupdate' in window)?'':L2('当前浏览器不支持 pointerrawupdate，采样精度降低，建议 Chrome / Edge。','No pointerrawupdate in this browser — sampling is coarser; use Chrome / Edge.');
+  }catch(e){}
+  try{ if(window.__lockReason) paintLockWarn(); }catch(e){}
+  try{ if(paused) go.textContent=L2('继续','Resume'); }catch(e){}
+  try{ refreshHudText(); }catch(e){}
+  try{ if(res.classList.contains('show') && result && typeof result.__render==='function') result.__render(); }catch(e){}
+  try{ var ch=document.getElementById('copyHint'); if(ch) ch.textContent=''; }catch(e){}
+}
 addEventListener('keydown',function(e){
   if(e.key==='Escape'){
     if(running && !paused){ pause(); }
@@ -1042,25 +1108,8 @@ addEventListener('keydown',function(e){
   }
 });
 
-/* ————— i18n ————— */
+/* ————— i18n（运行时切换 + 雨滴涟漪） ————— */
 (function(){
-  var EN=(function(){ try{
-    var q=new URLSearchParams(location.search);
-    if(q.get('lang')) return q.get('lang')==='en';
-    var s=localStorage.getItem('cs2at.lang');
-    if(s) return s==='en';
-    var n=(navigator.language||'en').toLowerCase();
-    return n.indexOf('zh')!==0;
-  }catch(e){ return true; } })();
-  window.__IS_EN=EN;
-  try{ var __fb=document.getElementById('fsBtn'); if(__fb) __fb.textContent = EN ? 'Fullscreen ⛶' : '全屏 ⛶'; }catch(e){}
-  try{ if(EN) document.title="Tracking test · Vernier"; }catch(e){}   // 英文模式下标题也要跟着走
-  try{ document.documentElement.setAttribute('lang', EN?'en':'zh-CN'); }catch(e){}
-  if(!EN) return;
-  try{
-    var rw=document.getElementById('rawWarn');
-    if(rw) rw.textContent='⚠️ Raw input lock failed: this run is system-accelerated — metrics are not comparable.';
-  }catch(e){}
   var D={
     '跟枪测试':'Tracking test',
     '目标走圆，准星压在目标上':'Keep your crosshair on the circling target',
@@ -1077,7 +1126,17 @@ addEventListener('keydown',function(e){
     '结果':'Result',
     '跟踪误差 RMS':'Tracking error RMS','相位滞后':'Phase lag','速度增益':'Speed gain','误差 ±':'error ±','样本':'Samples',
     '帧 · ':' frames · ','圈':' laps',
-    '再测一轮':'Run again','复制结果':'Copy result'
+    '再测一轮':'Run again','复制结果':'Copy result',
+    '跟枪 · TRACKING':'TRACKING',
+    'MODE · 测什么':'MODE',
+    'PARAMETERS · 参数':'PARAMETERS',
+    'RESULT · 结果':'RESULT',
+    '灵敏度':'Sensitivity',
+    '模式':'Mode',
+    '全屏 ⛶':'Fullscreen ⛶',
+    '步进跟随 · 结果':'Step follow · Result',
+    '参数摘要':'Parameter summary',
+    '⚠️ 原始输入锁定失败：本次测量经过系统加速，误差指标不可比。':'⚠️ Raw input lock failed: this run is system-accelerated — metrics are not comparable.'
   };
   var RULES=[
     [/^有效样本太少（(\d+) 帧 \/ (\d+) 圈，至少 6 圈 ≈ (\d+) 秒）——跟住目标，再测一轮。$/,'Too few valid samples ($1 frames / $2 laps, need ≥6 laps ≈ $3 s) — stay on target and run again.']
@@ -1090,26 +1149,13 @@ addEventListener('keydown',function(e){
     for(var i=0;i<RULES.length;i++){ var r=RULES[i]; if(r[0].test(s)) return s.replace(r[0],r[1]); }
     return s;
   }
-  function walk(node){
-    if(!node) return;
-    var kids=node.childNodes;
-    for(var i=0;i<kids.length;i++){
-      var k=kids[i];
-      if(k.nodeType===3){ var v=k.nodeValue; if(v&&v.trim()) k.nodeValue=tr(v); }
-      else if(k.nodeType===1 && k.tagName!=='SCRIPT' && k.tagName!=='STYLE') walk(k);
-    }
-  }
-  walk(document.body);
-  try{ document.title='Tracking test · Vernier'; }catch(e){}
-  try{
-    ['placeholder','title','aria-label'].forEach(function(a){
-      document.querySelectorAll('['+a+']').forEach(function(el){
-        el.setAttribute(a, tr(el.getAttribute(a)||''));
-      });
-    });
-  }catch(e){}
-  try{ updSum(); }catch(e){}
+  window.VernierI18n.init({
+    tr: tr,
+    titleEn: 'Tracking test · Vernier',
+    refresh: function(){ try{ refreshI18n(); }catch(e){} }
+  });
 })();
 </script>
+<div class="vn-dither"></div>
 </body>
 </html>

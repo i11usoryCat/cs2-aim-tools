@@ -11,6 +11,16 @@
 <link rel="alternate" hreflang="x-default" href="https://i11usorycat.github.io/cs2-aim-tools/">
 <meta property="og:title" content="Vernier — 方法论">
 <meta property="og:url" content="https://i11usorycat.github.io/cs2-aim-tools/methodology.html">
+<link rel="stylesheet" href="assets/theme.css">
+<script>/* 主题：assets/theme.css 是唯一来源（与全站同一套 9 主题） */
+(function(){
+  var OK={sand:1,ink:1,lake:1,light:1,jade:1,forest:1,mono:1,night:1,cyber:1};
+  var t=null;
+  try{ t=new URLSearchParams(location.search).get('theme'); }catch(e){}
+  if(!t){ try{ t=localStorage.getItem('cs2at.theme'); }catch(e){} }
+  if(!OK[t]){ try{ var d=new Date(), m=d.getHours()*60+d.getMinutes(); t=(m>=1410||m<460)?'forest':'sand'; }catch(e){ t='sand'; } }
+  try{ document.documentElement.setAttribute('data-theme',t); }catch(e){}
+})();</script>
 <link rel="stylesheet" href="assets/type.css">
 <style>
   /* 编辑体：纸面 + 衬线标题 + 无衬线正文。色与尺度全部取 assets/type.css 的变量。 */
@@ -25,8 +35,8 @@
   /* 纸感：两层极淡径向光 + 噪点，和 Hub 同一套 */
   body::before{ content:""; position:fixed; inset:0; pointer-events:none; z-index:0;
     background:
-      radial-gradient(1100px 680px at 16% -12%, rgba(194,65,12,.075), transparent 62%),
-      radial-gradient(880px 560px at 94% 4%, rgba(84,108,142,.075), transparent 64%); }
+      radial-gradient(1100px 680px at 16% -12%, color-mix(in srgb, var(--acc-paper) 8%, transparent), transparent 62%),
+      radial-gradient(880px 560px at 94% 4%, color-mix(in srgb, var(--ink) 4%, transparent), transparent 64%); }
   .page{ position:relative; z-index:1; max-width:820px; margin:0 auto; padding:64px 32px 120px; }
 
   /* 顶部：返回 + 语言切换，按注脚级排 */
@@ -36,14 +46,22 @@
     text-transform:uppercase; color:var(--ink-2); text-decoration:none; }
   .topbar .back:hover{ color:var(--acc-paper); }
   .langsw{ display:inline-flex; gap:0; align-items:baseline; }
-  .langsw button{ appearance:none; background:none; border:0; padding:4px 10px; cursor:pointer;
-    font-family:var(--f-ui); font-size:11px; letter-spacing:.2em; text-transform:uppercase;
+  /* 语言开关：与工具页 #langSw 同一形制（10.5px / .18em / 无框 / 选中 1px 线） */
+  .langsw button{ appearance:none; background:none; border:0; padding:4px 6px; cursor:pointer;
+    font-family:var(--f-ui); font-size:10.5px; letter-spacing:.18em; text-transform:uppercase;
     color:var(--ink-2); border-bottom:1px solid transparent; }
   .langsw button:hover{ color:var(--ink); }
   .langsw button.on{ color:var(--acc-paper); border-bottom-color:var(--acc-paper); }
 
+  /* 页头眉标：与工具页 .ov-eyebrow 同一形制 */
+  .eyebrow{ display:flex; align-items:center; gap:14px; margin:0 0 16px;
+    font-family:var(--f-ui); font-size:10.5px; letter-spacing:.24em; text-transform:uppercase;
+    color:var(--ink-2); font-weight:500; }
+  .eyebrow .num{ color:var(--acc-text, var(--acc-paper)); font-weight:700; font-size:10.5px; letter-spacing:.18em; line-height:1; }
+  .eyebrow .num + span::before{ content:"— " }
+
   /* 标题层级 */
-  h1{ font-family:var(--f-display); font-weight:900; font-size:clamp(44px,5vw,64px);
+  h1{ font-family:var(--f-display); font-weight:900; font-size:clamp(44px,5.2vw,76px);
     line-height:1.02; letter-spacing:-.02em; margin:0 0 28px; }
   article > h1 + p{ font-size:17px; line-height:1.8; color:var(--ink); max-width:60ch; margin-bottom:8px; }
   h2{ font-family:var(--f-display); font-weight:700; font-size:var(--fs-h2); line-height:1.3;
@@ -69,8 +87,8 @@
   ol.lead > li::before{
     content:counter(lead,decimal-leading-zero);
     position:absolute; left:0; top:8px;
-    font-family:var(--f-ui); font-weight:700; font-size:11px; letter-spacing:.22em;
-    color:var(--acc-paper);
+    font-family:var(--f-ui); font-weight:700; font-size:10.5px; letter-spacing:.18em;
+    color:var(--acc-text, var(--acc-paper));
   }
   ol.lead > li > strong{ display:block; font-family:var(--f-display); font-weight:700;
     font-size:23px; line-height:1.36; letter-spacing:-.005em; margin-bottom:6px; }
@@ -113,6 +131,7 @@
   </nav>
 </div>
 <article data-lang="zh" lang="zh-CN">
+<div class="eyebrow"><span class="num">01</span><span>方法论 · METHODOLOGY</span></div>
 <h1>方法论</h1>
 
 <p>这份文档记录：每个测量是怎么设计的、支撑它的证据是什么、以及哪些做法被否掉了。每条结论后面都附了可验证的方式——实测数字，或者文献名。</p>
@@ -445,6 +464,7 @@ const z = D * Math.cos(pitch) * Math.cos(yaw);</code></pre>
 </div>
 </article>
 <article data-lang="en" lang="en">
+<div class="eyebrow"><span class="num">01</span><span>METHODOLOGY</span></div>
 <h1>Methodology</h1>
 
 <p>This document records how each measurement was designed, what evidence backs it, and which approaches were rejected. Every claim carries a way to check it — a measured number, or a citation.</p>
@@ -860,7 +880,7 @@ memory buffering     -&gt; measured 4207 Hz
     try{
       var q=new URLSearchParams(location.search).get("lang");
       if(q==="zh"||q==="en") return q;
-      var s=localStorage.getItem("vernier.lang");
+      var s=localStorage.getItem("cs2at.lang")||localStorage.getItem("vernier.lang");
       if(s==="zh"||s==="en") return s;
     }catch(e){}
     // 不再用浏览器语言兜底：文件本身决定默认语言（zh 页默认中文，en 页默认英文），
@@ -878,7 +898,7 @@ memory buffering     -&gt; measured 4207 Hz
       btns[j].classList.toggle("on", on);
       if(on) btns[j].setAttribute("aria-current","page"); else btns[j].removeAttribute("aria-current");
     }
-    try{ localStorage.setItem("vernier.lang", lang); }catch(e){}
+    try{ localStorage.setItem("cs2at.lang", lang); localStorage.setItem("vernier.lang", lang); }catch(e){}
     if(syncUrl!==false){
       try{ var u=new URL(location.href); u.searchParams.set("lang", lang); history.replaceState(null,"",u); }catch(e){}
     }

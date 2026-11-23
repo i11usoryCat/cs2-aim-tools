@@ -1,11 +1,13 @@
-/* 语言切换：雨滴涟漪过渡（全站唯一允许「等」的地方）
-   用法： LangRipple.run({x,y}, function(){ 换成新语言 })
-   - 圆心 = 点击位置；主波 620ms ease-out，4 圈（主波 + 3 圈拖尾）
-   - 期间拦截点击；reduced-motion 380ms / 3 圈（不跳过，保留「有反应」的反馈）
+/* 语言切换：**边擦除边翻译**（原汁原味的「雨滴波纹揭示」）
+   核心技术：View Transitions API —— 浏览器自己把「旧页面」和「新页面」各拍一张快照，
+   我们用 clip-path 圆形把新快照从点击点揭开，于是文字是一边被擦掉一边变成新语言的。
+   不克隆 DOM、不重排，所以不会出现旧方案的重影/错行。
+   不支持 View Transitions 时退回「细环涟漪 + 原位切换」。
 */
 (function () {
   var REDUCE = false;
   try { REDUCE = matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
+  var CSS_DONE = false;
 
   function cssVar(name, fb) {
     try {
@@ -14,83 +16,105 @@
     } catch (e) { return fb; }
   }
 
-  function run(point, swap) {
-    // 减少动效模式：不跳过动画，而是缩短到 380ms / 3 圈——语言切换是用户主动操作，
-    // 完全无动画会让人以为「没反应」。
-    var DUR = REDUCE ? 560 : 880;
-    var N = REDUCE ? 3 : 4;
-    var x = point && isFinite(point.x) ? point.x : innerWidth / 2;
-    var y = point && isFinite(point.y) ? point.y : innerHeight / 2;
-    var rMax = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y)) * 1.05;
-    var acc = cssVar('--acc', cssVar('--acc-paper', '#c2410c'));
-    var line = cssVar('--rule', cssVar('--rule-d', 'rgba(0,0,0,.2)'));
-    var dark = document.documentElement.getAttribute('data-theme');
-    var isDark = dark && /night|forest|jade|ink|mono|cyber|dark/.test(dark);
-    var bg = isDark ? cssVar('--dark', '#0b0f14') : cssVar('--paper', '#f4efe4');
+  function injectBaseCss() {
+    if (CSS_DONE) return; CSS_DONE = true;
+    var st = document.createElement('style');
+    st.setAttribute('data-lang-vt', '');
+    st.textContent = [
+      /* 关掉默认交叉淡入，改由我们用圆形 clip 揭示 */
+      '::view-transition-old(root){ animation:none !important; mix-blend-mode:normal; }',
+      '::view-transition-new(root){ animation:none !important; mix-blend-mode:normal; }',
+      '::view-transition-group(root){ animation:none !important; }',
+      /* 揭开的那一瞬间不要有背景闪白 */
+      '::view-transition-image-pair(root){ isolation:auto; }'
+    ].join('');
+    document.head.appendChild(st);
+  }
 
+  /* 波前细环：只是装饰，跟着圆形半径走 */
+  function edgeRings(x, y, rMax, dur, acc, line) {
     var host = document.createElement('div');
     host.setAttribute('data-lang-ripple', '');
-    host.style.cssText = 'position:fixed;inset:0;z-index:99999;pointer-events:auto;overflow:hidden;';
-
-    // 波纹环（主波 + 3 圈拖尾）
+    host.style.cssText = 'position:fixed;inset:0;z-index:99999;pointer-events:none;overflow:hidden;';
     var rings = [];
-    for (var i = 0; i < N; i++) {
+    for (var i = 0; i < 3; i++) {
       var el = document.createElement('div');
-      var isMain = i === 0;
-      el.style.cssText = 'position:absolute;left:0;top:0;border-radius:50%;' +
-        'border:' + (isMain ? 1.2 : 1) + 'px solid ' + (isMain ? acc : line) + ';' +
-        'opacity:' + (isMain ? .95 : [0, .30, .20, .12][i]) + ';' +
-        'will-change:transform,opacity;transform:translate(-50%,-50%) scale(0);';
-      host.appendChild(el);
-      rings.push(el);
+      el.style.cssText = 'position:absolute;left:0;top:0;border-radius:50%;border:' + (i === 0 ? 1.2 : 1) + 'px solid ' +
+        (i === 0 ? acc : line) + ';opacity:' + (i === 0 ? .9 : [0, .26, .14][i]) + ';will-change:width,height;';
+      host.appendChild(el); rings.push(el);
     }
-
-    // 顶层覆盖片：用 clip-path 圆形把「新页面」盖住，避免切换瞬间看到旧内容
-    var veil = document.createElement('div');
-    veil.style.cssText = 'position:absolute;inset:0;background:' + bg + ';opacity:0;';
-    host.appendChild(veil);
-
     document.body.appendChild(host);
-
     var t0 = performance.now();
-    var swapped = false;
-
     function frame(now) {
-      var t = (now - t0) / DUR;
-      var e = 1 - Math.pow(1 - Math.min(1, t), 3); // ease-out
-
+      var t = Math.min(1, (now - t0) / dur);
+      var e = 1 - Math.pow(1 - t, 3);
       var r = e * rMax;
-      // 用真实宽高画环（不用 scale）：scale 会把 1px 描边一起放大，半径大时变成粗光带
       rings[0].style.width = rings[0].style.height = (r * 2) + 'px';
       rings[0].style.transform = 'translate(' + x + 'px,' + y + 'px) translate(-50%,-50%)';
-
-      // 拖尾：延迟 110/210/320ms，速度递减
-      for (var i = 1; i < N; i++) {
-        var d = [0, 110, 210, 320][i];
-        var tt = Math.max(0, (now - t0 - d)) / DUR;
+      for (var i = 1; i < 3; i++) {
+        var d = [0, 120, 240][i];
+        var tt = Math.max(0, (now - t0 - d)) / dur;
         var ee = 1 - Math.pow(1 - Math.min(1, tt), 3);
-        var rr = ee * rMax * [1, .88, .82, .76][i];
+        var rr = ee * rMax * [1, .9, .84][i];
         rings[i].style.width = rings[i].style.height = (rr * 2) + 'px';
         rings[i].style.transform = 'translate(' + x + 'px,' + y + 'px) translate(-50%,-50%)';
-        rings[i].style.opacity = String([0, .30, .20, .12][i] * (1 - Math.min(1, t)));
+        rings[i].style.opacity = String([0, .26, .14][i] * (1 - t));
       }
-
-      // 波前遮住大半时切换语言
-      if (!swapped && t >= .48) { swapped = true; try { swap(); } catch (e) {} }
-      // 覆盖片上浮：切换后 480ms 开始淡出
-      if (t > (REDUCE ? .6 : .78)) {
-        var fadeFrom = REDUCE ? .6 : .78, fadeLen = REDUCE ? .4 : .22;
-        veil.style.opacity = String(Math.min(1, (t - fadeFrom) / fadeLen) * .0);
-        host.style.opacity = String(1 - Math.min(1, (t - fadeFrom) / fadeLen));
-      }
-
       if (t < 1) requestAnimationFrame(frame);
       else { try { host.remove(); } catch (e) {} }
     }
     requestAnimationFrame(frame);
   }
 
-  window.LangRipple = { run: run, version: '3-r2', lastRun: 0 };
-  var _origRun = run;
-  window.LangRipple.run = function (p, s) { window.LangRipple.lastRun = Date.now(); return _origRun(p, s); };
+  /* 旧路径：细环 + 原位切换（不支持 View Transition 时） */
+  function fallbackRun(x, y, rMax, DUR, acc, line, swap) {
+    var host = document.createElement('div');
+    host.setAttribute('data-lang-ripple', '');
+    host.style.cssText = 'position:fixed;inset:0;z-index:99999;pointer-events:auto;overflow:hidden;';
+    var swapped = false;
+    var t0 = performance.now();
+    (function frame(now) {
+      var t = (now - t0) / DUR;
+      if (!swapped && t >= .5) { swapped = true; try { swap(); } catch (e) {} }
+      if (t < 1) requestAnimationFrame(frame);
+      else { try { host.remove(); } catch (e) {} }
+    })(t0);
+    edgeRings(x, y, rMax, DUR, acc, line);
+  }
+
+  function run(point, swap) {
+    var x = point && isFinite(point.x) ? point.x : innerWidth / 2;
+    var y = point && isFinite(point.y) ? point.y : innerHeight / 2;
+    var rMax = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y)) * 1.05;
+    var DUR = REDUCE ? 560 : 880;
+    var acc = cssVar('--acc', cssVar('--acc-paper', '#c2410c'));
+    var line = cssVar('--line', cssVar('--rule-d', 'rgba(0,0,0,.2)'));
+
+    // ① 首选：View Transition 圆形揭示（边擦除边翻译）
+    if (!window.__noVT && document.startViewTransition && !REDUCE) {
+      try {
+        injectBaseCss();
+        var vt = document.startViewTransition(function () {
+          try { swap(); } catch (e) {}
+        });
+        vt.ready.then(function () {
+          try {
+            var anim = document.documentElement.animate(
+              { clipPath: ['circle(0px at ' + x + 'px ' + y + 'px)', 'circle(' + rMax + 'px at ' + x + 'px ' + y + 'px)'] },
+              { duration: DUR, easing: 'cubic-bezier(.22,.85,.28,1)', fill: 'forwards', pseudoElement: '::view-transition-new(root)' }
+            );
+            anim.finished.then(function () { try { anim.cancel(); } catch (e) {} }).catch(function () {});
+          } catch (e) {}
+          edgeRings(x, y, rMax, DUR, acc, line);
+        }).catch(function () {});
+        vt.finished.catch(function () {});
+        return;
+      } catch (e) { /* 落到 fallback */ }
+    }
+    fallbackRun(x, y, rMax, DUR, acc, line, swap);
+  }
+
+  window.LangRipple = { run: run, version: '4-vt', lastRun: 0, mode: 'view-transition' };
+  var _orig = run;
+  window.LangRipple.run = function (p, s) { window.LangRipple.lastRun = Date.now(); return _orig(p, s); };
 })();

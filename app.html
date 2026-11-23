@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-theme="sand">
+<html lang="zh-CN" data-theme="sand">
 <head>
 <meta charset="utf-8">
 <script>/* 剪贴板兜底：writeText 在失焦/无权限时抛 NotAllowedError（未捕获会进 console），统一降级到 execCommand */
@@ -137,10 +137,14 @@ try{
   .gear svg{width:16px;height:16px}
   .gear:hover{color:var(--acc);border-color:var(--acc)}
 .gear.on{color:var(--acc);border-color:var(--acc);background:color-mix(in srgb,var(--acc) 10%,transparent)}
-  .lang{display:flex; gap:0; border:1px solid var(--line); border-radius:8px; overflow:hidden; margin-right:8px}
-  .lang span{padding:6px 12px; min-width:36px; text-align:center; font-size:12.5px; color:var(--dim); cursor:pointer; transition:.15s; user-select:none}
-  .lang span:hover{background:var(--panel2); color:var(--txt)}
-  .lang span.on{background:var(--acc); color:var(--on-acc,#fff); font-weight:600}
+  /* 语言开关：与工具页/.langsw 同一形制 —— 无框、无填色、选中项 1px 下划线 */
+  .lang{display:flex; gap:0; border:0; border-radius:0; overflow:visible; margin-right:8px;
+    font-family:var(--f-ui); font-size:10.5px; letter-spacing:.18em}
+  .lang span{padding:4px 6px; min-width:24px; text-align:center; font-size:10.5px; letter-spacing:.18em;
+    text-transform:uppercase; color:var(--dim); cursor:pointer; transition:color .15s; user-select:none;
+    border-bottom:1px solid transparent}
+  .lang span:hover{background:transparent; color:var(--txt)}
+  .lang span.on{background:transparent; color:var(--txt); border-bottom-color:var(--acc); box-shadow:none}
   .home{
     color:var(--dim); text-decoration:none; font-size:13px;
     padding:7px 13px; border:1px solid var(--line); border-radius:9px;
@@ -505,7 +509,7 @@ try{
 
   /* —— 数字排版：所有读数等宽，跳动不再抖 —— */
   body{font-size:14px; line-height:1.75; font-variant-numeric:tabular-nums; -moz-font-feature-settings:"tnum" 1}
-  .v{font-size:42px; line-height:1.1; letter-spacing:-.02em}   /* 数字是主角：比标题再大一档 */
+  .v{font-size:44px; line-height:1.1; letter-spacing:-.02em}   /* 数字是主角：比标题再大一档（44–46 区间） */
   /* 四联统计沿用同一档：数字必须比标题大，才能形成"数字是主角"的层级 */
   /* 目录式：区块之间的留白必须大于卡片内边距（22px × 1.8 ≈ 40px） */
   section{margin:0 0 44px}
@@ -618,7 +622,8 @@ try{
   #set .card{counter-increment:card}
   #set .card>.t::before{
     content:counter(card,decimal-leading-zero) "  ";
-    color:var(--dim2); font-variant-numeric:tabular-nums; letter-spacing:.08em;
+    color:var(--acc-text,var(--acc)); font-size:10.5px; font-weight:700;
+    letter-spacing:.18em; font-variant-numeric:tabular-nums;
   }
 
   /* —— 行高取 8 的倍数 —— */
@@ -648,19 +653,19 @@ try{
   @keyframes plotDraw{ from{transform:scaleX(0)} to{transform:scaleX(1)} }
   @keyframes plotTab{ from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:translateY(0)} }
 
-  /* A. 交错入场：11 项每项 +24ms */
-  #drillGrid .item{ opacity:0; animation:plotRise 260ms cubic-bezier(.2,.8,.2,1) forwards; animation-delay:calc(var(--i,0) * 24ms) }
+  /* A. 交错入场：11 项每项 +13ms（总入场 ≤400ms：10×13+260=390ms） */
+  #drillGrid .item{ opacity:0; animation:plotRise 260ms cubic-bezier(.2,.8,.2,1) forwards; animation-delay:calc(var(--i,0) * 13ms) }
   /* 主行动不排队：第 0 帧就可点，整体 120ms 淡入（motion-spec §0.2） */
   .today{ opacity:0; animation:plotRise 120ms linear forwards; animation-delay:0ms }
-  #drillGrid .grp{ opacity:0; animation:plotRise 260ms cubic-bezier(.2,.8,.2,1) forwards; animation-delay:calc(var(--gi,0) * 24ms) }
+  #drillGrid .grp{ opacity:0; animation:plotRise 260ms cubic-bezier(.2,.8,.2,1) forwards; animation-delay:calc(var(--gi,0) * 13ms) }
 
   /* B. 线条绘制：分组编号后的短刻度，从左匀速拉出 */
   #drillGrid .grp i{ display:inline-flex; align-items:center; white-space:nowrap }
   #drillGrid .grp i::after{
     content:""; display:inline-block; vertical-align:middle; flex:0 0 18px;
     width:18px; height:1px; margin-left:8px; background:var(--dim2);
-    transform-origin:left center; animation:plotDraw 420ms linear both;
-    animation-delay:calc(120ms + var(--gi,0) * 24ms);
+    transform-origin:left center; animation:plotDraw 200ms linear both;
+    animation-delay:calc(120ms + var(--gi,0) * 13ms);
   }
 
   /* C. 状态条数字：tabular-nums，宽度先锁定再滚，动画期间布局不变 */
@@ -871,20 +876,29 @@ try{
   #play .statsbar{ flex:0 0 auto; order:2; padding:36px 0 0 }
   #play .play-head{ margin-bottom:0 }
   .play-head{
-    display:grid; grid-template-columns:1.15fr .85fr; gap:64px;
-    align-items:end; padding:8px 0 28px; border-bottom:1px solid var(--line);
+    display:grid; grid-template-columns:1.15fr .85fr; gap:48px;
+    align-items:end; padding:0 0 32px; border-bottom:1px solid var(--line);
   }
+  section:not(#play) > .play-head{ margin-bottom:24px }
   .ph-eyebrow{
+    display:flex; align-items:center; gap:14px;
     font-size:var(--fs-label); letter-spacing:var(--track-label); text-transform:uppercase;
-    color:var(--dim); margin-bottom:18px;
+    color:var(--dim); margin-bottom:16px;
   }
+  /* 章节编号：10.5px / 700 / .18em / accent-text —— 与三个标定页、方法论同一形制 */
+  .ph-eyebrow .num{
+    inline-size:auto; color:var(--acc-text,var(--acc)); font-weight:700;
+    letter-spacing:.18em; font-size:var(--fs-label); line-height:1;
+  }
+  .ph-eyebrow .num + span::before{ content:"— " }
   .ph-left h2{
-    font-size:clamp(52px,6vw,76px); line-height:.96; letter-spacing:-.02em; margin:0;
+    font-size:clamp(44px,5.2vw,76px); line-height:.96; letter-spacing:-.02em; margin:0;
   }
   .ph-right{ padding-bottom:6px }
   .ph-right .hint{
     font-size:15px; line-height:1.7; color:var(--dim); margin:0 0 22px; max-width:38ch;
   }
+  .ph-right .hint:last-child{ margin-bottom:0 }
   .ph-right .hint a{ color:var(--acc) !important }
   #todaySlot .today{
     display:flex; align-items:center; justify-content:space-between; gap:16px;
@@ -899,22 +913,22 @@ try{
   #todaySlot .today .ar{ transition:transform 140ms var(--ease) }
   #todaySlot .today:hover .ar{ transform:translateX(6px) }
 
-  /* ---------- 数字条：4 格通栏 ---------- */
+  /* ---------- 数字条：4 格通栏（与三个标定页同一形制：数字在上、标签在下、1px 竖线） ---------- */
   #play .statsbar{
     display:grid; grid-template-columns:repeat(4,1fr); gap:0;
-    margin:0; padding:26px 0 0; border-top:0; max-height:none;
+    margin:0; padding:0; border-top:0; border-bottom:1px solid var(--line); max-height:none;
   }
   #play .statsbar .sb{
-    display:flex; flex-direction:column; align-items:flex-start; gap:10px;
-    padding:0 28px; min-width:0; border-left:0;   /* 一种线：统计条不用竖线，靠 28px 间距 */
+    display:flex; flex-direction:column-reverse; align-items:flex-start; gap:8px;
+    padding:24px 32px 24px 0; padding-left:32px; min-width:0; border-left:1px solid var(--line);
   }
-  #play .statsbar .sb:first-child{ padding-left:0 }
+  #play .statsbar .sb:first-child{ padding-left:0; border-left:0 }
   #play .statsbar .sb-k{
     font-size:var(--fs-label); letter-spacing:var(--track-label); text-transform:uppercase;
     color:var(--dim); line-height:1;
   }
   #play .statsbar .sb-v{
-    font-family:var(--f-ui); font-weight:800; font-size:44px; line-height:1;
+    font-family:var(--f-ui); font-weight:800; font-size:clamp(38px,3.2vw,52px); line-height:1.05;
     letter-spacing:-.03em; color:var(--txt); font-variant-numeric:tabular-nums;
     white-space:nowrap;
   }
@@ -941,8 +955,8 @@ try{
     letter-spacing:0; color:var(--txt); text-transform:none;
   }
   #drillGrid .grp i{
-    font-family:var(--f-ui); font-style:normal; font-weight:600; font-size:10px;
-    letter-spacing:.18em; color:var(--dim2); font-variant-numeric:tabular-nums;
+    font-family:var(--f-ui); font-style:normal; font-weight:700; font-size:10.5px;
+    letter-spacing:.18em; color:var(--acc-text,var(--acc)); font-variant-numeric:tabular-nums;
   }
   #drillGrid .grp::before,#drillGrid .grp::after{ display:none }
   #drillGrid .item{
@@ -1038,8 +1052,15 @@ try{
 
 <main>
   <section id="data">
-    <h2>个人数据</h2>
-    <div class="hint">最佳成绩按模式分别记录，只存在本浏览器。</div>
+    <div class="play-head">
+      <div class="ph-left">
+        <div class="ph-eyebrow"><span class="num">01</span><span>数据 · DATA</span></div>
+        <h2>个人数据</h2>
+      </div>
+      <div class="ph-right">
+        <div class="hint">最佳成绩按模式分别记录，只存在本浏览器。</div>
+      </div>
+    </div>
     <div class="card">
       <div class="t" style="margin-bottom:10px">现在怎么样</div>
       <div id="dataVerdict" style="font-size:17px;line-height:1.9;color:var(--txt)"></div>
@@ -1083,7 +1104,7 @@ try{
   <section id="play">
     <div class="play-head">
       <div class="ph-left">
-        <div class="ph-eyebrow">01 — 训练 · DRILLS</div>
+        <div class="ph-eyebrow"><span class="num">01</span><span>训练 · DRILLS</span></div>
         <h2 id="playTitle" style="cursor:default;user-select:none">训练</h2>
       </div>
       <div class="ph-right">
@@ -1100,6 +1121,15 @@ try{
 
   <section id="plan">
 
+  <div class="play-head">
+    <div class="ph-left">
+      <div class="ph-eyebrow"><span class="num">01</span><span>计划 · PLAN</span></div>
+      <h2>计划训练</h2>
+    </div>
+    <div class="ph-right">
+      <div class="hint">四周计划，自动判断今天该练什么。</div>
+    </div>
+  </div>
 
   <div class="panel">
     <h2 id="planEggTitle">今日训练</h2>
@@ -1144,8 +1174,15 @@ try{
   </section>
 
   <section id="set">
-    <h2>设置</h2>
-    <div class="hint">这里的参数会自动带进所有训练页面。</div>
+    <div class="play-head">
+      <div class="ph-left">
+        <div class="ph-eyebrow"><span class="num">01</span><span>设置 · SETTINGS</span></div>
+        <h2>设置</h2>
+      </div>
+      <div class="ph-right">
+        <div class="hint">这里的参数会自动带进所有训练页面。</div>
+      </div>
+    </div>
 
     <div class="card">
       <div class="t" style="margin-bottom:10px">灵敏度</div>
@@ -1480,6 +1517,8 @@ const EN={
   '球':'balls','第':'No.','天 · 已完成':' days · done','天 · 连续':' days · streak',
   '一':'M','二':'T','三':'W','四':'T','五':'F','六':'S','日':'S',
   '01 — 训练 · DRILLS':'01 — Training · Drills',
+  '训练 · DRILLS':'TRAINING',
+  '数据 · DATA':'DATA','计划 · PLAN':'PLAN','设置 · SETTINGS':'SETTINGS',
   '最近六维':'Last six-skill','本周训练':'This week','辅助等级':'Axis level','先从六维检查开始':'Start with the six-skill check',
   '定位':'Positioning','速度':'Speed','转向':'Turning','稳定':'Stability','体检':'Assessment',
   '今天练什么':'Today\u2019s drill','先从六维检查开始 →':'Start with the six-skill check →',

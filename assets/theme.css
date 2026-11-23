@@ -58,6 +58,24 @@ html{
   --gold-text: color-mix(in srgb, var(--gold) 70%, var(--txt));
 }
 
+/* ——— 线系统三级制（token 唯一来源）———
+   结构线 --line-s：页头底线 / 区块分界 / 页脚线。1px，两端渐隐 2%。
+   分组线 --line-g：表格行 / 日历行 / 目录竖线。1px，60% 混色；竖线上下渐隐 10%。
+   交互线 --line-i：hover / 选中下划线。1px，accent 55% + --line，从中间展开 160ms。
+   渐隐用 border-image 画在 border 区域里，不额外占布局。 */
+html{
+  --line-s: var(--line);
+  --line-g: color-mix(in srgb, var(--line) 60%, transparent);
+  --line-i: color-mix(in srgb, var(--acc) 55%, var(--line));
+  --num-gap: 2px;
+
+  --line-fade-x: linear-gradient(90deg, transparent 0, var(--line-s) 2%, var(--line-s) 98%, transparent 100%);
+  --line-fade-y: linear-gradient(180deg, transparent 0, var(--line-s) 10%, var(--line-s) 90%, transparent 100%);
+  --line-g-fade-x: linear-gradient(90deg, transparent 0, var(--line-g) 3%, var(--line-g) 97%, transparent 100%);
+  --line-g-fade-y: linear-gradient(180deg, transparent 0, var(--line-g) 10%, var(--line-g) 90%, transparent 100%);
+  --line-i-fade-x: linear-gradient(90deg, transparent 0, var(--line-i) 4%, var(--line-i) 96%, transparent 100%);
+}
+
 /* 语义状态色（成功 / 警告）：同属主题令牌表，页面不再各存一份。
    浅纸用深色状态色保证 ≥4.5:1，深纸用亮色。 */
 html{ --ok:#15803d; --warn:#b45309; }

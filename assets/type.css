@@ -81,4 +81,18 @@
 .vn-rule{ border:0; border-top:1px solid var(--rule); }
 .vn-em{ color:var(--acc-paper); }
 
-@media (prefers-reduced-motion: reduce){ *{ animation-duration:.01ms !important; transition-duration:.01ms !important; } }
+@media (prefers-reduced-motion: reduce){
+  *{ animation-name:none !important; animation-duration:.01ms !important;
+     transition-duration:.01ms !important; }
+}
+
+/* 滚动条：全站唯一一份 6px 暗线（Chromium 用 ::-webkit-scrollbar；
+   Firefox 才用标准 scrollbar-width——Chromium 一旦写标准属性，
+   ::-webkit-scrollbar 的 6px 就会被忽略，变成 10px 白条）。 */
+::-webkit-scrollbar{ width:6px; height:6px }
+::-webkit-scrollbar-track{ background:transparent }
+::-webkit-scrollbar-thumb{ background:color-mix(in srgb, var(--txt) 30%, transparent); border-radius:0 }
+::-webkit-scrollbar-thumb:hover{ background:color-mix(in srgb, var(--txt) 50%, transparent) }
+@supports (-moz-appearance:none){
+  html{ scrollbar-width:thin; scrollbar-color:color-mix(in srgb, var(--txt) 30%, transparent) transparent }
+}

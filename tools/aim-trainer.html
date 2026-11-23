@@ -36,7 +36,14 @@
   ::-webkit-scrollbar-thumb{background:var(--line,rgba(255,255,255,.18));border-radius:0}
   ::-webkit-scrollbar-thumb:hover{background:var(--dim,rgba(255,255,255,.35))}
   canvas{display:block;cursor:none}
-  #hud{position:fixed;left:22px;top:16px;font-size:14px;line-height:1.9;pointer-events:none;text-shadow:0 0 6px color-mix(in srgb,var(--bg) 82%,transparent)}
+  #hud{position:fixed;left:22px;top:16px;font-size:15px;font-weight:500;line-height:1.85;pointer-events:none;
+    font-variant-numeric:tabular-nums;
+    /* 清晰优先：1px 位移阴影给对比度，不用大半径光晕（那会让字发虚） */
+    text-shadow:0 1px 1px rgba(0,0,0,.55), 0 0 1px rgba(0,0,0,.35);
+    text-rendering:optimizeLegibility; letter-spacing:.01em}
+  html[data-theme="light"] #hud,html[data-theme="lake"] #hud,html[data-theme="ink"] #hud,html[data-theme="sand"] #hud{
+    text-shadow:0 1px 1px rgba(255,255,255,.65)
+  }
   #hud b{color:var(--hud-acc,var(--acc))}
   .overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;
     text-align:center;font-size:16px;line-height:2;color:var(--txt);
@@ -1590,6 +1597,41 @@ function grid(){
 }
 
 let rawLockFailed=false;
+let fsTried=false;
+// 全屏：必须在用户手势的同一个 tick 里调用，所以放在 doLock 前面
+function tryFullscreen(){
+  if(fsTried) return;
+  try{
+    if(document.fullscreenElement) { fsTried=true; return; }
+    var el=document.documentElement;
+    if(!el.requestFullscreen) return;
+    fsTried=true;
+    var p=el.requestFullscreen({navigationUI:'hide'});
+    if(p&&p.catch) p.catch(function(){ showFsHint(); });
+  }catch(e){ showFsHint(); }
+}
+// 全屏被拒时给一个可点的提示，点一下就进全屏（那是真手势）
+function showFsHint(){
+  try{
+    if(document.fullscreenElement) return;
+    var h=document.getElementById('fsHint');
+    if(!h){
+      h=document.createElement('div');
+      h.id='fsHint';
+      h.style.cssText='position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:9300;'
+        +'font:13px/1.5 var(--f-ui);letter-spacing:.04em;color:var(--ink-d);background:rgba(0,0,0,.42);'
+        +'border:1px solid rgba(255,255,255,.22);padding:8px 14px;cursor:pointer;pointer-events:auto';
+      h.textContent='点击进入全屏（更准）';
+      h.addEventListener('pointerdown',function(ev){
+        ev.stopPropagation();
+        try{ document.documentElement.requestFullscreen({navigationUI:'hide'}).catch(function(){}); }catch(e){}
+        fsTried=true; setTimeout(function(){ h.remove(); },300);
+      });
+      document.body.appendChild(h);
+      setTimeout(function(){ try{ h.remove(); }catch(e){} }, 9000);
+    }
+  }catch(e){}
+}
 function doLock(){
   function safeLock(){
     rawLockFailed=true;   // 原始输入锁失败：像素被系统加速，测量不可比
@@ -2562,7 +2604,7 @@ function finish(){
   if(mode==='check') setTimeout(drawCheckScatter, 30);
 }
 
-go.addEventListener('click',e=>{ e.stopPropagation(); start(); });
+go.addEventListener('click',e=>{ e.stopPropagation(); tryFullscreen(); start(); });
 
 /* 全屏单独一个按钮：官方文档要求 requestPointerLock() 必须在 requestFullscreen() 之前调用，
    因为 requestFullscreen 会吃掉 transient activation。把它拆成两次点击，两边都不用抢手势。 */
@@ -2598,7 +2640,7 @@ document.getElementById('copy').addEventListener('click', function(e){
 document.addEventListener('pointerdown', function(e){
   if(e.pointerType==='pen'){ penActive=true; return; }   // 笔不抢指针锁
   if(device!=='mouse') return;                            // 手柄/绘画板设备不抢指针锁
-  if((running||waiting) && !paused && !document.pointerLockElement && !lockFree){ doLock(); }
+  if((running||waiting) && !paused && !document.pointerLockElement && !lockFree){ tryFullscreen(); doLock(); }
 });
 document.addEventListener('pointerdown',function(e){
   if(e.pointerType==='pen') penActive=true;
@@ -2620,7 +2662,7 @@ function pause(){ if(!running||paused)return; paused=true; pauseAt=performance.n
   // ESC 只暂停、不退全屏：丢全屏就立刻要回来（同一按键手势内通常能成功）
   /* 全屏由独立按钮控制，暂停/继续不再抢手势 */ }
 function resume(){ msg.classList.remove('paused'); if(endMode==='time'){ endAt += performance.now()-pauseAt; } if(!paused)return; const d=performance.now()-pauseAt;
-  if(alive) tSpawn+=d; nextAt+=d; paused=false; msg.classList.remove('show'); doLock();
+  if(alive) tSpawn+=d; nextAt+=d; paused=false; msg.classList.remove('show'); tryFullscreen(); doLock();
   // 点「继续」是有效手势：顺带把全屏要回来
   /* 全屏由独立按钮控制，暂停/继续不再抢手势 */ }
 let hadLock=false, lockFails=0;

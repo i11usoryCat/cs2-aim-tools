@@ -1,0 +1,503 @@
+/* ============================================================================
+   Vernier · 线系统 v1（全站）
+   ----------------------------------------------------------------------------
+   用户反馈：「线条和线相撞」「又挤又别扭」「单纯的线显得蠢、不灵动」「要调线与字间距」。
+
+   三级制（token 在 assets/theme.css，唯一来源）：
+     结构线  --line-s   1px  --line        两端渐隐 2%        页头底线 / 区块分界 / 页脚
+     分组线  --line-g   1px  60% --line    竖线上下渐隐 10%    表格行 / 日历行 / 目录竖线
+     交互线  --line-i   1px  55% acc       从中间展开 160ms    hover / 选中 / 下划线
+
+   间距硬线：文字与线 ≥14px（scripts/line-scan.cjs 实测）；
+             结构线目标「上 20 / 下 16」，分组线在数据行内以 14px 为下限。
+   线的性格：全部 1px；长线两端渐隐；竖线不顶天立地；禁止 2px+ 实线（焦点态除外）。
+   本文件覆盖页面内联样式，故多数规则带 html body 前缀；inline style 用 !important 覆盖。
+   ========================================================================== */
+
+/* ============================================================
+   1 · 结构线：页头底线 / 区块分界 / 页脚线 —— 1px，两端渐隐 2%
+   ============================================================ */
+html body header,
+html body .play-head,
+html body .topbar,
+html body .ov-head,
+html body .foot,
+html body #resActions,
+html body .v3-res-head,
+html body #v3Stats,
+html body .ov-nums,
+html body #data .kpiRow{
+  border-image: var(--line-fade-x) 1;
+}
+/* 结构线只改颜色/图，不改宽度：显式压掉原实色边，让 border-image 生效 */
+html body header,
+html body .play-head,
+html body .topbar,
+html body .ov-head,
+html body .foot,
+html body #resActions,
+html body .v3-res-head,
+html body #v3Stats,
+html body .ov-nums,
+html body #data .kpiRow{
+  border-top-color: transparent;
+  border-right-color: transparent;
+  border-bottom-color: transparent;
+  border-left-color: transparent;
+}
+
+/* ============================================================
+   2 · 分组线：竖线上下渐隐 10%，横线两端渐隐、60% 混色
+   ============================================================ */
+/* 竖线：目录列 / 数据 KPI 格 / 数字条 / 附录 / 引用 / 代码块 */
+html body #drillGrid .col,
+html body #play .statsbar .sb,
+html body #data .kpiRow > div,
+html body .ov-num,
+html body .v3-stat,
+html body .appendix,
+html body blockquote,
+html body pre{
+  border-image: var(--line-g-fade-y) 1;
+}
+html body #drillGrid .col,
+html body #play .statsbar .sb,
+html body #data .kpiRow > div,
+html body .ov-num,
+html body .v3-stat,
+html body .appendix,
+html body blockquote,
+html body pre{
+  border-top-color: transparent;
+  border-right-color: transparent;
+  border-bottom-color: transparent;
+  border-left-color: transparent;
+}
+
+/* 横分组线：行分隔（表格另行处理）/ 今日行 / 计划行 */
+html body #todaySlot .today,
+html body #plan .prow,
+html body #plan .task{
+  border-bottom: 1px solid transparent;
+  border-image: var(--line-g-fade-x) 1;
+}
+
+/* ============================================================
+   3 · 交互线：语言开关 / 主题胶囊下划线，从中间展开 160ms
+   ============================================================ */
+html body .lang span,
+html body .langsw button,
+html body #langSw button,
+html body #langSwitch button,
+html body .langTop span{
+  position: relative;
+  border-bottom-color: transparent !important;
+}
+html body .lang span::after,
+html body .langsw button::after,
+html body #langSw button::after,
+html body #langSwitch button::after,
+html body .langTop span::after{
+  content: "";
+  position: absolute;
+  left: 4px; right: 4px; bottom: 0;
+  height: 1px;
+  background: var(--line-i);
+  transform: scaleX(0);
+  transform-origin: center;
+  transition: transform 160ms var(--ease, cubic-bezier(.2,.8,.2,1));
+  pointer-events: none;
+}
+html body .lang span:hover::after,
+html body .lang span.on::after,
+html body .langsw button:hover::after,
+html body .langsw button.on::after,
+html body #langSw button:hover::after,
+html body #langSw button.is-on::after,
+html body #langSwitch button:hover::after,
+html body #langSwitch button[aria-pressed="true"]::after,
+html body .langTop span:hover::after,
+html body .langTop span.on::after{ transform: scaleX(1); }
+
+/* 今日训练行：hover 时 accent 线从中间展开（替代死板的整条下划线） */
+html body #todaySlot .today{ position: relative; }
+html body #todaySlot .today::after{
+  content: ""; position: absolute; left: 0; right: 0; bottom: -1px; height: 1px;
+  background: var(--line-i); transform: scaleX(0); transform-origin: center;
+  transition: transform 160ms var(--ease, cubic-bezier(.2,.8,.2,1));
+  pointer-events: none;
+}
+html body #todaySlot .today:hover::after{ transform: scaleX(1); }
+
+/* ============================================================
+   4 · 落地页 index / en/index
+   ============================================================ */
+/* 页脚：只留一条结构线（原来公式上下两条线离字只有 7px） */
+html body .foot code{
+  border: 0 !important;
+  padding: 0 !important;
+  background: transparent !important;
+}
+/* 主入口上下两条 1px 线：两端 2% 渐隐（currentColor 在 border-image 里不解析，用显式色） */
+html body .start{
+  border-top-color: transparent !important;
+  border-bottom-color: transparent !important;
+  /* 页面里有 border:0 !important（shorthand 会把 border-image 重置成 none），所以这里也必须 !important */
+  border-image: linear-gradient(90deg, transparent 0, var(--acc-text, var(--acc)) 2%, var(--acc-text, var(--acc)) 98%, transparent 100%) 1 !important;
+}
+/* 页脚公式原来上下各一道刻度线（离字只有 7px）：去掉，只留页脚结构线 */
+html body .foot code::before,
+html body .foot code::after{ display: none !important; }
+
+/* ============================================================
+   5 · 应用外壳 app.html：顶栏 / 导航 / 卡片 / 表格
+   ============================================================ */
+/* 导航下划线：2px → 1px，accent 混色（选中的那一条不再是一根黑杠） */
+html body #navInk{
+  height: 1px !important;
+  background: var(--line-i) !important;
+}
+
+/* 卡片：一格一框 → 只留顶部一条分组线（设置页 / 数据页的「行」不再被四边框住） */
+html body .card{
+  border: 0 !important;
+  border-top: 1px solid transparent !important;
+  border-image: var(--line-g-fade-x) 1 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 26px 0 10px !important;
+  margin: 0 0 34px !important;
+}
+html body .card:hover{ box-shadow: none !important; }
+/* 卡片内的标题按钮（存图 / 重算 / 全部）：盒子 → 下划线文字，顶部不再贴着标题 */
+html body #data #trendSave,
+html body #data #rebuildBest,
+html body #data #moreRuns{
+  border: 0 !important;
+  border-bottom: 1px solid var(--line-g) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  height: auto !important;
+  min-width: 0 !important;
+  padding: 2px 0 !important;
+  color: var(--acc-text, var(--acc)) !important;
+  font-size: 12.5px !important;
+}
+html body #data .card > .t{ gap: 16px !important; }
+
+/* 表格：行分隔（去掉每格底边），每 2 行一条更淡的分组线 */
+html body #data table th,
+html body #data table td,
+html body #plan table th,
+html body #plan table td{
+  border-bottom: 0;
+  padding: 16px 10px;
+  vertical-align: middle;
+}
+html body #data table tr:first-child th,
+html body #plan table tr:first-child th{
+  border-bottom: 1px solid var(--line-g);
+}
+html body #data table tr:nth-child(odd):not(:first-child) td,
+html body #plan table tr:nth-child(odd):not(:first-child) td{
+  border-bottom: 1px solid var(--line-g);
+}
+html body #data table tr:last-child td,
+html body #plan table tr:last-child td{ border-bottom: 0 !important; }
+/* 表格最后一行与下方说明之间留 16px（原来 8px，是最后一条碰撞） */
+html body #data #bestHint,
+html body #data #runTable + div{ margin-top: 16px !important; }
+
+/* 数据页 · 仪表读数：顶线结构线，竖分隔分组线，刻度短线保留 */
+html body #data .kpiRow{
+  margin-top: 26px !important;
+  padding-top: 0 !important;
+}
+html body #data .kpiRow > div{
+  padding: 26px 24px 22px !important;
+}
+html body #data .kpiRow > div:first-child{ padding-left: 0 !important; }
+html body #data .kpiRow .k{ margin-bottom: 14px !important; }
+html body #data .kpiRow .v{ white-space: nowrap; word-spacing: var(--num-gap); }
+
+/* ============================================================
+   6 · 训练页 #play（Hub）：竖线渐隐、数字与单位 2px
+   ============================================================ */
+html body #play .statsbar .sb{ padding-left: 32px; }
+html body #play .statsbar .sb-v .u{ margin-left: var(--num-gap); }
+
+/* ============================================================
+   7 · 计划页 #plan：日历去框、行分隔、行内控件下划线
+   ============================================================ */
+/* 面板：一格一框 → 顶部一条分组线 */
+html body #plan .panel{
+  border: 0 !important;
+  border-top: 1px solid transparent !important;
+  border-image: var(--line-g-fade-x) 1 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 26px 0 14px !important;
+  margin: 0 0 34px !important;
+}
+
+/* 日历：31 个格子 × 4 条边 → 0 条边；每 2 行一条更淡的分组线（背景画，不占布局） */
+html body #plan .calWeek{ margin-bottom: 14px; }
+html body #plan .grid{ position: relative; }
+html body #plan .grid::after{      /* 每 2 行一条更淡的线；画在格子上层，完成格上也看得见 */
+  content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background-image: linear-gradient(to bottom, transparent 0, transparent 99px, var(--line-g) 99px, var(--line-g) 100px);
+  background-size: 100% 100px;
+  background-repeat: repeat-y;
+}
+html body #plan .grid .cell{
+  border: 0 !important;
+  height: 44px;
+  border-radius: 0 !important;
+  background: transparent;
+  color: var(--txt);
+}
+html body #plan .grid .cell.rest{ color: var(--dim); border: 0 !important; }
+html body #plan .grid .cell.done{
+  background: var(--acc);
+  color: var(--on-acc, #fff);
+  font-weight: 600;
+}
+html body #plan .grid .cell.today{
+  outline: 1px solid var(--acc);
+  outline-offset: -1px;
+  font-weight: 700;
+}
+html body #plan .grid .cell.done.today{ outline-color: var(--on-acc, #fff); }
+
+/* 计划胶囊：盒子 → 下划线；选中的那条换成 accent 混色 */
+/* 计划胶囊：用 2 个 id 压过页面里 button:not(.main)!important 的通用边框 */
+html body #plan #planPresets .chip{
+  border: 0 !important;
+  border-bottom: 1px solid var(--line-g) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 8px 2px !important;
+  color: var(--dim) !important;
+  min-width: 0 !important;
+  height: auto !important;
+}
+html body #plan #planPresets .chip:hover{ border-bottom-color: var(--line-i) !important; color: var(--txt) !important; }
+html body #plan #planPresets .chip.on{
+  border-bottom-color: var(--line-i) !important;
+  background: transparent !important;
+  color: var(--acc-text, var(--acc)) !important;
+  font-weight: 600;
+}
+html body #plan #planPresets .chip.new{ border-bottom-style: dashed !important; }
+html body #plan .chips{ margin: 14px 0 18px !important; }
+
+/* 计划行：行分隔线两端渐隐，上下留 14px；行内控件全部下划线化 */
+html body #plan .prow{
+  padding: 14px 34px 14px 10px !important;
+  border-top: 0;
+}
+html body #plan .prow input.nmIn,
+html body #plan .prow select{
+  border: 0 !important;
+  border-bottom: 1px solid var(--line-g) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 4px 2px !important;
+  height: 32px;
+}
+html body #plan .prow input.nmIn:focus,
+html body #plan .prow select:focus{
+  outline: 1px solid var(--acc);
+  outline-offset: 2px;
+  border-bottom-color: var(--line-i) !important;
+}
+html body #plan .stepper{ gap: 14px; }
+html body #plan #planRows .stepper button{
+  border: 0 !important;
+  background: transparent !important;
+  color: var(--dim) !important;
+  width: 24px; height: 24px; min-width: 0;
+  padding: 0;
+  border-radius: 0 !important;
+}
+html body #plan #planRows .stepper button:hover{ color: var(--acc-text, var(--acc)) !important; }
+html body #plan .stepper span{ word-spacing: var(--num-gap); }
+html body #plan #planRows .pGo{
+  border: 0 !important;
+  border-bottom: 1px solid var(--line-g) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 3px 0 !important;
+  color: var(--acc-text, var(--acc)) !important;
+}
+html body #plan #planRows .pGo:hover{ border-bottom-color: var(--line-i) !important; background: transparent !important; }
+html body #plan #planRows .del{
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 0;
+}
+html body #plan #planAdd{
+  border: 0 !important;
+  border-bottom: 1px solid var(--line-g) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  height: 44px;
+}
+html body #plan #planAdd:hover{ border-bottom-color: var(--line-i) !important; }
+html body #plan .planTotal{
+  border: 0 !important;
+  border-top: 1px solid transparent !important;
+  border-image: var(--line-g-fade-x) 1 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 18px 0 4px !important;
+}
+html body #plan textarea{
+  border: 1px solid var(--line) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+}
+html body #plan button{
+  border-color: var(--line) !important;
+  border-radius: 0 !important;
+}
+html body #plan button:hover:not(.main){ border-color: var(--line-i) !important; }
+
+/* ============================================================
+   8 · 设置页 #set：卡片去框、字段下划线、色板去框
+   ============================================================ */
+/* 字段：一格一框的 input/select → 下划线输入（与三个标定页同一形制） */
+html body #set input:not([type="checkbox"]):not([type="range"]):not([type="color"]):not([type="file"]),
+html body #set select,
+html body #set textarea{
+  border: 0 !important;
+  border-bottom: 1px solid var(--line-g) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 7px 2px !important;
+  height: 38px;
+  color: var(--txt) !important;
+}
+html body #set input:focus,
+html body #set select:focus,
+html body #set textarea:focus{
+  outline: 1px solid var(--acc);
+  outline-offset: 3px;
+  border-bottom-color: var(--line-i) !important;
+}
+html body #set .k{ margin-bottom: 6px; }
+/* 主题 / 场景色板：17 个小盒子 → 17 条下划线 */
+html body #set .sw{
+  border: 0 !important;
+  border-bottom: 1px solid var(--line-g) !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 8px 2px !important;
+}
+html body #set .sw:hover{ border-bottom-color: var(--line-i) !important; }
+html body #set .sw.on{
+  border-bottom-color: var(--line-i) !important;
+  background: transparent !important;
+  color: var(--acc-text, var(--acc)) !important;
+  font-weight: 600;
+}
+/* label.sw 是「显示实时帧率」这类开关，被 .sw 色板样式误伤成了框 */
+html body #set label.sw{
+  border: 0 !important;
+  background: transparent !important;
+  padding: 0 !important;
+}
+html body #set .grp{ margin: 26px 0 10px; }
+html body #set .grp::after{
+  background: linear-gradient(90deg, var(--line-g), transparent 82%) !important;
+}
+/* 标定入口卡片：保留细框，但线色统一 --line */
+html body #set .tile{ border-color: var(--line) !important; }
+/* 场景预览框：预览需要边界，保留 1px --line；准星圆点 2px → 1px */
+html body #set #scenePrev{ border-color: var(--line) !important; }
+html body #set #prevDot{ border-width: 1px !important; }
+/* 「命中特效 / 准星击中反馈」两行的文字与 select 之间拉开 14px */
+html body #set .card > .row > div[style*="display:flex"]{ gap: 14px !important; }
+/* 行与行之间给 16px：下划线输入下方紧贴上一行的标签是「线撞字」的典型 */
+html body #set .card .row + .row{ margin-top: 16px !important; }
+/* 控件行与说明之间 ≥16px（下划线下方文字目标 20） */
+html body #set .card .row + .hint{ margin-top: 16px !important; }
+html body #plan #todayHint{ margin-top: 16px !important; }
+
+/* ============================================================
+   9 · 方法页 methodology：内联代码去框、代码块左侧分组线
+   ============================================================ */
+/* 内联代码：1px 框离字只有 0.5px（就是「线与字相撞」的典型）→ 只留底色 */
+html body p code,
+html body li code{
+  border: 0 !important;
+  background: color-mix(in srgb, var(--txt) 7%, transparent);
+  padding: 1px 5px;
+}
+/* 代码块：四边盒 → 左侧一条结构竖线 + 更暗的纸 */
+html body pre{
+  border: 0 !important;
+  border-left: 1px solid transparent !important;
+  border-image: var(--line-fade-y) 1 !important;
+  background: var(--paper-2);
+  padding: 20px 22px !important;
+}
+html body .appendix pre{
+  border: 0 !important;
+  border-left: 1px solid transparent !important;
+  border-image: var(--line-fade-y) 1 !important;
+  background: transparent;
+}
+html body .appendix{
+  border-left-color: transparent;
+  border-image: var(--line-fade-y) 1;
+  padding-left: 26px;
+}
+html body blockquote{ padding-left: 20px; }
+/* 章节分界 = 结构线（--line 全值） */
+html body article h2{
+  border-top-color: transparent;
+  border-image: var(--line-fade-x) 1;
+  padding-top: 36px;
+}
+html body .topbar{ padding-bottom: 20px; }
+
+/* ============================================================
+   10 · 工具页 tools/*：数字条 / 结果表 / 展开按钮
+   ============================================================ */
+html body #more{ margin-top: 18px; }
+html body .overlay td,
+html body .overlay th{ border-bottom-color: var(--line-g); }
+html body #resBody .rt th,
+html body #resBody .rt td{ padding-top: 14px; padding-bottom: 14px; }
+html body #resBody .rt th{ border-top-color: var(--line-g); }
+html body #resBody .rt td{ border-top-color: var(--line-g); }
+html body .res-table td,
+html body .res-table th{
+  border-top-color: var(--line-g);
+  height: 48px;
+}
+html body .fld input,
+html body .fld select,
+html body .ov-fields .fld input,
+html body .ov-fields .fld select{ border-color: var(--line); }
+html body .ff-sec{ border-top-color: transparent; border-image: var(--line-g-fade-x) 1; }
+html body #v3Stats{ border-bottom-color: transparent; }
+html body #resPanel{ border-color: var(--line); }
+html body #res #again,
+html body #go{ border-radius: 0; }
+
+/* 工具页 HUD 与顶部返回/语言开关：下划线 ≥4px，从中间展开 */
+html body #back{ border: 0; }
+html body #langSw button{ padding: 4px 6px; }
+
+/* ============================================================
+   11 · 数字与单位：中间 2px（27.1 cm/360）
+   ============================================================ */
+/* 首页 CTA 下沿到 tip 的间距：18 → 20（结构线下方文字 ≥20） */
+html body .tip{ margin-top: 20px !important; }
+html body #play .statsbar .sb-v .u,
+html body #data .kpiRow .v{ word-spacing: var(--num-gap); }

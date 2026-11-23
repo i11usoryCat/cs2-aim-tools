@@ -44,14 +44,14 @@
     padding-bottom:16px; border-bottom:1px solid var(--rule); margin-bottom:56px; }
   .topbar .back{ font-family:var(--f-ui); font-size:12px; letter-spacing:.14em;
     text-transform:uppercase; color:var(--ink-2); text-decoration:none; }
-  .topbar .back:hover{ color:var(--acc-paper); }
+  .topbar .back:hover{ color:var(--acc-text,var(--acc-paper)); }
   .langsw{ display:inline-flex; gap:0; align-items:baseline; }
   /* 语言开关：与工具页 #langSw 同一形制（10.5px / .18em / 无框 / 选中 1px 线） */
   .langsw button{ appearance:none; background:none; border:0; padding:4px 6px; cursor:pointer;
     font-family:var(--f-ui); font-size:10.5px; letter-spacing:.18em; text-transform:uppercase;
     color:var(--ink-2); border-bottom:1px solid transparent; }
   .langsw button:hover{ color:var(--ink); }
-  .langsw button.on{ color:var(--acc-paper); border-bottom-color:var(--acc-paper); }
+  .langsw button.on{ color:var(--acc-text,var(--acc-paper)); border-bottom-color:var(--acc); }
 
   /* 页头眉标：与工具页 .ov-eyebrow 同一形制 */
   .eyebrow{ display:flex; align-items:center; gap:14px; margin:0 0 16px;
@@ -79,7 +79,7 @@
   li{ margin:0 0 10px; }
   strong{ font-weight:700; }
   em{ font-style:italic; }
-  a{ color:var(--acc-paper); text-decoration:underline; text-underline-offset:3px; text-decoration-thickness:1px; }
+  a{ color:var(--acc-text,var(--acc-paper)); text-decoration:underline; text-underline-offset:3px; text-decoration-thickness:1px; }
 
   /* 四条开篇结论：01–04 朱红小号 + 衬线结论句 */
   ol.lead{ list-style:none; counter-reset:lead; padding:0; margin:var(--s4) 0 var(--s5); max-width:68ch; }
@@ -917,5 +917,6 @@ memory buffering     -&gt; measured 4207 Hz
 })();
 </script>
 </div>
+<div class="vn-dither" aria-hidden="true"></div>
 </body>
 </html>

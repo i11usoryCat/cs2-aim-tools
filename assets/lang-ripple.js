@@ -17,7 +17,7 @@
   function run(point, swap) {
     // 减少动效模式：不跳过动画，而是缩短到 380ms / 3 圈——语言切换是用户主动操作，
     // 完全无动画会让人以为「没反应」。
-    var DUR = REDUCE ? 380 : 620;
+    var DUR = REDUCE ? 560 : 880;
     var N = REDUCE ? 3 : 4;
     var x = point && isFinite(point.x) ? point.x : innerWidth / 2;
     var y = point && isFinite(point.y) ? point.y : innerHeight / 2;
@@ -76,7 +76,7 @@
       }
 
       // 波前遮住大半时切换语言
-      if (!swapped && t >= .45) { swapped = true; try { swap(); } catch (e) {} }
+      if (!swapped && t >= .48) { swapped = true; try { swap(); } catch (e) {} }
       // 覆盖片上浮：切换后 480ms 开始淡出
       if (t > (REDUCE ? .6 : .78)) {
         var fadeFrom = REDUCE ? .6 : .78, fadeLen = REDUCE ? .4 : .22;

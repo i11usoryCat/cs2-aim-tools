@@ -1,0 +1,127 @@
+/* 排版精修 —— 定稿版（默认生效）
+   来源：design-variants 的 C · rhythm（Hub）+ B · readout 的仪表读数（数据页）
+   只改排版与间距，不改任何功能；颜色/线全部来自 theme.css / type.css 令牌。 */
+
+   C · rhythm —— 留白节奏
+   论点：首屏改成三段式「标题 → 目录 → 底部读数带」，目录居中、
+   读数带像杂志页脚一样压在下缘，纵向接近 1:2:1；目录行加宽到 48px。
+   ============================================================ */
+html main:has(> #play.on){ padding-bottom:0 }
+html #play.on{
+  padding:40px 0 0; gap:0; justify-content:space-between;
+  min-height:calc(100vh - 103px);   /* 103 = header 67 + main 上内边距 36，铺满一屏 */
+}
+html #play .play-head{ order:1; margin:0 }
+html #drillGrid{ order:2; margin:0 }
+html #play .statsbar{ order:3; margin:0 }
+
+html #playTitle{
+  font-size:clamp(52px,6.2vw,84px); line-height:.94; letter-spacing:-.02em; font-kerning:normal;
+}
+html #play .play-head{ padding-bottom:36px }
+html #play .ph-eyebrow{
+  gap:8px; font-size:9.5px; letter-spacing:.3em; line-height:1; margin-bottom:20px;
+}
+html #play .ph-eyebrow .num{ font-size:9.5px; font-weight:500; letter-spacing:.3em; line-height:1 }
+html #play .ph-eyebrow .num + span::before{
+  content:""; display:inline-block; width:22px; height:1px;
+  background:color-mix(in srgb, var(--acc) 60%, var(--line));
+  vertical-align:middle; margin-right:10px; transform:translateY(-.5px);
+}
+html #play .ph-right .hint{
+  font-size:15px; line-height:24px; letter-spacing:.01em; margin:0 0 20px;
+  max-width:38ch; text-wrap:pretty;
+}
+html #play #todaySlot .today{ height:48px; font-size:13.5px }
+
+/* 目录：行高 48px，列间距更大，压低到「目录页」的密度 */
+html #drillGrid .cols{ }
+html #drillGrid .col{ padding:0 24px 8px; min-height:0 }
+html #drillGrid .grp{ font-size:18px; letter-spacing:.02em; margin-bottom:16px; gap:10px }
+html #drillGrid .grp i{ font-size:9.5px; font-weight:600; letter-spacing:.26em }
+html #drillGrid .grp i::after{
+  flex:0 0 20px; width:20px; margin-left:9px;
+  background:color-mix(in srgb, var(--acc) 45%, var(--dim2));
+}
+html #drillGrid .item{ height:48px; font-size:14.5px; letter-spacing:.01em }
+html #drillGrid .item .ar{ font-size:11.5px }
+html #play #drillGrid .item{ overflow:visible }
+html #drillGrid .item>span:first-child{ overflow:hidden; text-overflow:ellipsis }
+html #drillGrid .item:hover::before{ height:0 }
+html #drillGrid .item::after{
+  content:""; position:absolute; left:0; top:calc(50% + 15px); height:1px;
+  width:calc(100% - 30px); background:color-mix(in srgb, var(--acc) 65%, transparent);
+  transform:scaleX(0); transform-origin:left center; pointer-events:none;
+  transition:transform 120ms cubic-bezier(.2,.8,.2,1);
+}
+html #drillGrid .item:hover::after{ transform:scaleX(1) }
+
+/* 底部读数带：只留一条压边横线，标签在上、数字 30px，像刊物页脚的版权行 */
+html #play .statsbar{
+  display:grid; grid-template-columns:repeat(4,1fr); gap:0;
+  padding:22px 0 28px; border-top:1px solid var(--line); border-bottom:0;
+}
+html #play .statsbar .sb{
+  flex-direction:column; align-items:flex-start; gap:8px;
+  padding:0 24px; border-left:1px solid var(--line);
+}
+html #play .statsbar .sb:first-child{ padding-left:0; border-left:0 }
+html #play .statsbar .sb-k{ font-size:9.5px; letter-spacing:.26em; line-height:1 }
+html #play .statsbar .sb-v{
+  font-size:28px; line-height:1; letter-spacing:-.03em; font-weight:800;
+}
+html #play .statsbar .sb-v .u{ font-size:11px; font-weight:500; letter-spacing:.06em }
+html #play .statsbar .sb-v.dim{ color:var(--dim); font-weight:600 }
+html #play .statsbar .sb-v.dim .u{ font-size:11px; font-weight:500 }
+html #play .statsbar .sb:has(.sb-v.dim > .u[style]) .sb-v .u{
+  font-size:28px !important; font-weight:600; letter-spacing:.02em;
+}
+
+/* ============================================================
+   个人数据 · 仪表读数（B · readout 的移植版）
+   论点：数据页整页都是读数，标签在上、数字放大、顶线压 20px 刻度短线，
+   像一块仪表盘而不是四段文字。
+   ============================================================ */
+html #data .kpiRow{
+  display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:0;
+  border-top:1px solid var(--line); padding-top:0; margin-top:24px;
+}
+html #data .kpiRow > div{
+  position:relative; padding:18px 24px 20px; border-left:1px solid var(--line);
+}
+html #data .kpiRow > div:first-child{ padding-left:0; border-left:0 }
+html #data .kpiRow > div::before{           /* 顶线刻度短线 */
+  content:""; position:absolute; left:0; top:-1px; width:20px; height:1px;
+  background:color-mix(in srgb, var(--txt) 30%, var(--line));
+}
+html #data .kpiRow > div:first-child::before{ left:0 }
+html #data .kpiRow .k{
+  font-size:9.5px; letter-spacing:.26em; line-height:1; text-transform:uppercase;
+  color:var(--dim); margin-bottom:12px; display:block;
+}
+html #data .kpiRow .v{
+  font-size:52px; line-height:1; letter-spacing:-.045em; font-weight:800;
+  font-variant-numeric:tabular-nums; color:var(--txt);
+}
+html #data .kpiRow .v.dim{
+  font-size:22px; font-weight:600; letter-spacing:0; color:var(--dim); line-height:2.2;
+}
+
+/* ---- 矮视口压缩（浏览器 chrome 吃掉高度时仍保证一屏放下） ---- */
+@media (max-height: 880px){
+  html #play.on{ padding:20px 0 0; min-height:calc(100vh - 92px) }
+  html #play .play-head{ padding-bottom:22px }
+  html #playTitle{ font-size:clamp(42px,4.8vw,58px) }
+  html #play .ph-eyebrow{ margin-bottom:14px }
+  html #drillGrid{ padding-top:4px }
+  html #drillGrid .item{ height:41px }
+  html #drillGrid .grp{ margin-bottom:10px; padding-bottom:10px }
+  html #play .statsbar .sb-v{ font-size:34px }
+  html #play .statsbar{ padding-top:0; padding-bottom:14px }
+}
+/* Hub 页不需要底部页脚留白：让三段式真正铺满一屏 */
+html body main{padding-bottom:0}
+@media (max-height: 880px){
+  html body main{padding-top:20px}
+  html #play.on{ min-height:calc(100vh - 87px) }
+}

@@ -57,6 +57,12 @@ html{
   --gold-text: color-mix(in srgb, var(--gold) 70%, var(--txt));
 }
 
+/* 语义状态色（成功 / 警告）：同属主题令牌表，页面不再各存一份。
+   浅纸用深色状态色保证 ≥4.5:1，深纸用亮色。 */
+html{ --ok:#15803d; --warn:#b45309; }
+html[data-theme="jade"],html[data-theme="forest"],html[data-theme="mono"],
+html[data-theme="night"],html[data-theme="cyber"]{ --ok:#3fb950; --warn:#d29922; }
+
 /* 主题色过渡：属性变化时平滑（避免一阶一阶跳） */
 html{ color-scheme: light; }
 html[data-theme="jade"],html[data-theme="forest"],html[data-theme="mono"],

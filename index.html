@@ -957,18 +957,21 @@ function rippleSwitch(lang, cx, cy){
   addEventListener('resize', fit);
   fit();
 
-  // 第四个彩蛋：页脚公式连点 3 次
-  (function(){
-    var f=document.getElementById('eggFormula');
-    if(!f) return;
-    var n=0, timer=null;
-    f.style.cursor='pointer';
-    f.addEventListener('click',function(){
-      n++; clearTimeout(timer);
-      timer=setTimeout(function(){ n=0; }, 900);
-      if(n>=3){ n=0; location.href='对话记录.html'; }
-    });
-  })();
+})();
+</script>
+<script>
+/* 第四个彩蛋：页脚公式连点 3 次 → 对话记录
+   （v3 删掉 #fx 画布后，这段原本留在 if(!cv) return 之后成了死代码，移出来独立执行） */
+(function(){
+  var f=document.getElementById('eggFormula');
+  if(!f) return;
+  var n=0, timer=null;
+  f.style.cursor='pointer';
+  f.addEventListener('click',function(){
+    n++; clearTimeout(timer);
+    timer=setTimeout(function(){ n=0; }, 900);
+    if(n>=3){ n=0; location.href='对话记录.html'; }
+  });
 })();
 </script>
 <script>

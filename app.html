@@ -974,6 +974,8 @@ try{
   .card{ border-radius:0 !important; background:transparent !important; border:1px solid var(--line) !important; }
   .card>.t{ font-family:var(--f-ui) }
   #set .v, #data .v, .v{ font-family:var(--f-ui); font-weight:800; font-variant-numeric:tabular-nums; letter-spacing:-.02em }
+  /* 空数据占位不要用 44px 的破折号（看起来像粗横杠）：降一档字号 + 次要色 */
+  #data .v.dim, #set .v.dim{ font-size:15px; font-weight:500; letter-spacing:0; color:var(--dim); line-height:2.9 }
   table td,table th{ font-size:13px; font-variant-numeric:tabular-nums }
   .k{ font-size:var(--fs-label); letter-spacing:.16em; text-transform:uppercase; color:var(--dim) }
   .hint{ font-size:13.5px }
@@ -2252,8 +2254,9 @@ function renderData(){
     if(b.bestLimit>0 && (minL===null||b.bestLimit<minL)) minL=b.bestLimit;
     if(b.bestHit>0 && (maxH===null||b.bestHit>maxH)) maxH=b.bestHit;
   });
-  $('sLimit').textContent=minL===null?'—':minL+' ms';
-  $('sHit').textContent=maxH===null?'—':maxH+'%';
+  var limEl=$('sLimit'), hitEl=$('sHit');
+  if(limEl){ limEl.textContent = minL===null?'未测':minL+' ms'; limEl.classList.toggle('dim', minL===null); }
+  if(hitEl){ hitEl.textContent = maxH===null?'未测':maxH+'%'; hitEl.classList.toggle('dim', maxH===null); }
 
   let rows='<tr><th>模式</th><th>最佳命中</th><th>最佳用时</th><th>最佳难度</th></tr>';
   const keys=Object.keys(best);

@@ -23,7 +23,7 @@
   }catch(e){}
 })();</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Vernier · 分毫</title>
+<title>训练 · Vernier</title>
 <meta name="description" content="分毫 Vernier —— 灵敏度标定、六维检查与每日训练计划。本地存储，无账号无广告。">
 <meta property="og:title" content="分毫 · 训练中心">
 <meta property="og:description" content="标定灵敏度，六维检查，按计划练枪。全部数据只存在本机。">
@@ -78,11 +78,10 @@ try{
     --dim2:color-mix(in srgb, var(--dim) 78%, transparent);
     --head:color-mix(in srgb, var(--bg) 92%, transparent);
     --shade:24 21 17; --ring:color-mix(in srgb, var(--acc) 22%, transparent);
-    --ok:#15803d; --warn:#b45309;
   }
   html[data-theme="jade"],html[data-theme="forest"],html[data-theme="mono"],
   html[data-theme="night"],html[data-theme="cyber"]{
-    --shade:0 0 0; --ok:#3fb950; --warn:#d29922;
+    --shade:0 0 0;
   }
 
   *{box-sizing:border-box}
@@ -156,7 +155,7 @@ try{
   #mobileTip{display:none;position:fixed;left:50%;bottom:18px;transform:translateX(-50%);
     z-index:9300;align-items:center;gap:12px;padding:10px 14px 10px 20px;
     background:var(--panel);border:1px solid var(--line);color:var(--txt);
-    border-radius:999px;font-size:13px;white-space:nowrap;max-width:calc(100vw - 20px);
+    border-radius:1px;font-size:13px;white-space:nowrap;max-width:calc(100vw - 20px);
     box-shadow:0 12px 32px -14px color-mix(in srgb,var(--txt) 30%,transparent)}
   #mobileTip button{font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;
     background:var(--acc);color:var(--on-acc,#fff);border:none;border-radius:9px;padding:7px 14px;
@@ -238,8 +237,8 @@ try{
   button,label.fileBtn{
     display:inline-flex; align-items:center; justify-content:center;
     min-width:132px; height:42px; padding:0 20px;
-    background:var(--panel2); border:1px solid var(--line);
-    color:var(--txt); border-radius:10px; font-size:14px; font-family:inherit;
+    background:transparent; border:1px solid var(--line);
+    color:var(--txt); border-radius:1px; font-size:14px; font-family:inherit;
     line-height:1; cursor:pointer; transition:.15s;
   }
 
@@ -254,13 +253,13 @@ try{
   /* ——— 主题选择 ——— */
   .swatches{display:flex; gap:9px; flex-wrap:wrap}
   .sw{
-    cursor:pointer; border:1px solid var(--line); border-radius:12px;
-    padding:9px 14px; font-size:13px; background:var(--panel2);
+    cursor:pointer; border:1px solid var(--line); border-radius:1px;
+    padding:9px 14px; font-size:13px; background:transparent;
     display:flex; align-items:center; gap:9px; transition:.16s;
   }
   .sw:hover{border-color:var(--line2)}
-  .sw.on{border-color:var(--acc); box-shadow:0 0 0 3px var(--ring); font-weight:600}
-  .dot{width:13px; height:13px; border-radius:50%; box-shadow:inset 0 0 0 1px #0003}
+  .sw.on{border-color:var(--acc); box-shadow:none; font-weight:600}
+  .dot{width:13px; height:13px; border-radius:1px; box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--txt) 22%,transparent)}
 
   @media (max-width:600px){
     header{padding:12px 16px}
@@ -299,13 +298,13 @@ try{
 
 
   *{box-sizing:border-box}
-#plan{margin:0;background:var(--bg);color:var(--txt);font-family:"Microsoft YaHei","Segoe UI",system-ui,sans-serif;line-height:1.7}
+#plan{margin:0;background:transparent;color:var(--txt);font-family:var(--f-ui);line-height:1.7}
 #plan .wrap{max-width:860px;margin:0 auto;padding:36px 22px 60px}
 #plan a.back{color:var(--dim);text-decoration:none;font-size:13px}
 #plan a.back:hover{color:var(--acc)}
 #plan h1{font-size:24px;margin:14px 0 4px;color:var(--acc)}
 #plan .sub{color:var(--dim);font-size:14px;margin-bottom:26px}
-#plan .panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:20px 22px;margin-bottom:18px}
+#plan .panel{background:transparent;border:1px solid var(--line);border-radius:1px;padding:20px 22px;margin-bottom:18px}
 #plan .panel h2{font-size:16px;margin:0 0 12px;color:var(--txt)}
 #plan .row{display:flex;gap:16px;flex-wrap:wrap}
 #plan .stat{flex:1;min-width:120px}
@@ -315,8 +314,8 @@ try{
 #plan .task:last-child{border-bottom:none}
 #plan .task .t{font-weight:600}
 #plan .task .n{font-size:13px;color:var(--dim)}
-#plan .go{margin-left:auto;padding:8px 18px;background:var(--acc);border:1px solid var(--acc);color:var(--on-acc,#fff);
-    border-radius:7px;text-decoration:none;font-size:14px;white-space:nowrap}
+#plan .go{margin-left:auto;padding:8px 18px;background:transparent;border:1px solid var(--line);color:var(--acc-text,var(--acc));
+    border-radius:1px;text-decoration:none;font-size:14px;white-space:nowrap}
 #plan .go:hover{background:var(--acc)}
 #plan .cal{margin-top:12px}
 #plan .calTitle{font-size:15px;font-weight:600;color:var(--txt);margin-bottom:10px;letter-spacing:.5px}
@@ -324,38 +323,37 @@ try{
 #plan .calWeek div{font-size:11px;color:var(--dim);text-align:center;letter-spacing:1px}
 #plan .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
 #plan .grid .cell{height:44px;display:flex;align-items:center;justify-content:center;
-    border-radius:8px;background:var(--panel2);color:var(--txt);font-size:13px;
-    border:1px solid transparent;font-variant-numeric:tabular-nums}
+    border-radius:1px;background:transparent;color:var(--txt);font-size:13px;
+    border:1px solid var(--line);font-variant-numeric:tabular-nums}
 #plan .grid .cell.blank{background:transparent;border:0}
-#plan .grid .cell.rest{background:transparent;color:var(--txt);opacity:.7;border:1px dashed var(--line)}
+#plan .grid .cell.rest{background:transparent;color:var(--dim);border:1px dashed var(--line)}
 #plan .grid .cell.done{background:var(--acc);color:var(--on-acc,#fff);border-color:var(--acc);font-weight:600}
-#plan .grid .cell.today{border:2px solid var(--acc);color:var(--txt);font-weight:700;
-    box-shadow:0 0 0 3px color-mix(in srgb,var(--acc) 22%,transparent)}
-#plan .grid .cell.rest.today{background:var(--panel2)}
+#plan .grid .cell.today{border:2px solid var(--acc);color:var(--txt);font-weight:700;box-shadow:none}
+#plan .grid .cell.rest.today{background:transparent}
 #plan .grid .cell.done.today{background:var(--acc);color:var(--on-acc,#fff);border-color:var(--txt)}
   
-#plan textarea{width:100%;height:70px;background:var(--bg);border:1px solid var(--line);color:var(--txt);
-    border-radius:7px;padding:10px;font-family:Consolas,monospace;font-size:13px;resize:vertical}
-#plan button{padding:9px 20px;background:var(--panel2);border:1px solid var(--line);color:var(--txt);border-radius:7px;
+#plan textarea{width:100%;height:70px;background:transparent;border:1px solid var(--line);color:var(--txt);
+    border-radius:1px;padding:10px;font-family:Consolas,monospace;font-size:13px;resize:vertical}
+#plan button{padding:9px 20px;background:transparent;border:1px solid var(--line);color:var(--txt);border-radius:1px;
     font-size:14px;cursor:pointer;font-family:inherit}
-#plan button:hover{border-color:var(--acc);color:var(--acc);background:var(--panel2)}
+#plan button:hover{border-color:var(--acc);color:var(--acc-text,var(--acc));background:transparent}
 #plan button.main{background:var(--acc);border-color:var(--acc);color:var(--on-acc,#fff)}
 #plan table{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}
 #plan td,#plan th{padding:6px 8px;border-bottom:1px solid var(--panel2);text-align:left}
 #plan th{color:var(--dim);font-weight:500}
 #plan .hint{font-size:13px;color:var(--dim)}
-#plan code{background:var(--panel2);padding:1px 6px;border-radius:4px;font-size:12px}
+#plan code{background:color-mix(in srgb,var(--txt) 6%,transparent);padding:1px 6px;border-radius:1px;font-size:12px}
 
   /* 计划自定义 */
   #plan .meta{margin:6px 0 2px;font-size:13px;color:var(--dim);letter-spacing:.3px}
   #plan .meta b{color:var(--txt);font-weight:600}
   #plan .chips{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 6px}
-  #plan .chip{padding:8px 14px;height:auto;min-width:0;font-size:13px;border-radius:20px;
+  #plan .chip{padding:8px 14px;height:auto;min-width:0;font-size:13px;border-radius:1px;
     background:transparent;border:1px solid var(--line);color:var(--dim);cursor:pointer}
   #plan .chip.on{background:var(--acc);border-color:var(--acc);color:var(--on-acc,#fff);font-weight:600}
   #plan .chip.new{border-style:dashed;color:var(--dim2)}
   #plan .chip.new:hover{border-color:var(--acc);color:var(--acc)}
-  #plan .chipIn{width:86px;height:auto;padding:8px 10px;font-size:13px;border-radius:20px}
+  #plan .chipIn{width:86px;height:auto;padding:8px 10px;font-size:13px;border-radius:1px}
   #plan .planOps{display:flex;gap:14px;align-items:center;margin:2px 0 10px;font-size:12px;
     color:var(--dim2);min-height:16px}
   #plan .planOps span{cursor:pointer;transition:.15s}
@@ -374,7 +372,7 @@ try{
   #plan .shareOpts input[type=checkbox]{width:14px;height:14px;accent-color:var(--acc)}
   #plan .prow{position:relative;display:grid;grid-template-columns:150px 148px auto;
     gap:12px;align-items:center;padding:10px 34px 10px 10px;margin:0 -10px;
-    border-radius:10px;border-bottom:1px solid var(--line);
+    border-radius:1px;border-bottom:1px solid var(--line);
     transition:background .15s}
   #plan .prow:hover{background:color-mix(in srgb,var(--txt) 6%,transparent)}
   #plan .prow:hover .del{color:var(--warn)}
@@ -384,18 +382,18 @@ try{
   #plan .prow .nm span{font-size:12px;color:var(--dim)}
   #plan .prow select{width:100%;height:34px;padding:0 8px;font-size:13px}
   #plan .prow input.nmIn{width:100%;height:34px;padding:0 10px;font-size:13px;
-    background:var(--bg2);border:1px solid var(--line);border-radius:8px;color:var(--txt);
+    background:transparent;border:1px solid var(--line);border-radius:1px;color:var(--txt);
     font-family:inherit;box-sizing:border-box}
-  #plan .prow input.nmIn:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 3px var(--ring)}
+  #plan .prow input.nmIn:focus{outline:1px solid var(--acc);outline-offset:2px;border-color:var(--acc);box-shadow:none}
   #plan .stepper{display:flex;align-items:center;gap:6px}
-  #plan .stepper button{height:30px;width:30px;min-width:0;padding:0;font-size:16px;border-radius:8px}
+  #plan .stepper button{height:30px;width:30px;min-width:0;padding:0;font-size:16px;border-radius:1px}
   #plan .stepper span{min-width:26px;text-align:center;font-size:14px;color:var(--txt);
     font-variant-numeric:tabular-nums}
   #plan .prow .time{font-size:12px;color:var(--dim);min-width:52px;text-align:right}
   #plan .prowAct{display:flex;align-items:center;gap:10px}
-  #plan .pGo{padding:5px 12px;background:var(--acc);color:var(--on-acc,#fff);border-radius:8px;
+  #plan .pGo{padding:5px 12px;background:transparent;border:1px solid var(--line);color:var(--acc-text,var(--acc));border-radius:1px;
     font-size:12.5px;text-decoration:none;white-space:nowrap;font-weight:600}
-  #plan .pGo:hover{background:var(--acc2)}
+  #plan .pGo:hover{border-color:var(--acc);background:color-mix(in srgb,var(--acc) 8%,transparent)}
   #plan{--dim2:color-mix(in srgb,var(--txt) 72%,var(--bg))}
   @media (max-width:560px){
     #plan .prow{grid-template-columns:1fr 1fr;gap:8px}
@@ -404,13 +402,13 @@ try{
     font-size:13.5px;line-height:1.9;color:var(--dim)}
   #plan .emptyRows{padding:22px 0;text-align:center;font-size:13px;color:var(--dim2)}
   #plan .addRow{width:100%;height:40px;margin-top:12px;border:1px dashed var(--line);
-    background:transparent;color:var(--dim);font-size:13px;border-radius:10px;cursor:pointer}
+    background:transparent;color:var(--dim);font-size:13px;border-radius:1px;cursor:pointer}
   #plan .addRow:hover{border-color:var(--acc);color:var(--acc)}
   #plan .prow .del{position:absolute;right:2px;top:50%;transform:translateY(-50%);
     width:28px;height:28px;min-width:0;padding:0;border:0;background:transparent;
-    color:var(--dim2);font-size:15px;cursor:pointer;border-radius:7px}
-  #plan .prow .del:hover{color:var(--warn);background:var(--panel2)}
-  #plan .planTotal{margin-top:16px;padding:14px 16px;border-radius:12px;background:var(--panel2)}
+    color:var(--dim2);font-size:15px;cursor:pointer;border-radius:0}
+  #plan .prow .del:hover{color:var(--warn);background:color-mix(in srgb,var(--txt) 6%,transparent)}
+  #plan .planTotal{margin-top:16px;padding:14px 16px;border-radius:1px;background:transparent;border:1px solid var(--line)}
   #plan .planTotal .sum{font-size:14px;color:var(--dim)}
   #plan .planTotal .sum b{font-size:22px;color:var(--acc);font-variant-numeric:tabular-nums}
   #plan .planTotal .tip{margin-top:6px;font-size:13px;color:var(--dim)}
@@ -1166,7 +1164,7 @@ try{
     <div class="hint">训练器成绩会自动计入日历；把「复制本组数据」粘到这里可留档详情。</div>
     <textarea id="logInput" placeholder="2026-10-24  限时450ms  命中率83%  中位436ms  超时5次"></textarea>
     <div style="margin-top:10px;display:flex;gap:10px">
-      <button class="main" id="addLog">保存这条</button>
+      <button id="addLog">保存这条</button>
       <button id="copyAll">复制全部</button>
     </div>
     <table id="logTable"></table>
@@ -1290,8 +1288,8 @@ try{
     <div class="card">
       <div class="t" style="margin-bottom:12px">训练场景配色</div>
       <div class="swatches" id="scenes"></div>
-      <div id="scenePrev" style="height:96px;border-radius:10px;border:1px solid var(--line);position:relative;margin:14px 0 0;overflow:hidden">
-        <div id="prevDot" style="position:absolute;right:26%;top:50%;width:16px;height:16px;margin-top:-8px;border-radius:50%;border:2px solid #fff"></div>
+      <div id="scenePrev" style="height:96px;border-radius:1px;border:1px solid var(--line);position:relative;margin:14px 0 0;overflow:hidden">
+        <div id="prevDot" style="position:absolute;right:26%;top:50%;width:16px;height:16px;margin-top:-8px;border-radius:1px;border:2px solid var(--on-acc)"></div>
         <div id="prevCross" style="position:absolute;inset:0"></div>
       </div>
       <div class="row" style="margin-top:10px;align-items:center;gap:18px">
@@ -2342,8 +2340,7 @@ function drawTrend(runs){
   const line=css.getPropertyValue('--line').trim()||'#2a3a36';
   // 中位用时线颜色按主题挑，避免与命中率线（--acc）撞色：
   // 暖砂/明亮（红/蓝 acc）→ 墨绿；湖泊/墨鱼（青 acc）→ 橙；深色主题 → 琥珀
-  const th2=document.documentElement.getAttribute('data-theme');
-  const mtC=({sand:'#0f766e',light:'#0f766e',lake:'#b45309',ink:'#b45309'})[th2]||'#d29922';
+  const mtC=css.getPropertyValue('--gold').trim()||'var(--gold)';
   const P={l:46,r:44,t:10,b:26};
   const cw=W-P.l-P.r, ch=H-P.t-P.b;
   // 网格：左轴 0-100%，右轴 0-900ms
@@ -3355,7 +3352,7 @@ try{
             '<span>'+(r.s*40)+L(' 球',' balls')+'</span>'+
             '<button data-step="1" data-i="'+i+'">+</button>'+
           '</div>'+
-          '<a class="pGo" target="_blank" rel="noopener" href="tools/aim-trainer.html?mode='+r.m+'&count='+Math.min(800,Math.max(20,r.s*40))+cfgQ()+'">'+L('开始','Start')+'</a>'+
+          '<a class="pGo" href="tools/aim-trainer.html?mode='+r.m+'&count='+Math.min(800,Math.max(20,r.s*40))+cfgQ()+'">'+L('开始','Start')+'</a>'+
         '</div>'+
         '<button class="del" data-del="'+i+'" title="'+L('删掉这项','Delete this row')+'">×</button>'+
       '</div>';

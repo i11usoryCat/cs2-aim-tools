@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-theme="sand">
+<html lang="zh-CN" data-theme="sand">
 <head>
 <meta charset="utf-8">
 <script>/* 剪贴板兜底：writeText 在失焦/无权限时抛 NotAllowedError（未捕获会进 console），统一降级到 execCommand */
@@ -99,6 +99,7 @@ try{
 <link rel="alternate" hreflang="x-default" href="https://i11usorycat.github.io/cs2-aim-tools/">
 <link rel="stylesheet" href="assets/theme.css?v=1">
 <link rel="stylesheet" href="assets/type.css?v=3">
+<script src="assets/lang-ripple.js"></script>
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20class%3D%22%22%20viewBox%3D%220%200%2032%2032%22%20fill%3D%22none%22%20stroke%3D%22currentColor%22%20stroke-linecap%3D%22butt%22%20aria-hidden%3D%22true%22%3E%3Cdefs%3E%3Cmask%20id%3D%22vmF%22%20maskUnits%3D%22userSpaceOnUse%22%20x%3D%220%22%20y%3D%220%22%20width%3D%2232%22%20height%3D%2232%22%3E%3Crect%20width%3D%2232%22%20height%3D%2232%22%20fill%3D%22%23fff%22%20stroke%3D%22none%22%2F%3E%3Crect%20x%3D%22-8.12%22%20y%3D%2212.58%22%20width%3D%2244%22%20height%3D%222.6%22%20transform%3D%22rotate(-45%2013.88%2013.88)%22%20fill%3D%22%23000%22%20stroke%3D%22none%22%2F%3E%3Crect%20x%3D%22-10.81%22%20y%3D%229.89%22%20width%3D%2244%22%20height%3D%222.6%22%20transform%3D%22rotate(-45%2011.19%2011.19)%22%20fill%3D%22%23000%22%20stroke%3D%22none%22%2F%3E%3Crect%20x%3D%22-13.50%22%20y%3D%227.20%22%20width%3D%2244%22%20height%3D%222.6%22%20transform%3D%22rotate(-45%208.50%208.50)%22%20fill%3D%22%23000%22%20stroke%3D%22none%22%2F%3E%3C%2Fmask%3E%3C%2Fdefs%3E%3Cg%20mask%3D%22url(%23vmF)%22%3E%3Ccircle%20cx%3D%2216%22%20cy%3D%2216%22%20r%3D%228.80%22%20stroke-width%3D%221.90%22%2F%3E%3Cpath%20d%3D%22M20.40%2016H30M16%2020.40V30M11.60%2016H2M16%2011.60V2%22%20stroke-width%3D%222.20%22%2F%3E%3Ccircle%20cx%3D%2216%22%20cy%3D%2216%22%20r%3D%221.50%22%20fill%3D%22currentColor%22%20stroke%3D%22none%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E">
 <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
 <style>
@@ -304,20 +305,20 @@ try{
   @keyframes landDraw{ from{transform:scaleX(0)} to{transform:scaleX(1)} }
 
   .logo-mark{ opacity:0; animation:landRise 260ms cubic-bezier(.2,.8,.2,1) forwards; animation-delay:0ms }
-  .brandline{ opacity:0; animation:landRise 260ms cubic-bezier(.2,.8,.2,1) forwards; animation-delay:24ms }
-  h1{ opacity:0; animation:landRise 260ms cubic-bezier(.2,.8,.2,1) forwards; animation-delay:48ms }
-  .sub{ opacity:0; animation:landRise 260ms cubic-bezier(.2,.8,.2,1) forwards; animation-delay:96ms }
-  .by{ opacity:0; animation:landRise 260ms cubic-bezier(.2,.8,.2,1) forwards; animation-delay:120ms }
+  .brandline{ opacity:0; animation:landRise 260ms cubic-bezier(.2,.8,.2,1) forwards; animation-delay:16ms }
+  h1{ opacity:0; animation:landRise 260ms cubic-bezier(.2,.8,.2,1) forwards; animation-delay:32ms }
+  .sub{ opacity:0; animation:landRise 260ms cubic-bezier(.2,.8,.2,1) forwards; animation-delay:64ms }
+  .by{ opacity:0; animation:landRise 260ms cubic-bezier(.2,.8,.2,1) forwards; animation-delay:80ms }
   /* 主行动不排队：第 0 帧就可点，整体 120ms 淡入（motion-spec §0.2） */
   .start{ opacity:0; animation:landRise 120ms linear forwards; animation-delay:0ms }
-  .tip{ opacity:0; animation:landRise 260ms cubic-bezier(.2,.8,.2,1) forwards; animation-delay:192ms }
-  .foot{ opacity:0; animation:landRise 260ms cubic-bezier(.2,.8,.2,1) forwards; animation-delay:216ms }
+  .tip{ opacity:0; animation:landRise 260ms cubic-bezier(.2,.8,.2,1) forwards; animation-delay:112ms }
+  .foot{ opacity:0; animation:landRise 260ms cubic-bezier(.2,.8,.2,1) forwards; animation-delay:128ms }
 
   /* 品牌块下方那条金色刻度尺：从左匀速画出来 */
   .sub::before{
     transform-origin:left center;
-    animation:landDraw 420ms linear both;
-    animation-delay:72ms;
+    animation:landDraw 240ms linear both;
+    animation-delay:48ms;
   }
 
   @media (prefers-reduced-motion:reduce){
@@ -366,6 +367,7 @@ try{
   }
   /* 品牌名只出现一次：小字距的 VERNIER 是标识，第二行 h1 仅留语义 */
   h1{
+    font-family:var(--f-display);
     position:absolute; width:1px; height:1px; margin:-1px; padding:0;
     overflow:hidden; clip-path:inset(50%); white-space:nowrap; border:0;
   }
@@ -429,16 +431,16 @@ try{
   .foot a:hover{color:var(--ink); border-bottom-color:var(--acc-paper)}
   #buildTag{font-size:10px !important; letter-spacing:.1em !important; color:var(--ink-2) !important}
 
-  /* 语言开关：注脚级 */
-  .langTop{top:26px; right:40px}
+  /* 语言开关：注脚级（无框，只有下划线；与工具页 .langsw 同形制） */
+  .langTop{top:26px; right:40px; border:0; overflow:visible; background:transparent}
   .langTop span{
     font-family:var(--f-ui); font-size:10.5px; letter-spacing:.18em; text-transform:uppercase;
     color:var(--ink-2); background:transparent !important; box-shadow:none !important;
-    padding:6px 10px; border:1px solid transparent;
+    padding:4px 6px; border:0; border-bottom:1px solid transparent;
   }
   .langTop span.on{
     color:var(--ink) !important; background:transparent !important;
-    border:1px solid var(--rule); box-shadow:none !important;
+    border:0 !important; border-bottom:1px solid var(--acc-paper) !important; box-shadow:none !important;
   }
 
   @media (max-width:900px){
@@ -751,6 +753,15 @@ function parseColor(v){
 let switching=false, watchdog=null;
 
 function rippleSwitch(lang, cx, cy){
+  // 全站统一：雨滴涟漪用 assets/lang-ripple.js（620ms / 4 圈；reduced-motion 380ms / 3 圈）
+  if(window.LangRipple && window.LangRipple.run){
+    var el=document.querySelector('#langTop span[data-l="'+lang+'"]');
+    if(el){ var r=el.getBoundingClientRect(); cx=r.left+r.width/2; cy=r.top+r.height/2; }
+    window.LangRipple.run({x:cx,y:cy}, function(){
+      LANG=lang; storeLang(lang); applyLang(lang); markSwitch(lang);
+    });
+    return;
+  }
   if(switching) return;
   switching=true;
 

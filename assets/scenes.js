@@ -21,7 +21,7 @@ window.GAME_SCENES = {
 };;
 
 /* 站点主题 → 训练场景（界面跟主题，场景配色跟这张表） */
-window.THEME2SCENE = {jade:'jade',ink:'ink',lake:'lake',light:'light',sand:'light',forest:'jade',mono:'mono',cyber:'night',night:'night'};
+window.THEME2SCENE = {jade:'jade',ink:'light',lake:'lake',light:'light',sand:'light',forest:'jade',mono:'mono',cyber:'night',night:'night'};
 
 /* 取当前该用哪个场景：手动选过优先，否则跟站点主题 */
 window.pickSceneKey = function(){

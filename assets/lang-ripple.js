@@ -15,7 +15,10 @@
   }
 
   function run(point, swap) {
-    if (REDUCE) { try { swap(); } catch (e) {} return; }
+    // 减少动效模式：不跳过动画，而是缩短到 240ms / 2 圈——语言切换是用户主动操作，
+    // 完全无动画会让人以为「没反应」。
+    var DUR = REDUCE ? 380 : 620;
+    var N = REDUCE ? 3 : 4;
     var x = point && isFinite(point.x) ? point.x : innerWidth / 2;
     var y = point && isFinite(point.y) ? point.y : innerHeight / 2;
     var rMax = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y)) * 1.05;
@@ -31,7 +34,7 @@
 
     // 波纹环（主波 + 3 圈拖尾）
     var rings = [];
-    for (var i = 0; i < 4; i++) {
+    for (var i = 0; i < N; i++) {
       var el = document.createElement('div');
       var isMain = i === 0;
       el.style.cssText = 'position:absolute;left:0;top:0;border-radius:50%;' +
@@ -50,7 +53,6 @@
     document.body.appendChild(host);
 
     var t0 = performance.now();
-    var DUR = 620;
     var swapped = false;
 
     function frame(now) {
@@ -63,7 +65,7 @@
       rings[0].style.transform = 'translate(' + x + 'px,' + y + 'px) translate(-50%,-50%)';
 
       // 拖尾：延迟 110/210/320ms，速度递减
-      for (var i = 1; i < 4; i++) {
+      for (var i = 1; i < N; i++) {
         var d = [0, 110, 210, 320][i];
         var tt = Math.max(0, (now - t0 - d)) / DUR;
         var ee = 1 - Math.pow(1 - Math.min(1, tt), 3);
@@ -76,9 +78,10 @@
       // 波前遮住大半时切换语言
       if (!swapped && t >= .45) { swapped = true; try { swap(); } catch (e) {} }
       // 覆盖片上浮：切换后 480ms 开始淡出
-      if (t > .78) {
-        veil.style.opacity = String(Math.min(1, (t - .78) / .22) * .0);
-        host.style.opacity = String(1 - Math.min(1, (t - .78) / .22));
+      if (t > (REDUCE ? .6 : .78)) {
+        var fadeFrom = REDUCE ? .6 : .78, fadeLen = REDUCE ? .4 : .22;
+        veil.style.opacity = String(Math.min(1, (t - fadeFrom) / fadeLen) * .0);
+        host.style.opacity = String(1 - Math.min(1, (t - fadeFrom) / fadeLen));
       }
 
       if (t < 1.05) requestAnimationFrame(frame);
@@ -87,5 +90,7 @@
     requestAnimationFrame(frame);
   }
 
-  window.LangRipple = { run: run };
+  window.LangRipple = { run: run, version: '3-r2', lastRun: 0 };
+  var _origRun = run;
+  window.LangRipple.run = function (p, s) { window.LangRipple.lastRun = Date.now(); return _origRun(p, s); };
 })();

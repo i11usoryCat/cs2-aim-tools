@@ -22,7 +22,7 @@
     };
   }catch(e){}
 })();</script>
-<title>甩枪训练 · 自适应难度</title>
+<title>甩枪训练 · Vernier</title>
 <link rel="icon" href="../assets/favicon.svg">
 <link rel="stylesheet" href="../assets/theme.css">
 <link rel="stylesheet" href="../assets/type.css">
@@ -34,11 +34,9 @@
   #hud{position:fixed;left:22px;top:16px;font-size:15px;font-weight:500;line-height:1.85;pointer-events:none;
     font-variant-numeric:tabular-nums;
     /* 中间档：3px 柔光 + 1px 实影——保留一点朦胧质感，但边缘不发虚 */
-    text-shadow:0 0 3px rgba(0,0,0,.42), 0 1px 1px rgba(0,0,0,.5);
+    text-shadow:0 0 3px color-mix(in srgb,var(--bg) 72%,transparent), 0 1px 1px color-mix(in srgb,var(--bg) 88%,transparent);
     text-rendering:optimizeLegibility; letter-spacing:.01em}
-  html[data-theme="light"] #hud,html[data-theme="lake"] #hud,html[data-theme="ink"] #hud,html[data-theme="sand"] #hud{
-    text-shadow:0 0 3px rgba(255,255,255,.55), 0 1px 1px rgba(255,255,255,.7)
-  }
+  /* 文字阴影一律跟随 --bg：深底给暗影、浅底给亮影，不再按主题枚举写死 rgba */
   #hud b{color:var(--hud-acc,var(--acc))}
   .overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;
     text-align:center;font-size:16px;line-height:2;color:var(--txt);
@@ -72,7 +70,7 @@
   #back{position:fixed;left:16px;top:14px;z-index:40;display:none;
     font-size:13px;color:var(--dim);text-decoration:none;padding:7px 12px;border-radius:9px;
     border:1px solid transparent;transition:.15s;letter-spacing:.5px}
-  #back:hover{color:var(--acc);border-color:var(--line);background:var(--panel)}
+  #back:hover{color:var(--acc-text,var(--acc));border-color:var(--line);background:var(--panel)}
   #back.on{display:inline-block}
   #grab{position:fixed;inset:0;z-index:60;display:none;align-items:center;justify-content:center;
     background:color-mix(in srgb,var(--bg) 72%,transparent);color:var(--txt);font-size:18px;letter-spacing:2px;cursor:pointer}
@@ -84,7 +82,7 @@
     background:var(--acc);border:1px solid var(--acc);color:var(--on-acc);border-radius:8px;pointer-events:auto}
   .btn:hover{background-color:var(--acc)}
   .btn.alt{background:var(--panel);border-color:var(--line);margin-left:10px;color:var(--txt)}
-  .btn.alt:hover{background:var(--panel);border-color:var(--acc);color:var(--acc)}
+  .btn.alt:hover{background:var(--panel);border-color:var(--acc);color:var(--acc-text,var(--acc))}
   table{border-collapse:collapse;margin-top:12px}
   td,th{padding:6px 16px;text-align:right;border-bottom:1px solid var(--line);font-size:13px;font-variant-numeric:tabular-nums}
   th{color:var(--dim);font-weight:500}
@@ -102,7 +100,7 @@
   .art-kicker{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);line-height:16px}
   .art-kicker b{font-weight:500;color:var(--dim)}
   .res-num{font-size:clamp(28px,3.2vw,40px);font-weight:800;line-height:40px;letter-spacing:-.01em;
-    color:var(--acc);font-variant-numeric:tabular-nums;margin-top:8px;text-align:left;
+    color:var(--acc-text,var(--acc));font-variant-numeric:tabular-nums;margin-top:8px;text-align:left;
     padding-bottom:16px;border-bottom:1px solid var(--line);position:relative}
   .res-num::after{content:"";position:absolute;right:0;bottom:-1px;width:24px;height:1px;
     background:var(--dim)}
@@ -265,7 +263,7 @@
   #btnRow{grid-area:3/2/4/3;margin-top:10px;align-self:start;display:flex;flex-direction:row;align-items:flex-start;gap:12px;flex-wrap:wrap}
   #sensHint{grid-area:1/2/2/3;margin-top:0;font-size:12px;line-height:1.6;color:var(--dim);
     cursor:pointer;font-variant-numeric:tabular-nums;max-width:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  #bw{grid-area:4/2/5/3;margin-top:12px;font-size:12.5px;line-height:1.65;color:var(--acc)}
+  #bw{grid-area:4/2/5/3;margin-top:12px;font-size:12.5px;line-height:1.65;color:var(--acc-text,var(--acc))}
   /* 「参数」：上面一行 10.5px 微标签 + 下面一个真正的 1px 线框按钮 */
   #more{grid-area:6/1/7/2;justify-self:start;margin-top:26px;
     display:flex;flex-direction:column;align-items:flex-start;gap:8px;
@@ -314,7 +312,7 @@
   .v3-res-extra{grid-column:2;justify-self:end;font-family:var(--f-ui);font-size:10.5px;letter-spacing:.18em;
     text-transform:uppercase;color:var(--dim);white-space:nowrap}
   .res-num{font-family:var(--f-ui);font-size:clamp(64px,7.4vw,104px);font-weight:800;line-height:.9;
-    letter-spacing:-.04em;color:var(--acc);margin-top:32px;padding:0 0 8px;border:0;text-align:left}
+    letter-spacing:-.04em;color:var(--acc-text,var(--acc));margin-top:32px;padding:0 0 8px;border:0;text-align:left}
   .res-num::after{display:none}
   .res-num i{font-family:var(--f-ui);font-size:.28em;font-weight:600;color:var(--dim);margin-left:8px;letter-spacing:0}
   .res-note{margin-top:28px;font-family:var(--f-ui);font-size:13px;line-height:1.9;color:var(--dim);
@@ -442,7 +440,7 @@
       </label>
     </div>
     <div id="checkNote" style="display:none;margin-top:14px;font-size:13px;color:var(--dim)">
-      90 秒 · 题目一样 · 方向随机&nbsp;&nbsp;<a href="#" id="switchMode" style="color:var(--acc);text-decoration:none">换模式</a>
+      90 秒 · 题目一样 · 方向随机&nbsp;&nbsp;<a href="#" id="switchMode" style="color:var(--acc-text,var(--acc));text-decoration:none">换模式</a>
     </div>
     <div id="chkRow" style="margin-top:16px;display:flex;gap:16px;justify-content:flex-start;font-size:13px;color:var(--dim)">
       <label><input id="limit" type="checkbox" checked> 时间限制</label>
@@ -465,7 +463,7 @@
 </div>
 
 <div id="cd" class="overlay">
-  <div id="cdNum" style="font-size:72px;font-weight:700;color:var(--acc)">3</div>
+  <div id="cdNum" style="font-size:72px;font-weight:700;color:var(--acc-text,var(--acc))">3</div>
   <div id="cdHint" style="margin-top:8px;color:var(--dim);font-size:14px;letter-spacing:2px">准备好</div>
 </div>
 <div id="res" class="overlay"><div id="resPanel">
@@ -1395,6 +1393,344 @@ function drawAtmosphereBackdrop(){
   const dh=visBot-visTop; if(dh<=0) return;
   ctx.drawImage(atmSkyCv, 0, (visTop-y0)*0.5, W*0.5, dh*0.5, 0, visTop, W, dh);
 }
+/* ============================================================
+   抬头星空 / 高空尘粒 —— 只在抬头时才出现的第三层天空
+   ------------------------------------------------------------
+   行为：
+   · 平视 / 低头（pitch ≤ 6°）完全不出；6°→20° 连续淡入（fade=t^0.85）；>20° 全显。
+   · 3 层（远/中/近）：远层小而密、近层大而稀；层间视差不同，yaw/pitch 移动时轻微错位。
+   · 呼吸：每层一个 3–9s 周期 + 各自相位，层级 alpha 在 0.35–1.0 间起伏（单颗星随之明暗）；
+     另有 8 颗（占比 <10%）0.8–1.5s 快速闪烁的亮点作点缀。
+   · 深色主题 = 真星空：--txt 61% / --acc 24% / --gold 15% 混合（每颗星再向暖/冷偏移 ≤25%）；
+     浅色主题 = 同一组主题色向纸白提亮的「高空尘粒 / 光斑」（数量 ×0.65、更大更柔、更低 α）。
+   · reduced-motion：不呼吸、不闪，静态星空。
+   性能：
+   · 每层星星的位置/大小/亮度/颜色在构建时烘焙进离屏 canvas（含视差位移余量）；
+     每帧只做 3 次 drawImage（按可见源矩形裁剪）+ 8 个亮点 sprite，无随机数、无 new 对象。
+   · 构建实测约 2–3ms：懒构建 + 加载后空闲预热；尺寸 / 主题 / 场景变化才重建。
+   · 调试：window.__starfield.info()/state()/probes()/visible()；?stars=off 可整层关闭（A/B 验收用）。
+   ============================================================ */
+const SF={
+  inDeg:6, fullDeg:20,                 // 淡入区间（度）
+  layers:[
+    // count = 1440×900 下期望「可见」星数；r=半径(CSS px)；a=单颗峰值 α；parX/parY=视差系数；period=呼吸周期
+    {count:360, r:[0.42,0.95], a:[0.10,0.34], parX:0.10, parY:0.16, period:8.2, phase:0.0},
+    {count:150, r:[0.70,1.35], a:[0.14,0.42], parX:0.18, parY:0.28, period:6.1, phase:2.1},
+    {count:50,  r:[1.05,2.25], a:[0.20,0.55], parX:0.28, parY:0.42, period:4.3, phase:4.2}
+  ],
+  sparkleNeed:[3,3,2],                 // 各层快速闪烁亮点数（共 8 颗）
+  sparklePeriod:[0.8,1.5],
+  stillAlpha:0.82,                     // reduced-motion：不呼吸，固定亮度系数
+  lightCount:0.65,                     // 浅色主题：尘粒数量 ×0.65（比星空稀疏）
+  lightAlpha:1.15,                     // 浅色主题：亮度系数（白天只留极淡尘粒，靠「大而柔」而不是「亮」被看见）
+  lightRadius:4.4                      // 浅色主题：尘粒半径倍率（光斑更大更柔）
+};
+const SF_TAU=Math.PI*2, SF_R2D=180/Math.PI;
+let _sfOff=false;
+try{ _sfOff=(new URLSearchParams(location.search).get('stars')==='off'); }catch(e){}
+let sfKey=null, sfLayers=null, sfSparks=null, sfSparkSprite=[null,null,null], sfInfo=null, sfBuildMs=0, sfPal=null, sfFails=0;
+let _sfThemeVer=0;
+try{
+  new MutationObserver(function(){ _sfThemeVer++; sfKey=null; })
+    .observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+}catch(e){}
+
+function _sfCl(v){ return v<0?0:v>255?255:v; }
+function _sfColor(str, fb){
+  var s=String(str||'').trim(), m=/^#([0-9a-fA-F]{6})$/.exec(s);
+  if(m){ var n=parseInt(m[1],16); return [(n>>16)&255,(n>>8)&255,n&255]; }
+  m=/^#([0-9a-fA-F]{3})$/.exec(s);
+  if(m){ var h=m[1]; return [parseInt(h[0]+h[0],16),parseInt(h[1]+h[1],16),parseInt(h[2]+h[2],16)]; }
+  m=/^rgba?\(\s*([0-9.]+)[,\s]+([0-9.]+)[,\s]+([0-9.]+)/.exec(s);
+  if(m) return [_sfCl(+m[1]),_sfCl(+m[2]),_sfCl(+m[3])];
+  return fb? fb.slice() : [255,255,255];
+}
+function _sfMix(a,b,t){ return [a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t, a[2]+(b[2]-a[2])*t]; }
+function _sfRGBA(c,a){ return 'rgba('+(c[0]|0)+','+(c[1]|0)+','+(c[2]|0)+','+(Math.round(a*1000)/1000)+')'; }
+function _sfRnd(seed){ var s=seed>>>0; return function(){ s=(s*1664525+1013904223)>>>0; return s/4294967296; }; }
+
+/* 主题令牌 → 星空配色（getComputedStyle 读 theme.css 的 --txt/--acc/--gold，不另造色） */
+function _sfPalette(){
+  var dark=!!(SC&&SC.dark);
+  var gs=getComputedStyle(document.documentElement);
+  var txt=_sfColor(gs.getPropertyValue('--txt'), dark?[232,242,234]:[51,41,28]);
+  var acc=_sfColor(gs.getPropertyValue('--acc'), dark?[74,222,128]:[194,65,12]);
+  var gold=_sfColor(gs.getPropertyValue('--gold'), dark?[234,179,8]:[161,98,7]);
+  var main, warm, cool;
+  if(dark){
+    main=_sfMix(_sfMix(txt,acc,0.28), gold, 0.15);      // ≈ txt .61 / acc .24 / gold .15
+    warm=_sfMix(main, gold, 0.45);
+    cool=_sfMix(main, acc, 0.45);
+  } else {
+    // 浅色：同一组主题色（acc/gold）向纸白 #fffcf4 提亮 76%——「被高空阳光照亮的尘粒」
+    main=_sfMix(_sfMix(acc,gold,0.55), [255,252,244], 0.76);
+    warm=_sfMix(main, [255,246,226], 0.40);
+    cool=_sfMix(main, [238,244,255], 0.40);
+  }
+  return {dark:dark, main:main, warm:warm, cool:cool};
+}
+function _sfGlowSprite(rgb, size, soft){
+  var cv=_mkCv(size,size), g=cv&&cv.getContext('2d');
+  if(!g) return null;
+  var r=size*0.5;
+  var grd=g.createRadialGradient(r,r,0, r,r,r);
+  grd.addColorStop(0,_sfRGBA(rgb,1));
+  grd.addColorStop(soft?0.16:0.30,_sfRGBA(rgb,soft?0.50:0.70));
+  grd.addColorStop(soft?0.42:0.62,_sfRGBA(rgb,soft?0.14:0.18));
+  grd.addColorStop(1,_sfRGBA(rgb,0));
+  g.fillStyle=grd; g.fillRect(0,0,size,size);
+  return cv;
+}
+/* 每层的离屏画布几何：视差位移余量 = f_css × par（sin 最大值 1），再加 8px 安全边 */
+function _sfGeom(i){
+  var dpr=devicePixelRatio||1, wc=W/dpr, hc=H/dpr, fc=f/dpr, L=SF.layers[i];
+  var mx=Math.ceil(fc*L.parX)+8, mtop=Math.ceil(fc*L.parY)+8;
+  return {dpr:dpr, wc:wc, hc:hc, fc:fc, mx:mx, mtop:mtop, w:Math.ceil(wc+2*mx), h:Math.ceil(hc+mtop+8)};
+}
+/* 单层烘焙：星星数据一次算死 → 画进离屏 canvas */
+function _sfBakeLayer(i){
+  var pal=sfPal, G=_sfGeom(i), L=SF.layers[i], dark=!!pal.dark;
+  var rnd=_sfRnd((0x9e3779b1 ^ ((i+1)*0x85ebca6b))>>>0);
+  var count=Math.max(6, Math.round(L.count*((G.w*G.h)/(G.wc*G.hc))*(dark?1:SF.lightCount)));
+  var data=new Float32Array(count*4);
+  for(var k=0;k<count;k++){
+    var o=k*4;
+    data[o]=rnd()*G.w; data[o+1]=rnd()*G.h;
+    data[o+2]=L.r[0]+(L.r[1]-L.r[0])*Math.pow(rnd(),1.8);
+    var a=L.a[0]+(L.a[1]-L.a[0])*Math.pow(rnd(),1.6);
+    if(rnd()<0.06) a=Math.min(L.a[1], a*1.35+0.05);     // 少量亮星
+    data[o+3]=a*(dark?1:SF.lightAlpha);
+  }
+  // 亮点（快速闪烁）：每层挑 need 颗；不烘焙进层 canvas，单独按 sprite 画
+  var need=SF.sparkleNeed[i]||0, picks=[];
+  for(var guard=0; guard<need*12 && picks.length<need; guard++){
+    var idx=Math.floor(rnd()*count);
+    if(picks.indexOf(idx)<0) picks.push(idx);
+  }
+  var cv=_mkCv(G.w,G.h), g=cv&&cv.getContext('2d');
+  if(!g) return null;
+  var glow=dark? _sfGlowSprite(pal.main, 48, false) : _sfGlowSprite(pal.warm, 48, true);
+  for(var k2=0;k2<count;k2++){
+    if(picks.indexOf(k2)>=0) continue;
+    var o2=k2*4, u=data[o2], v=data[o2+1], r=data[o2+2], aa=data[o2+3];
+    var col=_sfMix(pal.main, rnd()<0.5?pal.warm:pal.cool, rnd()*0.5);
+    if(dark){
+      if(i===2 && r>1.55 && glow){                       // 近层亮星：一点点柔光
+        var R=r*3.4;
+        g.globalAlpha=Math.min(1, aa*0.30);
+        g.drawImage(glow, u-R, v-R, R*2, R*2);
+      }
+      g.globalAlpha=Math.min(1, aa);
+      g.fillStyle=_sfRGBA(col,1);
+      g.beginPath(); g.arc(u, v, Math.max(0.42, r), 0, 6.2831853); g.fill();
+    } else {
+      // 浅色：全部用柔光 sprite，做「光斑 / 尘粒」而不是锐利星点
+      var R2=Math.max(1.8, r*SF.lightRadius);
+      g.globalAlpha=Math.min(1, aa);
+      if(glow) g.drawImage(glow, u-R2, v-R2, R2*2, R2*2);
+      else { g.fillStyle=_sfRGBA(col,1); g.beginPath(); g.arc(u,v,Math.max(0.5,r),0,6.2831853); g.fill(); }
+    }
+  }
+  g.globalAlpha=1;
+  var sparks=[];
+  for(var s=0;s<picks.length;s++){
+    var o3=picks[s]*4;
+    var sparkA=Math.min(0.55, Math.max(L.a[1]*1.02, data[o3+3]*1.30));   // 单颗峰值 α 上限 0.55（与规范一致）
+    sparks.push({
+      layer:i, u:data[o3], v:data[o3+1], a:sparkA,
+      halo:Math.max(4.2, data[o3+2]*5.2),
+      period:SF.sparklePeriod[0]+(SF.sparklePeriod[1]-SF.sparklePeriod[0])*rnd(),
+      phase:rnd()*SF_TAU
+    });
+  }
+  return {cv:cv, w:G.w, h:G.h, mx:G.mx, mtop:G.mtop, count:count, stars:data, sparks:sparks};
+}
+function _sfBuild(){
+  sfPal=_sfPalette();
+  var layers=[], sparks=[];
+  for(var i=0;i<SF.layers.length;i++){
+    var rec=_sfBakeLayer(i);
+    if(!rec) return false;
+    layers.push(rec);
+    for(var k=0;k<rec.sparks.length;k++) sparks.push(rec.sparks[k]);
+  }
+  sfSparkSprite=[
+    _sfGlowSprite(sfPal.dark?sfPal.cool:sfPal.warm, 64, true),
+    _sfGlowSprite(sfPal.dark?sfPal.main:sfPal.warm, 64, true),
+    _sfGlowSprite(sfPal.warm, 64, true)
+  ];
+  sfLayers=layers; sfSparks=sparks;
+  var total=0, list=[];
+  for(var i2=0;i2<layers.length;i2++){
+    total+=layers[i2].count;
+    list.push({layer:i2, baked:layers[i2].count, target:SF.layers[i2].count,
+      radius:SF.layers[i2].r.slice(), alpha:SF.layers[i2].a.slice(),
+      period:SF.layers[i2].period, phase:SF.layers[i2].phase,
+      parX:SF.layers[i2].parX, parY:SF.layers[i2].parY,
+      canvas:[layers[i2].w, layers[i2].h]});
+  }
+  var dpr2=devicePixelRatio||1;
+  sfInfo={dark:!!sfPal.dark, total:total, sparkles:sparks.length, layers:list, bakeMs:0,
+    viewport:[Math.round(W/dpr2), Math.round(H/dpr2)],
+    pitchInDeg:SF.inDeg, pitchFullDeg:SF.fullDeg,
+    palette:{main:sfPal.main.map(Math.round), warm:sfPal.warm.map(Math.round), cool:sfPal.cool.map(Math.round)}};
+  return true;
+}
+function _sfKey(){
+  return (W|0)+'x'+(H|0)+'|'+FOVH+'|'+(devicePixelRatio||1)+'|'+((SC&&SC.dark)?1:0)+'|'+
+    (document.documentElement.getAttribute('data-theme')||'')+'|'+_sfThemeVer;
+}
+function starfieldEnsure(){
+  if(_sfOff) return;
+  if(!(W>64&&H>64)) return;
+  var k=_sfKey();
+  if(k===sfKey && sfLayers) return;
+  sfKey=k;
+  var t0=performance.now(), ok=false;
+  try{ ok=_sfBuild(); }catch(e){
+    ok=false; try{ window.__starfieldErr=String((e&&e.stack)||e); }catch(e2){}
+  }
+  if(!ok){
+    sfLayers=null; sfSparks=null; sfInfo=null;
+    if(++sfFails>3) _sfOff=true;
+    sfKey=null;
+    return;
+  }
+  sfFails=0;
+  sfBuildMs=performance.now()-t0;
+  if(sfInfo) sfInfo.bakeMs=Math.round(sfBuildMs*10)/10;
+}
+function _sfFade(){
+  if(pitch<=SF.inDeg*D2R) return 0;
+  if(pitch>=SF.fullDeg*D2R) return 1;
+  var t=(pitch-SF.inDeg*D2R)/((SF.fullDeg-SF.inDeg)*D2R);
+  return Math.pow(t,0.85);   // t=0 → 0（6° 整）、t=1 → 1（20° 整）；前段抬得快一点，10° 就能看见星星在浮出来
+}
+function _sfClipCss(){
+  var dpr=devicePixelRatio||1;
+  var hy=H*0.5+f*Math.tan(pitch);
+  return Math.min(H, Math.max(0, hy))/dpr;
+}
+/* 层位移取整到整像素：dpr=1 时 drawImage 走 1:1 快路径（不触发双线性重采样），省的填充时间很明显 */
+function _sfShiftX(i){ var dpr=devicePixelRatio||1; return Math.round(-f/dpr*Math.sin(yaw)*SF.layers[i].parX); }
+function _sfShiftY(i){ var dpr=devicePixelRatio||1; return Math.round(f/dpr*Math.sin(pitch)*SF.layers[i].parY); }
+/* 只画屏幕可见的那块源矩形：省掉离屏画布落在屏幕外的填充 */
+function _sfBlit(bc, shX, shY, wcss, hcss, dpr){
+  var u0=Math.max(0, bc.mx-shX), u1=Math.min(bc.w, bc.mx-shX+wcss);
+  var v0=Math.max(0, bc.mtop-shY), v1=Math.min(bc.h, bc.mtop-shY+hcss);
+  if(u1-u0<1 || v1-v0<1) return;
+  ctx.drawImage(bc.cv, u0, v0, u1-u0, v1-v0,
+    (u0-bc.mx+shX)*dpr, (v0-bc.mtop+shY)*dpr, (u1-u0)*dpr, (v1-v0)*dpr);
+}
+function _sfVisibleCounts(){
+  if(!sfLayers) return [0,0,0];
+  var dpr=devicePixelRatio||1, wcss=W/dpr, clipY=_sfClipCss(), out=[];
+  for(var i=0;i<sfLayers.length;i++){
+    var bc=sfLayers[i], shx=_sfShiftX(i), shy=_sfShiftY(i), d=bc.stars, n=0;
+    for(var k=0;k<bc.count;k++){
+      var o=k*4, x=d[o]-bc.mx+shx, y=d[o+1]-bc.mtop+shy;
+      if(y>=4 && y<=clipY-4 && x>=4 && x<=wcss-4) n++;
+    }
+    out.push(n);
+  }
+  return out;
+}
+function _sfState(){
+  var dpr=devicePixelRatio||1, t=performance.now()*0.001, fade=_sfFade();
+  var alphas=[], shifts=[];
+  for(var i=0;i<SF.layers.length;i++){
+    var L=SF.layers[i];
+    var breathe=reducedMotion? SF.stillAlpha : (0.675+0.325*Math.sin(t*SF_TAU/L.period+L.phase));
+    alphas.push(Math.round(fade*breathe*10000)/10000);
+    shifts.push([_sfShiftX(i), _sfShiftY(i)]);
+  }
+  return {pitchDeg:Math.round(pitch*SF_R2D*10)/10, yawDeg:Math.round(wrapPi(yaw)*SF_R2D*10)/10,
+    fade:Math.round(fade*10000)/10000, alphas:alphas, shifts:shifts,
+    clipY:Math.round(Math.min(H, Math.max(0, H*0.5+f*Math.tan(pitch)))),
+    visible:_sfVisibleCounts(), bakeMs:sfInfo?sfInfo.bakeMs:0,
+    reducedMotion:!!reducedMotion, enabled:!_sfOff};
+}
+/* 主绘制：每帧 3 次 drawImage + ≤8 个亮点 sprite */
+function drawStarfield(now){
+  if(_sfOff) return;
+  var fade=_sfFade();
+  if(fade<=0.003) return;
+  starfieldEnsure();
+  if(!sfLayers) return;
+  var dpr=devicePixelRatio||1;
+  var hy=H*0.5+f*Math.tan(pitch);
+  var clipY=Math.min(H, Math.max(0, hy));
+  if(clipY<=2) return;
+  var wcss=W/dpr, hcss=clipY/dpr, t=now*0.001;
+  ctx.save();
+  ctx.beginPath(); ctx.rect(0,0,W,clipY); ctx.clip();
+  for(var i=0;i<sfLayers.length;i++){
+    var bc=sfLayers[i], L=SF.layers[i];
+    var breathe=reducedMotion? SF.stillAlpha : (0.675+0.325*Math.sin(t*SF_TAU/L.period+L.phase));
+    var a=fade*breathe;
+    if(a<=0.004) continue;
+    ctx.globalAlpha=a>1?1:a;
+    _sfBlit(bc, _sfShiftX(i), _sfShiftY(i), wcss, hcss, dpr);
+  }
+  if(sfSparks && sfSparks.length){
+    if(SC&&SC.dark) ctx.globalCompositeOperation='lighter';
+    for(var s=0;s<sfSparks.length;s++){
+      var sp=sfSparks[s], bc2=sfLayers[sp.layer];
+      var sx=sp.u-bc2.mx+_sfShiftX(sp.layer), syy=sp.v-bc2.mtop+_sfShiftY(sp.layer);
+      if(syy<-24 || syy>hcss+24 || sx<-24 || sx>wcss+24) continue;
+      var tw=reducedMotion? SF.stillAlpha : (0.35+0.65*(0.5+0.5*Math.sin(t*SF_TAU/sp.period+sp.phase)));
+      var sa=fade*sp.a*tw;
+      if(sa<=0.004) continue;
+      var spr=sfSparkSprite[sp.layer]||sfSparkSprite[1];
+      if(!spr) continue;
+      var R=sp.halo;
+      ctx.globalAlpha=sa>1?1:sa;
+      ctx.drawImage(spr, (sx-R)*dpr, (syy-R)*dpr, R*2*dpr, R*2*dpr);
+    }
+    ctx.globalCompositeOperation='source-over';
+  }
+  ctx.restore();
+  ctx.globalAlpha=1;
+}
+window.__starfield={
+  info:function(){ return sfInfo? JSON.parse(JSON.stringify(sfInfo)) : null; },
+  state:function(){ return _sfState(); },
+  visible:function(){ return _sfVisibleCounts(); },
+  probes:function(n){
+    n=n||8;
+    if(!sfLayers) return [];
+    var dpr=devicePixelRatio||1, wcss=W/dpr, clipY=_sfClipCss(), list=[];
+    for(var i=0;i<sfLayers.length;i++){
+      var bc=sfLayers[i], shx=_sfShiftX(i), shy=_sfShiftY(i), d=bc.stars;
+      for(var k=0;k<bc.count;k++){
+        var o=k*4, x=d[o]-bc.mx+shx, y=d[o+1]-bc.mtop+shy;
+        if(y<12 || y>clipY-12 || x<12 || x>wcss-12) continue;
+        list.push({layer:i, u:Math.round(d[o]*100)/100, v:Math.round(d[o+1]*100)/100,
+          sx:Math.round(x*dpr*10)/10, sy:Math.round(y*dpr*10)/10,
+          r:Math.round(d[o+2]*100)/100, a:Math.round(d[o+3]*1000)/1000});
+      }
+    }
+    list.sort(function(a,b){ return b.a-a.a; });
+    return list.slice(0,n);
+  },
+  sparkles:function(){ return sfSparks? sfSparks.map(function(s){return {layer:s.layer,a:+s.a.toFixed(3),period:+s.period.toFixed(3),halo:+s.halo.toFixed(2)};}) : []; },
+  sparkleProbes:function(){
+    if(!sfSparks || !sfLayers) return [];
+    var dpr=devicePixelRatio||1, wcss=W/dpr, clipY=_sfClipCss(), list=[];
+    for(var i=0;i<sfSparks.length;i++){
+      var sp=sfSparks[i], bc=sfLayers[sp.layer];
+      var x=sp.u-bc.mx+_sfShiftX(sp.layer), y=sp.v-bc.mtop+_sfShiftY(sp.layer);
+      if(y<14 || y>clipY-14 || x<14 || x>wcss-14) continue;
+      list.push({layer:sp.layer, sx:Math.round(x*dpr*10)/10, sy:Math.round(y*dpr*10)/10,
+        period:+sp.period.toFixed(3), a:+sp.a.toFixed(3), halo:+sp.halo.toFixed(2)});
+    }
+    return list;
+  },
+  enable:function(v){ _sfOff=!v; if(v) sfKey=null; }
+};
+/* 空闲预热：加载后先把三张星空烘焙好，第一次抬头不卡帧 */
+try{ setTimeout(function(){ if(!_sfOff && !sfLayers){ try{ starfieldEnsure(); }catch(e){} } }, 1800); }catch(e){}
+
 function drawAtmosphereRidges(){
   atmEnsureCache();
   const hy=H*0.5+f*Math.tan(pitch);
@@ -1595,6 +1931,7 @@ function drawSceneBase(now, dtMs, withGlow){
     return;
   }
   drawAtmosphereBackdrop();              // 天幕 + 地面光衰减（随 pitch 平移）
+  drawStarfield(now);                    // 抬头星空 / 高空尘粒（pitch>6° 才淡入；地平线以上，先于剪影/雾，让远山与雾把星压下去）
   drawAtmosphereRidges();                // 2–3 层远景剪影（随 yaw 视差）
   drawAtmosphereFog();                   // 地平线雾带
   grid();                                // 地面纹理（极淡）
@@ -1638,8 +1975,8 @@ function showFsHint(){
       h=document.createElement('div');
       h.id='fsHint';
       h.style.cssText='position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:9300;'
-        +'font:13px/1.5 var(--f-ui);letter-spacing:.04em;color:var(--ink-d);background:rgba(0,0,0,.42);'
-        +'border:1px solid rgba(255,255,255,.22);padding:8px 14px;cursor:pointer;pointer-events:auto';
+        +'font:13px/1.5 var(--f-ui);letter-spacing:.04em;color:var(--txt);background:color-mix(in srgb,var(--panel) 92%,transparent);'
+        +'border:1px solid var(--line);padding:8px 14px;cursor:pointer;pointer-events:auto';
       h.textContent='点击进入全屏（更准）';
       h.addEventListener('pointerdown',function(ev){
         ev.stopPropagation();
@@ -3233,8 +3570,8 @@ requestAnimationFrame(loop);
   function sync(){
     if(!ok){
       el.innerHTML = EN_UI
-        ? '⚠️ No raw pointer input in this browser (pointerrawupdate): reaction times will be inflated and not comparable across browsers<br>Use <b style="color:var(--acc)">Chrome</b> or <b style="color:var(--acc)">Edge</b>'
-        : '⚠️ 当前浏览器不支持原始输入（pointerrawupdate）：反应时间会偏大，跨浏览器不可比<br>建议使用 <b style="color:var(--acc)">Chrome</b> 或 <b style="color:var(--acc)">Edge</b>';
+        ? '⚠️ No raw pointer input in this browser (pointerrawupdate): reaction times will be inflated and not comparable across browsers<br>Use <b style="color:var(--acc-text,var(--acc))">Chrome</b> or <b style="color:var(--acc-text,var(--acc))">Edge</b>'
+        : '⚠️ 当前浏览器不支持原始输入（pointerrawupdate）：反应时间会偏大，跨浏览器不可比<br>建议使用 <b style="color:var(--acc-text,var(--acc))">Chrome</b> 或 <b style="color:var(--acc-text,var(--acc))">Edge</b>';
     } else if(raw){
       raw.textContent=EN_UI
         ? '⚠️ Raw input lock failed: movement is system-accelerated — cm/360 and reaction times are not comparable. This run will be marked.'

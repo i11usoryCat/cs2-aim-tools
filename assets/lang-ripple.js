@@ -1,7 +1,7 @@
 /* 语言切换：雨滴涟漪过渡（全站唯一允许「等」的地方）
    用法： LangRipple.run({x,y}, function(){ 换成新语言 })
-   - 圆心 = 点击位置；主波 620ms ease-out；3 圈拖尾
-   - 期间拦截点击；reduced-motion 直接切换
+   - 圆心 = 点击位置；主波 620ms ease-out，4 圈（主波 + 3 圈拖尾）
+   - 期间拦截点击；reduced-motion 380ms / 3 圈（不跳过，保留「有反应」的反馈）
 */
 (function () {
   var REDUCE = false;
@@ -15,7 +15,7 @@
   }
 
   function run(point, swap) {
-    // 减少动效模式：不跳过动画，而是缩短到 240ms / 2 圈——语言切换是用户主动操作，
+    // 减少动效模式：不跳过动画，而是缩短到 380ms / 3 圈——语言切换是用户主动操作，
     // 完全无动画会让人以为「没反应」。
     var DUR = REDUCE ? 380 : 620;
     var N = REDUCE ? 3 : 4;
@@ -84,7 +84,7 @@
         host.style.opacity = String(1 - Math.min(1, (t - fadeFrom) / fadeLen));
       }
 
-      if (t < 1.05) requestAnimationFrame(frame);
+      if (t < 1) requestAnimationFrame(frame);
       else { try { host.remove(); } catch (e) {} }
     }
     requestAnimationFrame(frame);

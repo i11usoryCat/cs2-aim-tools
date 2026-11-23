@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-theme="sand">
+<html lang="zh-CN" data-theme="sand">
 <head>
 <meta charset="utf-8">
 <link rel="stylesheet" href="../assets/theme.css">
@@ -38,16 +38,16 @@
 })();</script>
 <title>灵敏度标定 · 过冲法（全样本）</title>
 <style>
-  html,body{margin:0;height:100%;background:var(--bg);overflow:hidden;color:var(--txt);font-family:"Microsoft YaHei UI","Microsoft YaHei","Noto Sans SC","Segoe UI",system-ui,sans-serif}
-  /* 原生滚动条：6px 暗色细线，延续站点 1px 线风格。
-     只用 ::-webkit-scrollbar：一旦写 scrollbar-width/scrollbar-color，
-     Chromium 会忽略下面这组 6px 规则（实测变成 10px 白条）。 */
-  ::-webkit-scrollbar{width:6px;height:6px}
-  ::-webkit-scrollbar-track{background:transparent}
-  ::-webkit-scrollbar-thumb{background:var(--line);border-radius:0}
-  ::-webkit-scrollbar-thumb:hover{background:var(--dim)}
+  html,body{margin:0;height:100%;background:var(--bg);overflow:hidden;color:var(--txt);font-family:var(--f-ui)}
+  /* 滚动条规则统一在 assets/type.css（全站 6px 暗线），页面不再自定义 */
   canvas{display:block;cursor:none}
-  #ui{position:fixed;left:24px;top:20px;font-size:14px;line-height:1.9;pointer-events:none;text-shadow:0 0 6px var(--bg)}
+  /* HUD 统一档（与 tools/aim-trainer.html 的 #hud 同值）：3px 柔光 + 1px 实影
+     暗色场地用黑影，浅色场地（light/lake/ink/sand）换白色那一条 */
+  #ui{position:fixed;left:24px;top:20px;font-size:14px;line-height:1.9;pointer-events:none;
+    text-shadow:0 0 3px rgba(0,0,0,.42), 0 1px 1px rgba(0,0,0,.5)}
+  html[data-theme="light"] #ui,html[data-theme="lake"] #ui,html[data-theme="ink"] #ui,html[data-theme="sand"] #ui{
+    text-shadow:0 0 3px rgba(255,255,255,.55), 0 1px 1px rgba(255,255,255,.7)
+  }
   .overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;
     text-align:center;font-size:16px;line-height:2;color:var(--txt);background:color-mix(in srgb, var(--bg) 96%, transparent)}
   .overlay.show{display:flex}
@@ -902,6 +902,8 @@ updBwWarning();
   function sync(){
     var shown=document.querySelectorAll('.overlay.show').length>0;
     if(back) back.classList.toggle('on', shown);
+    // 与训练器一致：游戏中隐藏语言开关（鼠标已锁定点不到，且会压住左上角 HUD）
+    var ls=document.getElementById('langSw'); if(ls) ls.style.display = shown? '' : 'none';
   }
   ['msg','res'].forEach(function(id){
     var el=document.getElementById(id);

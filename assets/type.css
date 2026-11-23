@@ -51,7 +51,7 @@
 .vn-paper{
   background:
     radial-gradient(1100px 680px at 16% -12%, color-mix(in srgb, var(--acc-paper) 9%, transparent), transparent 62%),
-    radial-gradient(880px 560px at 94% 4%, rgba(84,108,142,.07), transparent 64%),
+    radial-gradient(880px 560px at 94% 4%, color-mix(in srgb, var(--txt) 4%, transparent), transparent 64%),
     var(--paper);
   color:var(--ink);
   font-family:var(--f-ui);

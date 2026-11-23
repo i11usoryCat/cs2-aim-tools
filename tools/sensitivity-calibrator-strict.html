@@ -44,17 +44,15 @@
   /* HUD 统一档（与 tools/aim-trainer.html 的 #hud 同值）：3px 柔光 + 1px 实影
      暗色场地用黑影，浅色场地（light/lake/ink/sand）换白色那一条 */
   #ui{position:fixed;left:24px;top:20px;font-size:14px;line-height:1.9;pointer-events:none;
-    text-shadow:0 0 3px rgba(0,0,0,.42), 0 1px 1px rgba(0,0,0,.5)}
-  html[data-theme="light"] #ui,html[data-theme="lake"] #ui,html[data-theme="ink"] #ui,html[data-theme="sand"] #ui{
-    text-shadow:0 0 3px rgba(255,255,255,.55), 0 1px 1px rgba(255,255,255,.7)
-  }
+    text-shadow:0 0 3px color-mix(in srgb,var(--bg) 72%,transparent), 0 1px 1px color-mix(in srgb,var(--bg) 88%,transparent)}
+  /* 文字阴影一律跟随 --bg：深底给暗影、浅底给亮影，不再按主题枚举写死 rgba */
   .overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;
     text-align:center;font-size:16px;line-height:2;color:var(--txt);background:color-mix(in srgb, var(--bg) 96%, transparent)}
   .overlay.show{display:flex}
 
   #back{position:fixed;left:16px;top:14px;z-index:40;display:none;font-size:13px;color:var(--dim);
     text-decoration:none;padding:7px 12px;border-radius:9px;border:1px solid transparent;transition:.15s}
-  #back:hover{color:var(--acc);border-color:var(--line);background:var(--panel)}
+  #back:hover{color:var(--acc-text,var(--acc));border-color:var(--line);background:var(--panel)}
   #back.on{display:inline-block}
   .btn{margin-top:24px;padding:13px 40px;font-size:16px;font-family:inherit;cursor:pointer;
     background:var(--acc);border:1px solid var(--acc);color:var(--on-acc);border-radius:8px;pointer-events:auto}
@@ -69,7 +67,7 @@
   .rt td,.rt th{padding:3px 14px;font-size:14px;line-height:18px}
   td,th{padding:9px 20px;text-align:right;border-bottom:1px solid var(--panel)}
   th{color:var(--dim);font-weight:500}
-  .big{font-size:30px;font-weight:700;color:var(--acc)}
+  .big{font-size:30px;font-weight:700;color:var(--acc-text,var(--acc))}
   /* 与训练器统一的开始页：参数默认收起 */
   #msg .pauseHide{display:none}
   #msg.showParams .pauseHide{display:block}
@@ -144,7 +142,7 @@
         <h1 id="calTitle" class="ov-title">灵敏度标定</h1>
       </div>
       <div class="ov-head-r">
-        <p class="ov-lede">每次只出现一个球。看到球后<b>最快速度甩过去并点击</b>。<br>程序记录你甩完的落点，算出你<b>冲过头还是没到</b>。<br><span style="color:var(--acc)">全样本：命中与未命中同样计入</span></p>
+        <p class="ov-lede">每次只出现一个球。看到球后<b>最快速度甩过去并点击</b>。<br>程序记录你甩完的落点，算出你<b>冲过头还是没到</b>。<br><span style="color:var(--acc-text,var(--acc))">全样本：命中与未命中同样计入</span></p>
         <div class="ov-actions">
           <button id="go" class="btn">开始</button>
           <button id="fsBtn" type="button" class="btn ghost">全屏 ⛶</button>
@@ -448,8 +446,8 @@ function finish(){
       '<div style="margin-top:12px;font-size:14px">'+verdict+'</div>'+
       (v.conv
         ? (v.fast
-            ? '<div style="margin-top:8px;color:var(--acc);font-weight:700">'+L2('✓ 快速标定完成（3 轮）——修明显偏差够用，想更准就继续测','✓ Quick calibration done (3 rounds) — good for fixing obvious bias; keep going for precision')+'</div>'
-            : '<div style="margin-top:8px;color:var(--acc);font-weight:700">'+L2('✓ 数据够了，可以定稿','✓ Enough data — finalize')+'</div>')
+            ? '<div style="margin-top:8px;color:var(--acc-text,var(--acc));font-weight:700">'+L2('✓ 快速标定完成（3 轮）——修明显偏差够用，想更准就继续测','✓ Quick calibration done (3 rounds) — good for fixing obvious bias; keep going for precision')+'</div>'
+            : '<div style="margin-top:8px;color:var(--acc-text,var(--acc));font-weight:700">'+L2('✓ 数据够了，可以定稿','✓ Enough data — finalize')+'</div>')
         : (v.fast
             ? (v.nCum<v.minBalls
                 ? '<div style="margin-top:8px;color:var(--dim);font-size:13px">'+L2('样本还少（'+v.nCum+'/'+v.minBalls+' 球）——继续打完 3 轮','Still few shots ('+v.nCum+'/'+v.minBalls+') — finish the 3 rounds')+'</div>'
@@ -554,7 +552,7 @@ addEventListener('keydown',function(e){
 document.getElementById('clr').addEventListener('click',e=>{
   e.stopPropagation();
   allRuns.length=0;
-  resBody.innerHTML+='<div style="margin-top:10px;color:var(--acc);font-size:13px">'+(window.__IS_EN?'Cumulative data cleared':'累计已清空')+'</div>';
+  resBody.innerHTML+='<div style="margin-top:10px;color:var(--acc-text,var(--acc));font-size:13px">'+(window.__IS_EN?'Cumulative data cleared':'累计已清空')+'</div>';
 });
 // 复制结果 / 应用到设置
 document.getElementById('copyRes').addEventListener('click',e=>{
@@ -745,8 +743,8 @@ function updBwWarning(){
   var ok = ('onpointerrawupdate' in window);
   if(ok){ el.innerHTML=''; return; }
   el.innerHTML = (window.__IS_EN
-    ? '⚠️ No pointerrawupdate in this browser — sampling is coarser<br>Use <b style="color:var(--acc)">Chrome</b> or <b style="color:var(--acc)">Edge</b>'
-    : '⚠️ 当前浏览器不支持 pointerrawupdate，采样精度会降低<br>建议使用 <b style="color:var(--acc)">Chrome</b> 或 <b style="color:var(--acc)">Edge</b>');
+    ? '⚠️ No pointerrawupdate in this browser — sampling is coarser<br>Use <b style="color:var(--acc-text,var(--acc))">Chrome</b> or <b style="color:var(--acc-text,var(--acc))">Edge</b>'
+    : '⚠️ 当前浏览器不支持 pointerrawupdate，采样精度会降低<br>建议使用 <b style="color:var(--acc-text,var(--acc))">Chrome</b> 或 <b style="color:var(--acc-text,var(--acc))">Edge</b>');
 }
 updBwWarning();
 
@@ -759,7 +757,7 @@ updBwWarning();
     if(!(d>0 && c>0)) { hint.textContent=''; return; }
     var s = y>0 ? 360/((c/2.54)*d)/y : 0;
     var txt = c.toFixed(1) + ' cm/360';
-    if(y>0) txt += ' · ' + (window.__IS_EN?'Sensitivity':'灵敏度') + ' <b style="color:var(--acc)">' + s.toFixed(2) + '</b>';
+    if(y>0) txt += ' · ' + (window.__IS_EN?'Sensitivity':'灵敏度') + ' <b style="color:var(--acc-text,var(--acc))">' + s.toFixed(2) + '</b>';
     txt += ' · DPI ' + d;
     hint.innerHTML = txt;
     try{

@@ -327,7 +327,7 @@ try{
     border-radius:1px;background:transparent;color:var(--txt);font-size:13px;
     border:1px solid var(--line);font-variant-numeric:tabular-nums}
 #plan .grid .cell.blank{background:transparent;border:0}
-#plan .grid .cell.rest{background:transparent;color:var(--dim);border:1px dashed var(--line)}
+#plan .grid .cell.rest{background:transparent;color:var(--dim);border:0}
 #plan .grid .cell.done{background:var(--acc);color:var(--on-acc,#fff);border-color:var(--acc);font-weight:600}
 #plan .grid .cell.today{border:2px solid var(--acc);color:var(--txt);font-weight:700;box-shadow:none}
 #plan .grid .cell.rest.today{background:transparent}
@@ -352,7 +352,7 @@ try{
   #plan .chip{padding:8px 14px;height:auto;min-width:0;font-size:13px;border-radius:1px;
     background:transparent;border:1px solid var(--line);color:var(--dim);cursor:pointer}
   #plan .chip.on{background:var(--acc);border-color:var(--acc);color:var(--on-acc,#fff);font-weight:600}
-  #plan .chip.new{border-style:dashed;color:var(--dim2)}
+  #plan .chip.new{border-style:solid;border-color:var(--line-g);color:var(--dim2)}
   #plan .chip.new:hover{border-color:var(--acc);color:var(--acc)}
   #plan .chipIn{width:86px;height:auto;padding:8px 10px;font-size:13px;border-radius:1px}
   #plan .planOps{display:flex;gap:14px;align-items:center;margin:2px 0 10px;font-size:12px;
@@ -1017,6 +1017,7 @@ try{
   #plan a.back:hover,
   [style*="color:var(--acc)"]{ color:var(--acc-text, var(--acc)) !important }
 </style>
+<link rel="stylesheet" href="assets/line-system.css?v=1">
 </head>
 <body>
 <div id="mobileTip" style="display:none"><span class="mtText">请用电脑打开（建议 Chrome / Edge）·</span><button type="button" id="mtCopy">复制链接</button><button type="button" id="mtClose" style="background:transparent;border:none;color:var(--dim);cursor:pointer;font-size:15px;padding:0 2px" aria-label="关闭">✕</button></div>

@@ -28,13 +28,8 @@
 <link rel="stylesheet" href="../assets/type.css">
 <script src="../assets/lang-ripple.js"></script>
 <style>
-  html,body{margin:0;height:100%;background:var(--bg);overflow:hidden;color:var(--txt);font-family:"Microsoft YaHei UI","Microsoft YaHei","Noto Sans SC","Segoe UI",system-ui,sans-serif}
-  /* 原生滚动条：6px 暗色细线，延续站点 1px 线风格 */
-  *{scrollbar-width:thin;scrollbar-color:var(--line,rgba(255,255,255,.18)) transparent}
-  ::-webkit-scrollbar{width:6px;height:6px}
-  ::-webkit-scrollbar-track{background:transparent}
-  ::-webkit-scrollbar-thumb{background:var(--line,rgba(255,255,255,.18));border-radius:0}
-  ::-webkit-scrollbar-thumb:hover{background:var(--dim,rgba(255,255,255,.35))}
+  html,body{margin:0;height:100%;background:var(--bg);overflow:hidden;color:var(--txt);font-family:var(--f-ui)}
+  /* 滚动条规则统一在 assets/type.css（全站 6px 暗线），页面不再自定义 */
   canvas{display:block;cursor:none}
   #hud{position:fixed;left:22px;top:16px;font-size:15px;font-weight:500;line-height:1.85;pointer-events:none;
     font-variant-numeric:tabular-nums;
@@ -238,10 +233,10 @@
     letter-spacing:.1em;padding:6px 2px;border:0;background:none;color:var(--dim);text-decoration:none}
   #back.on{display:inline-block}
   #back:hover{color:var(--txt);background:none;border:0}
-  #langSwitch{display:inline-flex;align-items:center;height:28px;border:1px solid var(--line);
+  #langSwitch{display:inline-flex;align-items:center;
     font-family:var(--f-ui);font-size:10.5px;letter-spacing:.18em;user-select:none}
   #langSwitch button{appearance:none;-webkit-appearance:none;background:transparent;border:0;color:var(--dim);
-    font:inherit;letter-spacing:inherit;padding:0 9px;height:26px;cursor:pointer;position:relative}
+    font:inherit;letter-spacing:inherit;padding:4px 6px;height:auto;cursor:pointer;position:relative}
   #langSwitch button[aria-pressed="true"]{color:var(--txt)}
   #langSwitch button[aria-pressed="true"]::after{content:"";position:absolute;left:8px;right:8px;bottom:-1px;height:1px;background:var(--txt)}
   #langSwitch span{color:var(--dim);opacity:.6;pointer-events:none}
@@ -253,12 +248,12 @@
       transparent 72%)}
   #msgCol{width:100%;max-width:1260px;margin:0 auto;display:grid;
     grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);
-    column-gap:clamp(44px,6vw,104px);align-items:start;text-align:left}
+    column-gap:48px;align-items:start;text-align:left}
   #v3Kicker{grid-area:1/1/2/2;font-family:var(--f-ui);font-size:10.5px;letter-spacing:.24em;
     text-transform:uppercase;color:var(--dim);line-height:1.4}
-  #v3Kicker b{color:var(--dim);font-weight:500}
-  #titleTop{grid-area:2/1/3/2;margin:22px 0 0;font-family:var(--f-display);font-weight:900;
-    font-size:clamp(52px,6.2vw,84px);line-height:.96;letter-spacing:-.02em;color:var(--txt);
+  #v3Kicker b{color:var(--acc-text,var(--acc));font-weight:700;letter-spacing:.18em}
+  #titleTop{grid-area:2/1/3/2;margin:16px 0 0;font-family:var(--f-display);font-weight:900;
+    font-size:clamp(44px,5.2vw,76px);line-height:.96;letter-spacing:-.02em;color:var(--txt);
     max-width:15ch;text-wrap:balance}
   #titleTop .v3-title-main{display:block;white-space:nowrap;overflow-wrap:normal;word-break:keep-all}
   #titleTop .v3-title-sub{display:block;margin-top:.35em;font-family:var(--f-ui);font-weight:600;
@@ -276,9 +271,10 @@
     display:flex;flex-direction:column;align-items:flex-start;gap:8px;
     background:none;border:0;padding:0;cursor:pointer;text-align:left;
     color:color-mix(in srgb,var(--txt) 52%,var(--dim));font-family:var(--f-ui)}
-  #more .moreBtn{display:inline-flex;align-items:center;gap:8px;
-    padding:7px 14px;border:1px solid var(--line);background:transparent;
-    color:var(--txt);font-size:13px;letter-spacing:.04em;line-height:1;
+  #more .moreBtn{display:inline-flex;align-items:center;gap:8px;height:34px;box-sizing:border-box;
+    padding:0 16px;border:1px solid var(--line);background:transparent;
+    color:var(--txt);font-size:10.5px;font-weight:600;letter-spacing:1.68px;line-height:32px;
+    text-transform:uppercase;
     transition:background-color 140ms var(--ease),border-color 140ms var(--ease)}
   #more:hover .moreBtn{background:color-mix(in srgb,var(--txt) 5%,transparent);border-color:color-mix(in srgb,var(--txt) 28%,var(--line))}
   #more:active .moreBtn{background:color-mix(in srgb,var(--txt) 9%,transparent)}
@@ -287,20 +283,21 @@
   html[lang="en"] #more::before{display:none}
   #more:hover{color:var(--txt);transform:none;background:none}
   #v3Stats{grid-area:5/1/6/3;margin-top:clamp(40px,5.6vh,60px);display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
-    box-sizing:border-box;padding:0 24px;background:color-mix(in srgb,var(--bg) 72%,transparent);
+    box-sizing:border-box;padding:0;background:transparent;
     border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
-  .v3-stat{padding:20px 24px 18px;border-left:1px solid var(--line);min-width:0}
+  .v3-stat{padding:24px 32px 24px 0;padding-left:32px;border-left:1px solid var(--line);min-width:0}
   .v3-stat:first-child{border-left:0;padding-left:0}
-  .v3-stat b{display:block;font-family:var(--f-ui);font-weight:800;font-size:clamp(34px,3.1vw,44px);
-    line-height:1;letter-spacing:-.04em;color:var(--txt);font-variant-numeric:tabular-nums;white-space:nowrap}
-  .v3-stat span{display:block;margin-top:10px;font-family:var(--f-ui);font-size:10.5px;
-    letter-spacing:.24em;text-transform:uppercase;color:var(--ink-2);font-weight:500;white-space:nowrap}
+  .v3-stat b{display:block;font-family:var(--f-ui);font-weight:800;font-size:clamp(38px,3.2vw,52px);
+    line-height:1.05;letter-spacing:-.03em;color:var(--txt);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .v3-stat span{display:block;margin-top:8px;font-family:var(--f-ui);font-size:10.5px;
+    letter-spacing:.24em;text-transform:uppercase;color:var(--dim);font-weight:500;white-space:nowrap}
   #msgCol>.pauseHide{grid-column:1/-1;width:100%;max-width:1260px}
   #msg.showParams .pauseHide{margin-top:48px!important}
-  #go{border-radius:0;padding:18px 44px;font-family:var(--f-ui);font-size:14px;font-weight:600;
-    letter-spacing:.2em;text-transform:uppercase;min-width:170px;min-height:58px}
-  #fsBtn{border-radius:0;padding:0 18px;font-family:var(--f-ui);font-size:10.5px;letter-spacing:.12em;
-    text-transform:uppercase;min-height:58px;color:var(--dim);border:1px solid var(--line);background:transparent}
+  #go{border-radius:0;padding:16px 64px;font-family:var(--f-ui);font-size:18px;font-weight:700;
+    letter-spacing:2px;line-height:24px;height:48px;text-transform:uppercase;min-width:0;min-height:0}
+  #fsBtn{border-radius:0;padding:14px 22px;font-family:var(--f-ui);font-size:14px;font-weight:700;
+    letter-spacing:2.52px;line-height:16px;height:48px;text-transform:uppercase;color:var(--dim);
+    border:1px solid var(--line);background:transparent}
   #fsBtn:hover{color:var(--txt);border-color:var(--txt);background:transparent}
   #msg .btn:focus-visible,#go:focus-visible,#fsBtn:focus-visible,#more:focus-visible{outline:1px solid var(--txt);outline-offset:3px}
   /* 结果页：编辑式头部 + 大数字 */
@@ -387,14 +384,14 @@
 <div id="hud"></div>
 
 <div id="msg" class="overlay show"><div id="msgCol">
-  <div id="v3Kicker" class="v3-kicker"><b>01</b> — 训练 / DRILLS</div>
+  <div id="v3Kicker" class="v3-kicker"><b>01</b> — 训练 · DRILLS</div>
   <h1 id="titleTop" class="vn-display">甩枪训练</h1>
   <div id="subNote">看到球 → 甩过去 → 手停 → 点击</div>
   <div id="modeNote" style="display:none"></div>
   <div id="v3Stats" class="v3-stats" aria-hidden="true"></div>
   <div id="btnRow">
     <button id="go" class="btn" style="margin-top:0"><span class="btn-label">开 始</span></button>
-    <button id="fsBtn" type="button" style="min-height:58px;display:inline-flex;align-items:center;justify-content:center">全屏 ⛶</button>
+    <button id="fsBtn" type="button" style="display:inline-flex;align-items:center;justify-content:center">全屏 ⛶</button>
   </div>
   <div id="sensHint" title="点击修改参数">…</div>
   <div id="bw"></div>
@@ -2076,6 +2073,17 @@ function judge(){
 
 let feedback=null, hitFx=null, hitCrossUntil=0;
 
+/* 站内链接归一化：本页可能以 /tools/aim-trainer.html 访问（同目录 → 去掉 tools/ 前缀），
+   也可能是根目录其它页面引过来的 —— 两种路径都要能跳 */
+function siteHref(u){
+  try{
+    if(!u) return u;
+    var inTools = /\/tools\//.test(location.pathname);
+    if(inTools) return u.replace(/^tools\//,'');
+    return u;
+  }catch(e){ return u; }
+}
+
 /* ===== 六维检查：评分与报告 ===== */
 function checkScores(){
   const D=checkData;
@@ -2202,7 +2210,7 @@ function checkReportHtml(){
     rx.slice(0,2).map(function(r){
       const nm=(EN_UI?r.lab.en:r.lab.zh);
       return '<div style="margin:9px 0;font-size:13px;line-height:1.75;color:var(--dim)">'+
-        (r.u? '<a href="'+r.u+'" target="_blank" style="color:var(--txt);text-decoration:none;font-weight:600">'+nm+'</a>' : '<b style="color:var(--txt)">'+nm+'</b>')+
+        (r.u? '<a href="'+siteHref(r.u)+'" style="color:var(--txt);text-decoration:none;font-weight:600">'+nm+'</a>' : '<b style="color:var(--txt)">'+nm+'</b>')+
         ' — '+(EN_UI?r.en:r.zh)+'</div>';
     }).join('')+'</div>' : okHtml;
   window.__logLine='检查 '+(EN_UI?'check-up ':'')+ITEMS.map(i=>(EN_UI?i.en:i.zh)+' '+(S[i.k]===null?'—':S[i.k])).join(' / ');
@@ -3322,7 +3330,8 @@ requestAnimationFrame(loop);
     '分轴定位（横移→微调）':'Axis-staged (sweep → micro-adjust)',
     '04 / 趋势':'04 / Trend',
     '训练':'Training',
-    '— 训练 / DRILLS':'— TRAINING / DRILLS',
+    '— 训练 · DRILLS':'— TRAINING',
+    '— TRAINING / DRILLS':'— TRAINING · DRILLS',
     '看到球 → 甩过去 → 手停 → 点击':'See the dot → flick → stop → click',
     '开 始':'START','全屏 ⛶':'Fullscreen ⛶','退出全屏 ⤢':'Exit fullscreen ⤢',
     '参数 ▾':'Parameters ▾','收起参数 ▴':'Hide parameters ▴',
@@ -3483,7 +3492,7 @@ requestAnimationFrame(loop);
     var en=current==='en';
     try{ document.title=en?'Flick trainer · adaptive':'甩枪训练 · 自适应难度'; }catch(e){}
     var kick=document.getElementById('v3Kicker');
-    if(kick) kick.innerHTML='<b>01</b> — '+(en?'TRAINING / DRILLS':'训练 / DRILLS');
+    if(kick) kick.innerHTML='<b>01</b> — '+(en?'TRAINING':'训练 · DRILLS');
     var back=document.getElementById('back'); if(back) back.textContent=en?'← Back':'← 返回';
     setGoLabel((typeof paused!=='undefined'&&paused)? (en?'RESUME':'继续') : (en?'START':'开 始'));
     setSwitch();

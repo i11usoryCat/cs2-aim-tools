@@ -125,3 +125,42 @@ html body main{padding-bottom:0}
   html body main{padding-top:20px}
   html #play.on{ min-height:calc(100vh - 87px) }
 }
+
+/* ============================================================
+   线的呼吸（line system）
+   1) 长线两端渐隐 → 不再像「一根直杠子」截断
+   2) 竖线上下渐隐 → 不顶到文字
+   3) 线与文字的最小间距（上 24 / 下 20）
+   ============================================================ */
+html #play .play-head{
+  border-bottom-color:transparent;
+  border-image:var(--line-fade-x) 1;          /* 结构线：两端渐隐 2% */
+  padding-bottom:30px;
+}
+html #play .statsbar{
+  border-top-color:transparent;
+  border-image:var(--line-fade-x) 1;          /* 结构线：读数带上沿 */
+  padding-top:24px;
+}
+html #drillGrid .col{
+  border-right-color:transparent;
+  border-image:var(--line-g-fade-y) 1;        /* 分组线：目录竖线 60% + 上下渐隐 10% */
+}
+/* 小节刻度：不再是一根死线，而是一个 6px 渐显的短划 */
+html #drillGrid .grp i::after{
+  width:18px;
+  background:linear-gradient(90deg, var(--line), color-mix(in srgb, var(--ace, var(--acc)) 55%, var(--line)));
+}
+html #drillGrid .grp{ padding-bottom:14px }
+html #drillGrid .item{ position:relative }
+/* hover 下划线：从中间向两边展开，比从左拉满更「活」 */
+html #drillGrid .item::after{
+  content:""; position:absolute; left:0; right:0; bottom:0; height:1px;
+  background:var(--line-i);                    /* 交互线：accent 55% 混 --line */
+  transform:scaleX(0); transform-origin:center; transition:transform 160ms var(--ease, cubic-bezier(.2,.8,.2,1));
+}
+html #drillGrid .item:hover::after{ transform:scaleX(1) }
+/* 导航下划线：与文字拉开 5px，不再贴着字脚 */
+html nav a.on::after{ bottom:-5px }
+/* 页脚读数带：标签与数字之间给足 10px */
+html #play .statsbar .sb{ gap:12px }

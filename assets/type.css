@@ -62,6 +62,12 @@
   background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/><feColorMatrix type='saturate' values='0'/></filter><rect width='140' height='140' filter='url(%23n)' opacity='0.045'/></svg>");
 }
 
+/* 中英混排：汉字与拉丁字母之间补 1/4 em 空隙（Chromium ≥138 支持 text-autospace；
+   不支持的内核会整条忽略，不产生副作用）。数字与单位在 line-system.css 里再补 2px。 */
+@supports (text-autospace: normal){
+  html{ text-autospace: normal; }
+}
+
 /* 显示级标题：衬线 + 紧行距 + 负字距 */
 .vn-display{
   font-family:var(--f-display); font-weight:900;

@@ -38,11 +38,11 @@
   canvas{display:block;cursor:none}
   #hud{position:fixed;left:22px;top:16px;font-size:15px;font-weight:500;line-height:1.85;pointer-events:none;
     font-variant-numeric:tabular-nums;
-    /* 清晰优先：1px 位移阴影给对比度，不用大半径光晕（那会让字发虚） */
-    text-shadow:0 1px 1px rgba(0,0,0,.55), 0 0 1px rgba(0,0,0,.35);
+    /* 中间档：3px 柔光 + 1px 实影——保留一点朦胧质感，但边缘不发虚 */
+    text-shadow:0 0 3px rgba(0,0,0,.42), 0 1px 1px rgba(0,0,0,.5);
     text-rendering:optimizeLegibility; letter-spacing:.01em}
   html[data-theme="light"] #hud,html[data-theme="lake"] #hud,html[data-theme="ink"] #hud,html[data-theme="sand"] #hud{
-    text-shadow:0 1px 1px rgba(255,255,255,.65)
+    text-shadow:0 0 3px rgba(255,255,255,.55), 0 1px 1px rgba(255,255,255,.7)
   }
   #hud b{color:var(--hud-acc,var(--acc))}
   .overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;
@@ -2095,6 +2095,9 @@ function checkScores(){
   const secondPool=secondAll.map(d=>d.stopToFire).filter(v=>v!==null);
   const sSecond=secondPool.length? clamp(100-med(secondPool)/6) : null;   // 0ms=100，300ms=50，600ms=0
   const secondCov=secondAll.length? Math.round(secondPool.length/secondAll.length*100) : 100;
+  // 原始读数：让 0 分可被解释（0 分不等于没数据）
+  const firstMed=firstPool.length? Math.round(med(firstPool)*100)/100 : null;   // 中位首落角（度）
+  const secondMed=secondPool.length? Math.round(med(secondPool)) : null;        // 中位「停手→击发」（ms）
   const sMicro=micro.length? clamp(micro.filter(d=>d.hit).length/micro.length*100) : 50;
   const sWide=wide.length? clamp(
       (wide.filter(d=>d.hit).length/wide.length*60) + (clamp(100-(med(wide.map(d=>d.mt))-300)/6)*0.4)) : 50;
@@ -2104,7 +2107,8 @@ function checkScores(){
   const hl=lst.filter(d=>d.hit).length/lst.length;
   // 稳定性（样本少，仅粗分）：系数收窄到 100，噪声误判从 ±31 降到 ±10 分
   const sAttn=clamp(50+(hl-hf)*100);
-  return { react:sReact, reactMs:reactMs, first:sFirst, second:sSecond, secondCov:secondCov, micro:sMicro, wide:sWide, attn:sAttn };
+  return { react:sReact, reactMs:reactMs, first:sFirst, second:sSecond, secondCov:secondCov,
+           firstMed:firstMed, secondMed:secondMed, micro:sMicro, wide:sWide, attn:sAttn };
 }
 /* 结果页读数窗标签：模式名 + 难度参数（art-direction §2 / 任务：仪表读数） */
 function resKicker(zhBase, enBase, zhExtra, enExtra){
@@ -2161,7 +2165,11 @@ function checkReportHtml(){
       else if(d<=-3) dl=' ▼'+d;
     }
     const pct=(v===null)? 0 : v;
-    const raw=(i.k==='react' && S.reactMs!==null)? ' · '+(EN_UI?'median ':'中位 ')+S.reactMs+' ms' : '';
+    // let raw = 该维度可解释的原始读数（0 分时尤其重要：证明是测出来的，不是缺数据）
+    let raw='';
+    if(i.k==='react' && S.reactMs!==null) raw=' · '+(EN_UI?'median ':'中位 ')+S.reactMs+' ms';
+    else if(i.k==='first' && S.firstMed!==null) raw=' · '+(EN_UI?'median first-stop ':'中位首落 ')+S.firstMed+'°';
+    else if(i.k==='second' && S.secondMed!==null) raw=' · '+(EN_UI?'median stop→fire ':'中位停手→击发 ')+S.secondMed+' ms';
     return '<div class="res-bar"><div class="lbl"><span>'+(EN_UI?i.en:i.zh)+'</span>'+
       '<b>'+(v===null? '—' : v)+'<span style="color:var(--dim);font-weight:400"> · '+label+dl+raw+'</span></b></div>'+
       '<div class="trk"><div class="fill'+(v!==null&&v>=75?' strong':'')+'" style="width:'+pct+'%"></div></div></div>';

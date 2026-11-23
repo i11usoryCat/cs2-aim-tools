@@ -151,7 +151,7 @@
     #go::after{content:"";position:absolute;left:14px;right:14px;bottom:9px;height:1px;background:var(--on-acc);
       opacity:.75;transform:scaleX(0);transform-origin:left center;transition:transform 140ms linear}
     #go:hover::after{transform:scaleX(1)}
-    #go:active{border-width:2px;padding:14px 55px}
+    #go:active{border-width:2px;padding:15px 63px}   /* 边框 1→2px 用 padding 补偿，按下零几何抖动 */
     #go .btn-label{display:inline-block;pointer-events:none;transition:transform 90ms linear}
     #go:active .btn-label{transform:translateY(1px)}
     /* C 档：状态行数值切换（旧值上浮淡出、新值从下淡入） */
@@ -237,8 +237,8 @@
     font-family:var(--f-ui);font-size:10.5px;letter-spacing:.18em;user-select:none}
   #langSwitch button{appearance:none;-webkit-appearance:none;background:transparent;border:0;color:var(--dim);
     font:inherit;letter-spacing:inherit;padding:4px 6px;height:auto;cursor:pointer;position:relative}
-  #langSwitch button[aria-pressed="true"]{color:var(--txt)}
-  #langSwitch button[aria-pressed="true"]::after{content:"";position:absolute;left:8px;right:8px;bottom:-1px;height:1px;background:var(--txt)}
+  #langSwitch button{border-bottom:1px solid transparent}
+  #langSwitch button[aria-pressed="true"]{color:var(--txt);border-bottom-color:var(--acc)}
   #langSwitch span{color:var(--dim);opacity:.6;pointer-events:none}
   /* 开始页：两栏编辑版式 */
   #msg{align-items:stretch;justify-content:flex-start;text-align:left;
@@ -624,8 +624,13 @@ function hexA(hex,a){
 }
 
 function resize(){
-  W=cv.width=innerWidth*devicePixelRatio; H=cv.height=innerHeight*devicePixelRatio;
-  cv.style.width=innerWidth+'px'; cv.style.height=innerHeight+'px';
+  // 只在尺寸真的变化时才改 canvas 尺寸：给 width/height 赋值会清空画布，
+  // 开始训练前那次 resize() 若必赋值，遮罩撤下的当帧会露出一帧空白底色（闪烁）。
+  var w=innerWidth*devicePixelRatio, h=innerHeight*devicePixelRatio;
+  if(cv.width!==w || cv.height!==h){
+    W=cv.width=w; H=cv.height=h;
+    cv.style.width=innerWidth+'px'; cv.style.height=innerHeight+'px';
+  }
   f=(W/2)/Math.tan(FOVH/2*D2R);
 }
 addEventListener('resize',resize); resize();
@@ -1067,7 +1072,8 @@ const ARENA_DECOR=false;   // ← 旧装饰层开关：true = 回滚旧刻度/�
 const ATMOS={
   margin:0.75,                 // 天幕缓存上下留白（pitch 平移余量：需覆盖 f·tan(35°)，0.55 时约 ±34° 就会露出底）
   ridgeRes:[1.0,1.0,1.0],      // 剪影烘焙分辨率：三层均 1:1（0.75/0.85 放大插值会把远山脊线糊掉）
-  par:[0.36,0.24,0.15],        // 三层剪影的视差（×W×yaw，单位 px/rad）
+  par:[0.94,0.97,1.00],        // 三层剪影的视差系数（× f）：无限远 = 1.00；三层都贴近 1，远山才不跟着准星跑
+  panA:0.04,                   // 角度映射 g(yaw)=yaw+A·sin(yaw) 的 A：2π 周期（可无缝循环）、单调（只前进）
   ridgeH:[0.10,0.13,0.16],     // 三层剪影高度（×H，暗色场景）
   ridgeHL:[0.20,0.14,0.10],    // 三层剪影高度（×H，浅色晨雾：按参考 P.ridgeHFrac 浅色档）
   ridgeA:[0.26,0.36,0.46],     // 三层剪影不透明度（暗色场景）
@@ -1085,6 +1091,15 @@ const ATMOS={
   vigDark:0.38, vigLight:0.080,// 暗角强度（浅色 ≤0.10）
   grainDark:0.22, grainLight:0.080  // 颗粒强度（浅色 ≤0.10）
 };
+/* 全景条的角度映射 g(yaw) = yaw + A·sin(yaw)（A = ATMOS.panA）
+   —— 为什么不用裸 tan(yaw)：tan 是 π 周期且无界的，转满 2π 时 tan 从 +∞ 跳到 −∞，
+      全景条会在 ±90° 处反向/跳变，无法做到「两整圈连续滚动」。
+   —— g 的性质：
+      · 2π 偏移周期：g(yaw+2π)=g(yaw)+2π → 转满一圈恰好走完一整条全景，取模后无缝；
+      · 单调：g'(yaw)=1+A·cos(yaw) ≥ 1−A = 0.96 > 0 → 只前进，不会停住或倒走；
+      · 小角度贴合 tan：g(0.2)/tan(0.2)=1.0258、g(0.4)/tan(0.4)=0.9829（A=0.04）
+        → 与 f·tan(yaw) 的位移差 ≤2.6%（0.2 rad）/1.7%（0.4 rad），远小于 10% 验收线。 */
+function ridgePanAngle(a){ return a + ATMOS.panA*Math.sin(a); }
 
 // 晨雾亮度层级（相对亮度 = (0.299R+0.587G+0.114B)/255）——只用于 SC.dark=false
 const MIST={
@@ -1098,7 +1113,7 @@ const MIST={
   fog:[250,242,228],          // 暖白雾
   light:[255,248,232]         // 晨光/光池
 };
-let atmKey=null, atmW=0, atmH=0;
+let atmKey=null, atmW=0, atmH=0, atmFov=0;
 let atmSkyCv=null, atmSkyHD=0;
 let atmFogCv=null, atmFogHD=0;
 const atmRidgeCv=[null,null,null], atmRidgeWD=[0,0,0], atmRidgeHD=[0,0,0];
@@ -1298,7 +1313,10 @@ function atmBuildFog(cv, fw, fh){
 }
 function atmBuildRidge(i){
   const dark=!!SC.dark, HD=Math.max(24, Math.floor(H*(dark?ATMOS.ridgeH[i]:ATMOS.ridgeHL[i])));
-  const CWd=Math.floor(W + 2*ATMOS.par[i]*W*Math.PI);
+  // 全景条宽度 = 该层转满 2π 的位移量（f·par·2π），限制在 2W–4W 控制显存；
+  // 取模采样的连续性由「整数正弦频率」保证，与宽度是否精确无关。
+  const cyclePx=2*Math.PI*f*ATMOS.par[i];
+  const CWd=Math.max(2*Math.ceil(W), Math.min(4*Math.ceil(W), Math.round(cyclePx)));
   atmRidgeHD[i]=HD; atmRidgeWD[i]=CWd;
   const rs=ATMOS.ridgeRes[i]||1;
   atmRidgeCv[i]=_mkCv(Math.max(2,Math.round(CWd*rs)), Math.max(2,Math.round(HD*rs)));
@@ -1318,7 +1336,10 @@ function atmBuildRidge(i){
     grd.addColorStop(1,_atmCSS(col,aTop));
   }
   g.fillStyle=grd;
-  const f1=1.7*(i+1)+0.8, f2=4.3*(i+1)+1.7, f3=9.7*(i+1)+0.4;
+  // 频率必须是整数圈/整条：否则全景条左右两端接不上，取模滚动时会出现断崖。
+  const f1=Math.max(2,Math.round(2.6*(i+1)+0.6));
+  const f2=Math.max(4,Math.round(4.4*(i+1)+1.4));
+  const f3=Math.max(8,Math.round(10.4*(i+1)-0.2));
   const p1=i*2.1+0.6, p2=i*3.7+1.2, p3=i*1.3+2.4;
   const base=0.55+0.13*i;
   g.beginPath(); g.moveTo(0,h2);
@@ -1330,8 +1351,8 @@ function atmBuildRidge(i){
   g.lineTo(w2,h2); g.closePath(); g.fill();
 }
 function atmEnsureCache(){
-  if(atmKey===SC && atmW===W && atmH===H) return;
-  atmKey=SC; atmW=W; atmH=H;
+  if(atmKey===SC && atmW===W && atmH===H && atmFov===FOVH) return;
+  atmKey=SC; atmW=W; atmH=H; atmFov=FOVH;
   const dark=!!SC.dark, white=[255,255,255];
   const ui=_rgbOf(SC.ui||SC.cross,0);
   // 兜底色 = 天幕缓存上下边缘的精确颜色（与 atmBuildSky / atmBuildMistSky 的首末渐变色一致），
@@ -1377,16 +1398,17 @@ function drawAtmosphereBackdrop(){
 function drawAtmosphereRidges(){
   atmEnsureCache();
   const hy=H*0.5+f*Math.tan(pitch);
+  const pan=ridgePanAngle(yaw);
   for(let i=0;i<3;i++){
     const cv=atmRidgeCv[i]; if(!cv) continue;
-    const CWd=atmRidgeWD[i], HD=atmRidgeHD[i];
-    const par=ATMOS.par[i]*W;
-    const destX=W*0.5 - yaw*par - CWd*0.5;
-    let sx=-destX;
-    const maxSx=CWd-W;
-    if(maxSx<=0) sx=0; else { if(sx<0) sx=0; else if(sx>maxSx) sx=maxSx; }
+    const P=atmRidgeWD[i], HD=atmRidgeHD[i];
     const rs=ATMOS.ridgeRes[i]||1;
-    ctx.drawImage(cv, sx*rs, 0, W*rs, cv.height, 0, hy-HD, W, HD);
+    // 该层位移 = f·视差系数·g(yaw)，按全景条宽度取模：
+    // 任意 yaw（含连续转多圈）都只是模内平移，不再有「clamp 触顶 → 山停住」。
+    let sx=(f*ATMOS.par[i]*pan)%P; if(sx<0) sx+=P;
+    const w1=Math.min(W, P-sx);
+    ctx.drawImage(cv, sx*rs, 0, w1*rs, cv.height, 0, hy-HD, w1, HD);
+    if(w1<W) ctx.drawImage(cv, 0, 0, (W-w1)*rs, cv.height, w1, hy-HD, W-w1, HD);
   }
 }
 function drawAtmosphereFog(){
@@ -3529,7 +3551,7 @@ requestAnimationFrame(loop);
     var target=b.getAttribute('data-lang');
     if(target===current) return;
     var run=function(){ try{ applyLang(target); }catch(err){ window.__langErr=String(err&&(err.stack||err.message)||err); } };
-    if(!window.LangRipple || reducedMotion){ run(); return; }
+    if(!window.LangRipple){ run(); return; }
     if(window.__langBusy) return;
     window.__langBusy=true;
     var x=e.clientX, y=e.clientY;

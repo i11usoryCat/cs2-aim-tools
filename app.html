@@ -3087,38 +3087,35 @@ function render(root, lang){
       : (LG==='en' ? 'Trainer results now count automatically; paste "Copy this set" into the log to archive details.' : '训练器成绩会自动计入日历；把「复制本组数据」粘到记录里可留档详情。');
   }
 
-  // 进度格
-  // 日历渲染
-  // 本轮窗口：开始日 .. 开始日+27；进行中高亮今天，结束后窗口保留本轮、不再有今天格
-  const startDt=new Date(localStorage.getItem(K_START)||todayStr());
-  const todayIdx=d;
+  // 进度格：始终显示**当前月**（不再停在已结束那轮的 28 天窗口）
   const pd=n=>String(n).padStart(2,'0');
-  const wd=(startDt.getDay()+6)%7;          // 周一=0
   const WEEK=(LG==='en')
     ? ['M','T','W','T','F','S','S'] : ['一','二','三','四','五','六','日'];
   $('calWeek').innerHTML=WEEK.map(w=>'<div>'+w+'</div>').join('');
-  const months={}; 
+  const nowD=new Date();
+  const y0=nowD.getFullYear(), m0=nowD.getMonth();
+  const lead=(new Date(y0,m0,1).getDay()+6)%7;          // 周一=0
+  const dim=new Date(y0,m0+1,0).getDate();              // 当月天数
+  const tk=todayStr();
   let g='';
-  for(let i=0;i<wd;i++) g+='<div class="cell blank"></div>';
-  for(let i=0;i<28;i++){
-    const dt=new Date(startDt.getTime()+i*86400000);
-    const k=dt.getFullYear()+'-'+pd(dt.getMonth()+1)+'-'+pd(dt.getDate());
-    months[dt.getMonth()+1]=dt.getFullYear();
+  for(let i=0;i<lead;i++) g+='<div class="cell blank"></div>';
+  for(let dnum=1;dnum<=dim;dnum++){
+    const dt=new Date(y0,m0,dnum);
+    const k=y0+'-'+pd(m0+1)+'-'+pd(dnum);
     const done=set.has(k);
-    const rest=((dt.getDay()+6)%7)>=5;       // 六、日
-    const cls='cell'+(done?' done':rest?' rest':'')+(i===todayIdx && d<28?' today':'');
-    g+='<div class="'+cls+'" title="'+k+(done? (LG==='en'?' · done':' · 已完成'):'')+'">'+dt.getDate()+'</div>';
+    const rest=((dt.getDay()+6)%7)>=5;                  // 六、日
+    const cls='cell'+(done?' done':rest?' rest':'')+(k===tk?' today':'');
+    g+='<div class="'+cls+'" title="'+k+(done? (LG==='en'?' · done':' · 已完成'):'')+'">'+dnum+'</div>';
   }
-  const total=wd+28, tail=(7-total%7)%7;
+  const total=lead+dim, tail=(7-total%7)%7;
   for(let i=0;i<tail;i++) g+='<div class="cell blank"></div>';
   $('grid').innerHTML=g;
-  const mk=Object.keys(months).map(Number);
   const EN_=LG==='en';
   const M=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  $('calTitle').textContent = mk.length===1
-    ? (EN_ ? M[mk[0]-1]+' '+months[mk[0]] : months[mk[0]]+' 年 '+mk[0]+' 月')
-    : (EN_ ? M[mk[0]-1]+' — '+M[mk[mk.length-1]-1]+' '+months[mk[0]]
-           : months[mk[0]]+' 年 '+mk[0]+' 月 — '+mk[mk.length-1]+' 月');
+  $('calTitle').textContent = EN_ ? M[m0]+' '+y0 : y0+' 年 '+(m0+1)+' 月';
+  // 本轮已结束：禁用「标记今天完成」，避免点了没反应
+  const mdEl=$('markDone');
+  if(mdEl){ const over=d>=28; mdEl.disabled=over; mdEl.style.opacity=over?'.45':''; mdEl.title=over?(LG==='en'?'Round finished — start over first':'本轮已结束，先点「重新开始」'):''; }
 
   // 记录表
   if(log.length){
@@ -3130,6 +3127,7 @@ function render(root, lang){
   window.__vRender = render;   // 切换语言后重新渲染（日历/星期/月份）
 
 $('markDone').addEventListener('click',()=>{
+  if($('markDone').disabled) return;
   const log=JSON.parse(localStorage.getItem(K_LOG)||'[]');
   if(log.some(x=>x.startsWith(todayStr()))){ alert(L('今天已经标记过了','Already marked today')); return; }
   log.push(todayStr()+'  已完成');

@@ -49,17 +49,15 @@
   /* HUD 统一档（与 tools/aim-trainer.html 的 #hud 同值）：3px 柔光 + 1px 实影
      暗色场地用黑影，浅色场地（light/lake/ink/sand）换白色那一条 */
   #ui{position:fixed;left:24px;top:20px;font-size:14px;line-height:1.9;pointer-events:none;
-    text-shadow:0 0 3px rgba(0,0,0,.42), 0 1px 1px rgba(0,0,0,.5)}
-  html[data-theme="light"] #ui,html[data-theme="lake"] #ui,html[data-theme="ink"] #ui,html[data-theme="sand"] #ui{
-    text-shadow:0 0 3px rgba(255,255,255,.55), 0 1px 1px rgba(255,255,255,.7)
-  }
+    text-shadow:0 0 3px color-mix(in srgb,var(--bg) 72%,transparent), 0 1px 1px color-mix(in srgb,var(--bg) 88%,transparent)}
+  /* 文字阴影一律跟随 --bg：深底给暗影、浅底给亮影，不再按主题枚举写死 rgba */
   .overlay{position:fixed;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;
     text-align:center;font-size:16px;line-height:2;color:var(--txt);background:color-mix(in srgb, var(--bg) 96%, transparent)}
   .overlay.show{display:flex}
 
   #back{position:fixed;left:16px;top:14px;z-index:40;display:none;font-size:13px;color:var(--dim);
     text-decoration:none;padding:7px 12px;border-radius:9px;border:1px solid transparent;transition:.15s}
-  #back:hover{color:var(--acc);border-color:var(--line);background:var(--panel)}
+  #back:hover{color:var(--acc-text,var(--acc));border-color:var(--line);background:var(--panel)}
   #back.on{display:inline-block}
   .btn{margin-top:24px;padding:13px 40px;font-size:16px;font-family:inherit;cursor:pointer;
     background:var(--acc);border:1px solid var(--acc);color:var(--on-acc);border-radius:8px;pointer-events:auto}
@@ -76,7 +74,7 @@
   }
   td,th{padding:9px 20px;text-align:right;border-bottom:1px solid var(--panel)}
   th{color:var(--dim);font-weight:500}
-  .big{font-size:30px;font-weight:700;color:var(--acc)}
+  .big{font-size:30px;font-weight:700;color:var(--acc-text,var(--acc))}
   /* 与训练器统一的开始页：参数默认收起 */
   #msg .pauseHide{display:none}
   #msg.showParams .pauseHide{display:block}

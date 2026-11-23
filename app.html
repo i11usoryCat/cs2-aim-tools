@@ -34,6 +34,8 @@
 <link rel="icon" href="assets/favicon.svg">
 <link rel="stylesheet" href="assets/theme.css?v=1">
 <link rel="stylesheet" href="assets/type.css?v=3">
+<!-- 排版精修（定稿）：Hub 留白节奏 + 数据页仪表读数 -->
+<link rel="stylesheet" href="assets/refine.css?v=1">
 <script>
 /* 首屏预置：主题与语言先于 CSS 生效，防闪烁 */
 try{
@@ -77,13 +79,8 @@ try{
     --panel2:var(--bg2); --line2:var(--line);
     --dim2:color-mix(in srgb, var(--dim) 78%, transparent);
     --head:color-mix(in srgb, var(--bg) 92%, transparent);
-    --shade:24 21 17; --ring:color-mix(in srgb, var(--acc) 22%, transparent);
+    --ring:color-mix(in srgb, var(--acc) 22%, transparent);
   }
-  html[data-theme="jade"],html[data-theme="forest"],html[data-theme="mono"],
-  html[data-theme="night"],html[data-theme="cyber"]{
-    --shade:0 0 0;
-  }
-
   *{box-sizing:border-box}
   html{background:var(--bg);scrollbar-gutter:stable}
   html,body{margin:0;min-height:100%}
@@ -195,7 +192,7 @@ try{
   a.tile:hover{
     transform:translateY(-3px);
     border-color:var(--acc);
-    box-shadow:0 14px 30px -10px rgb(var(--shade) / .18);
+    box-shadow:0 14px 30px -10px color-mix(in srgb, var(--txt) 18%, transparent);
   }
   a.tile .t::after{
     content:"→"; position:absolute; right:20px; top:20px;
@@ -259,7 +256,11 @@ try{
   }
   .sw:hover{border-color:var(--line2)}
   .sw.on{border-color:var(--acc); box-shadow:none; font-weight:600}
+  /* 主题/场景色板小方块：颜色一律来自单一来源——主题块用 data-theme 子作用域读
+     theme.css 的 --acc/--bg（见 theme.css 顶部说明）；场景块由 JS 从 assets/scenes.js
+     的 GAME_SCENES 取 tgt 填 inline。页面不再保存第二份主题色/场景色。 */
   .dot{width:13px; height:13px; border-radius:1px; box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--txt) 22%,transparent)}
+  .dot[data-theme]{background:linear-gradient(135deg,var(--acc) 0 50%,var(--bg) 50% 100%)}
 
   @media (max-width:600px){
     header{padding:12px 16px}
@@ -1064,7 +1065,7 @@ try{
     <div class="card">
       <div class="t" style="margin-bottom:10px">现在怎么样</div>
       <div id="dataVerdict" style="font-size:17px;line-height:1.9;color:var(--txt)"></div>
-      <div class="row" style="gap:28px;margin-top:14px">
+      <div class="row kpiRow">
         <div><div class="k">本地组数</div><div class="v" id="sRuns">0</div></div>
         <div><div class="k">训练天数</div><div class="v" id="sDays">0</div></div>
         <div><div class="k">历史最低限时</div><div class="v" id="sLimit">—</div></div>
@@ -1427,26 +1428,24 @@ const load=(k,d)=>{ try{ const v=localStorage.getItem(k); return v? JSON.parse(v
 const save=(k,v)=>{ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} };
 const MODE_NAME={random:'自适应随机', block:'定角重复', axis:'分轴定位', precision:'小球精度', wide:'大角度甩枪', track:'微调训练', check:'六维检查'};
 
+/* 主题色块不存 hex：渲染时用 data-theme 子作用域直接读 theme.css 的 --acc/--bg */
 const THEMES=[
-  {id:'jade',  name:'墨玉', dot:'#7fbfa6', kind:'rec'},
-  {id:'ink',   name:'墨鱼', dot:'#0f766e', kind:'rec'},
-  {id:'lake',  name:'湖泊', dot:'#0e7490', kind:'light'},
-  {id:'light', name:'明亮', dot:'#f4f6f9', kind:'light'},
-  {id:'sand',  name:'暖砂', dot:'#f7f2e8', kind:'light'},
-  {id:'forest',name:'森林', dot:'#1f6f45', kind:'dark'},
-  {id:'mono',  name:'极简灰', dot:'#23272e', kind:'dark'},
-  {id:'cyber', name:'赛博', dot:'#7c3aed', kind:'dark'},
-  {id:'night', name:'深蓝', dot:'#0b0f14', kind:'dark'}
+  {id:'jade',  name:'墨玉', kind:'rec'},
+  {id:'ink',   name:'墨鱼', kind:'rec'},
+  {id:'lake',  name:'湖泊', kind:'light'},
+  {id:'light', name:'明亮', kind:'light'},
+  {id:'sand',  name:'暖砂', kind:'light'},
+  {id:'forest',name:'森林', kind:'dark'},
+  {id:'mono',  name:'极简灰', kind:'dark'},
+  {id:'cyber', name:'赛博', kind:'dark'},
+  {id:'night', name:'深蓝', kind:'dark'}
 ];
-const SCENES=[
-  {id:'classic', name:'经典', dot:'#f85149'},
-  {id:'jade',  name:'墨玉', dot:'#e0a458'},
-  {id:'ink',   name:'墨鱼', dot:'#ffb020'},
-  {id:'light', name:'浅灰', dot:'#e8590c'},
-  {id:'night', name:'暗蓝', dot:'#ff5f56'},
-  {id:'mono',  name:'纯黑', dot:'#ffd166'},
-  {id:'cs',    name:'沙色', dot:'#e5484d'}
-];
+/* 场景色板：id/顺序/颜色全部来自 assets/scenes.js 的 GAME_SCENES（唯一来源），
+   这里只补中文名。之前手抄的 7 项色表漏了 lake（湖泊）场景，与 THEME2SCENE 不一致。 */
+const SCENE_NAMES={classic:'经典', lake:'湖泊', jade:'墨玉', ink:'墨鱼', light:'浅灰', night:'暗蓝', mono:'纯黑', cs:'沙色'};
+const SCENES=Object.keys(window.GAME_SCENES||{}).map(function(id){
+  return {id:id, name:SCENE_NAMES[id]||id, dot:(window.GAME_SCENES[id]||{}).tgt||''};
+});
 
 
 /* ---------- i18n ---------- */
@@ -2458,12 +2457,15 @@ function drawS6Trend(runs){
   cv.width=W*dpr; cv.height=H*dpr;
   const ctx=cv.getContext('2d'); ctx.scale(dpr,dpr);
   const DIMS=[['react','反应'],['first','第一枪'],['second','反应确定'],['micro','微调'],['wide','拉枪'],['attn','稳定']];
-  const COL=['#58a6ff','#3fb950','#f85149','#d29922','#c084fc','#8b949e'];
-  ctx.strokeStyle='rgba(128,128,128,.25)'; ctx.lineWidth=1;
+  /* 六维系列色与网格/刻度色一律取主题令牌（和主趋势图同一套），不再自带固定调色板 */
+  const tks=getComputedStyle(document.documentElement);
+  const tok=(n,fb)=>{ const v=tks.getPropertyValue(n).trim(); return v||fb; };
+  const COL=[tok('--acc','#58a6ff'),tok('--gold','#d29922'),tok('--ok','#3fb950'),tok('--warn','#b45309'),tok('--acc2','#c084fc'),tok('--dim','#8b949e')];
+  ctx.strokeStyle=tok('--line','rgba(128,128,128,.25)'); ctx.lineWidth=1;
   ctx.font='10px sans-serif'; ctx.textAlign='right';
   for(let g=0;g<=100;g+=25){ const y=H-10-(g/100)*(H-28);
     ctx.beginPath(); ctx.moveTo(40,y); ctx.lineTo(W-8,y); ctx.stroke();
-    ctx.fillStyle='rgba(150,150,150,.9)'; ctx.fillText(String(g),34,y+3);
+    ctx.fillStyle=tok('--dim','rgba(150,150,150,.9)'); ctx.fillText(String(g),34,y+3);
   }
   const n=arr.length;
   const X=i=>40+(n===1? (W-48)/2 : i*(W-48)/(n-1));
@@ -2606,7 +2608,7 @@ function fillSettings(){
 
   const theme=localStorage.getItem(K_THEME)||defaultTheme();
   function swHTML(list){ return list.map(t=>'<div class="sw'+(t.id===theme?' on':'')+'" data-th="'+t.id+'" tabindex="0" role="button">'+
-    '<span class="dot" style="background:'+t.dot+'"></span>'+t.name+'</div>').join(''); }
+    '<span class="dot" data-theme="'+t.id+'"></span>'+t.name+'</div>').join(''); }
   $('thRec').innerHTML   = swHTML(THEMES.filter(t=>t.kind==='rec'));
   $('thLight').innerHTML = swHTML(THEMES.filter(t=>t.kind==='light'));
   $('thDark').innerHTML  = swHTML(THEMES.filter(t=>t.kind==='dark'));
@@ -2618,7 +2620,7 @@ function fillSettings(){
 
   const scene=localStorage.getItem(K_SCENE)||'classic';
   $('scenes').innerHTML=SCENES.map(t=>'<div class="sw'+(t.id===scene?' on':'')+'" data-sc="'+t.id+'" tabindex="0" role="button">'+
-    '<span class="dot" style="background:'+t.dot+'"></span>'+t.name+'</div>').join('');
+    '<span class="dot" data-scene="1" style="background:'+t.dot+'"></span>'+t.name+'</div>').join('');
   document.querySelectorAll('.sw[data-sc]').forEach(el=>el.addEventListener('click',()=>{
     localStorage.setItem(K_SCENE, el.dataset.sc);
     localStorage.setItem('cs2at.sceneUser','1');   // 手动选过的场景，训练器不再跟随主题

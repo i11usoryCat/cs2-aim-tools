@@ -1641,14 +1641,25 @@ function applyLang(l){
   // 属性文本：text 节点遍历碰不到 title / placeholder
   try{
     const map=(l==='en')?EN:ZH;
-    document.querySelectorAll('[title],[placeholder]').forEach(function(el){
-      ['title','placeholder'].forEach(function(a){
+    document.querySelectorAll('[title],[placeholder],[aria-label]').forEach(function(el){
+      ['title','placeholder','aria-label'].forEach(function(a){
         if(!el.hasAttribute(a)) return;
         const key='__o_'+a;
         if(!el.dataset[key]) el.dataset[key]=el.getAttribute(a);
         const orig=el.dataset[key], t=orig.trim();
         el.setAttribute(a, map[t]||orig);
       });
+    });
+  }catch(e){}
+  // 少量静态 aria/title 不在词典里：直接按语言写死，保证英文态属性级 CJK 为 0
+  try{
+    var isEn = (l==='en');
+    var gear = document.querySelector('.gear');
+    if(gear){ gear.title = isEn?'Settings':'设置'; gear.setAttribute('aria-label', isEn?'Settings':'设置'); }
+    var brand = document.querySelector('a.brand');
+    if(brand){ brand.title = isEn?'Vernier':'Vernier · 分毫'; }
+    document.querySelectorAll('[aria-label="关闭"],[aria-label="Close"]').forEach(function(b){
+      b.setAttribute('aria-label', isEn?'Close':'关闭');
     });
   }catch(e){}
   // 计算出来的文案也要跟着语言走

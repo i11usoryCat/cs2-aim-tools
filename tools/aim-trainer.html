@@ -1363,6 +1363,18 @@ function atmEnsureCache(){
   atmSkyHD=H+2*M;
   const sw=Math.max(2,Math.floor(W*0.5)), sh=Math.max(2,Math.floor(atmSkyHD*0.5));
   atmSkyCv=_mkCv(sw,sh); if(atmSkyCv) atmBuildSky(atmSkyCv, sw, sh);
+  // 取缓存首/末行的**平均色**作为越界兜底色：与接缝同色（无横带），又是整行平均（无竖条纹）
+  try{
+    const g0=atmSkyCv.getContext('2d');
+    const avgRow=function(y){
+      const d=g0.getImageData(0,y,atmSkyCv.width,1).data; let r=0,gg=0,b=0,n=0;
+      for(let i=0;i<d.length;i+=4){ r+=d[i]; gg+=d[i+1]; b+=d[i+2]; n++; }
+      return n? [Math.round(r/n),Math.round(gg/n),Math.round(b/n)] : null;
+    };
+    const a0=avgRow(0), a1=avgRow(atmSkyCv.height-1);
+    if(a0) atmSkyTopRGB=a0;
+    if(a1) atmSkyBotRGB=a1;
+  }catch(e){}
   // 地平线雾带
   atmFogHD=Math.max(64, Math.floor(H*(dark?ATMOS.fogH:ATMOS.fogHL)));
   const fw=Math.max(2,Math.floor(W*0.5)), fh=Math.max(2,Math.floor(atmFogHD*0.5));
@@ -1389,8 +1401,9 @@ function drawAtmosphereBackdrop(){
   const visTop=Math.max(0,y0), visBot=Math.min(H,y0+atmSkyHD);
   // 天幕缓存覆盖不到的上下两端（pitch 超过缓存留白时）：用缓存「边缘那一行」纵向拉伸兜底。
   // 逐列取的就是接缝处同一像素，所以兜底区与天幕无缝衔接——既不露画布底色，也不会出现纯色横带。
-  if(visTop>0) ctx.drawImage(atmSkyCv, 0, 0, cvW, 1, 0, 0, W, visTop);
-  if(visBot<H) ctx.drawImage(atmSkyCv, 0, cvH-1, cvW, 1, 0, visBot, W, H-visBot);
+  // 兜底区用「与天幕边缘同色」的平面填充：拉伸单行会把逐列噪声放大成竖条纹（用户实拍可见）
+  if(visTop>0 && atmSkyTopRGB) { ctx.fillStyle=_atmCSS(atmSkyTopRGB,1); ctx.fillRect(0,0,W,visTop); }
+  if(visBot<H && atmSkyBotRGB) { ctx.fillStyle=_atmCSS(atmSkyBotRGB,1); ctx.fillRect(0,visBot,W,H-visBot); }
   const dh=visBot-visTop; if(dh<=0) return;
   ctx.drawImage(atmSkyCv, 0, (visTop-y0)*0.5, W*0.5, dh*0.5, 0, visTop, W, dh);
 }
@@ -2175,6 +2188,11 @@ function start(){
   var cd0=document.getElementById('cd'); if(cd0) cd0.classList.remove('show');
   // 笔/手柄设备不用锁光标：直接开始倒计时
   if(device==='pen' || device==='pad'){ setTimeout(beginCountdownOrSession, 16); }
+  else if(!lockFree){
+    // 鼠标：这次点击本身就是用户手势，直接请求全屏 + 锁光标（第一局和「再来一组」一致）
+    tryFullscreen();
+    doLock();
+  }
 }
 
 function beginCountdownOrSession(){
@@ -2887,6 +2905,7 @@ function finish(){
   var dry=window.__langDryRender===true;
   running=false; alive=false;
   if(!dry){
+    fsTried=false;                     // 下一局允许再次进入全屏（否则第二局永远不再全屏）
     if(document.fullscreenElement && document.exitFullscreen) document.exitFullscreen().catch(function(){});
     var gz=document.getElementById('grab'); if(gz) gz.classList.remove('on');
     if(document.pointerLockElement) document.exitPointerLock();

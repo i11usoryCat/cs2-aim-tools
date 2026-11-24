@@ -2009,9 +2009,13 @@ function doLock(){
     var el=document.getElementById('rawWarn');
     if(el) el.style.display='';
   }
-  try{ const r=cv.requestPointerLock({unadjustedMovement:true});
-    if(r&&r.catch) r.catch(safeLock); else safeLock(); }
-  catch(e){ safeLock(); }
+  // 关键：只有在「确定失败」（Promise reject / 同步抛错）时才降级。
+  // 旧写法在浏览器不返回 Promise 时会立刻再请求一次普通锁——那会取消正在进行的原始锁请求，
+  // 结果是每次都弹「原始输入锁定失败」。
+  try{
+    const r=cv.requestPointerLock({unadjustedMovement:true});
+    if(r && typeof r.then==='function'){ r.then(function(){}).catch(safeLock); }
+  }catch(e){ safeLock(); }
 }
 
 function readDelay(){
@@ -3033,7 +3037,8 @@ document.getElementById('copy').addEventListener('click', function(e){
 document.addEventListener('pointerdown', function(e){
   if(e.pointerType==='pen'){ penActive=true; return; }   // 笔不抢指针锁
   if(device!=='mouse') return;                            // 手柄/绘画板设备不抢指针锁
-  if((running||waiting) && !paused && !document.pointerLockElement && !lockFree){ doLock(); tryFullscreen(); }
+  // 只锁光标，不自动全屏：requestFullscreen 会打断 unadjustedMovement 指针锁（实测会退回非原始输入）
+  if((running||waiting) && !paused && !document.pointerLockElement && !lockFree){ doLock(); }
 });
 document.addEventListener('pointerdown',function(e){
   if(e.pointerType==='pen') penActive=true;
@@ -3055,7 +3060,7 @@ function pause(){ if(!running||paused)return; paused=true; pauseAt=performance.n
   // ESC 只暂停、不退全屏：丢全屏就立刻要回来（同一按键手势内通常能成功）
   /* 全屏由独立按钮控制，暂停/继续不再抢手势 */ }
 function resume(){ msg.classList.remove('paused'); if(endMode==='time'){ endAt += performance.now()-pauseAt; } if(!paused)return; const d=performance.now()-pauseAt;
-  if(alive) tSpawn+=d; nextAt+=d; paused=false; msg.classList.remove('show'); doLock(); tryFullscreen();
+  if(alive) tSpawn+=d; nextAt+=d; paused=false; msg.classList.remove('show'); doLock();
   // 点「继续」是有效手势：顺带把全屏要回来
   /* 全屏由独立按钮控制，暂停/继续不再抢手势 */ }
 let hadLock=false, lockFails=0;
@@ -3080,6 +3085,13 @@ document.addEventListener('fullscreenchange', function(){
 document.addEventListener('pointerlockerror', function(){
   if((!running && !waiting) || paused) return;
   lockFails++;
+  // 原始锁请求失败（部分浏览器不支持 unadjustedMovement）：第二次起降级为普通锁
+  if(lockFails===2 && !rawLockFailed){
+    rawLockFailed=true;
+    try{ const p=cv.requestPointerLock(); if(p&&p.catch) p.catch(()=>{}); }catch(e){}
+    var el0=document.getElementById('rawWarn'); if(el0) el0.style.display='';
+    return;
+  }
   if(lockFails<=5){ setTimeout(doLock, 260); return; }   // 多试几次（全屏切换那一下可能失败一次）
   lockFree=true;                                          // 彻底锁不上 → 无锁模式照常练
   if(waiting && !running) beginCountdownOrSession();

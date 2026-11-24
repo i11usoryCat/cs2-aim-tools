@@ -2184,15 +2184,13 @@ function start(){
   // 不再在开跑时抢全屏：requestFullscreen 会吃掉 transient activation，
   // 官方要求 requestPointerLock() 必须先于它，拆成两次点击最稳。
   waiting=true; running=false; paused=false;
+  // 每局都重新尝试「原始输入锁」：上一局若连续失败过会把 lockFree 置真，不重置就永远不再锁
+  try{ lockFree=false; lockFails=0; rawLockFailed=false;
+       var rw=document.getElementById('rawWarn'); if(rw) rw.style.display='none'; }catch(e){}
   if(cdTimer){ clearInterval(cdTimer); cdTimer=null; }
   var cd0=document.getElementById('cd'); if(cd0) cd0.classList.remove('show');
   // 笔/手柄设备不用锁光标：直接开始倒计时
   if(device==='pen' || device==='pad'){ setTimeout(beginCountdownOrSession, 16); }
-  else if(!lockFree){
-    // 鼠标：这次点击本身就是用户手势，直接请求全屏 + 锁光标（第一局和「再来一组」一致）
-    tryFullscreen();
-    doLock();
-  }
 }
 
 function beginCountdownOrSession(){
@@ -2999,7 +2997,7 @@ function finish(){
   if(mode==='check') setTimeout(drawCheckScatter, 30);
 }
 
-go.addEventListener('click',e=>{ e.stopPropagation(); tryFullscreen(); start(); });
+go.addEventListener('click',e=>{ e.stopPropagation(); start(); });
 
 /* 全屏单独一个按钮：官方文档要求 requestPointerLock() 必须在 requestFullscreen() 之前调用，
    因为 requestFullscreen 会吃掉 transient activation。把它拆成两次点击，两边都不用抢手势。 */
@@ -3035,7 +3033,7 @@ document.getElementById('copy').addEventListener('click', function(e){
 document.addEventListener('pointerdown', function(e){
   if(e.pointerType==='pen'){ penActive=true; return; }   // 笔不抢指针锁
   if(device!=='mouse') return;                            // 手柄/绘画板设备不抢指针锁
-  if((running||waiting) && !paused && !document.pointerLockElement && !lockFree){ tryFullscreen(); doLock(); }
+  if((running||waiting) && !paused && !document.pointerLockElement && !lockFree){ doLock(); tryFullscreen(); }
 });
 document.addEventListener('pointerdown',function(e){
   if(e.pointerType==='pen') penActive=true;
@@ -3057,7 +3055,7 @@ function pause(){ if(!running||paused)return; paused=true; pauseAt=performance.n
   // ESC 只暂停、不退全屏：丢全屏就立刻要回来（同一按键手势内通常能成功）
   /* 全屏由独立按钮控制，暂停/继续不再抢手势 */ }
 function resume(){ msg.classList.remove('paused'); if(endMode==='time'){ endAt += performance.now()-pauseAt; } if(!paused)return; const d=performance.now()-pauseAt;
-  if(alive) tSpawn+=d; nextAt+=d; paused=false; msg.classList.remove('show'); tryFullscreen(); doLock();
+  if(alive) tSpawn+=d; nextAt+=d; paused=false; msg.classList.remove('show'); doLock(); tryFullscreen();
   // 点「继续」是有效手势：顺带把全屏要回来
   /* 全屏由独立按钮控制，暂停/继续不再抢手势 */ }
 let hadLock=false, lockFails=0;
@@ -3082,7 +3080,7 @@ document.addEventListener('fullscreenchange', function(){
 document.addEventListener('pointerlockerror', function(){
   if((!running && !waiting) || paused) return;
   lockFails++;
-  if(lockFails<=3){ setTimeout(doLock, 260); return; }   // 多试几次
+  if(lockFails<=5){ setTimeout(doLock, 260); return; }   // 多试几次（全屏切换那一下可能失败一次）
   lockFree=true;                                          // 彻底锁不上 → 无锁模式照常练
   if(waiting && !running) beginCountdownOrSession();
 });

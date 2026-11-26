@@ -64,6 +64,7 @@
 <link rel="stylesheet" href="../assets/ui-material.css">
 <link rel="stylesheet" href="../assets/type.css">
 <link rel="stylesheet" href="../assets/overlay-v3.css">
+<link rel="stylesheet" href="../assets/shell.css?v=1">
 <style>
   /* 结果页一屏（1440×900）：趋势图 + 说明改成两栏并排；纯排版，不碰测量逻辑 */
   #res{padding-top:80px}
@@ -100,9 +101,9 @@
   window.__IS_EN=en;
   try{ document.documentElement.lang = en?'en':'zh-CN'; }catch(e){}
 })();</script>
-<div id="topbar">
+<div id="topbar" class="vn-topbar">
   <a id="back" href="../app.html#play">← 返回</a>
-  <div id="langSw" role="group" aria-label="Language">
+  <div id="langSw" class="vn-lang" role="group" aria-label="Language">
     <button type="button" data-lang="zh">中</button><span class="sep">/</span><button type="button" data-lang="en">EN</button>
   </div>
 </div>

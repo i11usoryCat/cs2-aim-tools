@@ -302,7 +302,8 @@
   }
 
   :focus-visible{outline:2px solid var(--acc);outline-offset:2px;border-radius:4px}
-  @media (prefers-reduced-motion:reduce){
+  @media (prefers-reduced-motion:reduce){/* W4-keep: a11y/动效强制（reduced-motion 或覆盖动画） */
+
     *{animation:none!important;transition:none!important}
   }
 
@@ -405,10 +406,11 @@
 /* W4 步骤 1：卡片皮肤与按钮/输入框 reset 拆成两个独立分组（同值同序，不动层叠） */
   .card,
   a.tile{
-    border-radius:0 !important;
-    background-image:none !important;
-    box-shadow:none !important;
-  }
+    border-radius:0;
+    background-image:none;
+    box-shadow:none;
+  }/* W4-keep: app 层叠/动效补丁 */
+
   button,
   select,
   input,
@@ -418,19 +420,21 @@
     border-radius:0 !important;
     background-image:none !important;
     box-shadow:none !important;
-  }
+  }/* W4-keep: app 层叠/动效补丁 */
+
   button:active,a.tile:active,.start:active{transform:none !important}
 
   /* —— 一屏一处填色：只有主操作用强调色 —— */
   button.main{
-    background:var(--acc) !important;
-    border:1px solid var(--acc) !important;
-    color:var(--on-acc,#fff) !important;
+    background:var(--acc);
+    border:1px solid var(--acc);
+    color:var(--on-acc,#fff);
     font-weight:600;
     transition:filter 120ms linear;
   }
   button.main:hover{filter:brightness(.94)}     /* 降 6% 明度 */
-  button.main:active{filter:brightness(.90)}    /* 再降 10% */
+  button.main:active{filter:brightness(.90)}/* W4-keep: a11y/动效强制（reduced-motion 或覆盖动画） */
+    /* 再降 10% */
 
   /* —— 次级按钮：透明 + 1px 线 + 中性文字 —— */
   button:not(.main):not(.delRun):not(#mtClose){
@@ -446,7 +450,8 @@
   }
   button:not(.main):not(.delRun):not(#mtClose):active{
     background:color-mix(in srgb,var(--txt) 8%, transparent);
-  }
+  }/* W4-keep: a11y/动效强制（reduced-motion 或覆盖动画） */
+
 
   /* —— 卡片：只有 1px 线 —— */
   .card,a.tile{
@@ -456,7 +461,8 @@
     transform:none !important;
   }
   a.tile:hover{border-color:var(--line2); background:color-mix(in srgb,var(--txt) 2%, transparent)}
-  a.tile::before{display:none}                 /* 上一版的刻度装饰去掉 */
+  a.tile::before{display:none}/* W4-keep: app 层叠/动效补丁 */
+                 /* 上一版的刻度装饰去掉 */
 
   /* —— 输入框：1px 线，focus 用双线而不是光晕 —— */
   #set input[type="number"],#set input[type="text"],#set select,#set textarea,input.fld,select.fld,.fld input,.fld select{
@@ -483,7 +489,7 @@
   .grp{counter-increment:grp; gap:10px}
   .grp::before{
     content:counter(grp,decimal-leading-zero);
-    width:auto; height:auto; background:none !important;
+    width:auto; height:auto; background:none;
     font-variant-numeric:tabular-nums; letter-spacing:.08em; color:var(--dim2);
   }
   #set{counter-reset:card}
@@ -536,9 +542,10 @@
   @keyframes plotTab{ from{transform:translateY(8px)} to{transform:translateY(0)} }
   section.on{ animation:plotTab 160ms cubic-bezier(.2,.8,.2,1) both }
 
-  @media (prefers-reduced-motion:reduce){
+  @media (prefers-reduced-motion:reduce){/* W4-keep: a11y/动效强制（reduced-motion 或覆盖动画） */
+
     #drillGrid .item,.today,#drillGrid .grp,section.on{ animation:none !important; opacity:1 !important; transform:none !important }
-    #drillGrid .grp i::after{ animation:none !important; transform:none !important }
+    #drillGrid .grp i::after{ animation:none; transform:none }
   }
 
   /* ——— C 档微交互（≤180ms，只动 transform/opacity/边框） ——— */
@@ -560,7 +567,8 @@
     background:currentColor; opacity:.55; transform:scaleX(0); transform-origin:left center;
     transition:transform 160ms linear;
   }
-  button.main:hover::after{transform:scaleX(1)}
+  button.main:hover::after{transform:scaleX(1)}/* W4-keep: a11y/动效强制（reduced-motion 或覆盖动画） */
+
 
   /* 3) 按下：边框 1px→2px（用 outline，不占布局），内容下沉 1px */
   button:active,a.tile:active,.today:active,#drillGrid .item:active,.start:active{
@@ -574,7 +582,8 @@
   @keyframes ringIn{
     from{ outline-offset:-1px }
     to{ outline-offset:2px }
-  }
+  }/* W4-keep: a11y/动效强制（reduced-motion 或覆盖动画） */
+
   #set input:focus-visible,#set select:focus-visible,#set textarea:focus-visible,
   input.fld:focus-visible,select.fld:focus-visible,.fld input:focus-visible,.fld select:focus-visible{
     outline:1px solid var(--acc) !important;
@@ -592,10 +601,14 @@
   .statsbar .num{position:relative}
   .statsbar .num.flip{animation:numIn 160ms cubic-bezier(.2,.8,.2,1) both}
 
-  @media (prefers-reduced-motion:reduce){
-    #drillGrid .item::before,#drillGrid .item .ar,button.main::after,.nav-ink{transition:none !important}
-    #set input:focus-visible,#set select:focus-visible,#set textarea:focus-visible{animation:none !important; box-shadow:0 0 0 1px var(--acc)}
-    button:active,a.tile:active,.today:active,#drillGrid .item:active,.start:active{transform:none !important}
+  @media (prefers-reduced-motion:reduce){/* W4-keep: a11y/动效强制（reduced-motion 或覆盖动画） */
+
+    #drillGrid .item::before,#drillGrid .item .ar,button.main::after,.nav-ink{transition:none !important}/* W4-keep: a11y/动效强制（reduced-motion 或覆盖动画） */
+
+    #set input:focus-visible,#set select:focus-visible,#set textarea:focus-visible{animation:none !important; box-shadow:0 0 0 1px var(--acc)}/* W4-keep: a11y/动效强制（reduced-motion 或覆盖动画） */
+
+    button:active,a.tile:active,.today:active,#drillGrid .item:active,.start:active{transform:none !important}/* W4-keep: a11y/动效强制（reduced-motion 或覆盖动画） */
+
     .statsbar .num.flip,.num-ghost{animation:none !important}
   }
 
@@ -611,7 +624,8 @@
 
   #play{display:none; min-height:calc(100vh - 220px); box-sizing:border-box; margin-bottom:0}
   #play.on{display:flex; flex-direction:column; justify-content:center; margin:0}
-  #play h2{margin-top:0}
+  #play h2{margin-top:0}/* W4-keep: app 层叠/动效补丁 */
+
   #drillGrid{display:block !important; width:100%}   /* 容器不再是卡片网格，改成目录 */
   #drillGrid .cols{display:grid; grid-template-columns:repeat(5,1fr); gap:0 28px}
   #drillGrid .grp{
@@ -712,13 +726,13 @@ h1,
   /* 矮视口（笔记本 1440×800、浏览器 chrome 吃掉 100px 时）：压一档，保证零滚动 */
   @media (max-height: 820px){
     #play.on{ padding:18px 0 20px; gap:24px }
-    .ph-left h2{ font-size:clamp(40px,4.6vw,54px) !important }
+    .ph-left h2{ font-size:clamp(40px,4.6vw,54px) }
     #play .statsbar{ padding-top:16px }
-    #play .statsbar .sb-v{ font-size:34px !important }
+    #play .statsbar .sb-v{ font-size:34px }
     #play .statsbar .sb{ gap:6px }
     #drillGrid .grp{ margin-bottom:8px; padding-bottom:8px }
     #drillGrid .item{ height:38px }
-    #drillGrid .col{ min-height:0 !important }
+    #drillGrid .col{ min-height:0 }
   }
   #play .play-head{ flex:0 0 auto; order:1 }
   #drillGrid{ flex:0 0 auto; display:flex; align-items:flex-start; order:3; padding-top:8px }
@@ -748,7 +762,7 @@ h1,
     font-size:15px; line-height:1.7; color:var(--dim); margin:0 0 22px; max-width:38ch;
   }
   .ph-right .hint:last-child{ margin-bottom:0 }
-  .ph-right .hint a{ color:var(--acc) !important }
+  .ph-right .hint a{ color:var(--acc) }
   #todaySlot .today{
     display:flex; align-items:center; justify-content:space-between; gap:16px;
     height:52px; padding:0 2px; margin:0;
@@ -782,7 +796,8 @@ h1,
     white-space:nowrap;
   }
   #play .statsbar .sb-v .u{ font-size:14px; font-weight:500; letter-spacing:0; color:var(--dim) }
-  #play .statsbar .sb-v.dim{ color:var(--dim2) }
+  #play .statsbar .sb-v.dim{ color:var(--dim2) }/* W4-keep: app 层叠/动效补丁 */
+
 
   /* ---------- 目录五列 ---------- */
   #drillGrid{ display:flex !important; margin:0; width:100%; align-items:center }
@@ -822,7 +837,7 @@ h1,
   #drillGrid .item::before{ display:none }
 
   /* ---------- 其它页：只换字体与尺度 ---------- */
-  .card{ border-radius:0 !important; background:transparent !important; border:1px solid var(--line) !important; }
+  .card{ border-radius:0; background:transparent; border:1px solid var(--line); }
   .card>.t{ font-family:var(--f-ui) }
   #set .v, #data .v, .v{ font-family:var(--f-ui); font-weight:800; font-variant-numeric:tabular-nums; letter-spacing:-.02em }
   /* 空数据占位不要用 44px 的破折号（看起来像粗横杠）：降一档字号 + 次要色 */
@@ -841,8 +856,9 @@ h1,
     #drillGrid .col{ padding:0 14px 4px }
   }
   @media (prefers-reduced-motion:reduce){
-    #play.on{ animation:none !important }
-  }
+    #play.on{ animation:none }
+  }/* W4-keep: app 层叠/动效补丁 */
+
 
   /* ============================================================
      对比度审计修正：强调色「文字」用 --acc-text（= --acc 朝正文色混合 10%）

@@ -1638,16 +1638,25 @@ function applyLang(l){
       el.classList.toggle('on', el.dataset.lang===l);
     });
   }catch(e){}
-  // 属性文本：text 节点遍历碰不到 title / placeholder
+  // 属性文本：text 节点遍历碰不到 title / placeholder / aria-label
+  // 注意：不能用 el.dataset['__o_aria-label']——键名含 "-a" 会触发 DOMStringMap SyntaxError，
+  // 一旦抛错，整段属性翻译就中断（英文界面残留中文 aria-label 就是这么来的）。
   try{
     const map=(l==='en')?EN:ZH;
     document.querySelectorAll('[title],[placeholder],[aria-label]').forEach(function(el){
+      const store = el.__origAttr || (el.__origAttr = {});
       ['title','placeholder','aria-label'].forEach(function(a){
         if(!el.hasAttribute(a)) return;
-        const key='__o_'+a;
-        if(!el.dataset[key]) el.dataset[key]=el.getAttribute(a);
-        const orig=el.dataset[key], t=orig.trim();
-        el.setAttribute(a, map[t]||orig);
+        if(store[a]===undefined) store[a]=el.getAttribute(a);
+        const orig=store[a]||'', t=orig.trim();
+        let mapped=map[t];
+        if(mapped===undefined){
+          // 「中文标签 + 数值」这类动态可读名（如「长度 1」「透明度 1.00」）词典里没有整串，
+          // 拆成前缀+数值，前缀查词典，数值原样保留。
+          const mm=/^([^\d.]+?)([\s]*[\d.]+)$/.exec(t);
+          if(mm && map[mm[1].trim()]!==undefined) mapped=map[mm[1].trim()]+mm[2];
+        }
+        el.setAttribute(a, mapped!==undefined? mapped : orig);
       });
     });
   }catch(e){}
@@ -1661,6 +1670,9 @@ function applyLang(l){
     document.querySelectorAll('[aria-label="关闭"],[aria-label="Close"]').forEach(function(b){
       b.setAttribute('aria-label', isEn?'Close':'关闭');
     });
+    var mtClose=document.getElementById('mtClose'); if(mtClose) mtClose.setAttribute('aria-label', isEn?'Close':'关闭');
+    var mtCopy=document.getElementById('mtCopy');
+    if(mtCopy){ mtCopy.textContent = isEn?'Copy link':'复制链接'; }
   }catch(e){}
   // 计算出来的文案也要跟着语言走
   // ⚠ 重入保护：下面的 render 回调里可能再次调用 applyLang（render→applyLang→render 会死循环）

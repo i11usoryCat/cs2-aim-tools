@@ -76,6 +76,8 @@
     /* 亮度权重与阈值沿用 app.html 迁移前的实现（0.299/0.587/0.114，阈值 0.55，暗字 #111820），
        保证 W1/W2 页面在同一主题下 --on-acc 取值逐像素一致。 */
     function applyOnAcc(){
+      /* 页面声明 data-theme-onacc="theme" 时保留 theme.css 里手调的 --on-acc（工具页场景） */
+      if (D.getAttribute('data-theme-onacc') === 'theme') return;
       var acc = getComputedStyle(document.documentElement).getPropertyValue('--acc').trim();
       if (!acc) return;
       try{ probe.style.color = acc; }catch(e){}
@@ -180,7 +182,7 @@
   }
   function articles(){ return document.querySelectorAll('article[data-lang]'); }
   function markSwitches(){
-    var els = document.querySelectorAll('.langTop [data-l],.langTop [data-lang],.langsw [data-l],.langsw [data-lang],.lang [data-l],.lang [data-lang],#langSw [data-l],#langSw [data-lang]');
+    var els = document.querySelectorAll('.langTop [data-l],.langTop [data-lang],.langsw [data-l],.langsw [data-lang],.lang [data-l],.lang [data-lang]');
     for (var i = 0; i < els.length; i++){
       var el = els[i];
       var l = el.getAttribute('data-l') || el.getAttribute('data-lang');
@@ -240,7 +242,7 @@
     swap();
   }
   function bindSwitches(){
-    var els = document.querySelectorAll('.langTop [data-l],.langTop [data-lang],.langsw [data-l],.langsw [data-lang],.lang [data-l],.lang [data-lang],#langSw [data-l],#langSw [data-lang]');
+    var els = document.querySelectorAll('.langTop [data-l],.langTop [data-lang],.langsw [data-l],.langsw [data-lang],.lang [data-l],.lang [data-lang]');
     for (var i = 0; i < els.length; i++){
       (function (el){
         el.addEventListener('click', function (ev){ ev.preventDefault(); runSwitch(el, ev); });

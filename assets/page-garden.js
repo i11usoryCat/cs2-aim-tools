@@ -353,7 +353,7 @@
             var diff = want - o.ang;
             while (diff > Math.PI) diff -= Math.PI * 2;
             while (diff < -Math.PI) diff += Math.PI * 2;
-            o.ang += diff * 0.12;
+            o.ang += diff * 0.24;
           }
         }
       }
@@ -632,11 +632,11 @@
       // 翅膀：细长、掠向后，半透明会拍
       var flapFreq = 0.011 + near * 0.012;
       var flap = 0.22 + 0.78 * Math.abs(Math.sin(now * flapFreq + o.phase * 1.7));
-      ctx.globalAlpha = a * 0.26;
-      ctx.fillStyle = 'rgba(226,240,238,1)';
+      ctx.globalAlpha = a * 0.34;
+      ctx.fillStyle = 'rgba(232,244,242,1)';
       for (var w = -1; w <= 1; w += 2) {
         ctx.beginPath();
-        ctx.ellipse(-L1 * 0.30, w * L2 * (0.75 + 0.22 * flap), L1 * 0.92, L2 * 0.34 * flap, w * 0.78, 0, Math.PI * 2);
+        ctx.ellipse(-L1 * 0.36, w * L2 * (0.82 + 0.20 * flap), L1 * 0.98, L2 * 0.42 * flap, w * 0.94, 0, Math.PI * 2);
         ctx.fill();
       }
       // 身体：暖琥珀色的梭形（实心、有轮廓）
@@ -648,21 +648,21 @@
       ctx.quadraticCurveTo(-L1 * 1.02, 0, -L1 * 0.92, L2 * 0.22);
       ctx.quadraticCurveTo(L1 * 0.2, L2 * 0.95, L1, 0);
       ctx.closePath(); ctx.fill();
-      // 尾灯：一小团暖光，是它唯一「发光」的地方
+      // 头灯：亮的一端放在**前面**——人眼会把亮点认作头，放后面就会「倒着飞」
       ctx.globalAlpha = Math.min(1, a * 0.95);
-      ctx.fillStyle = 'rgb(255,238,196)';
-      ctx.beginPath(); ctx.arc(-L1 * 0.58, 0, L2 * 0.34, 0, Math.PI * 2); ctx.fill();
-      // 头：暗一点，形成前后关系
+      ctx.fillStyle = 'rgb(255,240,200)';
+      ctx.beginPath(); ctx.arc(L1 * 0.62, 0, L2 * 0.36, 0, Math.PI * 2); ctx.fill();
+      // 尾端：暗琥珀，收住
       ctx.globalAlpha = a * 0.55;
       ctx.fillStyle = 'rgb(120,86,44)';
-      ctx.beginPath(); ctx.arc(L1 * 0.74, 0, L2 * 0.24, 0, Math.PI * 2); ctx.fill();
-      // 触角：两根极细的线
-      ctx.globalAlpha = a * 0.30;
-      ctx.strokeStyle = 'rgb(150,120,80)';
+      ctx.beginPath(); ctx.arc(-L1 * 0.88, 0, L2 * 0.20, 0, Math.PI * 2); ctx.fill();
+      // 触角：从头部往前伸
+      ctx.globalAlpha = a * 0.34;
+      ctx.strokeStyle = 'rgb(168,136,92)';
       ctx.lineWidth = Math.max(0.6, DPR * 0.55);
       ctx.beginPath();
-      ctx.moveTo(L1 * 0.92, 0); ctx.quadraticCurveTo(L1 * 1.35, -L2 * 0.5, L1 * 1.62, -L2 * 0.95);
-      ctx.moveTo(L1 * 0.92, 0); ctx.quadraticCurveTo(L1 * 1.35, L2 * 0.5, L1 * 1.62, L2 * 0.95);
+      ctx.moveTo(L1 * 0.70, 0); ctx.quadraticCurveTo(L1 * 1.25, -L2 * 0.55, L1 * 1.55, -L2 * 1.05);
+      ctx.moveTo(L1 * 0.70, 0); ctx.quadraticCurveTo(L1 * 1.25, L2 * 0.55, L1 * 1.55, L2 * 1.05);
       ctx.stroke();
       ctx.restore();
       // 水面倒影：只留一点摇曳的光
@@ -957,6 +957,7 @@
     orbs: function () { return orbs.length; },
     petals: function () { return petals.length; },
     orbsPos: function () { return orbs.map(function (o) { return { x: o.x / DPR, y: o.y / DPR, r: o.r / DPR }; }); },
+    orbsAng: function () { return orbs.map(function (o) { return o.ang || 0; }); },
     setMode: setMode,
     audio: function () { return { ready: !!AU.ctx, on: AU.on }; }
   };

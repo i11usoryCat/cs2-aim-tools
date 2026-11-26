@@ -1,25 +1,18 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-default="zh">
 <head>
 <meta charset="utf-8">
+<script src="assets/shell.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>一段对话 · Vernier</title>
 <meta name="robots" content="noindex">
 <link rel="stylesheet" href="assets/theme.css">
-<script>/* 主题：assets/theme.css 是唯一来源（与全站同一套 9 主题） */
-(function(){
-  var OK={sand:1,ink:1,lake:1,light:1,jade:1,forest:1,mono:1,night:1,cyber:1};
-  var t=null;
-  try{ t=new URLSearchParams(location.search).get('theme'); }catch(e){}
-  if(!t){ try{ t=localStorage.getItem('cs2at.theme'); }catch(e){} }
-  if(!OK[t]){ try{ var d=new Date(), m=d.getHours()*60+d.getMinutes(); t=(m>=1410||m<460)?'forest':'sand'; }catch(e){ t='sand'; } }
-  try{ document.documentElement.setAttribute('data-theme',t); }catch(e){}
-})();</script>
 <link rel="stylesheet" href="assets/type.css">
+<link rel="stylesheet" href="assets/shell.css?v=1">
 <link rel="stylesheet" href="assets/relic.css">
 <link rel="stylesheet" href="assets/line-system.css?v=1">
 </head>
-<body>
+<body class="vn-sheet">
 <main class="page">
 <div class="topbar">
   <a href="index.html">← VERNIER</a>
@@ -48,6 +41,5 @@
 
 <div class="end"><b>i11usoryCat</b> 问 · <b>大肥鱼</b> 答 · 2026-10-24 深夜<br>这是站点里藏着的第二个彩蛋</div>
 </main>
-<div class="vn-dither" aria-hidden="true"></div>
 </body>
 </html>

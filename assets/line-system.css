@@ -80,7 +80,8 @@ html body #plan .prow,
 html body #plan .task{
   border-bottom: 1px solid transparent;
   border-image: var(--line-g-fade-x) 1;
-}
+}/* W4-keep: 线系补丁层：与页面层 important 成对，单侧去会反转层叠 */
+
 
 /* ============================================================
    3 · 交互线：语言开关 / 主题胶囊下划线，从中间展开 160ms
@@ -134,10 +135,11 @@ html body #todaySlot .today:hover::after{ transform: scaleX(1); }
    ============================================================ */
 /* 页脚：只留一条结构线（原来公式上下两条线离字只有 7px） */
 html body .foot code{
-  border: 0 !important;
-  padding: 0 !important;
-  background: transparent !important;
-}
+  border: 0;
+  padding: 0;
+  background: transparent;
+}/* W4-keep: 线系补丁层：与页面层 important 成对，单侧去会反转层叠 */
+
 /* 主入口上下两条 1px 线：两端 2% 渐隐（currentColor 在 border-image 里不解析，用显式色） */
 html body .start{
   border-top-color: transparent !important;
@@ -147,16 +149,18 @@ html body .start{
 }
 /* 页脚公式原来上下各一道刻度线（离字只有 7px）：去掉，只留页脚结构线 */
 html body .foot code::before,
-html body .foot code::after{ display: none !important; }
+html body .foot code::after{ display: none; }/* W4-keep: 线系补丁层：与页面层 important 成对，单侧去会反转层叠 */
+
 
 /* ============================================================
    5 · 应用外壳 app.html：顶栏 / 导航 / 卡片 / 表格
    ============================================================ */
 /* 导航下划线：2px → 1px，accent 混色（选中的那一条不再是一根黑杠） */
 html body #navInk{
-  height: 1px !important;
+  height: 1px;
   background: var(--line-i) !important;
-}
+}/* W4-keep: 线系补丁层：与页面层 important 成对，单侧去会反转层叠 */
+
 
 /* 卡片：一格一框 → 只留顶部一条分组线（设置页 / 数据页的「行」不再被四边框住） */
 html body .card{
@@ -168,7 +172,8 @@ html body .card{
   padding: 26px 0 10px !important;
   margin: 0 0 34px !important;
 }
-html body .card:hover{ box-shadow: none !important; }
+html body .card:hover{ box-shadow: none; }/* W4-keep: 线系补丁层：与页面层 important 成对，单侧去会反转层叠 */
+
 /* 卡片内的标题按钮（存图 / 重算 / 全部）：盒子 → 下划线文字，顶部不再贴着标题 */
 html body #data #trendSave,
 html body #data #rebuildBest,
@@ -177,12 +182,13 @@ html body #data #moreRuns{
   border-bottom: 1px solid var(--line-g) !important;
   border-radius: 0 !important;
   background: transparent !important;
-  height: auto !important;
-  min-width: 0 !important;
+  height: auto;
+  min-width: 0;
   padding: 2px 0 !important;
   color: var(--acc-text, var(--acc)) !important;
   font-size: 12.5px !important;
-}
+}/* W4-keep: 线系补丁层：与页面层 important 成对，单侧去会反转层叠 */
+
 html body #data .card > .t{ gap: 16px !important; }
 
 /* 表格：行分隔（去掉每格底边），每 2 行一条更淡的分组线 */
@@ -203,28 +209,30 @@ html body #plan table tr:nth-child(odd):not(:first-child) td{
   border-bottom: 1px solid var(--line-g);
 }
 html body #data table tr:last-child td,
-html body #plan table tr:last-child td{ border-bottom: 0 !important; }
+html body #plan table tr:last-child td{ border-bottom: 0; }/* W4-keep: 线系补丁层：与页面层 important 成对，单侧去会反转层叠 */
+
 /* 表格最后一行与下方说明之间留 16px（原来 8px，是最后一条碰撞） */
 html body #data #bestHint,
 html body #data #runTable + div{ margin-top: 16px !important; }
 
 /* 数据页 · 仪表读数：顶线结构线，竖分隔分组线，刻度短线保留 */
 html body #data .kpiRow{
-  margin-top: 26px !important;
-  padding-top: 0 !important;
+  margin-top: 26px;
+  padding-top: 0;
 }
 html body #data .kpiRow > div{
-  padding: 26px 24px 22px !important;
+  padding: 26px 24px 22px;
 }
-html body #data .kpiRow > div:first-child{ padding-left: 0 !important; }
-html body #data .kpiRow .k{ margin-bottom: 14px !important; }
+html body #data .kpiRow > div:first-child{ padding-left: 0; }
+html body #data .kpiRow .k{ margin-bottom: 14px; }
 html body #data .kpiRow .v{ white-space: nowrap; word-spacing: var(--num-gap); }
 
 /* ============================================================
    6 · 训练页 #play（Hub）：竖线渐隐、数字与单位 2px
    ============================================================ */
 html body #play .statsbar .sb{ padding-left: 32px; }
-html body #play .statsbar .sb-v .u{ margin-left: var(--num-gap); }
+html body #play .statsbar .sb-v .u{ margin-left: var(--num-gap); }/* W4-keep: 线系补丁层：与页面层 important 成对，单侧去会反转层叠 */
+
 
 /* ============================================================
    7 · 计划页 #plan：日历去框、行分隔、行内控件下划线
@@ -248,7 +256,8 @@ html body #plan .grid::after{      /* 每 2 行一条更淡的线；画在格子
   background-image: linear-gradient(to bottom, transparent 0, transparent 99px, var(--line-g) 99px, var(--line-g) 100px);
   background-size: 100% 100px;
   background-repeat: repeat-y;
-}
+}/* W4-keep: 线系补丁层：与页面层 important 成对，单侧去会反转层叠 */
+
 html body #plan .grid .cell{
   border: 0 !important;
   height: 44px;
@@ -256,7 +265,7 @@ html body #plan .grid .cell{
   background: transparent;
   color: var(--txt);
 }
-html body #plan .grid .cell.rest{ color: var(--dim); border: 0 !important; }
+html body #plan .grid .cell.rest{ color: var(--dim); border: 0; }
 html body #plan .grid .cell.done{
   background: var(--acc);
   color: var(--on-acc, #fff);
@@ -267,7 +276,8 @@ html body #plan .grid .cell.today{
   outline-offset: -1px;
   font-weight: 700;
 }
-html body #plan .grid .cell.done.today{ outline-color: var(--on-acc, #fff); }
+html body #plan .grid .cell.done.today{ outline-color: var(--on-acc, #fff); }/* W4-keep: 线系补丁层：与页面层 important 成对，单侧去会反转层叠 */
+
 
 /* 计划胶囊：盒子 → 下划线；选中的那条换成 accent 混色 */
 /* 计划胶囊：用 2 个 id 压过页面里 button:not(.main)!important 的通用边框 */
@@ -277,32 +287,35 @@ html body #plan #planPresets .chip{
   border-radius: 0 !important;
   background: transparent !important;
   padding: 8px 2px !important;
-  color: var(--dim) !important;
-  min-width: 0 !important;
-  height: auto !important;
+  color: var(--dim);
+  min-width: 0;
+  height: auto;
 }
-html body #plan #planPresets .chip:hover{ border-bottom-color: var(--line-i) !important; color: var(--txt) !important; }
+html body #plan #planPresets .chip:hover{ border-bottom-color: var(--line-i); color: var(--txt); }/* W4-keep: 线系补丁层：与页面层 important 成对，单侧去会反转层叠 */
+
 html body #plan #planPresets .chip.on{
   border-bottom-color: var(--line-i) !important;
   background: transparent !important;
   color: var(--acc-text, var(--acc)) !important;
   font-weight: 600;
-}
+}/* W4-keep: 线系补丁层：与页面层 important 成对，单侧去会反转层叠 */
+
 html body #plan #planPresets .chip.new{ border-bottom-style: dashed !important; }
-html body #plan .chips{ margin: 14px 0 18px !important; }
+html body #plan .chips{ margin: 14px 0 18px; }
 
 /* 计划行：行分隔线两端渐隐，上下留 14px；行内控件全部下划线化 */
 html body #plan .prow{
-  padding: 14px 34px 14px 10px !important;
+  padding: 14px 34px 14px 10px;
   border-top: 0;
-}
+}/* W4-keep: 线系补丁层：与页面层 important 成对，单侧去会反转层叠 */
+
 html body #plan .prow input.nmIn,
 html body #plan .prow select{
   border: 0 !important;
   border-bottom: 1px solid var(--line-g) !important;
   border-radius: 0 !important;
   background: transparent !important;
-  box-shadow: none !important;
+  box-shadow: none;
   padding: 4px 2px !important;
   height: 32px;
 }
@@ -310,34 +323,38 @@ html body #plan .prow input.nmIn:focus,
 html body #plan .prow select:focus{
   outline: 1px solid var(--acc);
   outline-offset: 2px;
-  border-bottom-color: var(--line-i) !important;
+  border-bottom-color: var(--line-i);
 }
-html body #plan .stepper{ gap: 14px; }
+html body #plan .stepper{ gap: 14px; }/* W4-keep: 线系补丁层：与页面层 important 成对，单侧去会反转层叠 */
+
 html body #plan #planRows .stepper button{
   border: 0 !important;
   background: transparent !important;
-  color: var(--dim) !important;
+  color: var(--dim);
   width: 24px; height: 24px; min-width: 0;
   padding: 0;
   border-radius: 0 !important;
 }
-html body #plan #planRows .stepper button:hover{ color: var(--acc-text, var(--acc)) !important; }
-html body #plan .stepper span{ word-spacing: var(--num-gap); }
+html body #plan #planRows .stepper button:hover{ color: var(--acc-text, var(--acc)); }
+html body #plan .stepper span{ word-spacing: var(--num-gap); }/* W4-keep: 线系补丁层：与页面层 important 成对，单侧去会反转层叠 */
+
 html body #plan #planRows .pGo{
   border: 0 !important;
   border-bottom: 1px solid var(--line-g) !important;
   border-radius: 0 !important;
   background: transparent !important;
   padding: 3px 0 !important;
-  color: var(--acc-text, var(--acc)) !important;
+  color: var(--acc-text, var(--acc));
 }
-html body #plan #planRows .pGo:hover{ border-bottom-color: var(--line-i) !important; background: transparent !important; }
+html body #plan #planRows .pGo:hover{ border-bottom-color: var(--line-i); background: transparent; }/* W4-keep: 线系补丁层：与页面层 important 成对，单侧去会反转层叠 */
+
 html body #plan #planRows .del{
   border: 0 !important;
   border-radius: 0 !important;
   background: transparent !important;
   padding: 0;
-}
+}/* W4-keep: 线系补丁层：与页面层 important 成对，单侧去会反转层叠 */
+
 html body #plan #planAdd{
   border: 0 !important;
   border-bottom: 1px solid var(--line-g) !important;
@@ -345,25 +362,27 @@ html body #plan #planAdd{
   background: transparent !important;
   height: 44px;
 }
-html body #plan #planAdd:hover{ border-bottom-color: var(--line-i) !important; }
+html body #plan #planAdd:hover{ border-bottom-color: var(--line-i); }
 html body #plan .planTotal{
-  border: 0 !important;
-  border-top: 1px solid transparent !important;
-  border-image: var(--line-g-fade-x) 1 !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-  padding: 18px 0 4px !important;
+  border: 0;
+  border-top: 1px solid transparent;
+  border-image: var(--line-g-fade-x) 1;
+  border-radius: 0;
+  background: transparent;
+  padding: 18px 0 4px;
 }
 html body #plan textarea{
-  border: 1px solid var(--line) !important;
-  border-radius: 0 !important;
-  background: transparent !important;
-}
+  border: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
+}/* W4-keep: 线系补丁层：与页面层 important 成对，单侧去会反转层叠 */
+
 html body #plan button{
   border-color: var(--line) !important;
   border-radius: 0 !important;
 }
-html body #plan button:hover:not(.main){ border-color: var(--line-i) !important; }
+html body #plan button:hover:not(.main){ border-color: var(--line-i); }/* W4-keep: 线系补丁层：与页面层 important 成对，单侧去会反转层叠 */
+
 
 /* ============================================================
    8 · 设置页 #set：卡片去框、字段下划线、色板去框
@@ -376,19 +395,20 @@ html body #set textarea{
   border-bottom: 1px solid var(--line-g) !important;
   border-radius: 0 !important;
   background: transparent !important;
-  box-shadow: none !important;
+  box-shadow: none;
   padding: 7px 2px !important;
   height: 38px;
-  color: var(--txt) !important;
+  color: var(--txt);
 }
 html body #set input:focus,
 html body #set select:focus,
 html body #set textarea:focus{
   outline: 1px solid var(--acc);
   outline-offset: 3px;
-  border-bottom-color: var(--line-i) !important;
+  border-bottom-color: var(--line-i);
 }
-html body #set .k{ margin-bottom: 6px; }
+html body #set .k{ margin-bottom: 6px; }/* W4-keep: 线系补丁层：与页面层 important 成对，单侧去会反转层叠 */
+
 /* 主题 / 场景色板：17 个小盒子 → 17 条下划线 */
 html body #set .sw{
   border: 0 !important;
@@ -397,13 +417,15 @@ html body #set .sw{
   background: transparent !important;
   padding: 8px 2px !important;
 }
-html body #set .sw:hover{ border-bottom-color: var(--line-i) !important; }
+html body #set .sw:hover{ border-bottom-color: var(--line-i); }/* W4-keep: 线系补丁层：与页面层 important 成对，单侧去会反转层叠 */
+
 html body #set .sw.on{
   border-bottom-color: var(--line-i) !important;
   background: transparent !important;
-  color: var(--acc-text, var(--acc)) !important;
+  color: var(--acc-text, var(--acc));
   font-weight: 600;
-}
+}/* W4-keep: 线系补丁层：与页面层 important 成对，单侧去会反转层叠 */
+
 /* label.sw 是「显示实时帧率」这类开关，被 .sw 色板样式误伤成了框 */
 html body #set label.sw{
   border: 0 !important;
@@ -412,19 +434,24 @@ html body #set label.sw{
 }
 html body #set .grp{ margin: 26px 0 10px; }
 html body #set .grp::after{
-  background: linear-gradient(90deg, var(--line-g), transparent 82%) !important;
+  background: linear-gradient(90deg, var(--line-g), transparent 82%);
 }
 /* 标定入口卡片：保留细框，但线色统一 --line */
-html body #set .tile{ border-color: var(--line) !important; }
+html body #set .tile{ border-color: var(--line); }
 /* 场景预览框：预览需要边界，保留 1px --line；准星圆点 2px → 1px */
-html body #set #scenePrev{ border-color: var(--line) !important; }
-html body #set #prevDot{ border-width: 1px !important; }
+html body #set #scenePrev{ border-color: var(--line); }/* W4-keep: 线系补丁层：与页面层 important 成对，单侧去会反转层叠 */
+
+html body #set #prevDot{ border-width: 1px !important; }/* W4-keep: 线系补丁层：与页面层 important 成对，单侧去会反转层叠 */
+
 /* 「命中特效 / 准星击中反馈」两行的文字与 select 之间拉开 14px */
-html body #set .card > .row > div[style*="display:flex"]{ gap: 14px !important; }
+html body #set .card > .row > div[style*="display:flex"]{ gap: 14px !important; }/* W4-keep: 线系补丁层：与页面层 important 成对，单侧去会反转层叠 */
+
 /* 行与行之间给 16px：下划线输入下方紧贴上一行的标签是「线撞字」的典型 */
-html body #set .card .row + .row{ margin-top: 16px !important; }
+html body #set .card .row + .row{ margin-top: 16px !important; }/* W4-keep: 线系补丁层：与页面层 important 成对，单侧去会反转层叠 */
+
 /* 控件行与说明之间 ≥16px（下划线下方文字目标 20） */
-html body #set .card .row + .hint{ margin-top: 16px !important; }
+html body #set .card .row + .hint{ margin-top: 16px !important; }/* W4-keep: 线系补丁层：与页面层 important 成对，单侧去会反转层叠 */
+
 html body #plan #todayHint{ margin-top: 16px !important; }
 
 /* ============================================================
@@ -433,10 +460,11 @@ html body #plan #todayHint{ margin-top: 16px !important; }
 /* 内联代码：1px 框离字只有 0.5px（就是「线与字相撞」的典型）→ 只留底色 */
 html body p code,
 html body li code{
-  border: 0 !important;
+  border: 0;
   background: color-mix(in srgb, var(--txt) 7%, transparent);
   padding: 1px 5px;
-}
+}/* W4-keep: 线系补丁层：与页面层 important 成对，单侧去会反转层叠 */
+
 /* 代码块：四边盒 → 左侧一条结构竖线 + 更暗的纸 */
 html body pre{
   border: 0 !important;
@@ -446,9 +474,9 @@ html body pre{
   padding: 20px 22px !important;
 }
 html body .appendix pre{
-  border: 0 !important;
-  border-left: 1px solid transparent !important;
-  border-image: var(--line-fade-y) 1 !important;
+  border: 0;
+  border-left: 1px solid transparent;
+  border-image: var(--line-fade-y) 1;
   background: transparent;
 }
 html body .appendix{
@@ -498,6 +526,6 @@ html body #langSw button{ padding: 4px 6px; }
    11 · 数字与单位：中间 2px（27.1 cm/360）
    ============================================================ */
 /* 首页 CTA 下沿到 tip 的间距：18 → 20（结构线下方文字 ≥20） */
-html body .tip{ margin-top: 20px !important; }
+html body .tip{ margin-top: 20px; }
 html body #play .statsbar .sb-v .u,
 html body #data .kpiRow .v{ word-spacing: var(--num-gap); }

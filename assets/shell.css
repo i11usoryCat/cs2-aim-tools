@@ -171,16 +171,25 @@ html[data-vn-lang="en"] article[data-lang="zh"]{ display:none; }
 /* ============================================================
    9 · 卡片（最小骨架：一条分组线 + 留白，无框无底色）
    ============================================================ */
+/* .vn-card：app 卡片 / 页目录块共用的卡片基座（W4 从 page-app.css 收敛）
+   最终形态：只有 1px 线，无填色、无圆角、无投影（与 line-system 的线系同构）。
+   页面的 delta（卡片间距、tile 布局/交互）留在各自页面层。 */
 .vn-card{
+  border:1px solid var(--line); background:transparent; border-radius:0;
+  background-image:none; box-shadow:none;
+}
+
+/* 纸面文章卡片（方法论/遗留页风格，尚未有页面使用；保留供 W5 文章页） */
+.vn-card--paper{
   border:0; border-top:1px solid transparent; border-image:var(--line-g-fade-x) 1;
   border-radius:0; background:transparent;
   padding:26px 0 10px; margin:0 0 34px;
 }
-.vn-card > .t,.vn-card__title{
+.vn-card--paper > .t,.vn-card--paper .vn-card__title{
   font-family:var(--f-ui); font-size:13px; font-weight:600; letter-spacing:.06em;
   color:var(--ink); margin-bottom:10px; display:flex; align-items:center; gap:10px;
 }
-.vn-card .hint,.vn-card__hint{ font-size:12.5px; line-height:1.8; color:var(--ink-2); }
+.vn-card--paper .hint,.vn-card--paper .vn-card__hint{ font-size:12.5px; line-height:1.8; color:var(--ink-2); }
 
 /* ============================================================
    10 · 表格（行分隔 = 分组线；去掉每格底边）

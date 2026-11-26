@@ -107,6 +107,7 @@ const EN={
   '最近六维':'Last six-skill','本周训练':'This week','辅助等级':'Axis level','先从六维检查开始':'Start with the six-skill check',
   '定位':'Positioning','速度':'Speed','转向':'Turning','稳定':'Stability','体检':'Assessment',
   '今天练什么':'Today\u2019s drill','先从六维检查开始 →':'Start with the six-skill check →',
+    '不练也行 · 去花园坐一会儿':'Or just sit in the garden',
   '自动（跟随时间）':'Auto (by time)','明亮':'Light','深色':'Dark',
   '当前按本地时间自动切换（06:30–18:30 明亮）':'Following local time — light from 06:30 to 18:30',
   '作者推荐':'Author picks','— 大肥鱼常用的两套，日用与夜用':'— two themes the author actually uses, day and night',

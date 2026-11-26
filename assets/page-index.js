@@ -46,29 +46,6 @@ EN['瞄准，度量'] = 'aim, measured';
   /* 1 · 注册词典：外壳负责翻译 / 状态 / 存储 / 标题 */
   try{ VernierShell.i18n.register(EN); }catch(e){}
 
-  /* 2 · 剪贴板兜底：writeText 在失焦/无权限时抛 NotAllowedError，降级到 execCommand */
-  (function(){
-    try{
-      var c = navigator.clipboard;
-      if (!c || !c.writeText) return;
-      var orig = c.writeText.bind(c);
-      c.writeText = function(t){
-        var p = orig(t);
-        if (p && p.catch) p.catch(function(){
-          var ta = document.createElement('textarea');
-          ta.value = t; ta.setAttribute('readonly', '');
-          ta.style.cssText = 'position:fixed;top:-1000px;left:-1000px;opacity:0';
-          document.body.appendChild(ta);
-          ta.select(); ta.setSelectionRange(0, ta.value.length);
-          var ok = false; try{ ok = document.execCommand('copy'); }catch(e){}
-          ta.remove();
-          if (!ok){ try{ window.prompt('复制失败，请手动复制：', t); }catch(e){} }
-        });
-        return p;
-      };
-    }catch(e){}
-  })();
-
   /* 3 · 彩蛋：页脚公式连点 3 次 → 对话记录 */
   (function(){
     var f = document.getElementById('eggFormula');

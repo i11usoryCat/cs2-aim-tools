@@ -140,8 +140,8 @@
   letter-spacing:.01em; font-variant-numeric:tabular-nums; text-rendering:optimizeLegibility; }
 
 /* —— 原始输入警告：直角细框 —— */
-#rawWarn{ border-radius:1px !important; font-family:var(--f-ui) !important; }
-#rawWarn .wb{ border-radius:1px !important; }
+#rawWarn{ border-radius:1px; font-family:var(--f-ui); }
+#rawWarn .wb{ border-radius:1px; }
 
 @media (max-width:1100px){
   .overlay{ padding:96px 24px 32px; }

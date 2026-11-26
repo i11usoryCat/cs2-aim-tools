@@ -1,0 +1,860 @@
+/* ============================================================================
+   page-app.css — app.html 专属样式（W2）
+   ----------------------------------------------------------------------------
+   来源：app.html 内联 <style>（944 行）原样迁出。层级顺序与迁移前一致：
+   theme.css → type.css → refine.css → shell.css → page-app.css → line-system.css。
+   本文件只放 app 页面内容（4 个 tab：data / play / plan / set），
+   页头 / 导航 / 语言开关已上抽到 assets/shell.css（W2）；卡片皮肤与按钮/输入框
+   reset 混在同一条分组规则里、无法无损拆分，保留在本文件（W4 收敛到 shell）。
+   ========================================================================== */
+
+  /* —— 主题唯一来源：assets/theme.css（页面不再自带主题定义） —— */
+  :root{
+    --panel2:var(--bg2); --line2:var(--line);
+    --dim2:color-mix(in srgb, var(--dim) 78%, transparent);
+    --head:color-mix(in srgb, var(--bg) 92%, transparent);
+    --ring:color-mix(in srgb, var(--acc) 22%, transparent);
+  }
+  *{box-sizing:border-box}
+  html{background:var(--bg);scrollbar-gutter:stable}
+  html,body{margin:0;min-height:100%}
+  body{
+    background:var(--bg);
+    color:var(--txt);
+    font-family:"Microsoft YaHei UI","Microsoft YaHei","Noto Sans SC","Segoe UI",system-ui,sans-serif;
+    font-size:15px; line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+    transition:background .3s,color .3s;
+  }
+
+  /* ——— 手机提示条 ——— */
+  #mobileTip{display:none;position:fixed;left:50%;bottom:18px;transform:translateX(-50%);
+    z-index:9300;align-items:center;gap:12px;padding:10px 14px 10px 20px;
+    background:var(--panel);border:1px solid var(--line);color:var(--txt);
+    border-radius:1px;font-size:13px;white-space:nowrap;max-width:calc(100vw - 20px);
+    box-shadow:0 12px 32px -14px color-mix(in srgb,var(--txt) 30%,transparent)}
+  #mobileTip button{font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;
+    background:var(--acc);color:var(--on-acc,#fff);border:none;border-radius:9px;padding:7px 14px;
+    white-space:nowrap;flex-shrink:0}
+  #mobileTip #mtClose{min-width:0;padding:0 8px;background:transparent;color:var(--dim);font-size:15px;font-weight:400}
+  #mobileTip #mtCopy{min-width:0}
+  #mobileTip .mtText{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #mobileTip button:hover{filter:brightness(1.08)}
+
+  /* ——— 布局 ——— */
+  main{max-width:960px; margin:0 auto; padding:36px 26px 90px}
+  section{display:none; scroll-margin-top:76px; animation:rise .28s cubic-bezier(.2,.8,.2,1)}
+  section.on{display:block}
+  @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+  h2{
+    font-size:21px; font-weight:700; letter-spacing:.3px;
+    margin:0 0 6px; position:relative; padding-bottom:10px;
+    width:fit-content;                      /* 让下划线跟着文字宽度 */
+  }
+  h2::after{content:""; position:absolute; left:0; bottom:0; width:100%; height:3px;
+    border-radius:2px; background:var(--acc)}
+  .hint{font-size:13.5px; color:var(--dim); margin:12px 0 22px; max-width:640px}
+
+  /* ——— 卡片 / 区块 ——— */
+  .card{
+    background:var(--panel); border:1px solid var(--line); border-radius:16px;
+    padding:20px 22px; margin-bottom:16px;
+  }
+  .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(248px,1fr)); gap:14px}
+  a.tile,.tile{
+    display:block; position:relative;
+    background:var(--panel); border:1px solid var(--line); border-radius:16px;
+    padding:20px 22px; text-decoration:none; color:inherit;
+    transition:transform .18s cubic-bezier(.2,.8,.2,1), border-color .18s, box-shadow .18s;
+  }
+  a.tile:hover{
+    transform:translateY(-3px);
+    border-color:var(--acc);
+    box-shadow:0 14px 30px -10px color-mix(in srgb, var(--txt) 18%, transparent);
+  }
+  a.tile .t::after{
+    content:"→"; position:absolute; right:20px; top:20px;
+    color:var(--dim2); transition:transform .18s, color .18s;
+  }
+  a.tile:hover .t::after{transform:translateX(4px); color:var(--acc)}
+  .t{font-size:15.5px; font-weight:600; margin-bottom:7px; padding-right:22px}
+  .d{font-size:13px; color:var(--dim); line-height:1.6}
+
+  /* ——— 数据 ——— */
+  .row{display:flex; gap:14px; flex-wrap:wrap; align-items:center}
+  .k{font-size:12px; color:var(--dim); letter-spacing:.3px}
+  .v{font-size:26px; font-weight:700; letter-spacing:-.5px; font-variant-numeric:tabular-nums; color:var(--txt)}
+  .big{color:var(--acc); font-weight:700; font-variant-numeric:tabular-nums}
+
+  table{width:100%; border-collapse:collapse; font-size:13.5px}
+  th,td{padding:10px 10px; border-bottom:1px solid var(--line); text-align:left}
+  th{color:var(--dim); font-weight:500; font-size:12.5px; letter-spacing:.3px}
+  tr:last-child td{border-bottom:none}
+  tbody tr:hover td, table tr:hover td{background:var(--panel2)}
+  /* 数据页表格：小屏内部横向滚动，不撑破页面 */
+  #runTable, #bestTable{display:block;overflow-x:auto;max-width:100%}
+
+  /* ——— 表单 ——— */
+  input[type=file]{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+  /* 下拉框自适应宽度，长选项不截断 */
+  #set select,#data select,#play select{width:auto;max-width:100%}
+  button:hover,label.fileBtn:hover{border-color:var(--acc);color:var(--acc)}
+  button.main:hover,button.main:hover{color:var(--on-acc,#fff)}
+  input,select{
+    padding:9px 11px; background:var(--bg2); border:1px solid var(--line);
+    color:var(--txt); border-radius:10px; font-size:14px; font-family:inherit;
+    width:118px; transition:border-color .15s, box-shadow .15s;
+  }
+  input:focus,select:focus{
+    outline:none; border-color:var(--acc);
+    box-shadow:0 0 0 3px var(--ring);
+  }
+  button,label.fileBtn{
+    display:inline-flex; align-items:center; justify-content:center;
+    min-width:132px; height:42px; padding:0 20px;
+    background:transparent; border:1px solid var(--line);
+    color:var(--txt); border-radius:1px; font-size:14px; font-family:inherit;
+    line-height:1; cursor:pointer; transition:.15s;
+  }
+
+  button:active{transform:translateY(1px)}
+  button.main{background:var(--acc); border-color:var(--acc); color:var(--on-acc,#fff); font-weight:600}
+  button.main:hover{background:var(--acc2)}
+  button.main:hover{background:var(--acc2); border-color:var(--acc2)}
+  label.sw{display:flex; align-items:center; gap:9px; font-size:14px; cursor:pointer}
+  input[type=checkbox]{width:17px; height:17px; accent-color:var(--acc)}
+  iframe{width:100%; height:600px; border:0; border-radius:16px; background:transparent; display:block}
+
+  /* ——— 主题选择 ——— */
+  .swatches{display:flex; gap:9px; flex-wrap:wrap}
+  .sw{
+    cursor:pointer; border:1px solid var(--line); border-radius:1px;
+    padding:9px 14px; font-size:13px; background:transparent;
+    display:flex; align-items:center; gap:9px; transition:.16s;
+  }
+  .sw:hover{border-color:var(--line2)}
+  .sw.on{border-color:var(--acc); box-shadow:none; font-weight:600}
+  /* 主题/场景色板小方块：颜色一律来自单一来源——主题块用 data-theme 子作用域读
+     theme.css 的 --acc/--bg（见 theme.css 顶部说明）；场景块由 JS 从 assets/scenes.js
+     的 GAME_SCENES 取 tgt 填 inline。页面不再保存第二份主题色/场景色。 */
+  .dot{width:13px; height:13px; border-radius:1px; box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--txt) 22%,transparent)}
+  .dot[data-theme]{background:linear-gradient(135deg,var(--acc) 0 50%,var(--bg) 50% 100%)}
+
+  @media (max-width:600px){
+    main{padding:26px 16px 70px}
+  }
+
+  /* 窄屏（约 520px 内）：压缩顶栏，保证语言切换不被裁掉 */
+  @media (max-width:520px){
+    #mobileTip{bottom:12px;padding:9px 12px 9px 16px;font-size:12.5px;gap:10px}
+    #mobileTip button{padding:6px 12px;font-size:12px}
+  }
+  /* 手机（约 560px 内）：顶栏换行 + nav 单行均分，不再 96px 两行 */
+  @media (max-width:560px){
+    main{padding:22px 14px 80px}
+  }
+
+/* ===== 计划页样式 ===== */
+
+#plan :root{color-scheme:light dark}
+
+  *{box-sizing:border-box}
+#plan{margin:0;background:transparent;color:var(--txt);font-family:var(--f-ui);line-height:1.7}
+#plan .wrap{max-width:860px;margin:0 auto;padding:36px 22px 60px}
+#plan a.back{color:var(--dim);text-decoration:none;font-size:13px}
+#plan a.back:hover{color:var(--acc)}
+#plan h1{font-size:24px;margin:14px 0 4px;color:var(--acc)}
+#plan .sub{color:var(--dim);font-size:14px;margin-bottom:26px}
+#plan .panel{background:transparent;border:1px solid var(--line);border-radius:1px;padding:20px 22px;margin-bottom:18px}
+#plan .panel h2{font-size:16px;margin:0 0 12px;color:var(--txt)}
+#plan .row{display:flex;gap:16px;flex-wrap:wrap}
+#plan .stat{flex:1;min-width:120px}
+#plan .stat .k{font-size:12px;color:var(--dim)}
+#plan .stat .v{font-size:22px;font-weight:700;color:var(--acc)}
+#plan .task{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid var(--panel2)}
+#plan .task:last-child{border-bottom:none}
+#plan .task .t{font-weight:600}
+#plan .task .n{font-size:13px;color:var(--dim)}
+#plan .go{margin-left:auto;padding:8px 18px;background:transparent;border:1px solid var(--line);color:var(--acc-text,var(--acc));
+    border-radius:1px;text-decoration:none;font-size:14px;white-space:nowrap}
+#plan .go:hover{background:var(--acc)}
+#plan .cal{margin-top:12px}
+#plan .calTitle{font-size:15px;font-weight:600;color:var(--txt);margin-bottom:10px;letter-spacing:.5px}
+#plan .calWeek{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:6px}
+#plan .calWeek div{font-size:11px;color:var(--dim);text-align:center;letter-spacing:1px}
+#plan .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+#plan .grid .cell{height:44px;display:flex;align-items:center;justify-content:center;
+    border-radius:1px;background:transparent;color:var(--txt);font-size:13px;
+    border:1px solid var(--line);font-variant-numeric:tabular-nums}
+#plan .grid .cell.blank{background:transparent;border:0}
+#plan .grid .cell.rest{background:transparent;color:var(--dim);border:0}
+#plan .grid .cell.done{background:var(--acc);color:var(--on-acc,#fff);border-color:var(--acc);font-weight:600}
+#plan .grid .cell.today{border:2px solid var(--acc);color:var(--txt);font-weight:700;box-shadow:none}
+#plan .grid .cell.rest.today{background:transparent}
+#plan .grid .cell.done.today{background:var(--acc);color:var(--on-acc,#fff);border-color:var(--txt)}
+  
+#plan textarea{width:100%;height:70px;background:transparent;border:1px solid var(--line);color:var(--txt);
+    border-radius:1px;padding:10px;font-family:Consolas,monospace;font-size:13px;resize:vertical}
+#plan button{padding:9px 20px;background:transparent;border:1px solid var(--line);color:var(--txt);border-radius:1px;
+    font-size:14px;cursor:pointer;font-family:inherit}
+#plan button:hover{border-color:var(--acc);color:var(--acc-text,var(--acc));background:transparent}
+#plan button.main{background:var(--acc);border-color:var(--acc);color:var(--on-acc,#fff)}
+#plan table{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}
+#plan td,#plan th{padding:6px 8px;border-bottom:1px solid var(--panel2);text-align:left}
+#plan th{color:var(--dim);font-weight:500}
+#plan .hint{font-size:13px;color:var(--dim)}
+#plan code{background:color-mix(in srgb,var(--txt) 6%,transparent);padding:1px 6px;border-radius:1px;font-size:12px}
+
+  /* 计划自定义 */
+  #plan .meta{margin:6px 0 2px;font-size:13px;color:var(--dim);letter-spacing:.3px}
+  #plan .meta b{color:var(--txt);font-weight:600}
+  #plan .chips{display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 6px}
+  #plan .chip{padding:8px 14px;height:auto;min-width:0;font-size:13px;border-radius:1px;
+    background:transparent;border:1px solid var(--line);color:var(--dim);cursor:pointer}
+  #plan .chip.on{background:var(--acc);border-color:var(--acc);color:var(--on-acc,#fff);font-weight:600}
+  #plan .chip.new{border-style:solid;border-color:var(--line-g);color:var(--dim2)}
+  #plan .chip.new:hover{border-color:var(--acc);color:var(--acc)}
+  #plan .chipIn{width:86px;height:auto;padding:8px 10px;font-size:13px;border-radius:1px}
+  #plan .planOps{display:flex;gap:14px;align-items:center;margin:2px 0 10px;font-size:12px;
+    color:var(--dim2);min-height:16px}
+  #plan .planOps span{cursor:pointer;transition:.15s}
+  #plan .planOps span:hover{color:var(--acc)}
+  #plan .planOps .warn:hover{color:var(--warn)}
+  #plan .planOps .right{margin-left:auto}
+  #plan .planOps .off{opacity:.35;cursor:not-allowed;pointer-events:none}
+  #plan .shareBox:empty{display:none}
+  #plan .shareRow{display:flex;gap:8px;margin:0 0 10px}
+  #plan .shareRow input{flex:1;height:36px;font-size:12px;font-family:Consolas,monospace}
+  #plan .shareRow button{height:36px;min-width:64px;font-size:13px}
+  #plan .shareTip{font-size:12px;color:var(--warn);margin:-4px 0 10px}
+  #plan .shareTip2{font-size:12px;color:var(--dim2);margin:-4px 0 10px}
+  #plan .shareOpts{display:flex;gap:16px;align-items:center;font-size:12px;color:var(--dim);margin:-4px 0 10px}
+  #plan .shareOpts label{display:flex;align-items:center;gap:6px;cursor:pointer;margin:0}
+  #plan .shareOpts input[type=checkbox]{width:14px;height:14px;accent-color:var(--acc)}
+  #plan .prow{position:relative;display:grid;grid-template-columns:150px 148px auto;
+    gap:12px;align-items:center;padding:10px 34px 10px 10px;margin:0 -10px;
+    border-radius:1px;border-bottom:1px solid var(--line);
+    transition:background .15s}
+  #plan .prow:hover{background:color-mix(in srgb,var(--txt) 6%,transparent)}
+  #plan .prow:hover .del{color:var(--warn)}
+  #plan .prow:last-child{border-bottom:0}
+  #plan .prow .nm{flex:1;min-width:120px}
+  #plan .prow .nm b{display:block;font-size:14.5px;color:var(--txt);font-weight:600}
+  #plan .prow .nm span{font-size:12px;color:var(--dim)}
+  #plan .prow select{width:100%;height:34px;padding:0 8px;font-size:13px}
+  #plan .prow input.nmIn{width:100%;height:34px;padding:0 10px;font-size:13px;
+    background:transparent;border:1px solid var(--line);border-radius:1px;color:var(--txt);
+    font-family:inherit;box-sizing:border-box}
+  #plan .prow input.nmIn:focus{outline:1px solid var(--acc);outline-offset:2px;border-color:var(--acc);box-shadow:none}
+  #plan .stepper{display:flex;align-items:center;gap:6px}
+  #plan .stepper button{height:30px;width:30px;min-width:0;padding:0;font-size:16px;border-radius:1px}
+  #plan .stepper span{min-width:26px;text-align:center;font-size:14px;color:var(--txt);
+    font-variant-numeric:tabular-nums}
+  #plan .prow .time{font-size:12px;color:var(--dim);min-width:52px;text-align:right}
+  #plan .prowAct{display:flex;align-items:center;gap:10px}
+  #plan .pGo{padding:5px 12px;background:transparent;border:1px solid var(--line);color:var(--acc-text,var(--acc));border-radius:1px;
+    font-size:12.5px;text-decoration:none;white-space:nowrap;font-weight:600}
+  #plan .pGo:hover{border-color:var(--acc);background:color-mix(in srgb,var(--acc) 8%,transparent)}
+  #plan{--dim2:color-mix(in srgb,var(--txt) 72%,var(--bg))}
+  @media (max-width:560px){
+    #plan .prow{grid-template-columns:1fr 1fr;gap:8px}
+    #plan .prowAct{grid-column:1/-1;justify-content:space-between}
+  }
+    font-size:13.5px;line-height:1.9;color:var(--dim)}
+  #plan .emptyRows{padding:22px 0;text-align:center;font-size:13px;color:var(--dim2)}
+  #plan .addRow{width:100%;height:40px;margin-top:12px;border:1px dashed var(--line);
+    background:transparent;color:var(--dim);font-size:13px;border-radius:1px;cursor:pointer}
+  #plan .addRow:hover{border-color:var(--acc);color:var(--acc)}
+  #plan .prow .del{position:absolute;right:2px;top:50%;transform:translateY(-50%);
+    width:28px;height:28px;min-width:0;padding:0;border:0;background:transparent;
+    color:var(--dim2);font-size:15px;cursor:pointer;border-radius:0}
+  #plan .prow .del:hover{color:var(--warn);background:color-mix(in srgb,var(--txt) 6%,transparent)}
+  #plan .planTotal{margin-top:16px;padding:14px 16px;border-radius:1px;background:transparent;border:1px solid var(--line)}
+  #plan .planTotal .sum{font-size:14px;color:var(--dim)}
+  #plan .planTotal .sum b{font-size:22px;color:var(--acc);font-variant-numeric:tabular-nums}
+  #plan .planTotal .tip{margin-top:6px;font-size:13px;color:var(--dim)}
+  #plan .planTotal .tip.warn{color:var(--warn)}
+
+  /* 滑轨：跟随当前主题配色 */
+  /* 加宽 18px 并负边距 9px：抵消 Blink 圆钮中心无法到达框边的限制，两端都能拉到头 */
+  input[type=range]{-webkit-appearance:none;appearance:none;height:8px;border-radius:99px;
+    background:var(--line);outline:none;cursor:pointer;
+    width:calc(100% + 18px);margin:0 -9px;padding:0;border:none}
+  input[type=range]::-webkit-slider-runnable-track{height:8px;border-radius:99px;background:var(--line)}
+  input[type=range]::-moz-range-track{height:8px;border-radius:99px;background:var(--line)}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;
+    width:18px;height:18px;border-radius:50%;background:var(--acc);
+    border:2px solid var(--panel);cursor:pointer;margin-top:-5px;
+    transition:transform .15s ease}
+  input[type=range]:active::-webkit-slider-thumb{transform:scale(1.4)}
+  input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;
+    background:var(--acc);border:2px solid var(--panel);cursor:pointer;
+    transition:transform .15s ease}
+  input[type=range]:active::-moz-range-thumb{transform:scale(1.4)}
+
+  /* 细滚动条（保留位置感）：6px 暗线。
+     Chromium 设置标准 scrollbar-width 会覆盖 ::-webkit-scrollbar 宽度，所以只在 Firefox 用 thin。 */
+  html::-webkit-scrollbar{width:6px;height:6px}
+  html::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--txt) 30%,transparent);border-radius:0}
+  html::-webkit-scrollbar-track{background:transparent}
+  @supports (-moz-appearance:none){
+    html{scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--txt) 30%,transparent) transparent}
+  }
+
+  :focus-visible{outline:2px solid var(--acc);outline-offset:2px;border-radius:4px}
+  @media (prefers-reduced-motion:reduce){
+    *{animation:none!important;transition:none!important}
+  }
+
+  /* ============================================================
+     纸面手册 · Paper manual（与训练器的「黑色仪器」刻意区分）
+     只动样式：不改 id / 事件 / 存储键
+     ============================================================ */
+  :root{
+    --h-sec:25px; --h-card:15.5px;
+    --card-pad-y:22px; --card-pad-x:24px; --card-gap:14px;
+    --ease:cubic-bezier(.2,.8,.2,1); --t-fast:120ms; --t-mid:170ms;
+    --rule-ink:color-mix(in srgb, var(--txt) 14%, transparent);
+  }
+
+  /* —— 版式节奏：统一的字阶与留白 —— */
+  h2{
+    display:flex; align-items:center; gap:12px;
+    width:auto; font-size:var(--h-sec); letter-spacing:.2px;
+    margin:0 0 6px; padding:0;
+  }
+  h2::before{                      /* 游标刻度：左侧的竖条刻度 */
+    content:""; width:8px; height:20px; flex:none; border-radius:1px;
+    background:repeating-linear-gradient(to bottom, var(--gold) 0 1px, transparent 1px 4px);
+    opacity:.85;
+  }
+  h2::after{                       /* 细线向右渐隐，像手册的分节线 */
+    content:""; position:static; flex:1; height:1px; width:auto; border-radius:0;
+    background:linear-gradient(to right, var(--line2), transparent 72%);
+  }
+  .grp{                            /* 分组小标签：刻度 + 细线 */
+    grid-column:1/-1; margin:28px 0 2px; padding:0;   /* 与上一组卡片留出 ≥ 卡片内边距×1.8 的间隔 */
+    display:flex; align-items:center; gap:10px;
+    font-size:12px; color:var(--dim); letter-spacing:2px;
+  }
+  .grp::before{content:""; width:14px; height:9px;
+    background:repeating-linear-gradient(to right, var(--dim2) 0 1px, transparent 1px 4px)}
+  .grp::after{content:""; flex:1; height:1px; background:var(--line)}
+  .hint{margin:10px 0 22px; line-height:1.7}
+
+  /* —— 身份元素：卡片左侧的细刻度，hover 时推进 —— */
+  a.tile,.tile,.card{ position:relative; border-radius:14px }
+  a.tile,.tile{ padding:var(--card-pad-y) var(--card-pad-x) }
+  .card{ padding:var(--card-pad-y) var(--card-pad-x); margin-bottom:var(--card-gap) }
+  a.tile::before{
+    content:""; position:absolute; left:-1px; top:16px; bottom:16px; width:2px; border-radius:2px;
+    background:repeating-linear-gradient(to bottom, var(--gold) 0 1px, transparent 1px 6px);
+    opacity:0; transform:scaleY(.55); transform-origin:top;
+    transition:opacity var(--t-mid) var(--ease), transform var(--t-mid) var(--ease);
+  }
+  a.tile:hover::before{opacity:.85; transform:scaleY(1)}
+  a.tile{transition:transform var(--t-mid) var(--ease), border-color var(--t-fast) ease-out, box-shadow var(--t-mid) var(--ease)}
+  a.tile:hover{transform:translateY(-2px)}
+  a.tile .t::after{transition:transform var(--t-mid) var(--ease), color var(--t-fast) ease-out}
+
+  /* —— 卡片标题与正文的层次 —— */
+  .t{font-size:var(--h-card); letter-spacing:.2px; margin-bottom:6px}
+  .d{font-size:13px; line-height:1.65}
+
+  /* —— 微动效：标签切换 120ms 淡入 —— */
+  section{animation:paperIn var(--t-fast) ease-out}
+  @keyframes paperIn{from{opacity:0}to{opacity:1}}
+
+  /* —— 数字排版：所有读数等宽，跳动不再抖 —— */
+  body{font-size:14px; line-height:1.75; font-variant-numeric:tabular-nums; -moz-font-feature-settings:"tnum" 1}
+  .v{font-size:44px; line-height:1.1; letter-spacing:-.02em}   /* 数字是主角：比标题再大一档（44–46 区间） */
+  /* 四联统计沿用同一档：数字必须比标题大，才能形成"数字是主角"的层级 */
+  /* 目录式：区块之间的留白必须大于卡片内边距（22px × 1.8 ≈ 40px） */
+  section{margin:0 0 44px}
+  /* 去掉卡片阴影堆叠：只用 1px 发丝线建立秩序 */
+  a.tile:hover,.card:hover{box-shadow:none}
+  .k{letter-spacing:.4px}
+  table td, table th{font-variant-numeric:tabular-nums}
+  #calcHint{font-variant-numeric:tabular-nums; letter-spacing:.2px}
+
+  /* —— 窄屏：卡片单列、导航不溢出 —— */
+  @media (max-width:900px){
+    main{padding:26px 18px 72px}
+    .grid{grid-template-columns:1fr; gap:12px}
+    .row{gap:10px}
+    h2{font-size:var(--h-sec)}
+    a.tile,.card{--card-pad-x:18px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    a.tile::before{transition:none}
+    section{animation:none}
+  }
+
+  
+  /* ============================================================
+     平面与数学（art-direction-flat.md）
+     只用三样东西：1px 线、纯色块、留白。无阴影、无渐变、无圆角。
+     ============================================================ */
+  :root{
+    --line-hair:1px;
+    --row:24px;                 /* 行高取 8 的倍数 */
+    --gutter:26px;              /* 全站统一的左边缘 */
+  }
+
+  /* —— 删除全部立体 —— */
+.card,
+  a.tile,
+  button,
+  select,
+  input,
+  textarea,
+  .grp,
+  #set .tile{
+    border-radius:0 !important;
+    background-image:none !important;
+    box-shadow:none !important;
+  }
+  button:active,a.tile:active,.start:active{transform:none !important}
+
+  /* —— 一屏一处填色：只有主操作用强调色 —— */
+  button.main{
+    background:var(--acc) !important;
+    border:1px solid var(--acc) !important;
+    color:var(--on-acc,#fff) !important;
+    font-weight:600;
+    transition:filter 120ms linear;
+  }
+  button.main:hover{filter:brightness(.94)}     /* 降 6% 明度 */
+  button.main:active{filter:brightness(.90)}    /* 再降 10% */
+
+  /* —— 次级按钮：透明 + 1px 线 + 中性文字 —— */
+  button:not(.main):not(.delRun):not(#mtClose){
+    background:transparent !important;
+    border:1px solid var(--line) !important;
+    color:var(--dim) !important;
+    transition:background 120ms linear, color 120ms linear, border-color 120ms linear;
+  }
+  button:not(.main):not(.delRun):not(#mtClose):hover{
+    background:color-mix(in srgb,var(--txt) 4%, transparent);
+    color:var(--txt);
+    border-color:var(--line2);
+  }
+  button:not(.main):not(.delRun):not(#mtClose):active{
+    background:color-mix(in srgb,var(--txt) 8%, transparent);
+  }
+
+  /* —— 卡片：只有 1px 线 —— */
+  .card,a.tile{
+    border:1px solid var(--line) !important;
+    background:transparent !important;
+    transition:border-color 120ms linear, background 120ms linear;
+    transform:none !important;
+  }
+  a.tile:hover{border-color:var(--line2); background:color-mix(in srgb,var(--txt) 2%, transparent)}
+  a.tile::before{display:none}                 /* 上一版的刻度装饰去掉 */
+
+  /* —— 输入框：1px 线，focus 用双线而不是光晕 —— */
+  #set input[type="number"],#set input[type="text"],#set select,#set textarea,input.fld,select.fld,.fld input,.fld select{
+    border:1px solid var(--line) !important;
+    background:transparent !important;
+    box-shadow:none !important;
+  }
+  #set input:focus-visible,#set select:focus-visible,#set textarea:focus-visible,
+  input.fld:focus-visible,select.fld:focus-visible,.fld input:focus-visible,.fld select:focus-visible{
+    outline:1px solid var(--acc);
+    outline-offset:2px;                        /* 元素 1px 边 + 2px 外 1px 线 = 双线 */
+  }
+
+  /* —— 对齐：所有元素左边缘落在同一条竖线上 —— */
+  main{padding-left:var(--gutter); padding-right:var(--gutter)}
+  h2{display:block; padding-left:0; margin:0 0 8px; line-height:32px}
+  h2::before{display:none}                     /* 去掉左侧刻度条，文字与卡片同一条左边缘 */
+  h2::after{display:none}
+  .hint,.grp,section,.card,a.tile{margin-left:0}
+  .grp{margin-left:0; padding-left:0}
+
+  /* —— 章节编号 01 / 02 / 03 —— */
+  #drillGrid{counter-reset:grp}
+  .grp{counter-increment:grp; gap:10px}
+  .grp::before{
+    content:counter(grp,decimal-leading-zero);
+    width:auto; height:auto; background:none !important;
+    font-variant-numeric:tabular-nums; letter-spacing:.08em; color:var(--dim2);
+  }
+  #set{counter-reset:card}
+  #set .card{counter-increment:card}
+  #set .card>.t::before{
+    content:counter(card,decimal-leading-zero) "  ";
+    color:var(--acc-text,var(--acc)); font-size:10.5px; font-weight:700;
+    letter-spacing:.18em; font-variant-numeric:tabular-nums;
+  }
+
+  /* —— 行高取 8 的倍数 —— */
+  body{line-height:var(--row)}
+  .d,.hint{line-height:24px}
+
+  /* 外观三选 + 主题切换过渡 */
+  .tmbtn{
+    padding:7px 14px; border:1px solid var(--line); background:transparent;
+    color:var(--dim); font-size:13px; font-family:inherit; cursor:pointer;
+    border-radius:0; transition:color 120ms linear, border-color 120ms linear, background 120ms linear;
+  }
+  .tmbtn:hover{color:var(--txt); border-color:var(--line2)}
+  .tmbtn.on{color:var(--acc); border-color:var(--acc)}
+  html.theme-fade, html.theme-fade body{transition:background .3s, color .3s}
+  html.theme-fade body *{transition:background-color .3s, color .3s, border-color .3s}
+  /* ——— 动效（motion-spec v2）：像绘图仪在工作 ——— */
+  @keyframes plotRise{ from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:translateY(0)} }
+  @keyframes plotDraw{ from{transform:scaleX(0)} to{transform:scaleX(1)} }
+  @keyframes plotTab{ from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:translateY(0)} }
+
+  /* A. 交错入场：11 项每项 +13ms（总入场 ≤400ms：10×13+260=390ms） */
+  #drillGrid .item{ opacity:0; animation:plotRise 260ms cubic-bezier(.2,.8,.2,1) forwards; animation-delay:calc(var(--i,0) * 13ms) }
+  /* 主行动不排队：第 0 帧就可点，整体 120ms 淡入（motion-spec §0.2） */
+  .today{ opacity:0; animation:plotRise 120ms linear forwards; animation-delay:0ms }
+  #drillGrid .grp{ opacity:0; animation:plotRise 260ms cubic-bezier(.2,.8,.2,1) forwards; animation-delay:calc(var(--gi,0) * 13ms) }
+
+  /* B. 线条绘制：分组编号后的短刻度，从左匀速拉出 */
+  #drillGrid .grp i{ display:inline-flex; align-items:center; white-space:nowrap }
+  #drillGrid .grp i::after{
+    content:""; display:inline-block; vertical-align:middle; flex:0 0 18px;
+    width:18px; height:1px; margin-left:8px; background:var(--dim2);
+    transform-origin:left center; animation:plotDraw 200ms linear both;
+    animation-delay:calc(120ms + var(--gi,0) * 13ms);
+  }
+
+  /* C. 状态条数字：tabular-nums，宽度先锁定再滚，动画期间布局不变 */
+  .statsbar .sb-v .num{ display:inline-block; font-variant-numeric:tabular-nums }
+
+  /* D. 导航切换：fade + 8px，200ms */
+  /* 切 tab：新内容当帧就位（不从头淡入），只补一个 8px 的落位动作，160ms */
+  @keyframes plotTab{ from{transform:translateY(8px)} to{transform:translateY(0)} }
+  section.on{ animation:plotTab 160ms cubic-bezier(.2,.8,.2,1) both }
+
+  @media (prefers-reduced-motion:reduce){
+    #drillGrid .item,.today,#drillGrid .grp,section.on{ animation:none !important; opacity:1 !important; transform:none !important }
+    #drillGrid .grp i::after{ animation:none !important; transform:none !important }
+  }
+
+  /* ——— C 档微交互（≤180ms，只动 transform/opacity/边框） ——— */
+  /* 1) 列表项 hover：箭头 2→8px，左侧 1px 竖线 0→14px */
+  #drillGrid .item{position:relative}
+  #drillGrid .item::before{
+    content:""; position:absolute; left:0; top:50%; width:1px; height:0;
+    background:var(--acc); transform:translateY(-50%);
+    transition:height 120ms cubic-bezier(.2,.8,.2,1);
+  }
+  #drillGrid .item:hover::before{height:14px}
+  #drillGrid .item .ar{transition:transform 120ms cubic-bezier(.2,.8,.2,1), color 120ms linear}
+  #drillGrid .item:hover .ar{transform:translateX(8px); color:var(--acc)}
+
+  /* 2) 主按钮 hover：内部 1px 线从左扫到右 */
+  button.main{position:relative; overflow:hidden}
+  button.main::after{
+    content:""; position:absolute; left:0; bottom:0; right:0; height:1px;
+    background:currentColor; opacity:.55; transform:scaleX(0); transform-origin:left center;
+    transition:transform 160ms linear;
+  }
+  button.main:hover::after{transform:scaleX(1)}
+
+  /* 3) 按下：边框 1px→2px（用 outline，不占布局），内容下沉 1px */
+  button:active,a.tile:active,.today:active,#drillGrid .item:active,.start:active{
+    outline:1px solid currentColor; outline-offset:-1px;
+    transform:translateY(1px) !important;
+    transition:transform 90ms ease-out, outline-color 90ms linear;
+  }
+
+  /* 5) 输入框 focus：双线环从中心展开 */
+  /* 双线环：控件自身 1px 边 + 向外 2px 的第二道 1px 线，由贴合向外展开 */
+  @keyframes ringIn{
+    from{ outline-offset:-1px }
+    to{ outline-offset:2px }
+  }
+  #set input:focus-visible,#set select:focus-visible,#set textarea:focus-visible,
+  input.fld:focus-visible,select.fld:focus-visible,.fld input:focus-visible,.fld select:focus-visible{
+    outline:1px solid var(--acc) !important;
+    animation:ringIn 180ms cubic-bezier(.2,.8,.2,1) both;
+  }
+
+  /* 6) 数字变化：旧值上浮淡出、新值从下淡入（160ms） */
+  @keyframes numOut{ from{opacity:1; transform:translateY(0)} to{opacity:0; transform:translateY(-8px)} }
+  @keyframes numIn{ from{opacity:0; transform:translateY(8px)} to{opacity:1; transform:translateY(0)} }
+  .num-ghost{
+    position:absolute; left:0; top:0; pointer-events:none;
+    animation:numOut 160ms cubic-bezier(.2,.8,.2,1) forwards;
+    font-variant-numeric:tabular-nums;
+  }
+  .statsbar .num{position:relative}
+  .statsbar .num.flip{animation:numIn 160ms cubic-bezier(.2,.8,.2,1) both}
+
+  @media (prefers-reduced-motion:reduce){
+    #drillGrid .item::before,#drillGrid .item .ar,button.main::after,.nav-ink{transition:none !important}
+    #set input:focus-visible,#set select:focus-visible,#set textarea:focus-visible{animation:none !important; box-shadow:0 0 0 1px var(--acc)}
+    button:active,a.tile:active,.today:active,#drillGrid .item:active,.start:active{transform:none !important}
+    .statsbar .num.flip,.num-ghost{animation:none !important}
+  }
+
+  /* ——— 训练目录：五列横排，首屏零滚动 ——— */
+  .today{
+    display:flex; align-items:center; justify-content:space-between;
+    height:44px; padding:0 12px; margin:0 0 20px;
+    border:1px solid var(--line); text-decoration:none; color:var(--txt);
+    font-size:14px; transition:background 120ms linear, border-color 120ms linear;
+  }
+  .today:hover{background:color-mix(in srgb,var(--txt) 4%, transparent); border-color:var(--line2)}
+  .today .td-r{color:var(--dim); font-size:13px; font-variant-numeric:tabular-nums}
+
+  #play{display:none; min-height:calc(100vh - 220px); box-sizing:border-box; margin-bottom:0}
+  #play.on{display:flex; flex-direction:column; justify-content:center; margin:0}
+  #play h2{margin-top:0}
+  #drillGrid{display:block !important; width:100%}   /* 容器不再是卡片网格，改成目录 */
+  #drillGrid .cols{display:grid; grid-template-columns:repeat(5,1fr); gap:0 28px}
+  #drillGrid .grp{
+    margin:0 0 4px; padding:0; display:flex; gap:8px; align-items:baseline;
+    font-size:11px; letter-spacing:.18em; color:var(--dim); text-transform:none;
+  }
+  #drillGrid .grp i{font-style:normal; color:var(--dim2); font-variant-numeric:tabular-nums; letter-spacing:.08em}
+  #drillGrid .grp::before,#drillGrid .grp::after{display:none}
+  #drillGrid .item{
+    display:flex; align-items:center; justify-content:space-between;
+    height:44px; padding:0 4px; margin:0 0 12px; border:0;   /* 不用线分隔：44px 行高 + 12px 间距 */
+    text-decoration:none; color:var(--txt); font-size:14px;
+    transition:background 120ms linear;
+  }
+  #drillGrid .item:last-child{margin-bottom:0}
+  #drillGrid .item:hover{background:color-mix(in srgb,var(--txt) 4%, transparent)}
+  #drillGrid .item .ar{color:var(--dim2); transition:transform 120ms linear, color 120ms linear}
+  #drillGrid .item:hover .ar{transform:translateX(8px); color:var(--acc)}
+  /* 目录下方的紧凑状态条：11px 标签 / 24px 数字 / 1px 分隔线 */
+  .statsbar{
+    display:grid; grid-template-columns:repeat(3,1fr); gap:0 28px;
+    margin:24px 0 0; padding:0; border-top:0;   /* 用 24px 空白替代分隔线 */
+    max-height:80px; box-sizing:border-box;
+  }
+  .statsbar .sb{display:flex; align-items:baseline; gap:10px; min-width:0}
+  .statsbar .sb-k{font-size:11px; letter-spacing:.18em; color:var(--dim); text-transform:none}
+  .statsbar .sb-v{font-size:24px; line-height:1; font-variant-numeric:tabular-nums; color:var(--txt); white-space:nowrap}
+  .statsbar .sb-v.dim{color:var(--dim2)}
+
+  @media (max-width:900px){
+    #drillGrid .cols{grid-template-columns:repeat(2,1fr); gap:0 18px}
+    .statsbar{grid-template-columns:1fr; gap:10px 0; max-height:none}
+  }
+
+  /* ============================================================
+     视觉系统 v3「编辑体」—— Hub / 数据 / 计划 / 设置
+     只改视觉：字体、尺度、版面、纸感光；内容与功能不动
+     ============================================================ */
+
+  /* 主题跟随站点：不写死任何纸色，只叠一层极淡的光 */
+  :root{
+    --vn-glow:color-mix(in srgb, var(--acc) 8%, transparent);
+    --vn-glow2:color-mix(in srgb, var(--txt) 4%, transparent);
+  }
+  html[data-theme="forest"],html[data-theme="jade"],html[data-theme="mono"],
+  html[data-theme="night"],html[data-theme="cyber"]{
+    --vn-glow:color-mix(in srgb, var(--acc) 4%, transparent);   /* 深底上暖光降到 4%，避免发脏 */
+    --vn-glow2:transparent;
+  }
+  :root{
+    --paper-bg:
+      radial-gradient(1100px 680px at 16% -12%,
+        var(--vn-glow) 0%,
+        color-mix(in srgb, var(--vn-glow) 74%, transparent) 15%,
+        color-mix(in srgb, var(--vn-glow) 50%, transparent) 30%,
+        color-mix(in srgb, var(--vn-glow) 26%, transparent) 45%,
+        color-mix(in srgb, var(--vn-glow) 10%, transparent) 55%,
+        transparent 62%),
+      radial-gradient(880px 560px at 94% 4%,
+        var(--vn-glow2) 0%,
+        color-mix(in srgb, var(--vn-glow2) 60%, transparent) 20%,
+        color-mix(in srgb, var(--vn-glow2) 30%, transparent) 40%,
+        transparent 64%),
+      var(--bg);
+  }
+
+  /* 字号与字体：全站统一到 v3 栈 */
+  /* 主题切换：颜色渐变过去，不硬跳 */
+  html,body{ transition: background-color .5s cubic-bezier(.4,0,.2,1), color .45s cubic-bezier(.4,0,.2,1) }
+  body{
+    font-family:var(--f-ui);
+    font-size:var(--fs-body);
+    line-height:var(--lh-body);
+    -webkit-font-smoothing:antialiased;
+    background:var(--paper-bg,var(--bg));
+    background-attachment:fixed;
+  }
+
+  /* h1/h2 换衬线 */
+h1,
+  h2{
+    font-family:var(--f-display);
+    font-weight:900;
+    letter-spacing:-.015em;
+  }
+  h2{ font-size:var(--fs-h2); line-height:1.2; }
+  .card>.t, .card .t{ font-family:var(--f-ui); font-weight:600; font-size:16px; letter-spacing:0; }
+
+  /* ---------- Hub 头部两栏 ---------- */
+  #play{ display:none }
+  #play.on{
+    display:flex; flex-direction:column;
+    margin:0; padding:36px 0 40px;
+    min-height:calc(100vh - 230px); box-sizing:border-box;
+    animation:plotTab 200ms var(--ease, cubic-bezier(.2,.8,.2,1)) both;
+  }
+  #play.on{ justify-content:flex-start; gap:40px }
+  /* 矮视口（笔记本 1440×800、浏览器 chrome 吃掉 100px 时）：压一档，保证零滚动 */
+  @media (max-height: 820px){
+    #play.on{ padding:18px 0 20px; gap:24px }
+    .ph-left h2{ font-size:clamp(40px,4.6vw,54px) !important }
+    #play .statsbar{ padding-top:16px }
+    #play .statsbar .sb-v{ font-size:34px !important }
+    #play .statsbar .sb{ gap:6px }
+    #drillGrid .grp{ margin-bottom:8px; padding-bottom:8px }
+    #drillGrid .item{ height:38px }
+    #drillGrid .col{ min-height:0 !important }
+  }
+  #play .play-head{ flex:0 0 auto; order:1 }
+  #drillGrid{ flex:0 0 auto; display:flex; align-items:flex-start; order:3; padding-top:8px }
+  #play .statsbar{ flex:0 0 auto; order:2; padding:36px 0 0 }
+  #play .play-head{ margin-bottom:0 }
+  .play-head{
+    display:grid; grid-template-columns:1.15fr .85fr; gap:48px;
+    align-items:end; padding:0 0 32px; border-bottom:1px solid var(--line);
+  }
+  section:not(#play) > .play-head{ margin-bottom:24px }
+  .ph-eyebrow{
+    display:flex; align-items:center; gap:14px;
+    font-size:var(--fs-label); letter-spacing:var(--track-label); text-transform:uppercase;
+    color:var(--dim); margin-bottom:16px;
+  }
+  /* 章节编号：10.5px / 700 / .18em / accent-text —— 与三个标定页、方法论同一形制 */
+  .ph-eyebrow .num{
+    inline-size:auto; color:var(--acc-text,var(--acc)); font-weight:700;
+    letter-spacing:.18em; font-size:var(--fs-label); line-height:1;
+  }
+  .ph-eyebrow .num + span::before{ content:"— " }
+  .ph-left h2{
+    font-size:clamp(44px,5.2vw,76px); line-height:.96; letter-spacing:-.02em; margin:0;
+  }
+  .ph-right{ padding-bottom:6px }
+  .ph-right .hint{
+    font-size:15px; line-height:1.7; color:var(--dim); margin:0 0 22px; max-width:38ch;
+  }
+  .ph-right .hint:last-child{ margin-bottom:0 }
+  .ph-right .hint a{ color:var(--acc) !important }
+  #todaySlot .today{
+    display:flex; align-items:center; justify-content:space-between; gap:16px;
+    height:52px; padding:0 2px; margin:0;
+    border:0; border-bottom:1px solid var(--line);
+    background:transparent; color:var(--txt); text-decoration:none;
+    font-size:14px; letter-spacing:.02em;
+  }
+  #todaySlot .today:hover{ background:color-mix(in srgb, var(--txt) 5%, transparent) }
+  #todaySlot .today .td-l{ font-weight:600 }
+  #todaySlot .today .td-r{ color:var(--acc); display:flex; align-items:center; gap:10px }
+  #todaySlot .today .ar{ transition:transform 140ms var(--ease) }
+  #todaySlot .today:hover .ar{ transform:translateX(6px) }
+
+  /* ---------- 数字条：4 格通栏（与三个标定页同一形制：数字在上、标签在下、1px 竖线） ---------- */
+  #play .statsbar{
+    display:grid; grid-template-columns:repeat(4,1fr); gap:0;
+    margin:0; padding:0; border-top:0; border-bottom:1px solid var(--line); max-height:none;
+  }
+  #play .statsbar .sb{
+    display:flex; flex-direction:column-reverse; align-items:flex-start; gap:8px;
+    padding:24px 32px 24px 0; padding-left:32px; min-width:0; border-left:1px solid var(--line);
+  }
+  #play .statsbar .sb:first-child{ padding-left:0; border-left:0 }
+  #play .statsbar .sb-k{
+    font-size:var(--fs-label); letter-spacing:var(--track-label); text-transform:uppercase;
+    color:var(--dim); line-height:1;
+  }
+  #play .statsbar .sb-v{
+    font-family:var(--f-ui); font-weight:800; font-size:clamp(38px,3.2vw,52px); line-height:1.05;
+    letter-spacing:-.03em; color:var(--txt); font-variant-numeric:tabular-nums;
+    white-space:nowrap;
+  }
+  #play .statsbar .sb-v .u{ font-size:14px; font-weight:500; letter-spacing:0; color:var(--dim) }
+  #play .statsbar .sb-v.dim{ color:var(--dim2) }
+
+  /* ---------- 目录五列 ---------- */
+  #drillGrid{ display:flex !important; margin:0; width:100%; align-items:center }
+  #drillGrid .cols{ width:100% }
+  #drillGrid .cols{
+    display:grid; grid-template-columns:repeat(5,1fr); gap:0;
+    align-items:stretch; border-left:0;
+  }
+  #drillGrid .col{
+    display:flex; flex-direction:column;
+    border-right:1px solid var(--line); padding:0 20px 12px;
+    min-height:calc(44px * 3 + 46px);          /* 让所有竖线落在同一条基线 */
+  }
+  #drillGrid .col:last-child{ border-right:0 }   /* 最后一列不收边：只留 4 条 */
+  #drillGrid .grp{
+    display:flex; align-items:baseline; gap:9px; white-space:nowrap; overflow:hidden;
+    margin:0 0 14px; padding:0 0 12px; border-bottom:0;   /* 短线太多：标题不再画线 */
+    font-family:var(--f-display); font-weight:700; font-size:var(--fs-h3);
+    letter-spacing:0; color:var(--txt); text-transform:none;
+  }
+  #drillGrid .grp i{
+    font-family:var(--f-ui); font-style:normal; font-weight:700; font-size:10.5px;
+    letter-spacing:.18em; color:var(--acc-text,var(--acc)); font-variant-numeric:tabular-nums;
+  }
+  #drillGrid .grp::before,#drillGrid .grp::after{ display:none }
+  #drillGrid .item{
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    height:44px; padding:0; margin:0; border:0;
+    white-space:nowrap; overflow:hidden; border-bottom:0;
+    font-size:14.5px; color:var(--txt); text-decoration:none;
+    transition:color 120ms var(--ease);
+  }
+  #drillGrid .item:hover{ background:transparent; color:var(--acc) }
+  #drillGrid .item>span:first-child{ overflow:hidden; text-overflow:ellipsis; min-width:0 }
+  #drillGrid .item .ar{ color:var(--dim2); font-size:13px; flex:0 0 auto; transition:transform 140ms var(--ease) }
+  #drillGrid .item:hover .ar{ transform:translateX(6px); color:var(--acc) }
+  #drillGrid .item::before{ display:none }
+
+  /* ---------- 其它页：只换字体与尺度 ---------- */
+  .card{ border-radius:0 !important; background:transparent !important; border:1px solid var(--line) !important; }
+  .card>.t{ font-family:var(--f-ui) }
+  #set .v, #data .v, .v{ font-family:var(--f-ui); font-weight:800; font-variant-numeric:tabular-nums; letter-spacing:-.02em }
+  /* 空数据占位不要用 44px 的破折号（看起来像粗横杠）：降一档字号 + 次要色 */
+  #data .v.dim, #set .v.dim{ font-size:15px; font-weight:500; letter-spacing:0; color:var(--dim); line-height:2.9 }
+  table td,table th{ font-size:13px; font-variant-numeric:tabular-nums }
+  .k{ font-size:var(--fs-label); letter-spacing:.16em; text-transform:uppercase; color:var(--dim) }
+  .hint{ font-size:13.5px }
+  section h2{ font-family:var(--f-display) }
+
+  @media (max-width:900px){
+    .play-head{ grid-template-columns:1fr; gap:24px; padding-bottom:20px }
+    .ph-left h2{ font-size:44px }
+    #play .statsbar{ grid-template-columns:repeat(2,1fr); gap:22px 0 }
+    #play .statsbar .sb:nth-child(3){ padding-left:0; border-left:0 }
+    #drillGrid .cols{ grid-template-columns:repeat(2,1fr) }
+    #drillGrid .col{ padding:0 14px 4px }
+  }
+  @media (prefers-reduced-motion:reduce){
+    #play.on{ animation:none !important }
+  }
+
+  /* ============================================================
+     对比度审计修正：强调色「文字」用 --acc-text（= --acc 朝正文色混合 10%）
+     主题令牌 --acc 本身不动，填充块/描边仍用原 --acc。
+     修复前 light 主题的强调色文字只有 4.2:1；改后 ≥4.7:1（见 report）。
+     ============================================================ */
+.tmbtn.on,
+  .ph-right .hint a,
+  #todaySlot .today .td-r,
+  .big,
+  #plan h1,
+  #plan .stat .v,
+  #plan .planTotal .sum b,
+  #plan .planOps span:hover,
+  #plan .addRow:hover,
+  #plan button:hover,
+  #plan .chip.new:hover,
+  #plan a.back:hover,
+  [style*="color:var(--acc)"]{ color:var(--acc-text, var(--acc)) !important }

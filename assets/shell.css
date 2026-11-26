@@ -17,8 +17,8 @@
 /* ============================================================
    0 · 基础
    ============================================================ */
-*{ box-sizing:border-box; }
 html{ scroll-behavior:auto; }
+*{ box-sizing:border-box; }
 
 /* ============================================================
    1 · 纸面页（方法页 / 遗留页 / 未来的文章页）
@@ -313,14 +313,14 @@ html[data-vn-lang="en"] article[data-lang="zh"]{ display:none; }
     backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
     border-bottom:1px solid var(--line);
   }
-  .brand{display:flex;align-items:center;gap:11px;margin-right:22px;text-decoration:none;color:inherit;flex-shrink:0}
-  .brand .mark{width:46px;height:46px;color:var(--acc);flex-shrink:0}
-  .brand-text{display:flex;flex-direction:column;line-height:1.15}
-  .brand-name{font-size:15px;font-weight:700;letter-spacing:1.2px;color:var(--txt)}
-  .brand-sub{font-size:10px;letter-spacing:2px;color:color-mix(in srgb,var(--txt) 68%,var(--bg));margin-top:2px}
-  .brand:hover .mark{color:var(--acc2)}
-  .brand:hover .brand-name{color:var(--acc)}
-  .logo{
+  :where(.app-shell) .brand{display:flex;align-items:center;gap:11px;margin-right:22px;text-decoration:none;color:inherit;flex-shrink:0}
+  :where(.app-shell) .brand .mark{width:46px;height:46px;color:var(--acc);flex-shrink:0}
+  :where(.app-shell) .brand-text{display:flex;flex-direction:column;line-height:1.15}
+  :where(.app-shell) .brand-name{font-size:15px;font-weight:700;letter-spacing:1.2px;color:var(--txt)}
+  :where(.app-shell) .brand-sub{font-size:10px;letter-spacing:2px;color:color-mix(in srgb,var(--txt) 68%,var(--bg));margin-top:2px}
+  :where(.app-shell) .brand:hover .mark{color:var(--acc2)}
+  :where(.app-shell) .brand:hover .brand-name{color:var(--acc)}
+  :where(.app-shell) .logo{
     font-size:12px; font-weight:800; letter-spacing:2.4px;
     color:var(--acc); margin-right:18px; white-space:nowrap;
   }
@@ -336,35 +336,35 @@ html[data-vn-lang="en"] article[data-lang="zh"]{ display:none; }
     content:""; position:absolute; left:15px; right:15px; bottom:2px; height:2px;
     border-radius:2px; background:var(--acc);
   }
-  .sp{flex:1}
-  .gear{display:flex;align-items:center;justify-content:center;width:34px;height:34px;
+  :where(.app-shell) .sp{flex:1}
+  :where(.app-shell) .gear{display:flex;align-items:center;justify-content:center;width:34px;height:34px;
     border:1px solid var(--line);border-radius:8px;color:var(--dim);margin-right:8px;
     transition:.16s;text-decoration:none}
-  .gear svg{width:16px;height:16px}
-  .gear:hover{color:var(--acc);border-color:var(--acc)}
-.gear.on{color:var(--acc);border-color:var(--acc);background:color-mix(in srgb,var(--acc) 10%,transparent)}
-  .lang{display:flex; gap:0; border:0; border-radius:0; overflow:visible; margin-right:8px;
+  :where(.app-shell) .gear svg{width:16px;height:16px}
+  :where(.app-shell) .gear:hover{color:var(--acc);border-color:var(--acc)}
+:where(.app-shell) .gear.on{color:var(--acc);border-color:var(--acc);background:color-mix(in srgb,var(--acc) 10%,transparent)}
+  :where(.app-shell) .lang{display:flex; gap:0; border:0; border-radius:0; overflow:visible; margin-right:8px;
     font-family:var(--f-ui); font-size:10.5px; letter-spacing:.18em}
-  .lang span{padding:4px 6px; min-width:24px; text-align:center; font-size:10.5px; letter-spacing:.18em;
+  :where(.app-shell) .lang span{padding:4px 6px; min-width:24px; text-align:center; font-size:10.5px; letter-spacing:.18em;
     text-transform:uppercase; color:var(--dim); cursor:pointer; transition:color .15s; user-select:none;
     border-bottom:1px solid transparent}
-  .lang span:hover{background:transparent; color:var(--txt)}
-  .lang span.on{background:transparent; color:var(--txt); border-bottom-color:var(--acc); box-shadow:none}
-  .home{
+  :where(.app-shell) .lang span:hover{background:transparent; color:var(--txt)}
+  :where(.app-shell) .lang span.on{background:transparent; color:var(--txt); border-bottom-color:var(--acc); box-shadow:none}
+  :where(.app-shell) .home{
     color:var(--dim); text-decoration:none; font-size:13px;
     padding:7px 13px; border:1px solid var(--line); border-radius:9px;
     transition:.18s;
   }
-  .home:hover{color:var(--acc); border-color:var(--acc)}
+  :where(.app-shell) .home:hover{color:var(--acc); border-color:var(--acc)}
 
 
 
-@media (max-width:600px){
+:where(.app-shell) @media (max-width:600px){
     :where(.app-shell) header{padding:12px 16px}
     .logo{display:none}
 }
 
-@media (max-width:520px){
+:where(.app-shell) @media (max-width:520px){
     :where(.app-shell) header{gap:4px;padding:10px 12px}
     .brand{margin-right:6px;gap:8px}
     .brand .mark{width:34px;height:34px}
@@ -378,20 +378,20 @@ html[data-vn-lang="en"] article[data-lang="zh"]{ display:none; }
     .brand-name{font-size:15px}
 }
 
-@media (max-width:560px){
+:where(.app-shell) @media (max-width:560px){
     :where(.app-shell) header{padding:8px 12px;flex-wrap:wrap;row-gap:6px}
     :where(.app-shell) header .brand{margin-right:0}
     :where(.app-shell) nav{order:3;width:100%;justify-content:space-between;gap:2px}
     :where(.app-shell) nav a{flex:1;text-align:center;padding:8px 2px;font-size:12px}
 }
 
-@media (max-width:900px){
+:where(.app-shell) @media (max-width:900px){
     :where(.app-shell) header{padding:8px 14px; gap:4px}
     :where(.app-shell) nav a{padding:7px 10px; font-size:13px}
 }
-.lang span,
-  .gear,
-  .home{
+:where(.app-shell) .lang span,
+  :where(.app-shell) .gear,
+  :where(.app-shell) .home{
     border-radius:0;
     background-image:none;
     box-shadow:none;
@@ -399,25 +399,25 @@ html[data-vn-lang="en"] article[data-lang="zh"]{ display:none; }
   :where(.app-shell) nav a{transition:color 120ms linear, background 120ms linear; border-radius:0}
   :where(.app-shell) nav a:hover{background:color-mix(in srgb,var(--txt) 4%, transparent)}
   :where(.app-shell) nav a.on{background:color-mix(in srgb,var(--txt) 7%, transparent); color:var(--acc)}
-  .lang span.on{background:transparent; color:var(--acc)}
-  .lang span{color:var(--dim)}
+  :where(.app-shell) .lang span.on{background:transparent; color:var(--acc)}
+  :where(.app-shell) .lang span{color:var(--dim)}
   :where(.app-shell) nav a.on::after{display:none}
   :where(.app-shell) nav{position:relative}
-  .nav-ink{
+  :where(.app-shell) .nav-ink{
     position:absolute; left:0; bottom:0; height:2px; width:0;
     background:var(--txt); transform-origin:left center; pointer-events:none;
     transition:transform 220ms cubic-bezier(.2,.8,.2,1), width 220ms cubic-bezier(.2,.8,.2,1);
   }
   :where(.app-shell) nav a.on{background:none}
   :where(.app-shell) nav a.on::after{display:none}          /* 旧静态下划线退场，改由 .nav-ink 滑动 */
-.brand-name{
+:where(.app-shell) .brand-name{
     font-family:var(--f-display);
     font-weight:900;
     letter-spacing:-.015em;
   }
-  .brand-name{ font-size:19px; letter-spacing:.01em; }
-  .brand-sub{ font-family:var(--f-ui); font-size:9.5px; letter-spacing:.22em; text-transform:uppercase; color:var(--dim) }
+  :where(.app-shell) .brand-name{ font-size:19px; letter-spacing:.01em; }
+  :where(.app-shell) .brand-sub{ font-family:var(--f-ui); font-size:9.5px; letter-spacing:.22em; text-transform:uppercase; color:var(--dim) }
   :where(.app-shell) nav a{ font-family:var(--f-ui) }
 :where(.app-shell) nav a.on,
-  .lang span.on,
-  .brand:hover .brand-name{ color:var(--acc-text, var(--acc)) }
+  :where(.app-shell) .lang span.on,
+  :where(.app-shell) .brand:hover .brand-name{ color:var(--acc-text, var(--acc)) }

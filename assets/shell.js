@@ -12,7 +12,7 @@
      <article data-lang="zh|en">                    双语同页：按语言显隐
 
    页面接口：
-     VernierShell.i18n.register(EN)   单页双语（落地页）：注册英文词典，自动反推中文
+     VernierShell.i18n.register(EN[, {translate}])  单页双语：注册英文词典；可选 translate(lang) 自定义翻译器（app 用）
      VernierShell.lang.apply(lang)    立即应用语言（不写存储，供 QA / 页面调用）
      VernierShell.lang.set(lang)      用户切换：应用 + 写存储 + 同步 URL
 
@@ -53,7 +53,11 @@
   function tickTheme(){
     if (themeLocked()) return;
     var want = autoTheme();
-    if (D.getAttribute('data-theme') !== want) D.setAttribute('data-theme', want);
+    if (D.getAttribute('data-theme') === want) return;
+    /* 自动昼夜切换加 300ms 颜色过渡（app.html 的 html.theme-fade 规则；其他页面无此规则，无副作用） */
+    try{ D.classList.add('theme-fade'); }catch(e){}
+    D.setAttribute('data-theme', want);
+    setTimeout(function(){ try{ D.classList.remove('theme-fade'); }catch(e){} }, 320);
   }
   setInterval(tickTheme, 60000);
   document.addEventListener('visibilitychange', function(){ if (!document.hidden) tickTheme(); });
@@ -69,17 +73,45 @@
     probe.style.cssText = 'position:absolute;left:-9999px;top:-9999px;visibility:hidden';
     function attach(){ try{ (document.body || document.documentElement).appendChild(probe); }catch(e){} }
     if (document.body) attach(); else addEventListener('DOMContentLoaded', attach);
+    /* 亮度权重与阈值沿用 app.html 迁移前的实现（0.299/0.587/0.114，阈值 0.55，暗字 #111820），
+       保证 W1/W2 页面在同一主题下 --on-acc 取值逐像素一致。 */
     function applyOnAcc(){
       var acc = getComputedStyle(document.documentElement).getPropertyValue('--acc').trim();
       if (!acc) return;
       try{ probe.style.color = acc; }catch(e){}
-      var L = relLum(getComputedStyle(probe).color || acc);
-      if (acc.charAt(0) === '#' && L === 0) return;   /* 拿不到 rgb 时等 load 再试 */
-      D.style.setProperty('--on-acc', L > 0.32 ? '#0b0f14' : '#ffffff');
+      var rgbStr = getComputedStyle(probe).color || acc;
+      var m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(rgbStr);
+      if (!m && acc.charAt(0) === '#'){ var h = acc.replace('#',''); if (h.length === 3) h = h[0]+h[0]+h[1]+h[1]+h[2]+h[2]; if (/^[0-9a-fA-F]{6}$/.test(h)){ var v = parseInt(h,16); m = [null, String((v>>16)&255), String((v>>8)&255), String(v&255)]; } }
+      var lum = m ? (0.299*(+m[1]) + 0.587*(+m[2]) + 0.114*(+m[3]))/255 : 0.5;
+      D.style.setProperty('--on-acc', lum > 0.55 ? '#111820' : '#ffffff');
     }
     applyOnAcc();
     try{ new MutationObserver(applyOnAcc).observe(D, { attributes:true, attributeFilter:['class','data-theme','style'] }); }catch(e){}
     try{ addEventListener('load', applyOnAcc); }catch(e){}
+  })();
+
+  /* ── 2b · 剪贴板兜底（全站唯一）：writeText 在失焦/无权限时抛 NotAllowedError，
+       统一降级到 execCommand，绝不抛未捕获异常。原先 index/app/tools 各写一份。 */
+  (function(){
+    try{
+      var c = navigator.clipboard;
+      if (!c || !c.writeText) return;
+      var orig = c.writeText.bind(c);
+      c.writeText = function(t){
+        var p = orig(t);
+        if (p && p.catch) p.catch(function(){
+          var ta = document.createElement('textarea');
+          ta.value = t; ta.setAttribute('readonly', '');
+          ta.style.cssText = 'position:fixed;top:-1000px;left:-1000px;opacity:0';
+          document.body.appendChild(ta);
+          ta.select(); ta.setSelectionRange(0, ta.value.length);
+          var ok = false; try{ ok = document.execCommand('copy'); }catch(e){}
+          ta.remove();
+          if (!ok){ try{ window.prompt('复制失败，请手动复制：', t); }catch(e){} }
+        });
+        return p;
+      };
+    }catch(e){}
   })();
 
   /* ── 3 · 语言状态 ─────────────────────────────────────────────────────── */
@@ -106,7 +138,7 @@
 
   var TITLE_ZH = D.getAttribute('data-title-zh');
   var TITLE_EN = D.getAttribute('data-title-en');
-  var DICT = null, ZH_DICT = null;
+  var DICT = null, ZH_DICT = null, TRANSLATOR = null;
 
   function translateRoot(root, lang){
     if (!root || !document.createTreeWalker) return;
@@ -148,7 +180,7 @@
   }
   function articles(){ return document.querySelectorAll('article[data-lang]'); }
   function markSwitches(){
-    var els = document.querySelectorAll('.langTop [data-l],.langTop [data-lang],.langsw [data-l],.langsw [data-lang]');
+    var els = document.querySelectorAll('.langTop [data-l],.langTop [data-lang],.langsw [data-l],.langsw [data-lang],.lang [data-l],.lang [data-lang],#langSw [data-l],#langSw [data-lang]');
     for (var i = 0; i < els.length; i++){
       var el = els[i];
       var l = el.getAttribute('data-l') || el.getAttribute('data-lang');
@@ -171,7 +203,8 @@
     if (arts.length){
       for (var i = 0; i < arts.length; i++) arts[i].hidden = (arts[i].getAttribute('data-lang') !== LANG);
     } else if (DICT){
-      translateRoot(document.body, LANG);
+      if (TRANSLATOR){ try{ TRANSLATOR(LANG); }catch(e){} }
+      else { translateRoot(document.body, LANG); translateAttrs(document.body, LANG); }
     }
     markSwitches();
     try{ document.dispatchEvent(new CustomEvent('vernier:lang', { detail:{ lang: LANG } })); }catch(e){}
@@ -207,7 +240,7 @@
     swap();
   }
   function bindSwitches(){
-    var els = document.querySelectorAll('.langTop [data-l],.langTop [data-lang],.langsw [data-l],.langsw [data-lang]');
+    var els = document.querySelectorAll('.langTop [data-l],.langTop [data-lang],.langsw [data-l],.langsw [data-lang],.lang [data-l],.lang [data-lang],#langSw [data-l],#langSw [data-lang]');
     for (var i = 0; i < els.length; i++){
       (function (el){
         el.addEventListener('click', function (ev){ ev.preventDefault(); runSwitch(el, ev); });
@@ -256,10 +289,11 @@
       set: function(l){ return set(l); }
     },
     i18n: {
-      register: function(en){
+      register: function(en, opts){
         DICT = en || {};
         ZH_DICT = {};
         for (var k in DICT){ if (Object.prototype.hasOwnProperty.call(DICT, k)) ZH_DICT[DICT[k]] = k; }
+        if (opts && typeof opts.translate === 'function') TRANSLATOR = opts.translate;
         if (document.body) apply(LANG);
       }
     }

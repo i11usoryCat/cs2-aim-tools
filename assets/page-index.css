@@ -141,7 +141,8 @@
     .tip{margin-top:12px}
     .foot{font-size:10.5px;bottom:10px}
     .foot code{font-size:11px; padding:7px 11px}
-  }
+  }/* W4-keep: a11y/动效强制（reduced-motion 或覆盖动画） */
+
 
 
   /* ============================================================
@@ -157,13 +158,13 @@
     color:var(--on-acc,#fff);
     transition:filter 120ms linear;
   }
-  .start:hover{filter:brightness(.94); transform:none !important; box-shadow:none !important}
-  .start:active{filter:brightness(.90); transform:none !important}
+  .start:hover{filter:brightness(.94); transform:none; box-shadow:none}
+  .start:active{filter:brightness(.90); transform:none}
 
-  #mobileTip{border-radius:0 !important; box-shadow:none !important}
-  #mobileTip button{border-radius:0 !important; box-shadow:none !important; border:1px solid var(--acc)}
+  #mobileTip{border-radius:0; box-shadow:none}
+  #mobileTip button{border-radius:0; box-shadow:none; border:1px solid var(--acc)}
 
-  .foot code{border-radius:0 !important; background:transparent !important; border-top:1px solid var(--line); border-bottom:1px solid var(--line)}
+  .foot code{border-radius:0; background:transparent; border-top:1px solid var(--line); border-bottom:1px solid var(--line)}
   /* ——— 动效（motion-spec v2）：绘图仪式分层入场 + 刻度尺绘制 ——— */
   @keyframes landRise{ from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:translateY(0)} }
   @keyframes landDraw{ from{transform:scaleX(0)} to{transform:scaleX(1)} }
@@ -185,9 +186,10 @@
     animation-delay:48ms;
   }
 
-  @media (prefers-reduced-motion:reduce){
+  @media (prefers-reduced-motion:reduce){/* W4-keep: a11y/动效强制（reduced-motion 或覆盖动画） */
+
     .logo-mark,.brandline,h1,.sub,.by,.start,.tip,.foot{ animation:none !important; opacity:1 !important; transform:none !important }
-    .sub::before{ animation:none !important; transform:none !important }
+    .sub::before{ animation:none; transform:none }
   }
 
   /* ============================================================
@@ -240,7 +242,8 @@
     font-size:clamp(52px,6.2vw,76px); line-height:.96; letter-spacing:-.02em;
     color:var(--ink); text-align:center; margin:0; max-width:none;
   }
-  .sub .em{color:var(--acc-paper)}
+  .sub .em{color:var(--acc-paper)}/* W4-keep: 首页布局锁定（#buildTag / .sub > span） */
+
   .sub > span{
     display:block; margin-top:20px;
     font-family:var(--f-ui); font-weight:400; font-size:14px; line-height:1.7;
@@ -258,7 +261,8 @@
   .by{
     font-family:var(--f-ui); font-size:10.5px; letter-spacing:.24em; text-transform:uppercase;
     color:var(--ink-2); margin:26px 0 0;
-  }
+  }/* W4-keep: 首页布局锁定（#buildTag / .sub > span） */
+
   /* 单行入口 */
   .start{
     margin:32px 0 0; padding:0; height:56px; width:min(460px,100%);
@@ -273,9 +277,9 @@
     content:"→"; font-family:var(--f-ui); font-weight:400; letter-spacing:0;
     color:var(--acc-paper); transition:transform 140ms var(--ease);
   }
-  .start:hover{ background:color-mix(in srgb, var(--ink) 5%, transparent) !important; filter:none !important }
+  .start:hover{ background:color-mix(in srgb, var(--ink) 5%, transparent); filter:none }
   .start:hover::after{ transform:translateX(6px) }
-  .start:active{ transform:none !important; background:color-mix(in srgb, var(--ink) 9%, transparent) !important }
+  .start:active{ transform:none; background:color-mix(in srgb, var(--ink) 9%, transparent) }
   .tip{
     font-family:var(--f-ui); font-size:10.5px; letter-spacing:.12em; text-transform:uppercase;
     color:var(--ink-2); margin:14px 0 0;
@@ -291,7 +295,8 @@
     padding:7px 0; display:inline-block; margin-bottom:10px;
   }
   .foot a{color:var(--ink-2); text-decoration:none; border-bottom:1px solid transparent}
-  .foot a:hover{color:var(--ink); border-bottom-color:var(--acc-paper)}
+  .foot a:hover{color:var(--ink); border-bottom-color:var(--acc-paper)}/* W4-keep: 首页布局锁定（#buildTag / .sub > span） */
+
   #buildTag{font-size:10px !important; letter-spacing:.1em !important; color:var(--ink-2) !important}
 
   @media (max-width:900px){
@@ -302,7 +307,7 @@
     .foot{bottom:14px}
   }
   @media (prefers-reduced-motion:reduce){
-    .sub::before{animation:none !important}
+    .sub::before{animation:none}
   }
 
   /* ============================================================
@@ -312,20 +317,20 @@
   html,body{ transition: background-color .5s cubic-bezier(.4,0,.2,1), color .45s cubic-bezier(.4,0,.2,1) }
   html,body{ height:auto; min-height:100%; }
   body{
-    display:block !important;
-    overflow-x:hidden !important;
-    overflow-y:auto !important;
+    display:block;
+    overflow-x:hidden;
+    overflow-y:auto;
     padding-bottom:56px;              /* 给固定仪表带留位 */
   }
   main{ display:block; min-height:calc(100vh - 56px) }
   #stage{
-    will-change:auto !important;   /* 有 will-change:transform 时 fixed 会相对它定位，仪表带就浮不到视口底 */
-    width:auto !important; height:auto !important; min-height:calc(100vh - 56px);
-    transform:none !important; display:flex !important; flex-direction:column;
+    will-change:auto;   /* 有 will-change:transform 时 fixed 会相对它定位，仪表带就浮不到视口底 */
+    width:auto; height:auto; min-height:calc(100vh - 56px);
+    transform:none; display:flex; flex-direction:column;
     align-items:center; justify-content:center; padding:40px 0 32px; box-sizing:border-box;
   }
   #stage .hero{
-    width:min(920px,68vw); margin:0 auto; padding:0 !important;
+    width:min(920px,68vw); margin:0 auto; padding:0;
     display:flex; flex-direction:column; align-items:center; justify-content:center;
     flex:0 0 auto; min-height:0; text-align:center;
   }
@@ -342,7 +347,8 @@
       repeating-linear-gradient(to right, var(--rule) 0 1px, transparent 1px 15px) 0 0/100% 6px no-repeat,
       linear-gradient(to right, transparent, var(--rule) 50%, transparent) 0 9px/100% 1px no-repeat;
   }
-  .by{ margin:32px 0 0; font-size:11px; letter-spacing:.26em }
+  .by{ margin:32px 0 0; font-size:11px; letter-spacing:.26em }/* W4-keep: a11y/动效强制（reduced-motion 或覆盖动画） */
+
 
   /* 唯一入口：同列宽、文字真正居中 + 箭头紧贴文字右侧 8px */
   .start{
@@ -362,9 +368,10 @@
     transform:translateY(-50%); color:inherit;
     transition:transform 140ms var(--ease);
   }
-  .start:hover{ background:color-mix(in srgb, var(--acc-text, var(--acc-paper)) 7%, transparent) !important; filter:none !important }
+  .start:hover{ background:color-mix(in srgb, var(--acc-text, var(--acc-paper)) 7%, transparent); filter:none }
   .start:hover .start-t::after{ transform:translate(6px, -50%) }
-  .tip{ font-size:10.5px; letter-spacing:.14em; margin:18px 0 0 }
+  .tip{ font-size:10.5px; letter-spacing:.14em; margin:18px 0 0 }/* W4-keep: 首页布局锁定（#buildTag / .sub > span） */
+
 
   /* 底部仪表带：左公式，右链接 + 版本 */
   .foot{

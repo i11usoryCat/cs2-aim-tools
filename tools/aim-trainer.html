@@ -117,7 +117,8 @@
   @keyframes status-out{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-4px)}}
   @keyframes status-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
   @media (prefers-reduced-motion: no-preference){
-    .overlay.show>*{animation:art-in 260ms cubic-bezier(.2,.8,.2,1) backwards}
+    .overlay.show>*{animation:art-in 260ms cubic-bezier(.2,.8,.2,1) backwards}/* W4-keep: a11y/动效强制（reduced-motion 或覆盖动画） */
+
     /* 开始页交错入场：标题 → 说明 → 按钮行 → 状态行 → 参数开关；按钮行只做 120ms 整体淡入，第 0 帧可点 */
     #msg>#msgCol{animation:none!important}
     #msgCol>#titleTop{animation:art-in 260ms cubic-bezier(.2,.8,.2,1) backwards}
@@ -140,11 +141,13 @@
     #res .res-table td:first-child{position:relative}
     #res .res-table td:first-child::before{content:"";position:absolute;left:0;top:50%;width:1px;height:0;
       background:var(--txt);transform:translateY(-50%);transition:height 120ms linear}
-    #res .res-table tr:hover td:first-child::before{height:14px}
+    #res .res-table tr:hover td:first-child::before{height:14px}/* W4-keep: a11y/动效强制（reduced-motion 或覆盖动画） */
+
     /* C 档：参数展开/收起 220ms clip-path */
     #msg .pauseHide{display:block;max-height:0;margin-top:0!important;overflow:hidden;
       clip-path:inset(0 0 100% 0);
-      transition:max-height 220ms cubic-bezier(.2,.8,.2,1),clip-path 220ms cubic-bezier(.2,.8,.2,1)}
+      transition:max-height 220ms cubic-bezier(.2,.8,.2,1),clip-path 220ms cubic-bezier(.2,.8,.2,1)}/* W4-keep: a11y/动效强制（reduced-motion 或覆盖动画） */
+
     #msg.showParams .pauseHide{max-height:2200px;margin-top:26px!important;clip-path:inset(0)}
     /* 结果页表格逐行入场（JS 设置 animation-delay） */
     #resBody.table-anim .res-table tr{animation:res-row-in 180ms cubic-bezier(.2,.8,.2,1) both}
@@ -155,16 +158,25 @@
     #more:hover{transform:translateY(-2px)}
     #more:active{transform:scale(.98)}
   }
-  @media (prefers-reduced-motion: reduce){
-    .overlay.show>*{animation:none!important}
-    #msgCol>*,#sensHint .st-old,#sensHint .st-new{animation:none!important}
-    #resBody.table-anim .res-table tr{animation:none!important;opacity:1!important;transform:none!important}
-    #res .res-table td:first-child::before{transition:none!important}
-    #msg .pauseHide{transition:none!important}
-    #msg .pauseHide,#msg.showParams .pauseHide{max-height:none!important;clip-path:none!important;margin-top:26px!important}
-    #res .res-table td:first-child::before{transition:none!important}
+  @media (prefers-reduced-motion: reduce){/* W4-keep: a11y/动效强制（reduced-motion 或覆盖动画） */
+
+    .overlay.show>*{animation:none!important}/* W4-keep: a11y/动效强制（reduced-motion 或覆盖动画） */
+
+    #msgCol>*,#sensHint .st-old,#sensHint .st-new{animation:none!important}/* W4-keep: a11y/动效强制（reduced-motion 或覆盖动画） */
+
+    #resBody.table-anim .res-table tr{animation:none!important;opacity:1!important;transform:none!important}/* W4-keep: a11y/动效强制（reduced-motion 或覆盖动画） */
+
+    #res .res-table td:first-child::before{transition:none!important}/* W4-keep: a11y/动效强制（reduced-motion 或覆盖动画） */
+
+    #msg .pauseHide{transition:none!important}/* W4-keep: a11y/动效强制（reduced-motion 或覆盖动画） */
+
+    #msg .pauseHide,#msg.showParams .pauseHide{max-height:none!important;clip-path:none!important;margin-top:26px!important}/* W4-keep: a11y/动效强制（reduced-motion 或覆盖动画） */
+
+    #res .res-table td:first-child::before{transition:none!important}/* W4-keep: a11y/动效强制（reduced-motion 或覆盖动画） */
+
     .btn:hover,.btn.alt:hover,.btn:active,.btn.alt:active,#more:hover,#more:active,
-    #fsBtn:hover,#fsBtn:active,#resSubActions .btn:hover,#resSubActions .btn:active{transform:none!important}
+    #fsBtn:hover,#fsBtn:active,#resSubActions .btn:hover,#resSubActions .btn:active{transform:none!important}/* W4-keep: a11y/动效强制（reduced-motion 或覆盖动画） */
+
     .btn,.btn.alt,#more,#fsBtn,#resSubActions .btn,#go,#again{transition:opacity .01s linear!important}
   }
 
@@ -270,7 +282,8 @@
     line-height:1.05;letter-spacing:-.03em;color:var(--txt);font-variant-numeric:tabular-nums;white-space:nowrap}
   .v3-stat span{display:block;margin-top:8px;font-family:var(--f-ui);font-size:10.5px;
     letter-spacing:.24em;text-transform:uppercase;color:var(--dim);font-weight:500;white-space:nowrap}
-  #msgCol>.pauseHide{grid-column:1/-1;width:100%;max-width:1260px}
+  #msgCol>.pauseHide{grid-column:1/-1;width:100%;max-width:1260px}/* W4-keep: 训练器层叠补丁 */
+
   #msg.showParams .pauseHide{margin-top:48px!important}
   #go{border-radius:0;padding:16px 64px;font-family:var(--f-ui);font-size:18px;font-weight:700;
     letter-spacing:2px;line-height:24px;height:48px;text-transform:uppercase;min-width:0;min-height:0}

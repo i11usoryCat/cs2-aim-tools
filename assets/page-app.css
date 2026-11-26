@@ -58,14 +58,13 @@
 
   /* ——— 卡片 / 区块 ——— */
   .card{
-    background:var(--panel); border:1px solid var(--line); border-radius:16px;
-    padding:20px 22px; margin-bottom:16px;
+    /* 皮肤已收敛到 shell 的 .vn-card；这里只留页面 delta */
+    margin-bottom:16px;
   }
   .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(248px,1fr)); gap:14px}
   a.tile,.tile{
-    display:block; position:relative;
-    background:var(--panel); border:1px solid var(--line); border-radius:16px;
-    padding:20px 22px; text-decoration:none; color:inherit;
+    /* 皮肤已收敛到 shell 的 .vn-card；这里只留 tile 的布局/交互 delta */
+    display:block; position:relative; text-decoration:none; color:inherit;
     transition:transform .18s cubic-bezier(.2,.8,.2,1), border-color .18s, box-shadow .18s;
   }
   a.tile:hover{
@@ -403,8 +402,13 @@
   }
 
   /* —— 删除全部立体 —— */
-.card,
-  a.tile,
+/* W4 步骤 1：卡片皮肤与按钮/输入框 reset 拆成两个独立分组（同值同序，不动层叠） */
+  .card,
+  a.tile{
+    border-radius:0 !important;
+    background-image:none !important;
+    box-shadow:none !important;
+  }
   button,
   select,
   input,

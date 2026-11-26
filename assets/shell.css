@@ -6,7 +6,7 @@
    滚动条 / 抖动层 / reduced-motion 全部由本文件提供。
 
    约定：
-   - 本文件不含任何 #页面id 作用域，也不写 !important；
+   - 本文件不含任何 #页面id 作用域，也不写；
    - 颜色一律取 assets/theme.css 的令牌，字号/间距一律取 assets/type.css；
    - 页面内联样式上限 80 行（W1 之后为 0 行）；
    - 仍在线的优先级补丁在 assets/line-system.css（W4 收敛），本文件只提供
@@ -104,39 +104,39 @@ html{ scroll-behavior:auto; }
 /* ============================================================
    5 · 标题层级（文章页）
    ============================================================ */
-h1{ font-family:var(--f-display); font-weight:900; font-size:clamp(44px,5.2vw,76px);
+:where(.page) h1{ font-family:var(--f-display); font-weight:900; font-size:clamp(44px,5.2vw,76px);
   line-height:1.02; letter-spacing:-.02em; margin:0 0 28px; }
-article > h1 + p{ font-size:17px; line-height:1.8; color:var(--ink); max-width:60ch; margin-bottom:8px; }
-h2{ font-family:var(--f-display); font-weight:700; font-size:var(--fs-h2); line-height:1.3;
+:where(.page) article > h1 + p{ font-size:17px; line-height:1.8; color:var(--ink); max-width:60ch; margin-bottom:8px; }
+:where(.page) h2{ font-family:var(--f-display); font-weight:700; font-size:var(--fs-h2); line-height:1.3;
   letter-spacing:-.005em; margin:var(--s6) 0 var(--s2); padding-top:var(--s4);
   border-top:1px solid var(--rule); }
-article > h2:first-of-type{ margin-top:var(--s5); padding-top:0; border-top:0; }
-h3{ font-family:var(--f-ui); font-weight:600; font-size:17px; line-height:1.5;
+:where(.page) article > h2:first-of-type{ margin-top:var(--s5); padding-top:0; border-top:0; }
+:where(.page) h3{ font-family:var(--f-ui); font-weight:600; font-size:17px; line-height:1.5;
   letter-spacing:.01em; margin:var(--s4) 0 var(--s1); }
-h4{ font-family:var(--f-ui); font-weight:600; font-size:15px; margin:var(--s3) 0 4px; }
+:where(.page) h4{ font-family:var(--f-ui); font-weight:600; font-size:15px; margin:var(--s3) 0 4px; }
 
 /* ============================================================
    6 · 正文与列表（68ch 行宽）
    ============================================================ */
-p,li{ font-family:var(--f-ui); font-size:16px; line-height:1.85; color:var(--ink); }
-p{ margin:0 0 18px; max-width:68ch; }
-ul,ol{ max-width:68ch; padding-left:22px; }
-li{ margin:0 0 10px; }
-strong{ font-weight:700; }
-em{ font-style:italic; }
+:where(.page) p,:where(.page) li{ font-family:var(--f-ui); font-size:16px; line-height:1.85; color:var(--ink); }
+:where(.page) p{ margin:0 0 18px; max-width:68ch; }
+:where(.page) ul,:where(.page) ol{ max-width:68ch; padding-left:22px; }
+:where(.page) li{ margin:0 0 10px; }
+:where(.page) strong{ font-weight:700; }
+:where(.page) em{ font-style:italic; }
 .page a{ color:var(--acc-text,var(--acc-paper)); text-decoration:underline; text-underline-offset:3px; text-decoration-thickness:1px; }
 
 /* ============================================================
    7 · 代码块 / 行内代码 / 引文
    ============================================================ */
-pre{ background:var(--paper-2); border:1px solid var(--rule); border-radius:0;
+:where(.page) pre{ background:var(--paper-2); border:1px solid var(--rule); border-radius:0;
   padding:18px 20px; margin:0 0 20px; overflow-x:auto;
   font-family:Consolas,"SF Mono",Menlo,ui-monospace,monospace; font-size:13px; line-height:1.7;
   color:var(--ink); font-variant-numeric:tabular-nums; }
-pre code{ font:inherit; background:none; padding:0; }
-p code,li code{ font-family:Consolas,"SF Mono",Menlo,ui-monospace,monospace; font-size:.9em;
+:where(.page) pre code{ font:inherit; background:none; padding:0; }
+:where(.page) p code,:where(.page) li code{ font-family:Consolas,"SF Mono",Menlo,ui-monospace,monospace; font-size:.9em;
   background:var(--paper-2); padding:1px 5px; border:1px solid var(--rule); }
-blockquote{ margin:0 0 20px; padding:2px 0 2px 18px; border-left:1px solid var(--rule);
+:where(.page) blockquote{ margin:0 0 20px; padding:2px 0 2px 18px; border-left:1px solid var(--rule);
   color:var(--ink-2); font-size:15px; line-height:1.8; max-width:64ch; }
 
 /* 双语同页：由 shell.js 写 html[data-vn-lang]，CSS 先隐藏错语言的那一篇（防闪） */
@@ -268,8 +268,8 @@ html[data-vn-lang="en"] article[data-lang="zh"]{ display:none; }
 
 /* ============================================================
    15 · 减少动态效果
-   全局 kill-switch 仍在 type.css（!important）；这里补外壳组件的静态降级，
-   并把「全局规则」以无 !important 的形式自足一份（W4 收口后唯一来源为本文件）。
+   全局 kill-switch 仍在 type.css（）；这里补外壳组件的静态降级，
+   并把「全局规则」以无 的形式自足一份（W4 收口后唯一来源为本文件）。
    ============================================================ */
 @media (prefers-reduced-motion: reduce){
   /* 与 type.css 的全局 kill-switch 同值；组件层不再另写 transition:none（那会改变计算值） */
@@ -293,3 +293,131 @@ html[data-vn-lang="en"] article[data-lang="zh"]{ display:none; }
 @media (max-width:900px){
   .vn-foot{ padding:0 16px; gap:12px; }
 }
+
+/* ============================================================
+   17 · W2 · app 页头 / 导航 / 语言开关（由 page-app.css 上抽）
+   ----------------------------------------------------------------------------
+   app.html 的顶栏组件：品牌块 + tab 导航（含滑动下划线 .nav-ink）+ 语言开关
+   （.lang 落位）+ 设置齿轮 + 回首页链接。规则按原设计层序整体搬运（含
+   flat / editorial / 对比度修正三层的覆盖），层叠结果与迁移前逐像素一致。
+   裸 header/nav 选择器统一加 :where(.app-shell)（零特异性，不改层叠；app.html
+   <body class="app-shell">），避免全局 nav/header 规则误伤其他页面。
+   本区 0 个。卡片骨架见 §9 .vn-card；app 卡片皮肤与按钮/输入框 reset
+   混在同一条分组规则里，整组上抽会反转层叠，保留在 page-app.css（W4 收敛）。
+   ============================================================ */
+  :where(.app-shell) header{
+    position:sticky; top:0; z-index:20;
+    display:flex; align-items:center; gap:6px;
+    padding:10px 26px;
+    background:var(--head);
+    backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px);
+    border-bottom:1px solid var(--line);
+  }
+  .brand{display:flex;align-items:center;gap:11px;margin-right:22px;text-decoration:none;color:inherit;flex-shrink:0}
+  .brand .mark{width:46px;height:46px;color:var(--acc);flex-shrink:0}
+  .brand-text{display:flex;flex-direction:column;line-height:1.15}
+  .brand-name{font-size:15px;font-weight:700;letter-spacing:1.2px;color:var(--txt)}
+  .brand-sub{font-size:10px;letter-spacing:2px;color:color-mix(in srgb,var(--txt) 68%,var(--bg));margin-top:2px}
+  .brand:hover .mark{color:var(--acc2)}
+  .brand:hover .brand-name{color:var(--acc)}
+  .logo{
+    font-size:12px; font-weight:800; letter-spacing:2.4px;
+    color:var(--acc); margin-right:18px; white-space:nowrap;
+  }
+  :where(.app-shell) nav{display:flex; gap:2px; flex-wrap:wrap}
+  :where(.app-shell) nav a{
+    position:relative; padding:8px 15px; border-radius:8px;
+    color:var(--dim); text-decoration:none; font-size:14px;
+    transition:color .18s,background .18s;
+  }
+  :where(.app-shell) nav a:hover{color:var(--txt); background:var(--panel2)}
+  :where(.app-shell) nav a.on{color:var(--acc); font-weight:600}
+  :where(.app-shell) nav a.on::after{
+    content:""; position:absolute; left:15px; right:15px; bottom:2px; height:2px;
+    border-radius:2px; background:var(--acc);
+  }
+  .sp{flex:1}
+  .gear{display:flex;align-items:center;justify-content:center;width:34px;height:34px;
+    border:1px solid var(--line);border-radius:8px;color:var(--dim);margin-right:8px;
+    transition:.16s;text-decoration:none}
+  .gear svg{width:16px;height:16px}
+  .gear:hover{color:var(--acc);border-color:var(--acc)}
+.gear.on{color:var(--acc);border-color:var(--acc);background:color-mix(in srgb,var(--acc) 10%,transparent)}
+  .lang{display:flex; gap:0; border:0; border-radius:0; overflow:visible; margin-right:8px;
+    font-family:var(--f-ui); font-size:10.5px; letter-spacing:.18em}
+  .lang span{padding:4px 6px; min-width:24px; text-align:center; font-size:10.5px; letter-spacing:.18em;
+    text-transform:uppercase; color:var(--dim); cursor:pointer; transition:color .15s; user-select:none;
+    border-bottom:1px solid transparent}
+  .lang span:hover{background:transparent; color:var(--txt)}
+  .lang span.on{background:transparent; color:var(--txt); border-bottom-color:var(--acc); box-shadow:none}
+  .home{
+    color:var(--dim); text-decoration:none; font-size:13px;
+    padding:7px 13px; border:1px solid var(--line); border-radius:9px;
+    transition:.18s;
+  }
+  .home:hover{color:var(--acc); border-color:var(--acc)}
+
+
+
+@media (max-width:600px){
+    :where(.app-shell) header{padding:12px 16px}
+    .logo{display:none}
+}
+
+@media (max-width:520px){
+    :where(.app-shell) header{gap:4px;padding:10px 12px}
+    .brand{margin-right:6px;gap:8px}
+    .brand .mark{width:34px;height:34px}
+    .brand-sub{display:none}
+    :where(.app-shell) nav a{padding:8px 8px;font-size:12.5px}
+    :where(.app-shell) nav a.on::after{left:8px;right:8px}
+    .lang{margin-right:4px}
+    .lang span{padding:5px 8px;font-size:12px}
+    .gear{width:30px;height:30px;margin-right:4px}
+    .gear svg{width:14px;height:14px}
+    .brand-name{font-size:15px}
+}
+
+@media (max-width:560px){
+    :where(.app-shell) header{padding:8px 12px;flex-wrap:wrap;row-gap:6px}
+    :where(.app-shell) header .brand{margin-right:0}
+    :where(.app-shell) nav{order:3;width:100%;justify-content:space-between;gap:2px}
+    :where(.app-shell) nav a{flex:1;text-align:center;padding:8px 2px;font-size:12px}
+}
+
+@media (max-width:900px){
+    :where(.app-shell) header{padding:8px 14px; gap:4px}
+    :where(.app-shell) nav a{padding:7px 10px; font-size:13px}
+}
+.lang span,
+  .gear,
+  .home{
+    border-radius:0;
+    background-image:none;
+    box-shadow:none;
+  }
+  :where(.app-shell) nav a{transition:color 120ms linear, background 120ms linear; border-radius:0}
+  :where(.app-shell) nav a:hover{background:color-mix(in srgb,var(--txt) 4%, transparent)}
+  :where(.app-shell) nav a.on{background:color-mix(in srgb,var(--txt) 7%, transparent); color:var(--acc)}
+  .lang span.on{background:transparent; color:var(--acc)}
+  .lang span{color:var(--dim)}
+  :where(.app-shell) nav a.on::after{display:none}
+  :where(.app-shell) nav{position:relative}
+  .nav-ink{
+    position:absolute; left:0; bottom:0; height:2px; width:0;
+    background:var(--txt); transform-origin:left center; pointer-events:none;
+    transition:transform 220ms cubic-bezier(.2,.8,.2,1), width 220ms cubic-bezier(.2,.8,.2,1);
+  }
+  :where(.app-shell) nav a.on{background:none}
+  :where(.app-shell) nav a.on::after{display:none}          /* 旧静态下划线退场，改由 .nav-ink 滑动 */
+.brand-name{
+    font-family:var(--f-display);
+    font-weight:900;
+    letter-spacing:-.015em;
+  }
+  .brand-name{ font-size:19px; letter-spacing:.01em; }
+  .brand-sub{ font-family:var(--f-ui); font-size:9.5px; letter-spacing:.22em; text-transform:uppercase; color:var(--dim) }
+  :where(.app-shell) nav a{ font-family:var(--f-ui) }
+:where(.app-shell) nav a.on,
+  .lang span.on,
+  .brand:hover .brand-name{ color:var(--acc-text, var(--acc)) }

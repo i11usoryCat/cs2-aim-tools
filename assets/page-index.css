@@ -1,0 +1,398 @@
+/* ============================================================================
+   page-index.css — 落地页专属（index.html / en/index.html 共用）
+   ----------------------------------------------------------------------------
+   这是「海报页」的版面与材质：舞台、品牌块、刻度尺、单行入口、仪表带页脚。
+   属于外壳的部分（语言开关 / 滚动条 / 抖动层 / reduced-motion）在 assets/shell.css。
+   历史沿革：本文件由 index.html 内联 <style> 原样迁出（450 行 → 0 行内联），
+   保留 5 个设计层叠的原顺序；「后层覆盖前层」的写法暂不合并（W4 像素基线后收敛）。
+   ========================================================================== */
+  /* 主题唯一来源：assets/theme.css */
+  :root{
+    --panel2:var(--bg2); --line2:var(--line);
+    --dim2:color-mix(in srgb, var(--dim) 78%, transparent);
+    --head:color-mix(in srgb, var(--bg) 92%, transparent);
+    --ring:color-mix(in srgb, var(--acc) 22%, transparent);
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{display:flex;align-items:center;justify-content:center;overflow:hidden}
+  #stage{position:relative;width:900px;height:660px;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;transform-origin:center center;
+    will-change:transform}
+  /* 滚动条：6px 暗线（规则在文件末尾；这里只保留占位注释，旧的全隐藏规则已移除） */
+  html,body{margin:0;background:var(--bg);color:var(--txt);overflow-x:hidden;
+    font-family:"Microsoft YaHei UI","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased}
+
+  #stage .hero{position:relative;z-index:2;min-height:0;flex:1;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;text-align:center;padding:40px 22px}
+  .logo-mark{width:104px;height:104px;color:var(--acc);margin-bottom:18px;display:block}
+  .brandline{font-size:11px;letter-spacing:7px;color:var(--dim);margin-bottom:14px;
+    text-transform:uppercase;padding-left:4px;line-height:16px;height:16px}
+
+  h1{font-size:clamp(30px,5.5vw,52px);margin:0;font-weight:800;letter-spacing:4px;
+    color:var(--txt);line-height:1.15}
+  .sub{margin:16px 0 0;color:var(--dim);font-size:15px;line-height:30px;
+    min-height:60px;max-width:560px}
+  .by{margin-top:10px;font-size:13px;color:var(--dim);line-height:20px;
+    letter-spacing:3px;text-transform:uppercase;white-space:nowrap}
+  .by b{color:var(--gold);letter-spacing:1px}
+
+  .start{
+    margin-top:44px;min-width:172px;padding:17px 30px;font-size:17px;font-weight:700;letter-spacing:4px;text-align:center;
+    font-family:inherit;color:var(--on-acc,#fff);cursor:pointer;border:none;border-radius:14px;
+    background:linear-gradient(150deg,var(--acc),var(--acc2));
+    box-shadow:0 16px 34px -14px color-mix(in srgb,var(--acc) 55%,transparent);
+    transition:transform .18s cubic-bezier(.2,.8,.2,1), box-shadow .18s;
+  }
+  .start:hover{transform:translateY(-2px);box-shadow:0 22px 44px -16px color-mix(in srgb,var(--acc) 60%,transparent)}
+  .start:active{transform:translateY(0)}
+  .tip{margin-top:18px;font-size:12.5px;color:var(--dim)}
+
+  .foot{position:absolute;z-index:2;left:0;right:0;bottom:14px;text-align:center;color:var(--dim);
+    font-size:11px;padding:0 22px;line-height:1.9;letter-spacing:.04em}
+  .foot a{color:var(--acc);text-decoration:none}
+  .foot code{background:color-mix(in srgb,var(--txt) 8%,transparent);padding:2px 7px;border-radius:6px;font-size:12px;color:var(--acc)}
+  /* ——— 手机提示条 ——— */
+  #mobileTip{display:none;position:fixed;left:50%;bottom:18px;transform:translateX(-50%);
+    z-index:9300;align-items:center;gap:12px;padding:10px 14px 10px 20px;
+    background:var(--panel);border:1px solid var(--line);color:var(--txt);
+    border-radius:999px;font-size:13px;white-space:nowrap;max-width:calc(100vw - 20px);
+    box-shadow:0 12px 32px -14px color-mix(in srgb,var(--txt) 30%,transparent)}
+  #mobileTip button{font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;
+    background:var(--acc);color:var(--on-acc,#fff);border:none;border-radius:9px;padding:7px 14px;
+    white-space:nowrap;flex-shrink:0}
+  #mobileTip button:hover{filter:brightness(1.08)}
+  @media (max-width:520px){
+    #mobileTip{bottom:12px;padding:9px 12px 9px 16px;font-size:12.5px;gap:10px}
+    #mobileTip button{padding:6px 12px;font-size:12px}
+  }
+
+  /* ============================================================
+     纸面手册 · Paper manual（落地页层）
+     只动样式：不改 id / 事件 / 存储键
+     ============================================================ */
+  body{font-variant-numeric:tabular-nums}
+
+  /* 品牌行下方压一条游标刻度，作为整页的身份标记 */
+  /* 注意：基础规则里写死了 height:16px，这里必须放开，否则 padding 会被 height 吃掉、刻度压到字上 */
+  .brandline{position:relative;padding-bottom:18px;height:auto}
+  /* 只保留品牌块下方那一条刻度尺（.sub::before），这里不再叠第二条 */
+  /* —— 海报构图：一个重量中心 → 刻度尺 → 单行 CTA —— */
+  #stage .hero{padding:0 72px 104px; justify-content:center}   /* 底部预留版权行的位置，避免压字 */
+  .logo-mark{width:88px;height:88px;margin-bottom:20px;color:var(--txt)}   /* 品牌块用墨色，把唯一的 --acc 留给 CTA */
+  .brandline{font-size:11px;letter-spacing:.18em;margin-bottom:16px;color:var(--dim)}
+  h1{font-size:clamp(44px,7vw,84px); font-weight:800; line-height:1.02; letter-spacing:-.01em; color:var(--txt)}
+  .sub{margin:26px 0 0; font-size:14px; line-height:1.75; color:var(--dim); max-width:520px}
+  .sub::before{                       /* 品牌块与正文之间的细刻度尺 */
+    content:""; display:block; width:220px; height:7px; margin:0 auto 20px;
+    background:
+      repeating-linear-gradient(to right, var(--gold,#a8842f) 0 1px, transparent 1px 10px) 0 0/100% 5px no-repeat,
+      linear-gradient(to right, transparent, var(--gold,#a8842f), transparent) 0 6px/100% 1px no-repeat;
+    opacity:.9;
+  }
+  .by{margin-top:22px; font-size:11px; letter-spacing:.18em; color:var(--dim)}
+  .start{
+    margin-top:44px; padding:16px 46px; min-width:0; border:none; border-radius:8px;
+    background:var(--acc); color:var(--on-acc,#fff); font-size:14px; font-weight:600; letter-spacing:.12em;
+    box-shadow:none;
+  }
+  .start:hover{transform:translateY(-1px); box-shadow:none; filter:none; background:var(--acc2,#9a3412)}
+  .start:active{transform:scale(.98)}
+  .tip{margin-top:16px; font-size:11px; letter-spacing:.06em; color:var(--dim)}
+  .foot a{color:var(--dim2,#8a7f6d)}
+
+  /* 页脚那条公式：做成"量具读数"——上下各一道刻度线 */
+  .foot code{
+    display:inline-block; position:relative; padding:9px 16px; margin:6px 0;
+    font-family:ui-monospace,"Cascadia Code",Consolas,monospace;
+    font-size:12.5px; letter-spacing:.5px;
+    background:color-mix(in srgb,var(--txt) 6%,transparent);
+    border-radius:8px;
+  }
+  .foot code::before,.foot code::after{
+    content:""; position:absolute; left:6px; right:6px; height:5px;
+    background:repeating-linear-gradient(to right, color-mix(in srgb,var(--acc) 45%,transparent) 0 1px, transparent 1px 7px);
+    opacity:.55; pointer-events:none;
+  }
+  .foot code::before{top:-8px}
+  .foot code::after{bottom:-8px}
+  /* 页脚链接：下划线用细刻度，hover 才出现 */
+  .foot a{position:relative; text-decoration:none}
+  .foot a::after{
+    content:""; position:absolute; left:0; right:0; bottom:-3px; height:1px;
+    background:var(--acc); transform:scaleX(0); transform-origin:left;
+    transition:transform 170ms cubic-bezier(.2,.8,.2,1);
+  }
+  .foot a:hover::after{transform:scaleX(1)}
+
+  .start{transition:transform 170ms cubic-bezier(.2,.8,.2,1), box-shadow 170ms cubic-bezier(.2,.8,.2,1)}
+
+  /* 窄屏：单列、留白收紧 */
+  @media (max-width:900px){
+    h1{letter-spacing:-.01em}
+    #stage .hero{padding:0 40px 128px}
+    .logo-mark{width:72px;height:72px;margin-bottom:14px}
+    .brandline{margin-bottom:12px}
+    .sub{margin-top:18px}
+    .sub::before{margin-bottom:14px}
+    .by{margin-top:16px}
+    .start{margin-top:30px;padding:14px 38px}
+    .tip{margin-top:12px}
+    .foot{font-size:10.5px;bottom:10px}
+    .foot code{font-size:11px; padding:7px 11px}
+  }
+
+
+  /* ============================================================
+     平面与数学（art-direction-flat.md）— 覆盖材质层
+     无阴影 / 无渐变 / 无圆角，只有 1px 线与纯色块
+     ============================================================ */
+  .start{
+    border-radius:0 !important;
+    background:var(--acc) !important;
+    background-image:none !important;
+    box-shadow:none !important;
+    border:1px solid var(--acc);
+    color:var(--on-acc,#fff);
+    transition:filter 120ms linear;
+  }
+  .start:hover{filter:brightness(.94); transform:none !important; box-shadow:none !important}
+  .start:active{filter:brightness(.90); transform:none !important}
+
+  #mobileTip{border-radius:0 !important; box-shadow:none !important}
+  #mobileTip button{border-radius:0 !important; box-shadow:none !important; border:1px solid var(--acc)}
+
+  .foot code{border-radius:0 !important; background:transparent !important; border-top:1px solid var(--line); border-bottom:1px solid var(--line)}
+  /* ——— 动效（motion-spec v2）：绘图仪式分层入场 + 刻度尺绘制 ——— */
+  @keyframes landRise{ from{opacity:0; transform:translateY(10px)} to{opacity:1; transform:translateY(0)} }
+  @keyframes landDraw{ from{transform:scaleX(0)} to{transform:scaleX(1)} }
+
+  .logo-mark{ opacity:0; animation:landRise 260ms cubic-bezier(.2,.8,.2,1) forwards; animation-delay:0ms }
+  .brandline{ opacity:0; animation:landRise 260ms cubic-bezier(.2,.8,.2,1) forwards; animation-delay:16ms }
+  h1{ opacity:0; animation:landRise 260ms cubic-bezier(.2,.8,.2,1) forwards; animation-delay:32ms }
+  .sub{ opacity:0; animation:landRise 260ms cubic-bezier(.2,.8,.2,1) forwards; animation-delay:64ms }
+  .by{ opacity:0; animation:landRise 260ms cubic-bezier(.2,.8,.2,1) forwards; animation-delay:80ms }
+  /* 主行动不排队：第 0 帧就可点，整体 120ms 淡入（motion-spec §0.2） */
+  .start{ opacity:0; animation:landRise 120ms linear forwards; animation-delay:0ms }
+  .tip{ opacity:0; animation:landRise 260ms cubic-bezier(.2,.8,.2,1) forwards; animation-delay:112ms }
+  .foot{ opacity:0; animation:landRise 260ms cubic-bezier(.2,.8,.2,1) forwards; animation-delay:128ms }
+
+  /* 品牌块下方那条金色刻度尺：从左匀速画出来 */
+  .sub::before{
+    transform-origin:left center;
+    animation:landDraw 240ms linear both;
+    animation-delay:48ms;
+  }
+
+  @media (prefers-reduced-motion:reduce){
+    .logo-mark,.brandline,h1,.sub,.by,.start,.tip,.foot{ animation:none !important; opacity:1 !important; transform:none !important }
+    .sub::before{ animation:none !important; transform:none !important }
+  }
+
+  /* ============================================================
+     视觉系统 v3「编辑体」— 落地页海报（只改视觉，不改内容）
+     ============================================================ */
+  html,body{ background:var(--paper); }
+  body{
+    font-family:var(--f-ui); color:var(--ink);
+    background:
+      radial-gradient(1100px 680px at 16% -12%,
+        color-mix(in srgb, var(--acc-paper) 8%, transparent) 0%,
+        color-mix(in srgb, var(--acc-paper) 6%, transparent) 14%,
+        color-mix(in srgb, var(--acc-paper) 4.5%, transparent) 27%,
+        color-mix(in srgb, var(--acc-paper) 3%, transparent) 40%,
+        color-mix(in srgb, var(--acc-paper) 1.6%, transparent) 53%,
+        transparent 62%),
+      radial-gradient(880px 560px at 94% 4%,
+        color-mix(in srgb, var(--ink) 4%, transparent) 0%,
+        color-mix(in srgb, var(--ink) 3%, transparent) 16%,
+        color-mix(in srgb, var(--ink) 2%, transparent) 32%,
+        color-mix(in srgb, var(--ink) .9%, transparent) 48%,
+        transparent 64%),
+      var(--paper);
+  }
+  html[data-theme="forest"] body,html[data-theme="jade"] body,html[data-theme="mono"] body,
+  html[data-theme="night"] body,html[data-theme="cyber"] body{
+    background:
+      radial-gradient(1100px 680px at 16% -12%, color-mix(in srgb, var(--acc-paper) 4%, transparent), transparent 62%),
+      radial-gradient(880px 560px at 94% 4%, transparent, transparent 64%),
+      var(--paper);
+  }
+
+  /* 海报：品牌块 → 一句话 → 刻度尺 → 单行入口 → 页脚 */
+  #stage{display:flex; flex-direction:column}
+  #stage .hero{flex:1; padding:0 64px 8px; justify-content:center; display:flex; flex-direction:column; align-items:center; min-height:0}
+  .logo-mark{width:64px; height:64px; color:var(--ink); margin-bottom:18px}
+  .brandline{
+    font-family:var(--f-ui); font-size:10.5px; letter-spacing:.24em; text-transform:uppercase;
+    color:var(--ink-2); margin:0 0 18px; font-weight:500;
+  }
+  /* 品牌名只出现一次：小字距的 VERNIER 是标识，第二行 h1 仅留语义 */
+  h1{
+    font-family:var(--f-display);
+    position:absolute; width:1px; height:1px; margin:-1px; padding:0;
+    overflow:hidden; clip-path:inset(50%); white-space:nowrap; border:0;
+  }
+  /* 一句话：衬线大字，一个词朱红 */
+  .sub{
+    font-family:var(--f-display); font-weight:900;
+    font-size:clamp(52px,6.2vw,76px); line-height:.96; letter-spacing:-.02em;
+    color:var(--ink); text-align:center; margin:0; max-width:none;
+  }
+  .sub .em{color:var(--acc-paper)}
+  .sub > span{
+    display:block; margin-top:20px;
+    font-family:var(--f-ui); font-weight:400; font-size:14px; line-height:1.7;
+    letter-spacing:0; color:var(--ink-2); opacity:1 !important;
+  }
+  /* 刻度尺：一句话下方，1px 朱红刻度 + 细线 */
+  .sub::before{
+    content:""; display:block; width:260px; height:9px; margin:0 auto 28px;
+    background:
+      repeating-linear-gradient(to right, var(--rule) 0 1px, transparent 1px 13px) 0 0/100% 5px no-repeat,
+      linear-gradient(to right, transparent, var(--rule) 50%, transparent) 0 7px/100% 1px no-repeat;
+    animation:none; transform:none;
+  }
+  /* 作者行：注脚级 */
+  .by{
+    font-family:var(--f-ui); font-size:10.5px; letter-spacing:.24em; text-transform:uppercase;
+    color:var(--ink-2); margin:26px 0 0;
+  }
+  /* 单行入口 */
+  .start{
+    margin:32px 0 0; padding:0; height:56px; width:min(460px,100%);
+    display:flex; align-items:center; justify-content:space-between;
+    background:transparent !important; color:var(--acc-paper) !important;   /* 全屏唯一一处朱红 */
+    border:0 !important; border-top:1px solid var(--acc-paper) !important; border-bottom:1px solid var(--acc-paper) !important;
+    border-radius:0 !important; box-shadow:none !important;
+    font-family:var(--f-ui); font-size:17px; font-weight:600; letter-spacing:.1em;
+    cursor:pointer; position:relative;
+  }
+  .start::after{
+    content:"→"; font-family:var(--f-ui); font-weight:400; letter-spacing:0;
+    color:var(--acc-paper); transition:transform 140ms var(--ease);
+  }
+  .start:hover{ background:color-mix(in srgb, var(--ink) 5%, transparent) !important; filter:none !important }
+  .start:hover::after{ transform:translateX(6px) }
+  .start:active{ transform:none !important; background:color-mix(in srgb, var(--ink) 9%, transparent) !important }
+  .tip{
+    font-family:var(--f-ui); font-size:10.5px; letter-spacing:.12em; text-transform:uppercase;
+    color:var(--ink-2); margin:14px 0 0;
+  }
+  /* 页脚：注脚级 */
+  .foot{
+    position:static; flex:0 0 auto; padding:0 40px 22px; text-align:center;
+    font-family:var(--f-ui); font-size:10.5px; letter-spacing:.1em; color:var(--ink-2);
+  }
+  .foot code{
+    font-family:var(--f-ui); font-size:11px; letter-spacing:.04em; color:var(--ink-2);
+    border-top:1px solid var(--rule); border-bottom:1px solid var(--rule);
+    padding:7px 0; display:inline-block; margin-bottom:10px;
+  }
+  .foot a{color:var(--ink-2); text-decoration:none; border-bottom:1px solid transparent}
+  .foot a:hover{color:var(--ink); border-bottom-color:var(--acc-paper)}
+  #buildTag{font-size:10px !important; letter-spacing:.1em !important; color:var(--ink-2) !important}
+
+  @media (max-width:900px){
+    #stage .hero{padding:0 28px 110px}
+    .sub{font-size:clamp(44px,11vw,60px)}
+    .sub::before{width:180px}
+    .start{width:100%}
+    .foot{bottom:14px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .sub::before{animation:none !important}
+  }
+
+  /* ============================================================
+     v3.1 大屏版面：内容列 min(920px,68vw)，底部仪表带框住页面
+     ============================================================ */
+  /* 主题切换：颜色渐变过去，不硬跳 */
+  html,body{ transition: background-color .5s cubic-bezier(.4,0,.2,1), color .45s cubic-bezier(.4,0,.2,1) }
+  html,body{ height:auto; min-height:100%; }
+  body{
+    display:block !important;
+    overflow-x:hidden !important;
+    overflow-y:auto !important;
+    padding-bottom:56px;              /* 给固定仪表带留位 */
+  }
+  main{ display:block; min-height:calc(100vh - 56px) }
+  #stage{
+    will-change:auto !important;   /* 有 will-change:transform 时 fixed 会相对它定位，仪表带就浮不到视口底 */
+    width:auto !important; height:auto !important; min-height:calc(100vh - 56px);
+    transform:none !important; display:flex !important; flex-direction:column;
+    align-items:center; justify-content:center; padding:40px 0 32px; box-sizing:border-box;
+  }
+  #stage .hero{
+    width:min(920px,68vw); margin:0 auto; padding:0 !important;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    flex:0 0 auto; min-height:0; text-align:center;
+  }
+  .logo-mark{ width:76px; height:76px; margin-bottom:22px }
+  .brandline{ font-size:11px; letter-spacing:.34em; margin-bottom:38px }
+
+  /* 主标题：大屏放到 132px */
+  .sub{ width:100%; font-size:clamp(64px,8.2vw,132px); line-height:.94; letter-spacing:-.025em }
+  .sub > span{ font-size:17px; line-height:1.75; margin-top:30px }
+  /* 刻度尺随列宽拉伸 */
+  .sub::before{
+    width:100%; height:11px; margin:0 auto 40px;
+    background:
+      repeating-linear-gradient(to right, var(--rule) 0 1px, transparent 1px 15px) 0 0/100% 6px no-repeat,
+      linear-gradient(to right, transparent, var(--rule) 50%, transparent) 0 9px/100% 1px no-repeat;
+  }
+  .by{ margin:32px 0 0; font-size:11px; letter-spacing:.26em }
+
+  /* 唯一入口：同列宽、文字真正居中 + 箭头紧贴文字右侧 8px */
+  .start{
+    position:relative;
+    width:100% !important; height:56px; margin:44px 0 0; padding:0 20px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:18px; letter-spacing:.08em;
+    color:var(--acc-text, var(--acc-paper)) !important;   /* 文字用可读强调色：浅纸主题 ≥4.5:1 */
+    border-top:1px solid var(--acc-text, var(--acc-paper)) !important;
+    border-bottom:1px solid var(--acc-text, var(--acc-paper)) !important;
+    transition:background 140ms var(--ease);
+  }
+  .start::after{ content:none }   /* 旧版箭头是 flex 项，会把文字挤离中心轴 */
+  .start-t{ position:relative; display:inline-block }
+  .start-t::after{                /* 箭头脱离布局：文字中心 = 列中心，箭头在文字右 8px */
+    content:"→"; position:absolute; left:100%; top:50%; margin-left:8px;
+    transform:translateY(-50%); color:inherit;
+    transition:transform 140ms var(--ease);
+  }
+  .start:hover{ background:color-mix(in srgb, var(--acc-text, var(--acc-paper)) 7%, transparent) !important; filter:none !important }
+  .start:hover .start-t::after{ transform:translate(6px, -50%) }
+  .tip{ font-size:10.5px; letter-spacing:.14em; margin:18px 0 0 }
+
+  /* 底部仪表带：左公式，右链接 + 版本 */
+  .foot{
+    position:fixed !important; left:0; right:0; bottom:0; top:auto;
+    height:56px; padding:0 40px; margin:0;
+    display:flex; align-items:center; justify-content:space-between; gap:24px;
+    border-top:1px solid var(--rule);
+    background:color-mix(in srgb, var(--paper) 92%, transparent);
+    backdrop-filter:none;
+    font-size:11px; letter-spacing:.08em; color:var(--ink-2);
+    text-align:left; z-index:60;
+  }
+  .foot code{
+    border:0; padding:0; margin:0; font-family:var(--f-ui);
+    font-size:13px; letter-spacing:0; color:var(--ink-2);
+    font-variant-numeric:tabular-nums; white-space:nowrap;
+  }
+  .foot-r{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; justify-content:flex-end }
+  .foot-r a{ color:var(--ink-2); text-decoration:none; border-bottom:1px solid transparent }
+  .foot-r a:hover{ color:var(--ink); border-bottom-color:var(--acc-paper) }
+  #buildTag{ margin-left:12px; font-size:10.5px; letter-spacing:.14em; color:var(--ink-2) }
+
+  @media (max-width:900px){
+    #stage .hero{ width:88vw }
+    .sub{ font-size:clamp(44px,11vw,64px) }
+    .sub > span{ font-size:15px }
+    .start{ font-size:16px }
+    .foot{ padding:0 16px; gap:12px }
+    .foot code{ display:none }          /* 小屏优先放链接 */
+  }
+

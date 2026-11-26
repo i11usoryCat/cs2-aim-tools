@@ -386,11 +386,12 @@
   <div id="v3Kicker" class="v3-kicker"><b>01</b> — 训练 · DRILLS</div>
   <h1 id="titleTop" class="vn-display">甩枪训练</h1>
   <div id="subNote">看到球 → 甩过去 → 手停 → 点击</div>
+  <div id="subNote2" style="margin-top:6px;font-size:12.5px;color:var(--dim);letter-spacing:.02em">开始后点画面锁定鼠标 · 游戏中按 F 全屏（不影响测量）</div>
   <div id="modeNote" style="display:none"></div>
   <div id="v3Stats" class="v3-stats" aria-hidden="true"></div>
   <div id="btnRow">
     <button id="go" class="btn" style="margin-top:0"><span class="btn-label">开 始</span></button>
-    <button id="fsBtn" type="button" style="display:inline-flex;align-items:center;justify-content:center">全屏 ⛶</button>
+    <button id="fsBtn" type="button" style="display:inline-flex;align-items:center;justify-content:center">全屏 <span style="opacity:.55;font-weight:500;margin-left:2px">F</span></button>
   </div>
   <div id="sensHint" title="点击修改参数">…</div>
   <div id="bw"></div>
@@ -3010,7 +3011,7 @@ go.addEventListener('click',e=>{ e.stopPropagation(); start(); });
   if(!b) return;
   function sync(){
     var en = (typeof window.__IS_EN==='boolean') ? window.__IS_EN : false;
-    b.textContent = document.fullscreenElement ? (en?'Exit fullscreen ⤢':'退出全屏 ⤢') : (en?'Fullscreen ⛶':'全屏 ⛶');
+    b.textContent = document.fullscreenElement ? (en?'Exit fullscreen (F) ⤢':'退出全屏 (F) ⤢') : (en?'Fullscreen (F) ⛶':'全屏 (F) ⛶');
   }
   b.addEventListener('click', function(e){
     e.stopPropagation();
@@ -3081,6 +3082,20 @@ document.addEventListener('fullscreenchange', function(){
     var g0=document.getElementById('grab'); if(g0) g0.classList.remove('on');
     msg.classList.add('show');
   }
+});
+// F 键全屏：键盘事件是独立的用户手势，不会像 requestFullscreen 那样打断原始输入锁
+addEventListener('keydown', function(e){
+  if(e.key!=='f' && e.key!=='F') return;
+  var t=e.target;
+  if(t && (t.tagName==='INPUT' || t.tagName==='TEXTAREA' || t.isContentEditable)) return;
+  e.preventDefault();
+  try{
+    if(document.fullscreenElement){ if(document.exitFullscreen) document.exitFullscreen().catch(function(){}); }
+    else if(document.documentElement.requestFullscreen){
+      var p=document.documentElement.requestFullscreen({navigationUI:'hide'});
+      if(p&&p.catch) p.catch(function(){});
+    }
+  }catch(err){}
 });
 document.addEventListener('pointerlockerror', function(){
   if((!running && !waiting) || paused) return;
@@ -3722,6 +3737,9 @@ requestAnimationFrame(loop);
     '— 训练 · DRILLS':'— TRAINING',
     '— TRAINING / DRILLS':'— TRAINING · DRILLS',
     '看到球 → 甩过去 → 手停 → 点击':'See the dot → flick → stop → click',
+    '全屏 (F) ⛶':'Fullscreen (F) ⛶','退出全屏 (F) ⤢':'Exit fullscreen (F) ⤢',
+    '开始后点画面锁定鼠标 · 游戏中按 F 全屏（不影响测量）':'Click the canvas to lock the mouse · press F in-game for fullscreen (does not affect measurement)',
+
     '开 始':'START','全屏 ⛶':'Fullscreen ⛶','退出全屏 ⤢':'Exit fullscreen ⤢',
     '参数 ▾':'Parameters ▾','收起参数 ▴':'Hide parameters ▴',
     '← 返回':'← Back','继续':'Continue','准备好':'Get ready',

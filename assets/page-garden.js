@@ -131,7 +131,7 @@
     petalCv = mkCanvas(96, 64);
     var pg2 = petalCv.getContext('2d');
     var pgr = pg2.createRadialGradient(48, 32, 1, 48, 32, 46);
-    pgr.addColorStop(0, css(mix(PAL.petal, [255, 252, 240], 0.55), 0.95));
+    pgr.addColorStop(0, css(mix(PAL.petal, [255, 250, 236], 0.30), 0.80));
     pgr.addColorStop(0.45, css(PAL.petal, 0.55));
     pgr.addColorStop(0.8, css(PAL.petal, 0.14));
     pgr.addColorStop(1, css(PAL.petal, 0));
@@ -365,7 +365,7 @@
         rot: Math.random() * Math.PI * 2,
         vr: (Math.random() - 0.5) * 0.005,
         life: 1700 + Math.random() * 1600, born: performance.now(),
-        a: 0.55 + Math.random() * 0.4
+        a: 0.30 + Math.random() * 0.28
       });
     }
     // 两圈扩散环 + 一次光爆
@@ -596,17 +596,20 @@
     ctx.globalCompositeOperation = 'lighter';
     for (var i = 0; i < orbs.length; i++) {
       var o = orbs[i];
-      var a = (o.alpha === undefined ? 1 : o.alpha) * (PAL.dark ? 0.95 : 0.85);
+      var a = (o.alpha === undefined ? 1 : o.alpha) * (PAL.dark ? 0.70 : 0.62);
       var r = o.r * (o.scale || 1);
-      // 外层：青色柔晕（sprite，无硬边）
-      ctx.globalAlpha = a * 0.30;
-      ctx.drawImage(haloCv, o.x - r * 5.4, o.y - r * 5.4, r * 10.8, r * 10.8);
-      // 中层暖光
-      ctx.globalAlpha = a * 0.55;
-      ctx.drawImage(orbCv, o.x - r * 2.2, o.y - r * 2.2, r * 4.4, r * 4.4);
-      // 内核（保持一点暖色，不要纯白炸开）
-      ctx.globalAlpha = a * 0.42;
-      ctx.drawImage(orbCv, o.x - r * 1.0, o.y - r * 1.0, r * 2.0, r * 2.0);
+      // 靠近时才轻轻亮一点：告诉你可以打，但不刺眼
+      var near = P.seen ? Math.max(0, 1 - Math.hypot(o.x - P.x, o.y - P.y) / (r * 7)) : 0;
+      a *= 1 + near * 0.8;
+      // 外层：极淡青晕
+      ctx.globalAlpha = a * 0.14;
+      ctx.drawImage(haloCv, o.x - r * 6.0, o.y - r * 6.0, r * 12.0, r * 12.0);
+      // 中层暖雾
+      ctx.globalAlpha = a * 0.26;
+      ctx.drawImage(orbCv, o.x - r * 2.6, o.y - r * 2.6, r * 5.2, r * 5.2);
+      // 内核：暖白，控制在不过曝
+      ctx.globalAlpha = a * 0.13;
+      ctx.drawImage(orbCv, o.x - r * 1.1, o.y - r * 1.1, r * 2.2, r * 2.2);
       // 水面倒影：竖直拉长的柔光
       var ry = HORIZON + (o.y - HORIZON) * 0.18;
       if (ry > HORIZON) {
@@ -646,14 +649,14 @@
       if (r.flash) {
         var fr = Math.max(1, r.r + k * F * 0.09);
         var fg = ctx.createRadialGradient(r.x, r.y, 0, r.x, r.y, fr);
-        fg.addColorStop(0, css(PAL.orbCore, (1 - k) * 0.55));
-        fg.addColorStop(0.55, css(PAL.orb, (1 - k) * 0.22));
+        fg.addColorStop(0, css(PAL.orbCore, (1 - k) * 0.16));
+        fg.addColorStop(0.55, css(PAL.orb, (1 - k) * 0.10));
         fg.addColorStop(1, css(PAL.orb, 0));
         ctx.fillStyle = fg;
         ctx.beginPath(); ctx.arc(r.x, r.y, fr, 0, Math.PI * 2); ctx.fill();
       } else {
         var rad = Math.max(1, r.r + k * F * 0.22);
-        ctx.strokeStyle = css(PAL.orb, (1 - k) * 0.38);
+        ctx.strokeStyle = css(PAL.orb, (1 - k) * 0.20);
         ctx.lineWidth = Math.max(1, DPR * (1.8 - k * 1.2));
         ctx.beginPath(); ctx.arc(r.x, r.y, rad, 0, Math.PI * 2); ctx.stroke();
       }

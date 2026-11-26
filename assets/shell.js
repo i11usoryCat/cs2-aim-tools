@@ -117,6 +117,34 @@
       if (lang === 'en'){ if (DICT[t]) n.nodeValue = n.nodeValue.replace(t, DICT[t]); }
       else { if (ZH_DICT && ZH_DICT[t]) n.nodeValue = n.nodeValue.replace(t, ZH_DICT[t]); }
     }
+    translateAttrs(root, lang);
+  }
+  /* 属性回译：aria-label / title / placeholder（文本节点遍历碰不到）
+     原文存在元素自身的 __origAttr 上，避免 DOMStringMap 的键名限制（含 "-a" 会抛 SyntaxError）。 */
+  function translateAttrs(root, lang){
+    if (!root || !root.querySelectorAll) return;
+    var els = root.querySelectorAll('[aria-label],[title],[placeholder]');
+    for (var i = 0; i < els.length; i++){
+      var el = els[i];
+      var store = el.__origAttr || (el.__origAttr = {});
+      var keys = ['aria-label', 'title', 'placeholder'];
+      for (var k = 0; k < keys.length; k++){
+        var a = keys[k];
+        if (!el.hasAttribute(a)) continue;
+        var cur = el.getAttribute(a);
+        if (lang === 'zh' && store[a] !== undefined){ el.setAttribute(a, store[a]); continue; }
+        if (lang !== 'en') continue;
+        if (store[a] === undefined) store[a] = cur;
+        var orig = store[a] || '', t = orig.trim();
+        if (!/[\u4e00-\u9fa5]/.test(t)) continue;
+        var out = DICT[t];
+        if (out === undefined){
+          var m = /^([^\d.]+?)([\s]*[\d.]+)$/.exec(t);
+          if (m && DICT[m[1].trim()] !== undefined) out = DICT[m[1].trim()] + m[2];
+        }
+        if (out !== undefined) el.setAttribute(a, out);
+      }
+    }
   }
   function articles(){ return document.querySelectorAll('article[data-lang]'); }
   function markSwitches(){

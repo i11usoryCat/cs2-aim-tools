@@ -1,30 +1,22 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-default="zh">
 <head>
 <meta charset="utf-8">
+<script src="assets/shell.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>404 · Vernier</title>
 <link rel="stylesheet" href="assets/theme.css">
-<script>/* 主题：assets/theme.css 是唯一来源（与全站同一套 9 主题） */
-(function(){
-  var OK={sand:1,ink:1,lake:1,light:1,jade:1,forest:1,mono:1,night:1,cyber:1};
-  var t=null;
-  try{ t=new URLSearchParams(location.search).get('theme'); }catch(e){}
-  if(!t){ try{ t=localStorage.getItem('cs2at.theme'); }catch(e){} }
-  if(!OK[t]){ try{ var d=new Date(), m=d.getHours()*60+d.getMinutes(); t=(m>=1410||m<460)?'forest':'sand'; }catch(e){ t='sand'; } }
-  try{ document.documentElement.setAttribute('data-theme',t); }catch(e){}
-})();</script>
 <link rel="stylesheet" href="assets/type.css">
+<link rel="stylesheet" href="assets/shell.css?v=1">
 <link rel="stylesheet" href="assets/relic.css">
 <link rel="stylesheet" href="assets/line-system.css?v=1">
 </head>
-<body>
+<body class="vn-sheet">
 <main class="e404">
   <h1 class="code">404</h1>
   <p class="msg">这个地址没有页面。</p>
   <a class="home" id="e404Home" href="index.html">← 回到首页</a>
 </main>
-<div class="vn-dither" aria-hidden="true"></div>
 <!-- GitHub Pages 在任意缺失路径下都会返回本页；相对链接会按请求路径解析，
      这里按站点根（/cs2-aim-tools/）修正一次，保证深层 404 也能回到首页 -->
 <script>

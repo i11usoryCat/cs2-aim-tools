@@ -31,6 +31,7 @@ var EN = {
     '版本 build':'build','版本 build 2026-11-22 · 9':'build 2026-11-22 · 9',
     '请用电脑打开（建议 Chrome / Edge）·':'Open on desktop (Chrome / Edge) ·',
     '复制链接':'Copy link',
+    '关闭':'Close',
     '已复制':'Copied'
 };
 EN['大肥鱼'] = 'Big Fish';

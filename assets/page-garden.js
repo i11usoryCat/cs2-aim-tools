@@ -83,7 +83,7 @@
   }
 
   /* ── 预烘焙：星点、光点、暗角 ───────────────────────────── */
-  var starCv = null, orbCv = null, haloCv = null, petalCv = null, vigCv = null;
+  var starCv = null, orbCv = null, haloCv = null, petalCv = null, targetCv = null, vigCv = null;
   function mkCanvas(w, h) { var c = document.createElement('canvas'); c.width = Math.max(2, w | 0); c.height = Math.max(2, h | 0); return c; }
 
   function buildSprites() {
@@ -128,7 +128,40 @@
     hgr.addColorStop(0.62, css(PAL.orbHalo, 0.07));
     hgr.addColorStop(1, css(PAL.orbHalo, 0));
     hg.fillStyle = hgr; hg.fillRect(0, 0, 192, 192);
-    // 花瓣（柔边椭圆，带一点高光）
+    // 目标：一片花瓣（柔边、带主脉、玫瑰到暖金）。不用虫——有人怕虫。
+    targetCv = mkCanvas(128, 96);
+    var tg = targetCv.getContext('2d');
+    tg.save();
+    tg.translate(64, 48);
+    // 花瓣轮廓：一头尖（花托）一头圆（瓣尖）
+    tg.beginPath();
+    tg.moveTo(-54, 0);
+    tg.bezierCurveTo(-28, -40, 24, -44, 54, -8);
+    tg.bezierCurveTo(58, 4, 58, 8, 54, 12);
+    tg.bezierCurveTo(24, 44, -28, 40, -54, 0);
+    tg.closePath();
+    var tgr = tg.createLinearGradient(-54, 0, 54, 0);
+    tgr.addColorStop(0, css(mix(PAL.petal, [255, 236, 214], 0.30), 0.96));
+    tgr.addColorStop(0.42, css(mix(PAL.petal, [255, 214, 196], 0.12), 0.99));
+    tgr.addColorStop(0.78, css(mix(PAL.petal, PAL.rose, 0.35), 0.96));
+    tgr.addColorStop(1, css(mix(PAL.rose, [255, 210, 200], 0.20), 0.90));
+    tg.fillStyle = tgr;
+    tg.fill();
+    // 主脉：一条极细的亮线
+    tg.strokeStyle = 'rgba(255,250,240,0.55)';
+    tg.lineWidth = 1.6;
+    tg.beginPath(); tg.moveTo(-46, 0); tg.quadraticCurveTo(0, -6, 46, -2); tg.stroke();
+    // 侧脉
+    tg.strokeStyle = 'rgba(255,250,240,0.22)';
+    tg.lineWidth = 1;
+    for (var vv = 1; vv <= 3; vv++) {
+      var vx = -40 + vv * 22;
+      tg.beginPath(); tg.moveTo(vx, 0); tg.quadraticCurveTo(vx + 10, -12, vx + 16, -18); tg.stroke();
+      tg.beginPath(); tg.moveTo(vx, 0); tg.quadraticCurveTo(vx + 10, 12, vx + 16, 18); tg.stroke();
+    }
+    tg.restore();
+    // 花瓣（散落的光尘，也复用它的小尺寸版本）
+    petalCv = mkCanvas(96, 64);
     petalCv = mkCanvas(96, 64);
     var pg2 = petalCv.getContext('2d');
     var pgr = pg2.createRadialGradient(48, 32, 1, 48, 32, 46);
@@ -161,7 +194,7 @@
     for (var i = 0; i < layers.length; i++) hills.push(layers[i]);
   }
 
-  var orbs = [], petals = [], rings = [], flies = [];
+  var orbs = [], petals = [], rings = [], blooms = [], flies = [];
   var lastFlee = 0;
   var mode = 'breathe';
   var t0 = performance.now();
@@ -178,8 +211,8 @@
     },
     drift: {
       zh: '漂流', en: 'Drift',
-      hintZh: '光点一直在漂。想打就打，想停就看。',
-      hintEn: 'The lights keep drifting. Strike when you like — or just watch.'
+      hintZh: '花瓣一直在飘。想碰就碰，想停就看。',
+      hintEn: 'Petals keep falling. Touch one if you like — or just watch.'
     },
     gaze: {
       zh: '远眺', en: 'Gaze',
@@ -200,7 +233,8 @@
     '呼': 'Exhale',
     '看远处': 'Look far',
     '吸气时睁眼，呼气时出手。这一局不计分。': 'Open your eyes on the inhale, strike on the exhale. Nothing is scored.',
-    '光点一直在漂。想打就打，想停就看。': 'The lights keep drifting. Strike when you like — or just watch.',
+    '花瓣一直在飘。想碰就碰，想停就看。': 'Petals keep falling. Touch one if you like — or just watch.',
+    '光点一直在漂。想打就打，想停就看。': 'Petals keep falling. Touch one if you like — or just watch.',
     '不用点。每二十秒，把视线放到最远的地方。': 'No clicking. Every twenty seconds, rest your eyes on the farthest point.',
     '花园 · GARDEN': 'Garden'
   };
@@ -238,13 +272,17 @@
       path: null, phase: Math.random() * Math.PI * 2, kind: kind || 'breathe'
     };
     if (kind === 'drift') {
-      o.cx = W * (0.28 + Math.random() * 0.44);
-      o.cy = H * (0.24 + Math.random() * 0.38);
-      o.ax = W * (0.06 + Math.random() * 0.13);
-      o.ay = H * (0.05 + Math.random() * 0.11);
-      o.sx = (0.00010 + Math.random() * 0.00014);
-      o.sy = (0.00012 + Math.random() * 0.00016);
-      o.r = s * (0.020 + Math.random() * 0.016);
+      o.cx = W * (0.12 + Math.random() * 0.76);
+      o.cy = H * (0.16 + Math.random() * 0.60);
+      o.ax = W * (0.03 + Math.random() * 0.07);
+      o.ay = H * (0.012 + Math.random() * 0.03);
+      o.sx = (0.00004 + Math.random() * 0.00007);
+      o.sy = (0.00006 + Math.random() * 0.00009);
+      o.r = s * (0.012 + Math.random() * 0.009);   // 花瓣长度 ≈ 20–34px
+      o.rot0 = Math.random() * Math.PI * 2;
+      o.rotSpeed = (Math.random() - 0.5) * 0.55;
+      o.fallSpeed = 0.7 + Math.random() * 0.7;
+      o.alpha = 0;
       o.life = Infinity;
     } else if (kind === 'gaze') {
       o.cx = W * (0.5 + (Math.random() - 0.5) * 0.5);
@@ -261,7 +299,9 @@
       o.cy = H * 0.44 + Math.sin(ang) * dist * 0.72;
       o.ax = W * 0.012; o.ay = H * 0.012;
       o.sx = 0.0002; o.sy = 0.0002;
-      o.r = s * (0.016 + Math.random() * 0.010);
+      o.r = s * (0.012 + Math.random() * 0.008);
+      o.rot0 = Math.random() * Math.PI * 2;
+      o.rotSpeed = (Math.random() - 0.5) * 0.30;
       o.life = 6400;
     }
     return o;
@@ -356,20 +396,20 @@
         o.alpha = 1; o.scale = 1;
         if (o.kind === 'gaze') o.scale = 0.7 + 0.3 * Math.sin(age * 0.0003 + o.phase);
       }
-      if (o.px !== undefined) {
-        var dx = o.x - o.px, dy = o.y - o.py;
-        if (dx * dx + dy * dy > 0.04) {
-          var want = Math.atan2(dy, dx);
-          if (o.ang === undefined) o.ang = want;
-          else {
-            var diff = want - o.ang;
-            while (diff > Math.PI) diff -= Math.PI * 2;
-            while (diff < -Math.PI) diff += Math.PI * 2;
-            o.ang += diff * 0.24;
-          }
-        }
+      // 飘落 + 摇摆 + 自转
+      var sec = dt / 1000;
+      o.fall += (o.fallSpeed || 1) * sec;
+      if (o.kind !== 'gaze') o.cy += F * 0.0000075 * sec;
+      o.x = o.cx + Math.sin(age * o.sx * 6.28 + o.phase) * o.ax;
+      o.y = o.cy + Math.cos(age * o.sy * 6.28 + o.phase) * o.ay;
+      o.rot = (o.rot0 || 0) + o.fall * (o.rotSpeed || 0.35) + Math.sin(age * 0.0004 + o.phase) * 0.25;
+      // 飘出下界：回到天上，继续落（不是消失）
+      if (o.kind !== 'breathe' && o.kind !== 'gaze' && o.cy > H * 0.86) {
+        o.cy = H * 0.14;
+        o.cx = W * (0.15 + Math.random() * 0.7);
+        o.alpha = 0;
       }
-      o.px = o.x; o.py = o.y;
+      if (o.alpha !== undefined && o.alpha < 1 && !o.flee) o.alpha = Math.min(1, o.alpha + sec * 1.6);
     }
   }
 
@@ -380,30 +420,54 @@
   }
 
   /* ── 粒子 / 涟漪 ──────────────────────────────────────── */
-  /* 不去「打死」它：轻轻一碰，萤火虫受惊飞走。
-     留下的是缓缓上升的光尘，不是碎裂的花瓣——不残忍。 */
+  /* 碰一下，不是打碎它，是让它「开」出来：
+     八片花瓣从中心向外展开成一朵小花，再慢慢散成光尘。 */
   function startle(o) {
-    o.flee = true;
-    o.fleeAt = performance.now();
-    o.fvx = (Math.random() - 0.5) * F * 0.00016;
-    o.fvy = -F * (0.00022 + Math.random() * 0.00010);
-    o.fa = o.alpha === undefined ? 1 : o.alpha;
-    var n = reduce ? 4 : 12;
+    blooms.push({
+      x: o.x, y: o.y, r: o.r * 1.05,
+      rot: Math.random() * Math.PI * 2,
+      born: performance.now(), life: 1700
+    });
+    var n = reduce ? 4 : 10;
     for (var i = 0; i < n; i++) {
       petals.push({
         x: o.x + (Math.random() - 0.5) * o.r,
         y: o.y + (Math.random() - 0.5) * o.r,
-        vx: (Math.random() - 0.5) * F * 0.00007,
-        vy: -F * (0.00005 + Math.random() * 0.00012),
-        r: F * (0.0016 + Math.random() * 0.0024),
+        vx: (Math.random() - 0.5) * F * 0.00005,
+        vy: -F * (0.00004 + Math.random() * 0.00009),
+        r: F * (0.0014 + Math.random() * 0.0022),
         rot: 0, vr: 0,
-        life: 900 + Math.random() * 700, born: performance.now(),
-        a: 0.22 + Math.random() * 0.22
+        life: 1100 + Math.random() * 900, born: performance.now(),
+        a: 0.18 + Math.random() * 0.18
       });
     }
-    rings.push({ x: o.x, y: o.y, r: o.r * 0.6, born: performance.now(), life: 900 });
+    rings.push({ x: o.x, y: o.y, r: o.r * 0.5, born: performance.now(), life: 1100 });
     lastFlee = performance.now();
     chime(o.y / H);
+  }
+
+  /* 一朵正在开的花 */
+  function drawBlooms(now) {
+    if (!blooms.length || !targetCv) return;
+    ctx.save();
+    for (var i = 0; i < blooms.length; i++) {
+      var b = blooms[i];
+      var k = Math.max(0, Math.min(1, (now - b.born) / b.life));
+      var open = 0.25 + 0.75 * Math.min(1, k * 2.6);      // 先开，后散
+      var fade = k < 0.55 ? 1 : (1 - (k - 0.55) / 0.45);
+      var pr = b.r * 0.95;
+      for (var p = 0; p < 8; p++) {
+        var ang = b.rot + p / 8 * Math.PI * 2 + (reduce ? 0 : k * 0.5);
+        var dist = pr * open;
+        ctx.save();
+        ctx.translate(b.x + Math.cos(ang) * dist, b.y + Math.sin(ang) * dist * 0.85 - k * pr * 0.7);
+        ctx.rotate(ang);
+        ctx.globalAlpha = Math.max(0, fade) * 0.9;
+        ctx.drawImage(targetCv, -pr * 0.85, -pr * 0.34, pr * 1.7, pr * 0.68);
+        ctx.restore();
+      }
+    }
+    ctx.restore();
   }
 
   function updateParticles(now) {
@@ -648,71 +712,32 @@
     ctx.restore();
   }
 
-  /* 目标形象：萤火虫。
-     身体 + 两片会拍的翅膀 + 尾灯 —— 用「有形象的虫」承载「无形的光」。
-     光晕只做陪衬（≤18%），不刺眼；靠近时翅尖会快一点，表示它注意到你了。 */
+  /* 目标形象：一片花瓣。
+     有形状（椭圆带尖、带主脉）、有颜色（玫瑰到暖金）、会自转飘落；
+     光只是托着它的一点微亮，不是主体。点它，它会开成一朵小小的话。 */
   function drawOrbs(now) {
-    if (!orbCv) return;
+    if (!targetCv) return;
     ctx.save();
-    ctx.globalCompositeOperation = 'lighter';
     for (var i = 0; i < orbs.length; i++) {
       var o = orbs[i];
-      var a = (o.alpha === undefined ? 1 : o.alpha) * 0.86;
-      var r = o.r * (o.scale || 1);
-      var near = P.seen ? Math.max(0, 1 - Math.hypot(o.x - P.x, o.y - P.y) / (r * 7)) : 0;
-      // 明灭（真实萤火虫是慢慢亮、慢慢暗）
-      var blink = 0.35 + 0.65 * Math.pow(0.5 + 0.5 * Math.sin(now * 0.0010 + o.phase), 2);
-      a *= 0.55 + 0.45 * blink;
-      // 极淡光晕（只是氛围，不是本体）
-      ctx.globalAlpha = a * 0.09;
-      ctx.drawImage(haloCv, o.x - r * 4.6, o.y - r * 4.6, r * 9.2, r * 9.2);
-      // 本体改用正常混合：让萤火虫是一只「实体的虫」，而不是一团光
+      var a = (o.alpha === undefined ? 1 : o.alpha) * 0.92;
+      if (a <= 0.01) continue;
+      var near = P.seen ? Math.max(0, 1 - Math.hypot(o.x - P.x, o.y - P.y) / (o.r * 4.5)) : 0;
+      var r = o.r * (0.94 + near * 0.08);
+      // 托底微光（很淡，只是让花瓣在暗处可见）
+      ctx.globalCompositeOperation = 'lighter';
+      ctx.globalAlpha = a * (0.10 + near * 0.10);
+      ctx.drawImage(haloCv, o.x - r * 3.6, o.y - r * 3.6, r * 7.2, r * 7.2);
+      // 花瓣本体
       ctx.globalCompositeOperation = 'source-over';
+      ctx.globalAlpha = Math.min(1, a);
       ctx.save();
       ctx.translate(o.x, o.y);
-      ctx.rotate(o.ang || 0);
-      var L1 = r * 0.62, L2 = r * 0.30;   // 本体：长 1.24r，宽 0.6r
-      // 翅膀：细长、掠向后，半透明会拍
-      var flapFreq = 0.011 + near * 0.012;
-      var flap = 0.22 + 0.78 * Math.abs(Math.sin(now * flapFreq + o.phase * 1.7));
-      ctx.globalAlpha = a * 0.34;
-      ctx.fillStyle = 'rgba(232,244,242,1)';
-      for (var w = -1; w <= 1; w += 2) {
-        ctx.beginPath();
-        ctx.ellipse(L1 * 0.06, w * L2 * (0.82 + 0.20 * flap), L1 * 0.92, L2 * 0.42 * flap, w * 0.94, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      // 身体：暖琥珀色的梭形（实心、有轮廓）
-      ctx.globalAlpha = Math.min(1, a * 0.92);
-      ctx.fillStyle = 'rgb(228,178,104)';
-      ctx.beginPath();
-      ctx.moveTo(L1, 0);
-      ctx.quadraticCurveTo(L1 * 0.2, -L2 * 0.95, -L1 * 0.92, -L2 * 0.22);
-      ctx.quadraticCurveTo(-L1 * 1.02, 0, -L1 * 0.92, L2 * 0.22);
-      ctx.quadraticCurveTo(L1 * 0.2, L2 * 0.95, L1, 0);
-      ctx.closePath(); ctx.fill();
-      // 头灯：亮的一端放在**前面**——人眼会把亮点认作头，放后面就会「倒着飞」
-      ctx.globalAlpha = Math.min(1, a * 0.95);
-      ctx.fillStyle = 'rgb(255,240,200)';
-      ctx.beginPath(); ctx.arc(L1 * 0.62, 0, L2 * 0.36, 0, Math.PI * 2); ctx.fill();
-      // 尾端：暗琥珀，收住
-      ctx.globalAlpha = a * 0.55;
-      ctx.fillStyle = 'rgb(120,86,44)';
-      ctx.beginPath(); ctx.arc(-L1 * 0.88, 0, L2 * 0.20, 0, Math.PI * 2); ctx.fill();
-      // 触角：从头部往前伸
-      ctx.globalAlpha = a * 0.34;
-      ctx.strokeStyle = 'rgb(168,136,92)';
-      ctx.lineWidth = Math.max(0.6, DPR * 0.55);
-      ctx.beginPath();
-      ctx.moveTo(L1 * 0.70, 0); ctx.quadraticCurveTo(L1 * 1.25, -L2 * 0.55, L1 * 1.55, -L2 * 1.05);
-      ctx.moveTo(L1 * 0.70, 0); ctx.quadraticCurveTo(L1 * 1.25, L2 * 0.55, L1 * 1.55, L2 * 1.05);
-      ctx.stroke();
+      ctx.rotate(o.rot || 0);
+      // 翻转感：横向压缩随自转变化，像真的在飘
+      var squash = 0.35 + 0.65 * Math.abs(Math.cos((o.rot || 0) * 1.1));
+      ctx.drawImage(targetCv, -r * 1.35, -r * 0.5, r * 2.7, r * 1.0 * squash);
       ctx.restore();
-      // 水面倒影：只留一点摇曳的光
-      if (o.y < HORIZON) {
-        ctx.globalAlpha = a * 0.10;
-        ctx.drawImage(haloCv, o.x - r * 2.0, HORIZON + 6, r * 4.0, r * 7);
-      }
     }
     ctx.restore();
   }
@@ -855,6 +880,7 @@
     drawBreathRing(now);
     drawOrbs(now);
     drawPetals(now);
+    drawBlooms(now);
     drawRings(now);
     drawCross(now);
     drawVignette();
@@ -938,7 +964,9 @@
     }
     if (best) {
       startle(best);
-      if (mode === 'breathe' && !orbs.some(function (o) { return !o.flee; })) spawnBreatheOrb();
+      var bi = orbs.indexOf(best);
+      if (bi >= 0) orbs.splice(bi, 1);
+      if (mode === 'breathe' && !orbs.length) spawnBreatheOrb();
     } else {
       rings.push({ x: p.x, y: p.y, r: F * 0.004, born: performance.now(), life: 620 });
     }

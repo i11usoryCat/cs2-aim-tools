@@ -9,33 +9,6 @@
    --line…），线全部走三级线 --line-s / --line-g / --line-i，圆角一律 0。
    版式与 methodology.html 同构：纸面底 + 衬线大标题 + 无衬线正文 + 单栏 820px。
    ========================================================================== */
-*{box-sizing:border-box}
-html{scroll-behavior:auto}
-body{
-  margin:0;
-  background:var(--paper);
-  color:var(--ink);
-  font-family:var(--f-ui);
-  font-size:16px; line-height:1.85;
-  font-variant-numeric:tabular-nums; font-feature-settings:"tnum" 1;
-  -webkit-font-smoothing:antialiased;
-}
-/* 纸感：与 methodology.html 同一套（两层极淡径向光） */
-body::before{
-  content:""; position:fixed; inset:0; pointer-events:none; z-index:0;
-  background:
-    radial-gradient(1100px 680px at 16% -12%, color-mix(in srgb, var(--acc-paper) 8%, transparent), transparent 62%),
-    radial-gradient(880px 560px at 94% 4%, color-mix(in srgb, var(--ink) 4%, transparent), transparent 64%);
-}
-
-/* ---- 单栏页面 ---- */
-.page{ position:relative; z-index:1; max-width:820px; margin:0 auto; padding:64px 32px 120px; }
-
-/* ---- 页头：← VERNIER + 返回（与 methodology 的 .topbar 同构） ---- */
-.topbar{
-  display:flex; align-items:baseline; justify-content:space-between; gap:24px;
-  padding-bottom:16px; border-bottom:1px solid var(--line-s); margin-bottom:56px;
-}
 .topbar a{
   font-family:var(--f-ui); font-size:12px; letter-spacing:.14em;
   text-transform:uppercase; color:var(--ink-2); text-decoration:none;
@@ -44,19 +17,14 @@ body::before{
 }
 .topbar a:hover{ color:var(--acc-text,var(--acc-paper)); border-bottom-color:var(--line-i); }
 
-/* ---- 页头眉标 / 衬线大标题 / 副题 ---- */
-.eyebrow{
-  display:flex; align-items:center; gap:14px; margin:0 0 16px;
-  font-family:var(--f-ui); font-size:10.5px; letter-spacing:.24em;
-  text-transform:uppercase; color:var(--ink-2); font-weight:500;
-}
-.eyebrow .num{ color:var(--acc-text,var(--acc-paper)); font-weight:700; font-size:10.5px; letter-spacing:.18em; line-height:1; }
-.eyebrow .num + span::before{ content:"— " }
-h1{
-  font-family:var(--f-display); font-weight:900;
-  font-size:clamp(44px,5.2vw,76px); line-height:1.02; letter-spacing:-.02em;
-  margin:0 0 18px;
-}
+/* 标题边距：本族页面比 shell 默认紧 10px */
+.page h1, .e404 h1{ margin:0 0 18px; }
+
+/* 遗留页正文沿用浏览器默认段落外边距（shell 的 `.page p` 是现代文体规则） */
+:where(.page) p{ margin:1em 0; max-width:none; }
+:where(.page) ul, :where(.page) ol{ max-width:none; }
+:where(.page) li{ margin:0; }
+
 .meta{
   font-family:var(--f-ui); font-size:12.5px; line-height:1.9; letter-spacing:.04em;
   color:var(--ink-2); margin:0 0 48px; max-width:64ch;
@@ -91,6 +59,7 @@ h1{
 
 /* ---- 引文 / 代码块：线的部分交给 line-system.css，这里只定字号 ---- */
 blockquote{
+  padding:0 0 0 20px;
   margin:0 0 22px; border-left:1px solid var(--line-g);
   color:var(--ink-2); font-size:15.5px; line-height:1.85; max-width:64ch;
 }

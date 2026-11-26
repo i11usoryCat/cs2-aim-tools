@@ -127,20 +127,11 @@
 #copyHint:empty,#applyHint:empty{ display:none; }
 
 /* —— 顶部返回 + 语言切换 —— */
-#topbar{ position:fixed; left:48px; top:24px; z-index:60; display:flex; align-items:center;
-  gap:24px; pointer-events:none; }
 #back{ position:static; display:none; padding:4px 0; border:0; background:none;
   font-family:var(--f-ui); font-size:10.5px; letter-spacing:.18em; text-transform:uppercase;
   color:var(--dim); text-decoration:none; pointer-events:auto; }
 #back.on{ display:inline-block; }
 #back:hover{ color:var(--txt); background:none; border:0; }
-#langSw{ display:flex; align-items:center; gap:2px; pointer-events:auto;
-  font-family:var(--f-ui); font-size:10.5px; letter-spacing:.18em; color:var(--dim); }
-#langSw button{ padding:4px 6px; background:none; border:0; border-bottom:1px solid transparent;
-  font:inherit; letter-spacing:inherit; text-transform:uppercase; color:var(--dim); cursor:pointer; }
-#langSw button.is-on{ color:var(--txt); border-bottom-color:var(--acc); }
-#langSw button:hover{ color:var(--txt); }
-#langSw .sep{ opacity:.45; }
 
 /* —— HUD —— */
 /* 四页 HUD 同一档（训练器 #hud 为准）：15px / 500 / 左上 22,16；
@@ -158,5 +149,4 @@
   .ov-nums{ grid-template-columns:repeat(2,1fr); }
   .ov-num{ padding:16px 16px 16px 0; }
   .ov-num:nth-child(3){ border-left:0; padding-left:0; }
-  #topbar{ left:24px; }
 }

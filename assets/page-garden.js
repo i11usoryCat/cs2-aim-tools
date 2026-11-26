@@ -162,6 +162,7 @@
   }
 
   var orbs = [], petals = [], rings = [], flies = [];
+  var lastFlee = 0;
   var mode = 'breathe';
   var t0 = performance.now();
   var last = t0;
@@ -330,6 +331,17 @@
   function updateOrbs(now, dt) {
     for (var i = orbs.length - 1; i >= 0; i--) {
       var o = orbs[i];
+      if (o.flee) {
+        var fa = (now - o.fleeAt) / 1700;
+        o.x += o.fvx * dt * 0.06;
+        o.y += o.fvy * dt * 0.06;
+        o.fvy -= F * 0.0000004 * dt * 0.06;   // 越飞越快
+        o.alpha = Math.max(0, 1 - fa) * (o.fa || 1);
+        o.scale = (o.scale || 1) * 0.998;
+        o.wingFast = 1;
+        if (fa >= 1) { orbs.splice(i, 1); continue; }
+        continue;
+      }
       var age = now - o.born;
       if (o.kind === 'breathe') {
         o.x = o.cx + Math.sin(age * o.sx * 6.28 + o.phase) * o.ax;
@@ -368,25 +380,29 @@
   }
 
   /* ── 粒子 / 涟漪 ──────────────────────────────────────── */
-  function bloom(o) {
-    var n = reduce ? 8 : 34;
+  /* 不去「打死」它：轻轻一碰，萤火虫受惊飞走。
+     留下的是缓缓上升的光尘，不是碎裂的花瓣——不残忍。 */
+  function startle(o) {
+    o.flee = true;
+    o.fleeAt = performance.now();
+    o.fvx = (Math.random() - 0.5) * F * 0.00016;
+    o.fvy = -F * (0.00022 + Math.random() * 0.00010);
+    o.fa = o.alpha === undefined ? 1 : o.alpha;
+    var n = reduce ? 4 : 12;
     for (var i = 0; i < n; i++) {
-      var a = (i / n) * Math.PI * 2 + Math.random() * 0.6;
-      var sp = F * (0.00010 + Math.random() * 0.00034);
       petals.push({
-        x: o.x, y: o.y,
-        vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - F * 0.00006,
-        r: F * (0.0042 + Math.random() * 0.0058),
-        rot: Math.random() * Math.PI * 2,
-        vr: (Math.random() - 0.5) * 0.005,
-        life: 1700 + Math.random() * 1600, born: performance.now(),
-        a: 0.30 + Math.random() * 0.28
+        x: o.x + (Math.random() - 0.5) * o.r,
+        y: o.y + (Math.random() - 0.5) * o.r,
+        vx: (Math.random() - 0.5) * F * 0.00007,
+        vy: -F * (0.00005 + Math.random() * 0.00012),
+        r: F * (0.0016 + Math.random() * 0.0024),
+        rot: 0, vr: 0,
+        life: 900 + Math.random() * 700, born: performance.now(),
+        a: 0.22 + Math.random() * 0.22
       });
     }
-    // 两圈扩散环 + 一次光爆
-    rings.push({ x: o.x, y: o.y, r: o.r, born: performance.now(), life: 1100 });
-    rings.push({ x: o.x, y: o.y, r: o.r * 1.6, born: performance.now(), life: 1600 });
-    rings.push({ x: o.x, y: o.y, r: o.r * 0.4, born: performance.now(), life: 520, flash: true });
+    rings.push({ x: o.x, y: o.y, r: o.r * 0.6, born: performance.now(), life: 900 });
+    lastFlee = performance.now();
     chime(o.y / H);
   }
 
@@ -406,7 +422,13 @@
 
   /* ── 声音（WebAudio 现场合成） ─────────────────────────── */
   var AU = { ctx: null, master: null, on: true, pad: null };
-  var SCALE = [0, 3, 5, 7, 10, 12, 15, 17, 19, 22];
+  /* 不是随机音阶：固定五声音阶 + 固定短句。
+     每次轻碰推进一个音，连起来是一条可辨认的旋律；
+     同一时刻只会有一个音在响（去重 260ms），不会糊成一团。 */
+  var SCALE = [0, 3, 5, 7, 10, 12, 15];
+  var PHRASE = [0, 4, 2, 6, 3, 5, 1, 4];   // 相对 SCALE 的下标
+  var phraseIdx = 0;
+  var lastChime = 0;
   function initAudio() {
     if (AU.ctx) return;
     var AC = window.AudioContext || window.webkitAudioContext;
@@ -434,21 +456,42 @@
   }
   function chime(posY) {
     if (!AU.ctx || !AU.on) return;
+    var nowMs = performance.now();
+    if (nowMs - lastChime < 260) return;    // 去重：不叠音
+    lastChime = nowMs;
+    var semis = SCALE[PHRASE[phraseIdx % PHRASE.length]];
+    phraseIdx++;
+    // 固定八度：低音区只随高度做 ±2 半音的微调，不破坏旋律
+    var octave = 12;
+    var base = 196 * Math.pow(2, (octave + semis + ((1 - posY) * 4 - 2)) / 12);
     var t = AU.ctx.currentTime;
-    var semis = SCALE[Math.floor(Math.random() * SCALE.length)];
-    var base = 220 * Math.pow(2, (12 + semis + (1 - posY) * 5) / 12);
-    for (var i = 0; i < 3; i++) {
+    for (var i = 0; i < 2; i++) {            // 只留两个泛音，声音更干净
       var o = AU.ctx.createOscillator();
       var g = AU.ctx.createGain();
       o.type = 'sine';
-      o.frequency.value = base * (i + 1) * (i ? 1.003 : 1);
+      o.frequency.value = base * (i + 1) * (i ? 2.006 : 1);
       g.gain.setValueAtTime(0, t);
-      g.gain.linearRampToValueAtTime(0.22 / (i + 1.4), t + 0.012);
-      g.gain.exponentialRampToValueAtTime(0.0001, t + 1.15 + i * 0.12);
+      g.gain.linearRampToValueAtTime(0.12 / (i + 1.6), t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 2.2 + i * 0.2);
       o.connect(g); g.connect(AU.master);
-      o.start(t); o.stop(t + 1.4 + i * 0.12);
+      o.start(t); o.stop(t + 2.6 + i * 0.2);
     }
   }
+  /* 呼吸的低音：固定音高、固定间隔（6s），极轻。给耳朵一个可预期的节拍。 */
+  function heartNote(inhale) {
+    if (!AU.ctx || !AU.on) return;
+    var t = AU.ctx.currentTime;
+    var o = AU.ctx.createOscillator();
+    var g = AU.ctx.createGain();
+    o.type = 'sine';
+    o.frequency.value = inhale ? 98 : 73.4;      // 吸气低一点，呼气更低
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(0.055, t + 0.9);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 4.2);
+    o.connect(g); g.connect(AU.master);
+    o.start(t); o.stop(t + 4.4);
+  }
+
   function breathSound(inhale) {
     if (!AU.ctx || !AU.on) return;
     var t = AU.ctx.currentTime;
@@ -636,7 +679,7 @@
       ctx.fillStyle = 'rgba(232,244,242,1)';
       for (var w = -1; w <= 1; w += 2) {
         ctx.beginPath();
-        ctx.ellipse(-L1 * 0.36, w * L2 * (0.82 + 0.20 * flap), L1 * 0.98, L2 * 0.42 * flap, w * 0.94, 0, Math.PI * 2);
+        ctx.ellipse(L1 * 0.06, w * L2 * (0.82 + 0.20 * flap), L1 * 0.92, L2 * 0.42 * flap, w * 0.94, 0, Math.PI * 2);
         ctx.fill();
       }
       // 身体：暖琥珀色的梭形（实心、有轮廓）
@@ -782,10 +825,19 @@
       if (cyc < 0.02 && now > nextSpawn) {
         nextSpawn = now + 400;
         spawnBreatheOrb();
-        if (!reduce && now > breathNextCue) { breathNextCue = now + 3000; breathSound(true); }
+        if (now > breathNextCue) {
+          breathNextCue = now + 3000;
+          heartNote(true);
+          if (!reduce) breathSound(true);
+        }
       }
     } else if (mode === 'drift') {
-      if (orbs.length < 4) { var no = makeOrb('drift'); if (!tooClose(no, Math.min(W, H) * 0.20)) orbs.push(no); }
+      var liveDrift = 0;
+      for (var di = 0; di < orbs.length; di++) if (!orbs[di].flee) liveDrift++;
+      if (liveDrift < 4 && now - lastFlee > 1400) {
+        var no = makeOrb('drift');
+        if (!tooClose(no, Math.min(W, H) * 0.20)) orbs.push(no);
+      }
     } else if (mode === 'gaze') {
       gazeTimer += dt;
       if (gazeTimer > 20000) { gazeTimer = 0; cue(L('看远处', 'Look far'), 3200); }
@@ -885,12 +937,8 @@
       if (d < hitR && d < bestD) { best = o; bestD = d; }
     }
     if (best) {
-      bloom(best);
-      var idx = orbs.indexOf(best);
-      if (idx >= 0) orbs.splice(idx, 1);
-      if (mode === 'drift') orbs.push(makeOrb('drift'));
-      if (mode === 'gaze') orbs.push(makeOrb('gaze'));
-      if (mode === 'breathe' && !orbs.length) spawnBreatheOrb();
+      startle(best);
+      if (mode === 'breathe' && !orbs.some(function (o) { return !o.flee; })) spawnBreatheOrb();
     } else {
       rings.push({ x: p.x, y: p.y, r: F * 0.004, born: performance.now(), life: 620 });
     }
@@ -958,6 +1006,7 @@
     petals: function () { return petals.length; },
     orbsPos: function () { return orbs.map(function (o) { return { x: o.x / DPR, y: o.y / DPR, r: o.r / DPR }; }); },
     orbsAng: function () { return orbs.map(function (o) { return o.ang || 0; }); },
+    fleeing: function () { return orbs.filter(function (o) { return o.flee; }).length; },
     setMode: setMode,
     audio: function () { return { ready: !!AU.ctx, on: AU.on }; }
   };

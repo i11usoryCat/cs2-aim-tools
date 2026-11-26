@@ -1,41 +1,10 @@
 <!doctype html>
-<html lang="zh-CN" data-theme="sand">
+<html lang="zh-CN" data-theme-onacc="theme" data-theme="sand">
 <head>
 <meta charset="utf-8">
+<script src="../assets/shell.js"></script>
 <link rel="stylesheet" href="../assets/theme.css">
-<script>/* 主题：assets/theme.css 是唯一来源；这里只决定 data-theme（?theme= → cs2at.theme → 本地时间） */
-(function(){
-  var OK={sand:1,ink:1,lake:1,light:1,jade:1,forest:1,mono:1,night:1,cyber:1};
-  var t=null;
-  try{ t=new URLSearchParams(location.search).get('theme'); }catch(e){}
-  if(!t){ try{ t=localStorage.getItem('cs2at.theme'); }catch(e){} }
-  if(!OK[t]){
-    try{ var d=new Date(), m=d.getHours()*60+d.getMinutes(); t=(m>=1410||m<460)?'forest':'sand'; }catch(e){ t='sand'; }
-  }
-  window.__THEME=t;
-  try{ document.documentElement.setAttribute('data-theme',t); }catch(e){}
-})();</script>
 
-<script>/* 剪贴板兜底：writeText 在失焦/无权限时抛 NotAllowedError（未捕获会进 console），统一降级到 execCommand */
-(function(){
-  try{
-    var c = navigator.clipboard;
-    if(!c || !c.writeText) return;
-    var orig = c.writeText.bind(c);
-    c.writeText = function(t){
-      return orig(t).catch(function(){
-        var ta = document.createElement('textarea');
-        ta.value = t; ta.setAttribute('readonly','');
-        ta.style.cssText = 'position:fixed;top:-1000px;left:-1000px;opacity:0';
-        document.body.appendChild(ta);
-        ta.select(); ta.setSelectionRange(0, ta.value.length);
-        var ok = false; try{ ok = document.execCommand('copy'); }catch(e){}
-        ta.remove();
-        if(!ok){ try{ window.prompt('复制失败，请手动复制：', t); }catch(e){} }   // 兜底：绝不抛未捕获异常
-      });
-    };
-  }catch(e){}
-})();</script>
 <title>跟枪测试 · Vernier</title>
 <meta name="description" content="90 秒圆形跟枪测试：跟踪误差 RMS、相位滞后、速度增益——检验跟枪手感；找灵敏度请用灵敏度标定。">
 <link rel="canonical" href="https://i11usorycat.github.io/cs2-aim-tools/tools/tracking-calibrator.html">

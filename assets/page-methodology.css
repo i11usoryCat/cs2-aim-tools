@@ -1,0 +1,31 @@
+/* ============================================================================
+   page-methodology.css — 方法论页专属（methodology.html / en/methodology.html 共用）
+   ----------------------------------------------------------------------------
+   只放「这一页才有」的内容版式：开篇结论列表、附录区。
+   页头 / 眉标 / 标题层级 / 正文 / 代码块 / 语言开关 / 滚动条 / 抖动层 → assets/shell.css
+   ========================================================================== */
+
+/* 四条开篇结论：01–04 朱红小号 + 衬线结论句 */
+ol.lead{ list-style:none; counter-reset:lead; padding:0; margin:var(--s4) 0 var(--s5); max-width:68ch; }
+ol.lead > li{ counter-increment:lead; position:relative; padding-left:64px; margin:0 0 40px; }
+ol.lead > li::before{
+  content:counter(lead,decimal-leading-zero);
+  position:absolute; left:0; top:8px;
+  font-family:var(--f-ui); font-weight:700; font-size:10.5px; letter-spacing:.18em;
+  color:var(--acc-text, var(--acc-paper));
+}
+ol.lead > li > strong{ display:block; font-family:var(--f-display); font-weight:700;
+  font-size:23px; line-height:1.36; letter-spacing:-.005em; margin-bottom:6px; }
+
+/* 附录：左竖线缩进，字号降一档 */
+.appendix{ margin-top:var(--s7); padding-left:var(--s3); border-left:1px solid var(--rule); }
+.appendix > h2{ margin-top:0; padding-top:0; border-top:0; }
+.appendix h3{ font-size:16px; margin-top:var(--s4); }
+.appendix p, .appendix li, .appendix blockquote{ font-size:15px; color:var(--ink-2); }
+.appendix pre{ background:transparent; border:0; border-left:1px solid var(--rule); padding-left:16px; font-size:12.5px; }
+
+@media (max-width:640px){
+  ol.lead > li{ padding-left:44px; }
+  ol.lead > li > strong{ font-size:20px; }
+  .appendix{ padding-left:16px; }
+}

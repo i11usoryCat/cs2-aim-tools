@@ -46,7 +46,8 @@
     var gold = parseColor(cs.getPropertyValue('--gold'), [224, 164, 88]);
     var txt = parseColor(cs.getPropertyValue('--txt'), [236, 240, 238]);
     var bg = parseColor(cs.getPropertyValue('--bg'), [12, 16, 18]);
-    var dark = lum(bg) < 0.4;
+    // 花园永远是夜色：明亮主题下也保持深色场景，否则目标会白底发光、刺眼。
+    var dark = true;
     var base = dark ? mix(bg, [2, 4, 8], 0.55) : mix(bg, [255, 255, 255], 0.35);
     // 梦境基色：固定四色（青 / 玫瑰 / 金 / 靛），主题只做 18% 的微染。
     // 这样任何主题下花园都保持「艳丽但不刺眼」，而不是被主题拉成单色。
@@ -343,6 +344,20 @@
         o.alpha = 1; o.scale = 1;
         if (o.kind === 'gaze') o.scale = 0.7 + 0.3 * Math.sin(age * 0.0003 + o.phase);
       }
+      if (o.px !== undefined) {
+        var dx = o.x - o.px, dy = o.y - o.py;
+        if (dx * dx + dy * dy > 0.04) {
+          var want = Math.atan2(dy, dx);
+          if (o.ang === undefined) o.ang = want;
+          else {
+            var diff = want - o.ang;
+            while (diff > Math.PI) diff -= Math.PI * 2;
+            while (diff < -Math.PI) diff += Math.PI * 2;
+            o.ang += diff * 0.12;
+          }
+        }
+      }
+      o.px = o.x; o.py = o.y;
     }
   }
 
@@ -590,31 +605,70 @@
     ctx.restore();
   }
 
+  /* 目标形象：萤火虫。
+     身体 + 两片会拍的翅膀 + 尾灯 —— 用「有形象的虫」承载「无形的光」。
+     光晕只做陪衬（≤18%），不刺眼；靠近时翅尖会快一点，表示它注意到你了。 */
   function drawOrbs(now) {
     if (!orbCv) return;
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
     for (var i = 0; i < orbs.length; i++) {
       var o = orbs[i];
-      var a = (o.alpha === undefined ? 1 : o.alpha) * (PAL.dark ? 0.70 : 0.62);
+      var a = (o.alpha === undefined ? 1 : o.alpha) * 0.86;
       var r = o.r * (o.scale || 1);
-      // 靠近时才轻轻亮一点：告诉你可以打，但不刺眼
       var near = P.seen ? Math.max(0, 1 - Math.hypot(o.x - P.x, o.y - P.y) / (r * 7)) : 0;
-      a *= 1 + near * 0.8;
-      // 外层：极淡青晕
-      ctx.globalAlpha = a * 0.14;
-      ctx.drawImage(haloCv, o.x - r * 6.0, o.y - r * 6.0, r * 12.0, r * 12.0);
-      // 中层暖雾
+      // 明灭（真实萤火虫是慢慢亮、慢慢暗）
+      var blink = 0.35 + 0.65 * Math.pow(0.5 + 0.5 * Math.sin(now * 0.0010 + o.phase), 2);
+      a *= 0.55 + 0.45 * blink;
+      // 极淡光晕（只是氛围，不是本体）
+      ctx.globalAlpha = a * 0.09;
+      ctx.drawImage(haloCv, o.x - r * 4.6, o.y - r * 4.6, r * 9.2, r * 9.2);
+      // 本体改用正常混合：让萤火虫是一只「实体的虫」，而不是一团光
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.save();
+      ctx.translate(o.x, o.y);
+      ctx.rotate(o.ang || 0);
+      var L1 = r * 0.62, L2 = r * 0.30;   // 本体：长 1.24r，宽 0.6r
+      // 翅膀：细长、掠向后，半透明会拍
+      var flapFreq = 0.011 + near * 0.012;
+      var flap = 0.22 + 0.78 * Math.abs(Math.sin(now * flapFreq + o.phase * 1.7));
       ctx.globalAlpha = a * 0.26;
-      ctx.drawImage(orbCv, o.x - r * 2.6, o.y - r * 2.6, r * 5.2, r * 5.2);
-      // 内核：暖白，控制在不过曝
-      ctx.globalAlpha = a * 0.13;
-      ctx.drawImage(orbCv, o.x - r * 1.1, o.y - r * 1.1, r * 2.2, r * 2.2);
-      // 水面倒影：竖直拉长的柔光
-      var ry = HORIZON + (o.y - HORIZON) * 0.18;
-      if (ry > HORIZON) {
-        ctx.globalAlpha = a * 0.18;
-        ctx.drawImage(orbCv, o.x - r * 2.2, HORIZON + 4, r * 4.4, r * 9);
+      ctx.fillStyle = 'rgba(226,240,238,1)';
+      for (var w = -1; w <= 1; w += 2) {
+        ctx.beginPath();
+        ctx.ellipse(-L1 * 0.30, w * L2 * (0.75 + 0.22 * flap), L1 * 0.92, L2 * 0.34 * flap, w * 0.78, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      // 身体：暖琥珀色的梭形（实心、有轮廓）
+      ctx.globalAlpha = Math.min(1, a * 0.92);
+      ctx.fillStyle = 'rgb(228,178,104)';
+      ctx.beginPath();
+      ctx.moveTo(L1, 0);
+      ctx.quadraticCurveTo(L1 * 0.2, -L2 * 0.95, -L1 * 0.92, -L2 * 0.22);
+      ctx.quadraticCurveTo(-L1 * 1.02, 0, -L1 * 0.92, L2 * 0.22);
+      ctx.quadraticCurveTo(L1 * 0.2, L2 * 0.95, L1, 0);
+      ctx.closePath(); ctx.fill();
+      // 尾灯：一小团暖光，是它唯一「发光」的地方
+      ctx.globalAlpha = Math.min(1, a * 0.95);
+      ctx.fillStyle = 'rgb(255,238,196)';
+      ctx.beginPath(); ctx.arc(-L1 * 0.58, 0, L2 * 0.34, 0, Math.PI * 2); ctx.fill();
+      // 头：暗一点，形成前后关系
+      ctx.globalAlpha = a * 0.55;
+      ctx.fillStyle = 'rgb(120,86,44)';
+      ctx.beginPath(); ctx.arc(L1 * 0.74, 0, L2 * 0.24, 0, Math.PI * 2); ctx.fill();
+      // 触角：两根极细的线
+      ctx.globalAlpha = a * 0.30;
+      ctx.strokeStyle = 'rgb(150,120,80)';
+      ctx.lineWidth = Math.max(0.6, DPR * 0.55);
+      ctx.beginPath();
+      ctx.moveTo(L1 * 0.92, 0); ctx.quadraticCurveTo(L1 * 1.35, -L2 * 0.5, L1 * 1.62, -L2 * 0.95);
+      ctx.moveTo(L1 * 0.92, 0); ctx.quadraticCurveTo(L1 * 1.35, L2 * 0.5, L1 * 1.62, L2 * 0.95);
+      ctx.stroke();
+      ctx.restore();
+      // 水面倒影：只留一点摇曳的光
+      if (o.y < HORIZON) {
+        ctx.globalAlpha = a * 0.10;
+        ctx.drawImage(haloCv, o.x - r * 2.0, HORIZON + 6, r * 4.0, r * 7);
       }
     }
     ctx.restore();
@@ -664,14 +718,30 @@
     }
   }
 
+  /* 呼吸引导：不是硬边圆，是水面涟漪。
+     吸气时涟漪向外散，呼气时向内收 —— 用有形象的水纹表达呼吸。 */
   function drawBreathRing(now) {
     if (mode !== 'breathe') return;
-    var rr = F * (0.10 + 0.055 * breathPhase);
+    var cx = W * 0.5, cy = H * 0.44;
     ctx.save();
     ctx.globalCompositeOperation = 'lighter';
-    ctx.strokeStyle = css(PAL.orb, 0.10 + 0.05 * breathPhase);
-    ctx.lineWidth = Math.max(1, DPR * 0.9);
-    ctx.beginPath(); ctx.arc(W * 0.5, H * 0.44, rr, 0, Math.PI * 2); ctx.stroke();
+    for (var i = 0; i < 3; i++) {
+      var t = ((now * 0.00013 + i / 3) % 1);
+      var rad = F * (0.05 + t * 0.30) * (0.82 + 0.18 * breathPhase);
+      var al = (1 - t) * (0.035 + 0.055 * breathPhase);
+      if (al <= 0.002) continue;
+      ctx.strokeStyle = css(PAL.orbHalo, al);
+      ctx.lineWidth = Math.max(1, DPR * (1.4 - t * 0.8));
+      // 略微不规则：手画的水纹不是正圆
+      ctx.beginPath();
+      for (var k = 0; k <= 64; k++) {
+        var ang = k / 64 * Math.PI * 2;
+        var rr = rad * (1 + 0.018 * Math.sin(ang * 3 + now * 0.0004 + i));
+        var px2 = cx + Math.cos(ang) * rr, py2 = cy + Math.sin(ang) * rr * 0.82;
+        if (k === 0) ctx.moveTo(px2, py2); else ctx.lineTo(px2, py2);
+      }
+      ctx.closePath(); ctx.stroke();
+    }
     ctx.restore();
   }
 
@@ -825,6 +895,18 @@
       rings.push({ x: p.x, y: p.y, r: F * 0.004, born: performance.now(), life: 620 });
     }
   }, { passive: true });
+
+  // 模式按钮：必须绑点击（之前只绑了键盘，点标签页无反应）
+  var modeBtns = document.querySelectorAll('.garden-modes button');
+  for (var mb = 0; mb < modeBtns.length; mb++) {
+    (function (btn) {
+      btn.addEventListener('click', function (ev) {
+        ev.preventDefault();
+        initAudio();
+        setMode(btn.getAttribute('data-mode'));
+      });
+    })(modeBtns[mb]);
+  }
 
   addEventListener('keydown', function (ev) {
     var k = ev.key;

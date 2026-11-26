@@ -878,3 +878,18 @@ h1,
   #plan .chip.new:hover,
   #plan a.back:hover,
   [style*="color:var(--acc)"]{ color:var(--acc-text, var(--acc)) !important }
+
+/* ============================================================
+   花园入口（Hub 右栏）：比「今天练什么」更轻的一行
+   ============================================================ */
+.garden-entry{
+  display:flex; align-items:center; justify-content:space-between; gap:16px;
+  margin-top:10px; padding:10px 2px 0;
+  font-size:12.5px; letter-spacing:.02em; text-decoration:none;
+  color:color-mix(in srgb, var(--dim) 92%, transparent);
+  border-top:1px solid color-mix(in srgb, var(--line) 55%, transparent);
+  transition:color 160ms var(--ease);
+}
+.garden-entry:hover{ color:var(--acc-text, var(--acc)); }
+.garden-entry .ge-ar{ transition:transform 160ms var(--ease); }
+.garden-entry:hover .ge-ar{ transform:translateX(4px); }

@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="jade">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>花园 · Vernier</title>
+<meta name="description" content="花园：慢下来的练枪。呼吸、漂流、远眺三种节奏，不计分，不催促。">
+<meta name="theme-color" content="#0b1014">
+<link rel="canonical" href="https://i11usorycat.github.io/cs2-aim-tools/garden.html">
+<link rel="alternate" hreflang="en" href="https://i11usorycat.github.io/cs2-aim-tools/en/garden.html">
+<link rel="alternate" hreflang="zh" href="https://i11usorycat.github.io/cs2-aim-tools/garden.html">
+<link rel="icon" href="assets/favicon.svg">
+<link rel="stylesheet" href="assets/theme.css?v=1">
+<link rel="stylesheet" href="assets/type.css?v=4">
+<link rel="stylesheet" href="assets/shell.css?v=5">
+<link rel="stylesheet" href="assets/page-garden.css?v=1">
+<link rel="stylesheet" href="assets/line-system.css?v=6">
+</head>
+<body class="garden">
+
+<canvas id="gardenCanvas" aria-hidden="true"></canvas>
+
+<header class="garden-top">
+  <a class="garden-back" href="app.html#play">← 训练中心</a>
+
+  <div class="garden-modes" role="tablist" aria-label="节奏 / Tempo">
+    <button type="button" role="tab" data-mode="breathe" aria-selected="true">呼吸</button>
+    <button type="button" role="tab" data-mode="drift" aria-selected="false">漂流</button>
+    <button type="button" role="tab" data-mode="gaze" aria-selected="false">远眺</button>
+  </div>
+
+  <div class="garden-tools">
+    <button type="button" id="soundBtn" aria-pressed="true" aria-label="声音">♪</button>
+    <nav class="langsw" aria-label="语言 / Language">
+      <button type="button" data-lang="zh" class="on">中</button>
+      <span aria-hidden="true">/</span>
+      <button type="button" data-lang="en">EN</button>
+    </nav>
+  </div>
+</header>
+
+<div class="garden-caption" id="caption">
+  <div class="garden-kicker" id="gardenKicker">花园 · GARDEN</div>
+  <h1 class="garden-title" id="gardenTitle">呼吸</h1>
+  <p class="garden-hint" id="gardenHint">吸气时睁眼，呼气时出手。这一局不计分。</p>
+</div>
+
+<div class="garden-breathlabel" id="breathLabel" aria-hidden="true"></div>
+
+<script src="assets/shell.js?v=5"></script>
+<script src="assets/page-garden.js?v=1"></script>
+</body>
+</html>

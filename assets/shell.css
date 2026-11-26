@@ -18,7 +18,6 @@
    0 · 基础
    ============================================================ */
 html{ scroll-behavior:auto; }
-*{ box-sizing:border-box; }
 
 /* ============================================================
    1 · 纸面页（方法页 / 遗留页 / 未来的文章页）
@@ -421,3 +420,22 @@ html[data-vn-lang="en"] article[data-lang="zh"]{ display:none; }
 :where(.app-shell) nav a.on,
   :where(.app-shell) .lang span.on,
   :where(.app-shell) .brand:hover .brand-name{ color:var(--acc-text, var(--acc)) }
+
+/* ============================================================
+   19 · W3 · 工具页顶栏组件（.vn-topbar / .vn-lang）
+   ----------------------------------------------------------------------------
+   由 overlay-v3.css 的 #topbar / #langSw 迁移而来（逐字同值，层序不变）。
+   只作用于组件自身、组件自带 box-sizing；不引入任何全局 reset。
+   页面保留原 id（#topbar / #langSw）供 JS / interact-test / line-system 补丁使用，
+   class 只负责形制；#back 仍在 overlay-v3.css（其内联文本存在 0.1‰ 亚像素 AA，W4 再议）。
+   ============================================================ */
+.vn-topbar{ box-sizing:border-box; position:fixed; left:48px; top:24px; z-index:60;
+  display:flex; align-items:center; gap:24px; pointer-events:none; }
+@media (max-width:1100px){ .vn-topbar{ left:24px; } }
+.vn-lang{ box-sizing:border-box; display:flex; align-items:center; gap:2px; pointer-events:auto;
+  font-family:var(--f-ui); font-size:10.5px; letter-spacing:.18em; color:var(--dim); }
+.vn-lang button{ padding:4px 6px; background:none; border:0; border-bottom:1px solid transparent;
+  font:inherit; letter-spacing:inherit; text-transform:uppercase; color:var(--dim); cursor:pointer; }
+.vn-lang button.is-on{ color:var(--txt); border-bottom-color:var(--acc); }
+.vn-lang button:hover{ color:var(--txt); }
+.vn-lang .sep{ opacity:.45; }

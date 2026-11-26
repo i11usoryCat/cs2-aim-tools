@@ -87,7 +87,8 @@
 .vn-rule{ border:0; border-top:1px solid var(--rule); }
 .vn-em{ color:var(--acc-paper); }
 
-@media (prefers-reduced-motion: reduce){
+@media (prefers-reduced-motion: reduce){/* W4-keep: a11y/动效强制（reduced-motion 或覆盖动画） */
+
   *{ animation-name:none !important; animation-duration:.01ms !important;
      transition-duration:.01ms !important; }
 }

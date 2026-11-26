@@ -1,0 +1,110 @@
+/* 花园 · 慢练（garden.html）
+   设计分工：DOM 外壳保持「仪器」的克制（0 圆角、1px 线、无阴影）；
+   画布内部允许「梦境」——柔光、加色混合、粒子。这是两种人格的边界。 */
+
+html,body{ height:100%; }
+body.garden{
+  margin:0; overflow:hidden;
+  background:#070b0f; color:var(--txt);
+  font-family:var(--f-ui);
+  -webkit-font-smoothing:antialiased;
+}
+#gardenCanvas{
+  position:fixed; inset:0; width:100%; height:100%; display:block;
+  touch-action:none;
+}
+
+/* ---------- 顶栏 ---------- */
+.garden-top{
+  position:fixed; left:0; right:0; top:0; z-index:20;
+  display:flex; align-items:center; justify-content:space-between; gap:24px;
+  padding:20px 28px; pointer-events:none;
+}
+.garden-top > *{ pointer-events:auto; }
+.garden-back{
+  font-size:11.5px; letter-spacing:.16em; text-transform:uppercase;
+  color:color-mix(in srgb, var(--txt) 62%, transparent);
+  text-decoration:none;
+  transition:color 160ms var(--ease);
+}
+.garden-back:hover{ color:var(--txt); }
+
+.garden-modes{ display:flex; align-items:center; gap:2px; }
+.garden-modes button{
+  appearance:none; -webkit-appearance:none; background:none; border:0;
+  padding:7px 14px; margin:0; cursor:pointer;
+  font-family:var(--f-ui); font-size:12.5px; letter-spacing:.14em;
+  color:color-mix(in srgb, var(--txt) 55%, transparent);
+  position:relative; transition:color 160ms var(--ease);
+}
+.garden-modes button:hover{ color:var(--txt); }
+.garden-modes button[aria-selected="true"]{ color:var(--txt); }
+.garden-modes button[aria-selected="true"]::after{
+  content:""; position:absolute; left:14px; right:14px; bottom:2px; height:1px;
+  background:linear-gradient(90deg, transparent, var(--acc), transparent);
+  opacity:.9;
+}
+
+.garden-tools{ display:flex; align-items:center; gap:18px; }
+#soundBtn{
+  appearance:none; background:none; border:1px solid color-mix(in srgb, var(--txt) 18%, transparent);
+  width:28px; height:28px; line-height:1; cursor:pointer; padding:0;
+  color:color-mix(in srgb, var(--txt) 62%, transparent);
+  font-size:13px; transition:color 160ms, border-color 160ms;
+}
+#soundBtn:hover{ color:var(--txt); border-color:color-mix(in srgb, var(--txt) 38%, transparent); }
+#soundBtn[aria-pressed="false"]{ opacity:.45; }
+
+.garden-tools .langsw button{
+  color:color-mix(in srgb, var(--txt) 52%, transparent);
+  border-bottom-color:transparent;
+}
+.garden-tools .langsw button.on{ color:var(--txt); border-bottom-color:var(--acc); }
+.garden-tools .langsw span{ color:color-mix(in srgb, var(--txt) 30%, transparent); font-size:10px; }
+
+/* ---------- 左下说明 ---------- */
+.garden-caption{
+  position:fixed; left:28px; bottom:26px; z-index:20;
+  max-width:min(520px, calc(100vw - 56px));
+  pointer-events:none;
+  transition:opacity 420ms var(--ease);
+}
+.garden-caption.is-faded{ opacity:.0; }
+.garden-kicker{
+  font-size:9.5px; letter-spacing:.3em; text-transform:uppercase;
+  color:color-mix(in srgb, var(--txt) 42%, transparent);
+  margin-bottom:10px;
+}
+.garden-title{
+  margin:0 0 8px;
+  font-family:var(--f-display); font-weight:900;
+  font-size:clamp(30px, 3.4vw, 44px); line-height:1;
+  letter-spacing:-.01em; color:var(--txt);
+}
+.garden-hint{
+  margin:0; font-size:12.5px; line-height:1.75;
+  color:color-mix(in srgb, var(--txt) 52%, transparent);
+  max-width:36ch;
+}
+
+/* ---------- 呼吸提示（居中，极淡） ---------- */
+.garden-breathlabel{
+  position:fixed; left:50%; top:50%; transform:translate(-50%,-50%);
+  z-index:15; pointer-events:none;
+  font-size:12px; letter-spacing:.5em; text-indent:.5em;
+  color:color-mix(in srgb, var(--txt) 26%, transparent);
+  opacity:0; transition:opacity 600ms var(--ease);
+}
+.garden-breathlabel.is-on{ opacity:1; }
+
+/* ---------- 窄屏 ---------- */
+@media (max-width:720px){
+  .garden-top{ padding:14px 16px; gap:10px; }
+  .garden-modes button{ padding:6px 9px; font-size:11.5px; letter-spacing:.06em; }
+  .garden-caption{ left:16px; right:16px; bottom:18px; }
+  .garden-title{ font-size:26px; }
+}
+
+@media (prefers-reduced-motion: reduce){
+  .garden-modes button, .garden-back, #soundBtn{ transition:none; }
+}

@@ -896,17 +896,26 @@
     }
   }, { passive: true });
 
-  // 模式按钮：必须绑点击（之前只绑了键盘，点标签页无反应）
+  // 模式按钮：两重绑定（直接 click + document 委托），避免任何覆盖层/事件拦截导致点不动
+  function onModePick(btn) {
+    if (!btn) return;
+    initAudio();
+    setMode(btn.getAttribute('data-mode'));
+  }
   var modeBtns = document.querySelectorAll('.garden-modes button');
   for (var mb = 0; mb < modeBtns.length; mb++) {
     (function (btn) {
-      btn.addEventListener('click', function (ev) {
-        ev.preventDefault();
-        initAudio();
-        setMode(btn.getAttribute('data-mode'));
-      });
+      btn.addEventListener('click', function (ev) { ev.preventDefault(); onModePick(btn); });
     })(modeBtns[mb]);
   }
+  document.addEventListener('click', function (ev) {
+    var t = ev.target && ev.target.closest ? ev.target.closest('.garden-modes button') : null;
+    if (t) { ev.preventDefault(); onModePick(t); }
+  }, true);
+  document.addEventListener('pointerup', function (ev) {
+    var t = ev.target && ev.target.closest ? ev.target.closest('.garden-modes button') : null;
+    if (t && !t.__picked) { t.__picked = 1; setTimeout(function () { t.__picked = 0; }, 300); onModePick(t); }
+  }, true);
 
   addEventListener('keydown', function (ev) {
     var k = ev.key;
